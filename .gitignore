@@ -1,0 +1,6 @@
+main/*.js
+play.*
+
+*.exe
+*.db
+sqlite3.*
