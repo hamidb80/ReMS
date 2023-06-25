@@ -1,4 +1,4 @@
-import std/[macros, strformat, strutils]
+import std/[macros, strformat]
 import std/[jsffi, dom]
 import macroplus
 
@@ -20,11 +20,15 @@ type
 
   KonvaEvent* = ref object of JsObject
 
+  Vector* = ref object of JsObject
+    x*, y*: Float
+
   KonvaMouseEvent* = ref object of KonvaEvent
     pointerId*: int
+    evt*: MouseEvent
+    # `type`*: Str
 
   KonvaClickEvent* = ref object of KonvaMouseEvent
-
 
   KonvaCallback* = proc or proc(ke: KonvaEvent)
 
@@ -33,30 +37,20 @@ type
   Number = SomeNumber
 
 
-func realParamCount(params: NimNode): int =
-  ## to support grouped args (a, b: int)
-  for p in params:
-    result.inc max(0, p.len - 2)
-
 proc toKonvaMethod(def: NimNode): NimNode =
   result = def
-
-  let
-    name = def.name
-    argsLen = pred realParamCount def.params
-    args = repeat("#, ", argsLen).strip(chars = {' ', ','})
-    pragma = newColonExpr(ident"importjs", newLit fmt"#.{name}({args})")
-
-  result.addPragma pragma
+  result.addPragma newColonExpr(ident"importjs", newLit fmt"#.{def.name}(@)")
 
 macro konva(def): untyped =
   ## adds `importjs` pragma automatically
   toKonvaMethod def
 
 macro caster*(def): untyped =
-  ## support for cast in args, for example below procedure
+  ## support for cast in args,
+  ##
+  ## for example below procedure
   ## should treat `ev` as an `KonvaClickEvent` rather `JsObject`
-  ## it is specially usefull in event handling scenarios.
+  ## it is specially useful in event handling scenarios.
   ##
   ## proc callback(ev: JsObject as KonvaClickEvent) {.caster.} = ...
 
@@ -73,6 +67,17 @@ macro caster*(def): untyped =
 
   result.body = newStmtList(before, result.body)
 
+# --- utils ---
+
+func `+`*(v: Vector, t: Float): Vector = 
+  Vector(x: v.x + t, y: v.y + t)
+
+func `-`*(v: Vector, t: Float): Vector = 
+  v + -t
+
+func `*`*(v: Vector, t: Float): Vector = 
+  Vector(x: v.x * t, y: v.y * t)
+
 # --- constructors ---
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}
 proc newLayer*: Layer {.importjs: "new Konva.Layer()".}
@@ -84,6 +89,13 @@ proc draw*(l: Layer) {.konva.}
 proc add*(k, o: KonvaObject) {.konva.}
 proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
 
+proc `scale=`*(k: KonvaObject, v: Vector) {.konva.}
+proc `scale=`*[N: Number](k: KonvaObject, v: N) =
+  k.scale = Vector(x: v.toFloat, y: v.toFloat)
+
+proc `scale`*(k: KonvaObject): Vector {.konva.}
+proc `draggable=`*(k: KonvaObject, b: bool) {.konva.}
+proc `draggable`*(k: KonvaObject): bool {.konva.}
 proc `container=`*(k: Stage, id: Str) {.konva.}
 proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}

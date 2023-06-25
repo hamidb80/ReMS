@@ -1,4 +1,5 @@
-main/*.js
+src/*.js
+dist/script.js
 play.*
 
 *.exe
