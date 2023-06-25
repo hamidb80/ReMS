@@ -26,13 +26,12 @@ type
   KonvaMouseEvent* = ref object of KonvaEvent
     pointerId*: int
     evt*: MouseEvent
-    # `type`*: Str
 
   KonvaClickEvent* = ref object of KonvaMouseEvent
 
   KonvaCallback* = proc or proc(ke: KonvaEvent)
 
-  Float = float64
+  Float* = float64
   Str = cstring
   Number = SomeNumber
 
@@ -67,16 +66,32 @@ macro caster*(def): untyped =
 
   result.body = newStmtList(before, result.body)
 
-# --- utils ---
+# --- types ---
 
-func `+`*(v: Vector, t: Float): Vector = 
+func toFloat[F: SomeFloat](f: F): F = f
+
+func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
+  Vector(x: x.toFloat, y: y.toFloat)
+
+func asScalar*(v: Vector): Float =
+  assert v.x == v.y
+  v.x
+
+func `+`*(v: Vector, t: Float): Vector =
   Vector(x: v.x + t, y: v.y + t)
 
-func `-`*(v: Vector, t: Float): Vector = 
+func `-`*(v: Vector, t: Float): Vector =
   v + -t
 
-func `*`*(v: Vector, t: Float): Vector = 
+func `*`*(v: Vector, t: Float): Vector =
   Vector(x: v.x * t, y: v.y * t)
+
+# --- utils ---
+proc movement*(ke: KonvaMouseEvent): Vector =
+  Vector(x: ke.evt.movementx.toFloat, y: ke.evt.movementy.toFloat)
+
+proc cancelBubble*(ke: KonvaMouseEvent): Vector =
+  ke.cancelBubble = false
 
 # --- constructors ---
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}
@@ -101,19 +116,19 @@ proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}
 
 # --- visual properties ---
-proc `fill=`*(k: KonvaShape, color: Str) {.konva.}
-proc `fill`*(k: KonvaShape): Str {.konva.}
-proc `stroke=`*(k: KonvaShape, color: Str) {.konva.}
-proc `stroke`*(k: KonvaShape): Str {.konva.}
 proc `width=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `width`*(k: KonvaObject): Float {.konva.}
 proc `height=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `height`*(k: KonvaObject): Float {.konva.}
+proc `x=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `x`*(k: KonvaObject): Float {.konva.}
+proc `y=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `y`*(k: KonvaObject): Float {.konva.}
+proc `fill=`*(k: KonvaObject, color: Str) {.konva.}
+proc `fill`*(k: KonvaObject): Str {.konva.}
+proc `stroke=`*(k: KonvaShape, color: Str) {.konva.}
+proc `stroke`*(k: KonvaShape): Str {.konva.}
 proc `strokeWidth=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `strokeWidth`*(k: KonvaShape): Float {.konva.}
 proc `radius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `radius`*(k: KonvaShape): Float {.konva.}
-proc `x=`*[N: Number](k: KonvaShape, v: N) {.konva.}
-proc `x`*(k: KonvaShape): Float {.konva.}
-proc `y=`*[N: Number](k: KonvaShape, v: N) {.konva.}
-proc `y`*(k: KonvaShape): Float {.konva.}
