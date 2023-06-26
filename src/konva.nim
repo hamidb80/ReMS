@@ -70,6 +70,7 @@ macro caster*(def): untyped =
 
 func toFloat[F: SomeFloat](f: F): F = f
 
+
 func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
   Vector(x: x.toFloat, y: y.toFloat)
 
@@ -78,17 +79,17 @@ func asScalar*(v: Vector): Float =
   v.x
 
 func `+`*(v: Vector, t: Float): Vector =
-  Vector(x: v.x + t, y: v.y + t)
+  v(v.x + t, v.y + t)
 
 func `-`*(v: Vector, t: Float): Vector =
   v + -t
 
 func `*`*(v: Vector, t: Float): Vector =
-  Vector(x: v.x * t, y: v.y * t)
+  v(v.x * t, v.y * t)
 
 # --- utils ---
 proc movement*(ke: KonvaMouseEvent): Vector =
-  Vector(x: ke.evt.movementx.toFloat, y: ke.evt.movementy.toFloat)
+  v(ke.evt.movementx.toFloat, ke.evt.movementy.toFloat)
 
 proc cancelBubble*(ke: KonvaMouseEvent): Vector =
   ke.cancelBubble = false
@@ -100,15 +101,10 @@ proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
 
 # --- settings ---
+proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str {.importjs: "#.toDataURL({ pixelRatio: # })".}
 proc draw*(l: Layer) {.konva.}
 proc add*(k, o: KonvaObject) {.konva.}
 proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
-
-proc `scale=`*(k: KonvaObject, v: Vector) {.konva.}
-proc `scale=`*[N: Number](k: KonvaObject, v: N) =
-  k.scale = Vector(x: v.toFloat, y: v.toFloat)
-
-proc `scale`*(k: KonvaObject): Vector {.konva.}
 proc `draggable=`*(k: KonvaObject, b: bool) {.konva.}
 proc `draggable`*(k: KonvaObject): bool {.konva.}
 proc `container=`*(k: Stage, id: Str) {.konva.}
@@ -132,3 +128,7 @@ proc `strokeWidth=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `strokeWidth`*(k: KonvaShape): Float {.konva.}
 proc `radius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `radius`*(k: KonvaShape): Float {.konva.}
+proc `scale=`*(k: KonvaObject, v: Vector) {.konva.}
+proc `scale=`*[N: Number](k: KonvaObject, v: N) =
+  k.scale = v(v.toFloat, v.toFloat)
+proc `scale`*(k: KonvaObject): Vector {.konva.}

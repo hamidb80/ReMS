@@ -1,9 +1,16 @@
-import std/[with, jsffi, dom, jsconsole, lenientops, sugar]
+import std/[with, jsffi, dom, jsconsole, lenientops, sugar, jsffi, jscore]
 import konva
 
 
 proc qi(id: string): Element =
   document.getElementById id
+
+proc download(data, memetype: cstring) 
+  {.importjs: "download(@)".}
+
+proc downloadUrl(name, data: cstring) 
+  {.importjs: "downloadUrl(@)".}
+
 
 
 when isMainModule:
@@ -17,18 +24,18 @@ when isMainModule:
   proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
     ke.cancelBubble = true
 
-
   proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = true
 
   proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
     if isClicked:
       let m = ke.movement
-      stage.x = stage.x + m.x
-      stage.y = stage.y + m.y
+      stage.x = stage.x + m.x / stage.scale.asScalar
+      stage.y = stage.y + m.y / stage.scale.asScalar
 
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
+
 
   proc cc(x, y, r: Float, f: string): Circle =
     result = newCircle()
@@ -78,32 +85,37 @@ when isMainModule:
         ( -stage.y + stage.height / 2) / stage.scale.asScalar,
       )
 
+    proc report =
+      let c = stage.center
+      console.log "----------------"
+      dump stage.scale.asScalar
+      dump (stage.x, stage.y)
+      dump (c.x, c.y)
+
     proc newScale(⊡: Vector, Δscale: Float) =
       ## ⊡: center
 
       let
+        s = stage.scale.asScalar
+        s′ = s + Δscale
+
         w = stage.width
         h = stage.height
-        w₂ = w/2
-        h₂ = h/2
+        w′ = w/s′
+        h′ = h/s′
 
-        s = stage.scale.asScalar
-        x = stage.x
-        y = stage.y
-
-        s′ = s + Δscale
-        x′ = w₂ # ⊡.x
-        y′ = h₂ # ⊡.y
+        x′ = -⊡.x
+        y′ = -⊡.y
 
       stage.scale = s′
       stage.x = x′
       stage.y = y′
-      
+
       console.log "----------------"
       dump s′
-      dump w / s′
-      dump x′
-      dump y′
+      dump (⊡.x, ⊡.y)
+      dump (w′, h′)
+      dump (x′, y′)
 
 
     "zoom+".qi.onclick = proc(e: Event) =
@@ -113,13 +125,50 @@ when isMainModule:
       newScale stage.center, -scaleStep
 
     "action!".qi.onclick = proc(e: Event) =
-      newScale v(0,0), 0
-
-    proc report =
-      console.log "----------------"
-      dump stage.x
-      dump stage.y
-      dump stage.scale.asScalar
+      newScale v(250, 250), 0
 
     "report".qi.onclick = proc(e: Event) =
       report()
+
+
+
+  when false:
+    when p == 250:
+      1/2 -> 125
+      1 -> 0
+      3/2 -> -125
+      2 -> -250
+      5/2 -> -375
+      3 -> -500
+      7/2 -> -625
+      4 -> -750
+
+    elif p == 500:
+      1/2 -> 0
+      1 -> -250
+      3/2 -> -500
+      2 -> -750
+      5/2 -> -1000
+      3 -> -1250
+      7/2 -> -1500
+      4 -> -1750
+
+    elif p == 0:
+      1/2 -> +250
+      1 -> +250
+      3/2 -> +250
+      2 -> +250
+      5/2 -> +250
+      3 -> +250
+      7/2 -> +250
+      4 -> +250
+
+
+    fn0 (p: 0, s):
+      250 + s * p
+
+    fn1 (p: 250, s):
+      (s - 1.0) * p
+
+    fn2 (p: 500, s):
+      (s - 0.5) * p
