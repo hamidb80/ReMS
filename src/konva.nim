@@ -68,6 +68,8 @@ macro caster*(def): untyped =
 
 # --- types ---
 
+proc valueAsNumber*(el: Element): Float {.importjs: "#.valueAsNumber".}
+
 func toFloat[F: SomeFloat](f: F): F = f
 
 
@@ -86,6 +88,9 @@ func `-`*(v: Vector, t: Float): Vector =
 
 func `*`*(v: Vector, t: Float): Vector =
   v(v.x * t, v.y * t)
+
+func `/`*(v: Vector, t: Float): Vector =
+  v(v.x / t, v.y / t)
 
 # --- utils ---
 proc movement*(ke: KonvaMouseEvent): Vector =
