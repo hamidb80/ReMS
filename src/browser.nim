@@ -10,3 +10,7 @@ proc download*(data, memetype: cstring)
 proc downloadUrl*(name, data: cstring)
   {.importjs: "downloadUrl(@)".}
 
+
+proc onNonPassive*(el: Element, eventName: cstring, handler: proc(e: Event)) =
+  el.addEventListener(eventName, handler,
+    AddEventListenerOptions(passive: false))

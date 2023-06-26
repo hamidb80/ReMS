@@ -1,4 +1,4 @@
-import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils]
+import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math]
 from std/jsffi import JsObject
 
 import konva, browser
@@ -16,16 +16,16 @@ when isMainModule:
 
   # --- functionalities ---
 
-  const 
+  const
     scaleStep = 0.25
-    minScale = 0.1
+    ⌊scale⌋ = 0.1
 
   proc newScale(⊡: Vector, Δscale: Float) =
     ## ⊡: center
 
     let
       s = stage.scale.asScalar
-      s′ = max(s + Δscale, minScale)
+      s′ = max(s + Δscale, ⌊scale⌋)
 
       w = stage.width
       h = stage.height
@@ -51,7 +51,11 @@ when isMainModule:
     v(gx, gy)
 
   proc onPasteOnScreen(data: cstring) {.exportc.} =
-    newImageFromUrl data, proc(img: Image) = 
+    newImageFromUrl data, proc(img: Image) =
+      with img:
+        x = lastPos.x
+        y = lastPos.y
+
       layer.add img
       console.log img
 
@@ -70,21 +74,20 @@ when isMainModule:
       stage.y = stage.y + m.y
 
     lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
+    echo "updated in mouseMoveStage"
+
 
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
 
 
-  # proc ontouchstart(jo: JsObject as KonvaClickEvent) {.caster.} =
-  # proc ontouchmove(ke: JsObject as KonvaClickEvent) {.caster.} =
-  # proc ontouchend(jo: JsObject as KonvaClickEvent) {.caster.} =
-
+  # TODO add touch movement for mobile ...
   proc onpointerdown(jo: JsObject as KonvaClickEvent) {.caster.} =
     echo "👇"
 
   proc onpointermove(ke: JsObject as KonvaClickEvent) {.caster.} =
-    # echo "👋"
-    discard
+    lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
+    echo "updated in onpointermove"
 
   proc onpointereup(jo: JsObject as KonvaClickEvent) {.caster.} =
     echo "👆"
@@ -98,15 +101,27 @@ when isMainModule:
       ( -stage.y + stage.height / 2) / s,
     )
 
-  proc onWheel(ke: JsObject as KonvaEvent[WheelEvent]) {.caster.} =
-    ke.evt.preventdefault
+  proc onWheel(event: Event as WheelEvent) {.caster.} =
+    event.preventDefault
+    lastPos = realPos v(event.clientx, event.clienty)
 
-    let
-      Δy = ke.evt.deltaY
-      h = stage.height
-      c = stage.center
+    # Trackpad pinch-zoom
+    if event.ctrlKey:
+      let
+        s = stage.scale.asScalar
+        ⋊s = exp(-event.deltaY / 100)
 
-    newScale c, Δy * 2 / h
+      newScale stage.center, s*(⋊s - 1)
+
+    # Otherwise, handle trackpad panning
+    else:
+      let dir =
+        if true: -1 # `natural.checked` natrual is a check box: -1
+        else: 1
+
+      # Apply to target state
+      stage.x = stage.x + event.deltaX * dir
+      stage.y = stage.y + event.deltaY * dir
 
   proc cc(x, y, r: Float, f: string): Circle =
     result = newCircle()
@@ -146,7 +161,7 @@ when isMainModule:
     stage.on "pointerdown", onpointerdown
     stage.on "pointermove", onpointermove
     stage.on "pointerup", onpointereup
-    stage.on "wheel", onWheel
+    stage.container.onNonPassive "wheel", onWheel
 
 
   block UI:

@@ -1,3 +1,8 @@
 konva + nim + jester + poinari
 
-https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events/Pinch_zoom_gestures
+# Helpful contents
+## Pinch Zoom
+https://gist.github.com/Martin-Pitt/2756cf86dca90e179b4e75003d7a1a2b
+
+## Touch
+https://konvajs.org/docs/sandbox/Multi-touch_Scale_Stage.html
