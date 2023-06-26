@@ -14,3 +14,6 @@ proc downloadUrl*(name, data: cstring)
 proc onNonPassive*(el: Element, eventName: cstring, handler: proc(e: Event)) =
   el.addEventListener(eventName, handler,
     AddEventListenerOptions(passive: false))
+
+proc setTimeout*(delay: Natural, action: proc) =
+  discard setTimeout(action, delay)

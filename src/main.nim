@@ -1,173 +1,162 @@
-import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math, options]
+import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math,
+    options]
 from std/jsffi import JsObject
+include karax/prelude
+import konva, hotkeys, browser, view
 
-import konva, browser, hotkeys
 
+type
+  AppData = object
+    stage: Stage
+    layer: Layer
+    transformer: Transformer
+    selectedObject: Option[KonvaObject]
+    lastMousePos: Vector
+    isMouseDown: bool
 
 
 when isMainModule:
   # --- def ---
-  var
-    objCounter = 0
-    stage = newStage "board"
-    layer = newLayer()
-    tr = newTransformer()
-    lastPos = v(0, 0)
-    selectedObject: Option[KonvaObject]
-    isClicked = false
+  var app: AppData
+  
+  # --- UI ---
+  setRenderer createDom, "app"
 
-  addHotkey "delete", proc(ev: Event, h: JsObject) =
-    selectedObject.get.destroy
-    tr.nodes = []
+  # --- Init ---
+  500.setTimeout proc =
+    with app:
+      stage = newStage "board"
+      layer = newLayer()
+      transformer = newTransformer()
 
-  # --- functionalities ---
+    addHotkey "delete", proc(ev: Event, h: JsObject) =
+      app.selectedObject.get.destroy
+      app.transformer.nodes = []
 
-  const
-    ⌊scale⌋ = 0.01 # minimum amount of scale
+    # --- functionalities ---
 
-  proc newScale(⊡: Vector, Δscale: Float) =
-    ## ⊡: center
+    const
+      ⌊scale⌋ = 0.01 # minimum amount of scale
 
-    let
-      s = stage.scale.asScalar
-      s′ = max(s + Δscale, ⌊scale⌋)
+    proc newScale(⊡: Vector, Δscale: Float) =
+      ## ⊡: center
 
-      w = stage.width
-      h = stage.height
-
-      ⊡′ = ⊡ * s′
-
-    stage.scale = s′
-    stage.x = -⊡′.x + w/2
-    stage.y = -⊡′.y + h/2
-
-  proc realPos(p: Vector): Vector =
-    let
-      s = stage.scale.asScalar
-
-      sx = stage.x
-      sy = stage.y
-
-      gx = (-sx + p.x)/s
-      gy = (-sy + p.y)/s
-
-    v(gx, gy)
-
-  proc onPasteOnScreen(data: cstring) {.exportc.} =
-    newImageFromUrl data, proc(img: Image) =
-      let c = objCounter
-
-      with img:
-        x = lastPos.x
-        y = lastPos.y
-
-      img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
-        stopPropagate ke
-        img.draggable = true
-        tr.nodes = [KonvaShape img]
-        layer.add tr
-        layer.batchDraw
-        selectedObject = some KonvaObject img
-
-      img.on "transformend", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
-        img.width = img.width * img.scale.x
-        img.height = img.height * img.scale.y
-        img.scale = v(1, 1)
-
-
-
-      layer.add img
-      inc objCounter
-
-  proc cc(x, y, r: Float, f: string): Circle =
-    result = newCircle()
-    with result:
-      x = x
-      y = y
-      radius = r
-      fill = f
-      stroke = "black"
-      strokeWidth = 2
-
-  # --- events ---
-  proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
-    isClicked = true
-
-  proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
-    lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
-
-  proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
-    stopPropagate ke
-    reset selectedObject
-    tr.nodes = []
-    tr.remove
-
-    if ke.evt.ctrlKey:
-      let i = objCounter
-      let pos = realPos v(ke.evt.clientX, ke.evt.clientY)
-      let c = cc(pos.x, pos.y, 16, "black")
-
-      c.on "click", proc =
-        echo i
-
-      layer.add c
-      objCounter.inc
-
-  proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
-    isClicked = false
-
-  proc center(stage: Stage): Vector =
-    ## real coordinate of center of the canvas
-    let s = stage.scale.asScalar
-    v(
-      ( -stage.x + stage.width / 2) / s,
-      ( -stage.y + stage.height / 2) / s,
-    )
-
-  proc onWheel(event: Event as WheelEvent) {.caster.} =
-    event.preventDefault
-    lastPos = realPos v(event.clientx, event.clienty)
-
-    if event.ctrlKey: # Trackpad pinch-zoom
       let
-        s = stage.scale.asScalar
-        ⋊s = exp(-event.deltaY / 100)
+        s = app.stage.scale.asScalar
+        s′ = max(s + Δscale, ⌊scale⌋)
 
-      newScale stage.center, s*(⋊s - 1)
+        w = app.stage.width
+        h = app.stage.height
 
-    else: # Otherwise, handle trackpad panning
-      stage.x = stage.x + event.deltaX * -1
-      stage.y = stage.y + event.deltaY * -1
+        ⊡′ = ⊡ * s′
 
+      app.stage.scale = s′
+      app.stage.x = -⊡′.x + w/2
+      app.stage.y = -⊡′.y + h/2
 
-  # --- init ---
-  block canvas:
-    with stage:
+    proc realPos(p: Vector): Vector =
+      let
+        s = app.stage.scale.asScalar
+        sx = app.stage.x
+        sy = app.stage.y
+
+        gx = (-sx + p.x)/s
+        gy = (-sy + p.y)/s
+
+      v(gx, gy)
+
+    proc onPasteOnScreen(data: cstring) {.exportc.} =
+      newImageFromUrl data, proc(img: Image) =
+        with img:
+          x = app.lastMousePos.x
+          y = app.lastMousePos.y
+
+        img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+          stopPropagate ke
+          img.draggable = true
+          app.transformer.nodes = [KonvaShape img]
+          app.layer.add app.transformer
+          app.layer.batchDraw
+          app.selectedObject = some KonvaObject img
+
+        img.on "transformend", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+          img.width = img.width * img.scale.x
+          img.height = img.height * img.scale.y
+          img.scale = v(1, 1)
+
+        app.layer.add img
+
+    proc cc(x, y, r: Float, f: string): Circle =
+      result = newCircle()
+      with result:
+        x = x
+        y = y
+        radius = r
+        fill = f
+        stroke = "black"
+        strokeWidth = 2
+
+    # --- events ---
+    proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
+      app.isMouseDown = true
+
+    proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
+      app.lastMousePos = realPos v(ke.evt.clientx, ke.evt.clienty)
+
+    proc onStageClick(ke: JsObject as KonvaClickEvent) {.caster.} =
+      if issome app.selectedObject:
+        app.selectedObject.get.draggable = false
+
+      stopPropagate ke
+      reset app.selectedObject
+      app.transformer.nodes = []
+      app.transformer.remove
+
+    proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
+      app.isMouseDown = false
+
+    proc center(stage: Stage): Vector =
+      ## real coordinate of center of the canvas
+      let s = app.stage.scale.asScalar
+      v(
+        ( -app.stage.x + app.stage.width / 2) / s,
+        ( -app.stage.y + app.stage.height / 2) / s,
+      )
+
+    proc onWheel(event: Event as WheelEvent) {.caster.} =
+      event.preventDefault
+      app.lastMousePos = realPos v(event.clientx, event.clienty)
+
+      if event.ctrlKey: # Trackpad pinch-zoom
+        let
+          s = app.stage.scale.asScalar
+          ⋊s = exp(-event.deltaY / 100)
+
+        newScale app.stage.center, s*(⋊s - 1)
+
+      else: # Otherwise, handle trackpad panning
+        app.stage.x = app.stage.x + event.deltaX * -1
+        app.stage.y = app.stage.y + event.deltaY * -1
+
+    # --- init ---
+    with app.stage:
       width = window.innerWidth
       height = window.innerHeight * 0.8
-      add layer
 
-    layer.add cc(0, 0, 16, "red")
-    layer.add cc(0, 0, 1, "black")
-    layer.add cc(stage.width / 2, 0, 16, "yellow")
-    layer.add cc(stage.width, 0, 16, "orange")
-    layer.add cc(stage.width / 2, stage.height / 2, 16, "green")
-    layer.add cc(stage.width, stage.height / 2, 16, "purple")
-    layer.add cc(stage.width / 2, stage.height, 16, "pink")
-    layer.add cc(0, stage.height / 2, 16, "cyan")
-    layer.add cc(0, stage.height, 16, "khaki")
-    layer.add cc(stage.width, stage.height, 16, "blue")
+    app.layer.add cc(0, 0, 16, "red")
+    app.layer.add cc(0, 0, 1, "black")
+    app.layer.add cc(app.stage.width / 2, 0, 16, "yellow")
+    app.layer.add cc(app.stage.width, 0, 16, "orange")
+    app.layer.add cc(app.stage.width / 2, app.stage.height / 2, 16, "green")
+    app.layer.add cc(app.stage.width, app.stage.height / 2, 16, "purple")
+    app.layer.add cc(app.stage.width / 2, app.stage.height, 16, "pink")
+    app.layer.add cc(0, app.stage.height / 2, 16, "cyan")
+    app.layer.add cc(0, app.stage.height, 16, "khaki")
+    app.layer.add cc(app.stage.width, app.stage.height, 16, "blue")
+    app.stage.add app.layer
+    app.stage.on "click", onStageClick
+    app.stage.on "mousedown pointerdown", mouseDownStage
+    app.stage.on "mousemove pointermove", mouseMoveStage
+    app.stage.on "mouseup pointerup", mouseUpStage
+    app.stage.container.onNonPassive "wheel", onWheel
 
-    stage.on "click", clickkk
-    stage.on "mousedown pointerdown", mouseDownStage
-    stage.on "mousemove pointermove", mouseMoveStage
-    stage.on "mouseup pointerup", mouseUpStage
-    stage.container.onNonPassive "wheel", onWheel
-
-
-  block UI:
-    "action!".qi.onclick = proc(e: Event) =
-      echo "nothing"
-
-    "save".qi.onclick = proc(e: Event) =
-      downloadUrl "result.png", stage.toDataURL 2
