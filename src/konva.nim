@@ -18,14 +18,26 @@ type
   # Ellipse = ref object of KonvaShape
 
 
-  KonvaEvent* = ref object of JsObject
-
-  Vector* = ref object of JsObject
+  Vector* = object
     x*, y*: Float
 
-  KonvaMouseEvent* = ref object of KonvaEvent
+  KonvaEvent*[E] = ref object of JsObject
+    evt*: E
+    cancelBubble*: bool
+
+  WheelEvent* = ref object of MouseEvent
+    wheelDelta*: int
+    wheelDeltaX*: int
+    wheelDeltaY*: int
+    which*: int
+
+    deltaMode: int
+    deltaX: Float
+    deltaY: Float
+    deltaZ: Float
+
+  KonvaMouseEvent* = ref object of KonvaEvent[MouseEvent]
     pointerId*: int
-    evt*: MouseEvent
 
   KonvaClickEvent* = ref object of KonvaMouseEvent
 
@@ -96,8 +108,8 @@ func `/`*(v: Vector, t: Float): Vector =
 proc movement*(ke: KonvaMouseEvent): Vector =
   v(ke.evt.movementx.toFloat, ke.evt.movementy.toFloat)
 
-proc cancelBubble*(ke: KonvaMouseEvent): Vector =
-  ke.cancelBubble = false
+proc stopPropagate*(ke: KonvaEvent) =
+  ke.cancelBubble = true
 
 # --- constructors ---
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}

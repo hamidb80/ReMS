@@ -1,4 +1,6 @@
-import std/[with, jsffi, dom, jsconsole, lenientops, sugar, jsffi, jscore, strutils]
+import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils]
+from std/jsffi import JsObject
+
 import konva
 
 
@@ -20,9 +22,34 @@ when isMainModule:
     layer = newLayer()
     isClicked = false
 
+
+  # --- functionalities ---
+
+  const scaleStep = 0.25
+
+  proc newScale(⊡: Vector, Δscale: Float) =
+    ## ⊡: center
+
+    let
+      s = stage.scale.asScalar
+      s′ = s + Δscale
+
+      w = stage.width
+      h = stage.height
+
+      ⊡′ = ⊡ * s′
+
+    stage.scale = s′
+    stage.x = -⊡′.x + w/2
+    stage.y = -⊡′.y + h/2
+
+    echo "scale changed: ", s′
+
+
   # --- events ---
   proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
-    ke.cancelBubble = true
+    echo ke is KonvaEvent
+    # stopPropagate ke
 
   proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = true
@@ -36,6 +63,54 @@ when isMainModule:
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
 
+
+  # proc ontouchstart(jo: JsObject as KonvaClickEvent) {.caster.} =
+  # proc ontouchmove(ke: JsObject as KonvaClickEvent) {.caster.} =
+  # proc ontouchend(jo: JsObject as KonvaClickEvent) {.caster.} =
+
+  proc onpointerdown(jo: JsObject as KonvaClickEvent) {.caster.} =
+    echo "👇"
+
+  proc onpointermove(ke: JsObject as KonvaClickEvent) {.caster.} =
+    # echo "👋"
+    discard
+
+  proc onpointereup(jo: JsObject as KonvaClickEvent) {.caster.} =
+    echo "👆"
+
+  
+  proc center(stage: Stage): Vector =
+    ## real coordinate of center of the canvas
+    let s = stage.scale.asScalar
+    v(
+      ( -stage.x + stage.width / 2) / s,
+      ( -stage.y + stage.height / 2) / s,
+    )
+
+  proc onWheel(ke: JsObject as KonvaEvent[WheelEvent]) {.caster.} =
+    ke.evt.preventdefault
+
+    let
+      s = stage.scale.asScalar
+
+      Δx = ke.evt.deltaX
+      Δy = ke.evt.deltaY
+
+      px = ke.evt.clientX
+      py = ke.evt.clientY
+
+      sx = stage.x
+      sy = stage.y
+
+      h = stage.height
+      w = stage.width
+
+      c = stage.center
+      gx = (-sx + px)/s
+      gy = (-sy + py)/s
+
+    dump (c.x, c.y)
+    newScale c, Δy * 2 / h
 
   proc cc(x, y, r: Float, f: string): Circle =
     result = newCircle()
@@ -72,18 +147,13 @@ when isMainModule:
     stage.on "mousedown", mouseDownStage
     stage.on "mousemove", mouseMoveStage
     stage.on "mouseup", mouseUpStage
+    stage.on "pointerdown", onpointerdown
+    stage.on "pointermove", onpointermove
+    stage.on "pointerup", onpointereup
+    stage.on "wheel", onWheel
 
 
   block UI:
-    const scaleStep = 0.4
-
-    proc center(stage: Stage): Vector =
-      ## real coordinate of center of the canvas
-      let s = stage.scale.asScalar
-      v(
-        ( -stage.x + stage.width / 2) / s,
-        ( -stage.y + stage.height / 2) / s,
-      )
 
     proc report =
       let c = stage.center
@@ -91,24 +161,6 @@ when isMainModule:
       dump stage.scale.asScalar
       dump (stage.x, stage.y)
       dump (c.x, c.y)
-
-    proc newScale(⊡: Vector, Δscale: Float) =
-      ## ⊡: center
-
-      let
-        s = stage.scale.asScalar
-        s′ = s + Δscale
-
-        w = stage.width 
-        h = stage.height 
-
-        ⊡′ = ⊡ * s′
-
-      stage.scale = s′
-      stage.x = -⊡′.x + w/2
-      stage.y = -⊡′.y + h/2
-
-      echo "scale changed: ", s′
 
 
     "zoom+".qi.onclick = proc(e: Event) =
@@ -122,45 +174,3 @@ when isMainModule:
 
     "report".qi.onclick = proc(e: Event) =
       report()
-
-
-  when false:
-    when p == 250:
-      1/2 -> 125
-      1 -> 0
-      3/2 -> -125
-      2 -> -250
-      5/2 -> -375
-      3 -> -500
-      7/2 -> -625
-      4 -> -750
-
-    elif p == 500:
-      1/2 -> 0
-      1 -> -250
-      3/2 -> -500
-      2 -> -750
-      5/2 -> -1000
-      3 -> -1250
-      7/2 -> -1500
-      4 -> -1750
-
-    elif p == 0:
-      1/2 -> +250
-      1 -> +250
-      3/2 -> +250
-      2 -> +250
-      5/2 -> +250
-      3 -> +250
-      7/2 -> +250
-      4 -> +250
-
-
-    fn0 (p: 0, s):
-      250 + s * p
-
-    fn1 (p: 250, s):
-      (s - 1.0) * p
-
-    fn2 (p: 500, s):
-      (s - 0.5) * p
