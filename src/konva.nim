@@ -137,6 +137,8 @@ proc toDataURL*(wrapper: KonvaContainer,
 proc draw*(l: Layer) {.konva.}
 proc batchDraw*(l: Layer) {.konva.}
 proc add*(k, o: KonvaObject) {.konva.}
+proc destroy*(k: KonvaObject) {.konva.}
+proc remove*(k: KonvaObject) {.konva.}
 proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
 proc `draggable=`*(k: KonvaObject, b: bool) {.konva.}
 proc `draggable`*(k: KonvaObject): bool {.konva.}
@@ -145,7 +147,7 @@ proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}
 proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
-proc `nodes`*(t: Transformer, elems: seq[KonvaShape]) {.konva.}
+proc `nodes=`*(t: Transformer, elems: openArray[KonvaShape]) {.konva.}
 proc `nodes`*(t: Transformer): seq[KonvaObject] {.konva.}
 
 # --- visual properties ---

@@ -1,7 +1,7 @@
-import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math]
+import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math, options]
 from std/jsffi import JsObject
 
-import konva, browser
+import konva, browser, hotkeys
 
 
 
@@ -13,8 +13,12 @@ when isMainModule:
     layer = newLayer()
     tr = newTransformer()
     lastPos = v(0, 0)
+    selectedObject: Option[KonvaObject]
     isClicked = false
 
+  addHotkey "delete", proc(ev: Event, h: JsObject) =
+    selectedObject.get.destroy
+    tr.nodes = []
 
   # --- functionalities ---
 
@@ -60,17 +64,21 @@ when isMainModule:
 
       img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
         stopPropagate ke
-        echo "hey!!"
         img.draggable = true
-        tr.nodes  @[KonvaShape img]
+        tr.nodes = [KonvaShape img]
         layer.add tr
         layer.batchDraw
+        selectedObject = some KonvaObject img
+
+      img.on "transformend", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+        img.width = img.width * img.scale.x
+        img.height = img.height * img.scale.y
+        img.scale = v(1, 1)
+
+
 
       layer.add img
       inc objCounter
-
-
-  # --- events ---
 
   proc cc(x, y, r: Float, f: string): Circle =
     result = newCircle()
@@ -82,30 +90,32 @@ when isMainModule:
       stroke = "black"
       strokeWidth = 2
 
-  proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
-    stopPropagate ke
-
-    if ke.evt.ctrlKey:
-      let i = objCounter
-      let pos = realPos v(ke.evt.clientX, ke.evt.clientY)
-      let c = cc(pos.x, pos.y, 16, "black")
-   
-      c.on "click", proc =
-        echo i
-
-      layer.add c
-      objCounter.inc
-
-
+  # --- events ---
   proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = true
 
   proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
     lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
 
+  proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
+    stopPropagate ke
+    reset selectedObject
+    tr.nodes = []
+    tr.remove
+
+    if ke.evt.ctrlKey:
+      let i = objCounter
+      let pos = realPos v(ke.evt.clientX, ke.evt.clientY)
+      let c = cc(pos.x, pos.y, 16, "black")
+
+      c.on "click", proc =
+        echo i
+
+      layer.add c
+      objCounter.inc
+
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
-
 
   proc center(stage: Stage): Vector =
     ## real coordinate of center of the canvas
@@ -119,23 +129,16 @@ when isMainModule:
     event.preventDefault
     lastPos = realPos v(event.clientx, event.clienty)
 
-    # Trackpad pinch-zoom
-    if event.ctrlKey:
+    if event.ctrlKey: # Trackpad pinch-zoom
       let
         s = stage.scale.asScalar
         ⋊s = exp(-event.deltaY / 100)
 
       newScale stage.center, s*(⋊s - 1)
 
-    # Otherwise, handle trackpad panning
-    else:
-      let dir =
-        if true: -1 # `natural.checked` natrual is a check box: -1
-        else: 1
-
-      # Apply to target state
-      stage.x = stage.x + event.deltaX * dir
-      stage.y = stage.y + event.deltaY * dir
+    else: # Otherwise, handle trackpad panning
+      stage.x = stage.x + event.deltaX * -1
+      stage.y = stage.y + event.deltaY * -1
 
 
   # --- init ---
@@ -172,3 +175,6 @@ when isMainModule:
 
     "action!".qi.onclick = proc(e: Event) =
       echo "nothing"
+
+    "save".qi.onclick = proc(e: Event) =
+      downloadUrl "result.png", stage.toDataURL 2

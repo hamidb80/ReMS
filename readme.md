@@ -1,4 +1,11 @@
-konva + nim + jester + poinari
+## Stack
+- konva
+- hotkeys
+- bootstrap + bootswatch
+- font awesome v6
+- nim
+- jester
+- poinari
 
 # Helpful contents
 ## Pinch Zoom

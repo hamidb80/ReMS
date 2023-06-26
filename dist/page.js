@@ -10,6 +10,7 @@ function download(data, type = 'text/plain') {
 function downloadUrl(name, dataurl) {
   const link = document.createElement("a")
   link.href = dataurl
+  link.target = "_blank"
   link.download = name
   link.click()
 }
