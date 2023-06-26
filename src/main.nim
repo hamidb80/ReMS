@@ -8,8 +8,10 @@ import konva, browser
 when isMainModule:
   # --- def ---
   var
+    objCounter = 0
     stage = newStage "board"
     layer = newLayer()
+    tr = newTransformer()
     lastPos = v(0, 0)
     isClicked = false
 
@@ -18,7 +20,7 @@ when isMainModule:
 
   const
     scaleStep = 0.25
-    ⌊scale⌋ = 0.1
+    ⌊scale⌋ = 0.1 # minimum amount of scale
 
   proc newScale(⊡: Vector, Δscale: Float) =
     ## ⊡: center
@@ -36,8 +38,6 @@ when isMainModule:
     stage.x = -⊡′.x + w/2
     stage.y = -⊡′.y + h/2
 
-    echo "scale changed: ", s′
-
   proc realPos(p: Vector): Vector =
     let
       s = stage.scale.asScalar
@@ -52,45 +52,59 @@ when isMainModule:
 
   proc onPasteOnScreen(data: cstring) {.exportc.} =
     newImageFromUrl data, proc(img: Image) =
+      let c = objCounter
+
       with img:
         x = lastPos.x
         y = lastPos.y
 
+      img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+        stopPropagate ke
+        echo "hey!!"
+        img.draggable = true
+        tr.nodes  @[KonvaShape img]
+        layer.add tr
+        layer.batchDraw
+
       layer.add img
-      console.log img
+      inc objCounter
+
 
   # --- events ---
+
+  proc cc(x, y, r: Float, f: string): Circle =
+    result = newCircle()
+    with result:
+      x = x
+      y = y
+      radius = r
+      fill = f
+      stroke = "black"
+      strokeWidth = 2
+
   proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
-    echo ke is KonvaEvent
-    # stopPropagate ke
+    stopPropagate ke
+
+    if ke.evt.ctrlKey:
+      let i = objCounter
+      let pos = realPos v(ke.evt.clientX, ke.evt.clientY)
+      let c = cc(pos.x, pos.y, 16, "black")
+   
+      c.on "click", proc =
+        echo i
+
+      layer.add c
+      objCounter.inc
+
 
   proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = true
 
   proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
-    if isClicked:
-      let m = ke.movement
-      stage.x = stage.x + m.x
-      stage.y = stage.y + m.y
-
     lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
-    echo "updated in mouseMoveStage"
-
 
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
-
-
-  # TODO add touch movement for mobile ...
-  proc onpointerdown(jo: JsObject as KonvaClickEvent) {.caster.} =
-    echo "👇"
-
-  proc onpointermove(ke: JsObject as KonvaClickEvent) {.caster.} =
-    lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
-    echo "updated in onpointermove"
-
-  proc onpointereup(jo: JsObject as KonvaClickEvent) {.caster.} =
-    echo "👆"
 
 
   proc center(stage: Stage): Vector =
@@ -123,16 +137,6 @@ when isMainModule:
       stage.x = stage.x + event.deltaX * dir
       stage.y = stage.y + event.deltaY * dir
 
-  proc cc(x, y, r: Float, f: string): Circle =
-    result = newCircle()
-    with result:
-      x = x
-      y = y
-      radius = r
-      fill = f
-      stroke = "black"
-      strokeWidth = 2
-
 
   # --- init ---
   block canvas:
@@ -141,9 +145,7 @@ when isMainModule:
       height = 500
       add layer
 
-    let circle = cc(0, 0, 16, "red")
-
-    layer.add circle
+    layer.add cc(0, 0, 16, "red")
     layer.add cc(0, 0, 1, "black")
     layer.add cc(stage.width / 2, 0, 16, "yellow")
     layer.add cc(stage.width, 0, 16, "orange")
@@ -154,25 +156,14 @@ when isMainModule:
     layer.add cc(0, stage.height, 16, "khaki")
     layer.add cc(stage.width, stage.height, 16, "blue")
 
-    circle.on "click", clickkk
-    stage.on "mousedown", mouseDownStage
-    stage.on "mousemove", mouseMoveStage
-    stage.on "mouseup", mouseUpStage
-    stage.on "pointerdown", onpointerdown
-    stage.on "pointermove", onpointermove
-    stage.on "pointerup", onpointereup
+    stage.on "click", clickkk
+    stage.on "mousedown pointerdown", mouseDownStage
+    stage.on "mousemove pointermove", mouseMoveStage
+    stage.on "mouseup pointerup", mouseUpStage
     stage.container.onNonPassive "wheel", onWheel
 
 
   block UI:
-
-    proc report =
-      let c = stage.center
-      console.log "----------------"
-      dump stage.scale.asScalar
-      dump (stage.x, stage.y)
-      dump (c.x, c.y)
-
     "zoom+".qi.onclick = proc(e: Event) =
       newScale stage.center, +scaleStep
 
@@ -181,6 +172,3 @@ when isMainModule:
 
     "action!".qi.onclick = proc(e: Event) =
       echo "nothing"
-
-    "report".qi.onclick = proc(e: Event) =
-      report()

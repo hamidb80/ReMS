@@ -18,12 +18,13 @@ type
   Image* = ref object of KonvaShape
   # Ellipse = ref object of KonvaShape
 
+  Transformer* = ref object of KonvaContainer
 
   Vector* = object
     x*, y*: Float
 
-  KonvaEvent*[E] = ref object of JsObject
-    evt*: E
+  KonvaEvent*[Event] = ref object of JsObject
+    evt*: Event
     cancelBubble*: bool
 
   WheelEvent* = ref object of MouseEvent
@@ -47,6 +48,13 @@ type
   Float* = float64
   Str = cstring
   Number = SomeNumber
+
+  KonvaEventKinds = enum
+    mouseover, mouseout, mouseenter, mouseleave, mousemove, mousedown, mouseup, wheel, click, dblclick # Mouse events
+    touchstart, touchmove, touchend, tap, dbltap # Touch events
+    pointerdown, pointermove, pointereup, pointercancel, pointerover, pointerenter, pointerout,pointerleave, pointerclick, pointerdblclick # Pointer events
+    dragstart, dragmove, dragend # Drag events
+    transformstart, transform, transformend # Transform events
 
 
 proc toKonvaMethod(def: NimNode): NimNode =
@@ -109,7 +117,7 @@ func `/`*(v: Vector, t: Float): Vector =
 proc movement*(ke: KonvaMouseEvent): Vector =
   v(ke.evt.movementx.toFloat, ke.evt.movementy.toFloat)
 
-proc stopPropagate*(ke: KonvaEvent) =
+proc stopPropagate*[E](ke: KonvaEvent[E]) =
   ke.cancelBubble = true
 
 proc noOp = discard
@@ -120,12 +128,14 @@ proc newLayer*: Layer {.importjs: "new Konva.Layer()".}
 proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
 proc newImage*: Image {.importjs: "new Konva.Image()".}
+proc newTransformer*: Transformer {.importjs: "new Konva.Transformer()".}
 proc newImageFromUrl*(url: Str, onSuccess: proc(img: Image), onError = noOp) {.importjs: "Konva.Image.fromURL(@)".}
 
 # --- settings ---
 proc toDataURL*(wrapper: KonvaContainer,
     ratio: int): Str {.importjs: "#.toDataURL({ pixelRatio: # })".}
 proc draw*(l: Layer) {.konva.}
+proc batchDraw*(l: Layer) {.konva.}
 proc add*(k, o: KonvaObject) {.konva.}
 proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
 proc `draggable=`*(k: KonvaObject, b: bool) {.konva.}
@@ -135,6 +145,8 @@ proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}
 proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
+proc `nodes`*(t: Transformer, elems: seq[KonvaShape]) {.konva.}
+proc `nodes`*(t: Transformer): seq[KonvaObject] {.konva.}
 
 # --- visual properties ---
 proc `width=`*[N: Number](k: KonvaObject, v: N) {.konva.}
