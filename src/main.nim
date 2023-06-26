@@ -1,17 +1,7 @@
 import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils]
 from std/jsffi import JsObject
 
-import konva
-
-
-proc qi(id: string): Element =
-  document.getElementById id
-
-proc download(data, memetype: cstring)
-  {.importjs: "download(@)".}
-
-proc downloadUrl(name, data: cstring)
-  {.importjs: "downloadUrl(@)".}
+import konva, browser
 
 
 
@@ -20,18 +10,21 @@ when isMainModule:
   var
     stage = newStage "board"
     layer = newLayer()
+    lastPos = v(0, 0)
     isClicked = false
 
 
   # --- functionalities ---
 
-  const scaleStep = 0.25
+  const 
+    scaleStep = 0.25
+    minScale = 0.1
 
   proc newScale(⊡: Vector, Δscale: Float) =
     ## ⊡: center
 
     let
-      s = stage.scale.asScalar
+      s = max(stage.scale.asScalar, minScale)
       s′ = s + Δscale
 
       w = stage.width
@@ -45,6 +38,22 @@ when isMainModule:
 
     echo "scale changed: ", s′
 
+  proc realPos(p: Vector): Vector =
+    let
+      s = stage.scale.asScalar
+
+      sx = stage.x
+      sy = stage.y
+
+      gx = (-sx + p.x)/s
+      gy = (-sy + p.y)/s
+
+    v(gx, gy)
+
+  proc onPasteOnScreen(data: cstring) {.exportc.} =
+    newImageFromUrl data, proc(img: Image) = 
+      layer.add img
+      console.log img
 
   # --- events ---
   proc clickkk(ke: JsObject as KonvaClickEvent) {.caster.} =
@@ -59,6 +68,8 @@ when isMainModule:
       let m = ke.movement
       stage.x = stage.x + m.x
       stage.y = stage.y + m.y
+
+    lastPos = realPos v(ke.evt.clientx, ke.evt.clienty)
 
   proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
     isClicked = false
@@ -78,7 +89,7 @@ when isMainModule:
   proc onpointereup(jo: JsObject as KonvaClickEvent) {.caster.} =
     echo "👆"
 
-  
+
   proc center(stage: Stage): Vector =
     ## real coordinate of center of the canvas
     let s = stage.scale.asScalar
@@ -91,25 +102,10 @@ when isMainModule:
     ke.evt.preventdefault
 
     let
-      s = stage.scale.asScalar
-
-      Δx = ke.evt.deltaX
       Δy = ke.evt.deltaY
-
-      px = ke.evt.clientX
-      py = ke.evt.clientY
-
-      sx = stage.x
-      sy = stage.y
-
       h = stage.height
-      w = stage.width
-
       c = stage.center
-      gx = (-sx + px)/s
-      gy = (-sy + py)/s
 
-    dump (c.x, c.y)
     newScale c, Δy * 2 / h
 
   proc cc(x, y, r: Float, f: string): Circle =
@@ -126,7 +122,7 @@ when isMainModule:
   # --- init ---
   block canvas:
     with stage:
-      width = 500
+      width = window.innerWidth
       height = 500
       add layer
 
@@ -161,7 +157,6 @@ when isMainModule:
       dump stage.scale.asScalar
       dump (stage.x, stage.y)
       dump (c.x, c.y)
-
 
     "zoom+".qi.onclick = proc(e: Event) =
       newScale stage.center, +scaleStep

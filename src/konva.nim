@@ -15,6 +15,7 @@ type
 
   Rect* = ref object of KonvaShape
   Circle* = ref object of KonvaShape
+  Image* = ref object of KonvaShape
   # Ellipse = ref object of KonvaShape
 
 
@@ -111,14 +112,19 @@ proc movement*(ke: KonvaMouseEvent): Vector =
 proc stopPropagate*(ke: KonvaEvent) =
   ke.cancelBubble = true
 
+proc noOp = discard
+
 # --- constructors ---
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}
 proc newLayer*: Layer {.importjs: "new Konva.Layer()".}
 proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
+proc newImage*: Image {.importjs: "new Konva.Image()".}
+proc newImageFromUrl*(url: Str, onSuccess: proc(img: Image), onError = noOp) {.importjs: "Konva.Image.fromURL(@)".}
 
 # --- settings ---
-proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str {.importjs: "#.toDataURL({ pixelRatio: # })".}
+proc toDataURL*(wrapper: KonvaContainer,
+    ratio: int): Str {.importjs: "#.toDataURL({ pixelRatio: # })".}
 proc draw*(l: Layer) {.konva.}
 proc add*(k, o: KonvaObject) {.konva.}
 proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
@@ -127,6 +133,8 @@ proc `draggable`*(k: KonvaObject): bool {.konva.}
 proc `container=`*(k: Stage, id: Str) {.konva.}
 proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}
+proc `image=`*(k: Image, element: ImageElement) {.konva.}
+proc `image`*(k: Image): ImageElement {.konva.}
 
 # --- visual properties ---
 proc `width=`*[N: Number](k: KonvaObject, v: N) {.konva.}
