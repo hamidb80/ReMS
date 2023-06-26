@@ -23,8 +23,7 @@ when isMainModule:
   # --- functionalities ---
 
   const
-    scaleStep = 0.25
-    ⌊scale⌋ = 0.1 # minimum amount of scale
+    ⌊scale⌋ = 0.01 # minimum amount of scale
 
   proc newScale(⊡: Vector, Δscale: Float) =
     ## ⊡: center
@@ -145,7 +144,7 @@ when isMainModule:
   block canvas:
     with stage:
       width = window.innerWidth
-      height = 500
+      height = window.innerHeight * 0.8
       add layer
 
     layer.add cc(0, 0, 16, "red")
@@ -167,12 +166,6 @@ when isMainModule:
 
 
   block UI:
-    "zoom+".qi.onclick = proc(e: Event) =
-      newScale stage.center, +scaleStep
-
-    "zoom-".qi.onclick = proc(e: Event) =
-      newScale stage.center, -scaleStep
-
     "action!".qi.onclick = proc(e: Event) =
       echo "nothing"
 
