@@ -24,8 +24,8 @@ when isMainModule:
     ## ⊡: center
 
     let
-      s = max(stage.scale.asScalar, minScale)
-      s′ = s + Δscale
+      s = stage.scale.asScalar
+      s′ = max(s + Δscale, minScale)
 
       w = stage.width
       h = stage.height
