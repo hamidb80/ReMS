@@ -2,7 +2,7 @@ import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math,
     options]
 from std/jsffi import JsObject
 include karax/prelude
-import konva, hotkeys, browser, view, canvas
+import konva, hotkeys, browser, ui, canvas
 
 
 type

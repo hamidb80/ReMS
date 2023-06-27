@@ -1,8 +1,10 @@
-src/*.js
 .vscode
-dist/script.js
-play.*
 
+dist/script.js
+dist/index.html
+src/*.js
+
+play.*
 *.exe
 *.db
 sqlite3.*

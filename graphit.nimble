@@ -12,5 +12,8 @@ bin           = @["graphit"]
 
 requires "nim >= 1.6.12"
 
-task gen, "generate js file in ./dist":
+task gen, "generate script.js file in ./dist":
   exec "nim js -o:./dist/script.js src/main.nim"
+
+task html, "generate index.html ./dist":
+  exec "nim r src/ui.nim"
