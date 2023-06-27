@@ -9,7 +9,7 @@ func konva(id: cstring): VNode =
 func createDom*: VNode =
   buildHtml:
     tdiv(class = "d-flex flex-row"):
-      main(class = "border border-dark rounded"):
+      main(class = "border border-dark rounded overflow-hidden"):
         konva "board"
 
       aside:
