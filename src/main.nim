@@ -39,6 +39,7 @@ proc center(stage: Stage): Vector =
 # --- actions ---
 
 proc changeScale(mouse, real: Vector, Δscale: Float) =
+  ## zoom in/out with `real` position pinned
   let
     s = ||app.stage.scale
     s′ = max(s + Δscale, ⌊scale⌋)
@@ -77,6 +78,7 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       stopPropagate ke
       img.draggable = true
       app.transformer.nodes = [KonvaShape img]
+      app.layer.add app.transformer
       app.layer.batchDraw
       app.selectedObject = some KonvaObject img
 
@@ -154,7 +156,6 @@ when isMainModule:
       add tempCircle(0, app.stage.height / 2, 16, "cyan")
       add tempCircle(0, app.stage.height, 16, "khaki")
       add tempCircle(app.stage.width, app.stage.height, 16, "blue")
-      add app.transformer
 
 
   addHotkey "delete", proc(ev: Event, h: JsObject) =
