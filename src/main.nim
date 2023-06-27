@@ -1,8 +1,7 @@
-import std/[with, dom, jsconsole, lenientops, sugar, jscore, strutils, math,
-    options]
+import std/[with, dom, lenientops, math, options]
 from std/jsffi import JsObject
 include karax/prelude
-import konva, hotkeys, browser, ui, canvas
+import konva, hotkeys, browser, ui, canvas, utils
 
 
 type
@@ -68,7 +67,7 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
 
     app.layer.add img
 
-proc resetSelected = 
+proc resetSelected =
   reset app.selectedObject
   app.transformer.nodes = []
   app.transformer.remove

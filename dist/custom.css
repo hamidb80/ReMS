@@ -1,9 +1,20 @@
-.side-bar{
-  width: 40%;
+/* global */
+.pointer {
+  cursor: pointer;
+}
+
+/* specific */
+
+.side-bar {
   right: 0;
   top: 0;
 }
 
-.content-wrapper{
+.content-wrapper {
   overflow-y: scroll;
+}
+
+.extender {
+  width: 4px;
+  cursor: e-resize;
 }

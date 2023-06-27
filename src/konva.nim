@@ -1,6 +1,5 @@
 import std/[macros, strformat]
 import std/[jsffi, dom]
-import macroplus
 
 ## TODO publish it as an independent library
 
@@ -33,10 +32,10 @@ type
     wheelDeltaY*: int
     which*: int
 
-    deltaMode: int
-    deltaX: Float
-    deltaY: Float
-    deltaZ: Float
+    deltaMode*: int
+    deltaX*: Float
+    deltaY*: Float
+    deltaZ*: Float
 
   KonvaMouseEvent* = ref object of KonvaEvent[MouseEvent]
     pointerId*: int
@@ -64,28 +63,6 @@ proc toKonvaMethod(def: NimNode): NimNode =
 macro konva(def): untyped =
   ## adds `importjs` pragma automatically
   toKonvaMethod def
-
-macro caster*(def): untyped =
-  ## support for cast in args,
-  ##
-  ## for example below procedure
-  ## should treat `ev` as an `KonvaClickEvent` rather `JsObject`
-  ## it is specially useful in event handling scenarios.
-  ##
-  ## proc callback(ev: JsObject as KonvaClickEvent) {.caster.} = ...
-
-  var before = newStmtList()
-  result = def
-
-  for i, p in def.params:
-    if i != 0: # return type
-      for id in p[IdentDefNames]:
-        let t = p[IdentDefType]
-        if t.matchInfix "as":
-          before.add newLetStmt(id, newTree(nnkCast, t[InfixRightSide], id))
-          result.params[i][IdentDefType] = t[InfixLeftSide]
-
-  result.body = newStmtList(before, result.body)
 
 # --- types ---
 
