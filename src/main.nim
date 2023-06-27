@@ -97,20 +97,21 @@ proc center(stage: Stage): Vector =
     ( -app.stage.y + app.stage.height / 2) / s,
   )
 
-proc onWheel(event: Event as WheelEvent) {.caster.} =
-  event.preventDefault
-  app.lastMousePos = realPos v(event.clientx, event.clienty)
+proc onWheel(e: Event as WheelEvent) {.caster.} =
+  preventDefault e
+  app.lastMousePos = realPos v(e.clientx, e.clienty)
 
-  if event.ctrlKey: # Trackpad pinch-zoom
+  if e.ctrlKey: # pinch-zoom
     let
       s = app.stage.scale.asScalar
-      ⋊s = exp(-event.deltaY / 100)
+      ⋊s = exp(-e.deltaY / 100)
 
+    
     newScale app.stage.center, s*(⋊s - 1)
 
-  else: # Otherwise, handle trackpad panning
-    app.stage.x = app.stage.x + event.deltaX * -1
-    app.stage.y = app.stage.y + event.deltaY * -1
+  else: # panning
+    app.stage.x = app.stage.x + e.deltaX * -1
+    app.stage.y = app.stage.y + e.deltaY * -1
 
 
 when isMainModule:
@@ -126,8 +127,7 @@ when isMainModule:
 
     with app.stage:
       width = window.innerWidth
-      height = window.innerHeight * 0.8
-
+      height = window.innerHeight
 
     app.layer.add tempCircle(0, 0, 16, "red")
     app.layer.add tempCircle(0, 0, 1, "black")

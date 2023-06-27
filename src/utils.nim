@@ -19,7 +19,6 @@ macro caster*(def): untyped =
       for id in p[IdentDefNames]:
         let t = p[IdentDefType]
         if t.matchInfix "as":
-          echo "changed ... ", id.strVal
           before.add newLetStmt(id, newTree(nnkCast, t[InfixRightSide], id))
           result.params[i][IdentDefType] = t[InfixLeftSide]
 

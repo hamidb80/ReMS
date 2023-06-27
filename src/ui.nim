@@ -1,8 +1,10 @@
-import std/[strformat, dom, jsconsole]
-# import karax/[karaxdsl, vdom, vstyles, ]
-import karax/[vstyles]
-include karax/prelude
+import std/[strformat]
+import karax/[karaxdsl, vdom, vstyles]
 import utils
+
+when defined js:
+  include karax/prelude
+  import std/[dom, jsconsole]
 
 
 # --- components ---
@@ -30,14 +32,14 @@ proc createDom*: VNode =
 
   buildHtml:
     tdiv(class = "karax"):
-      main(class = "board-wrapper border border-dark rounded overflow-hidden"):
+      main(class = "board-wrapper border border-dark rounded overflow-hidden h-100 w-100"):
         konva "board"
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
-          iff(freeze, "user-select-none"), style = style(StyleAttr.width,
-              fmt"{sidebarWidth}px")):
+          iff(freeze, "user-select-none"),
+          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
 
-        tdiv(class = "extender bg-secondary h-100"):
+        tdiv(class = "extender h-100 bg-light"):
           proc onMouseDown(ev: Event, n: VNode) =
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
               let amount = window.innerWIdth - e.clientX
@@ -48,15 +50,15 @@ proc createDom*: VNode =
               winel.onmousemove.reset
 
         tdiv(class = "d-flex flex-column w-100"):
-          header(class = "nav nav-tabs d-flex flex-row justify-content-between"):
+          header(class = "nav nav-tabs d-flex flex-row justify-content-between bg-light"):
 
             tdiv(class = "nav-item"):
-              span(class = "nav-link active cursor"):
+              span(class = "nav-link active pointer"):
                 text "Messages "
                 icon "message"
 
             tdiv(class = "nav-item"):
-              span(class = "nav-link cursor"):
+              span(class = "nav-link pointer"):
                 text "Settings "
                 icon "wrench"
 
@@ -74,6 +76,9 @@ proc createDom*: VNode =
                     text "Card link"
                   a(class = "card-link", href = "#"):
                     text "Another link"
+
+      # aside(class="tool-bar")
+      # footer(class="")
 
 
 func index*(t = "RMS - Remembering Manangement System"): VNode =
