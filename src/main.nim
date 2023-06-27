@@ -1,6 +1,6 @@
-import std/[with, dom, lenientops, math, options]
+import std/[with, dom, math, options]
 from std/jsffi import JsObject
-include karax/prelude
+import karax/[karax]
 import konva, hotkeys, browser, ui, canvas, utils, conventions
 
 
@@ -18,8 +18,6 @@ type
 # TODO define maximum map [boarders to not go further if not nessesarry]
 const ⌊scale⌋ = 0.01 # minimum amount of scale
 var app: AppData
-
-
 
 # --- helpers ---
 
@@ -104,7 +102,9 @@ proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
 
 proc onWheel(e: Event as WheelEvent) {.caster.} =
   preventDefault e
-  app.lastMousePos = realPos v(e.x, e.y)
+
+  let mp = v(e.x, e.y)
+  app.lastMousePos = realPos mp
 
   if e.ctrlKey: # pinch-zoom
     let
@@ -113,6 +113,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
 
 
     newScale app.stage.center, s*(⋊s - 1)
+    
 
   else: # panning
     app.stage.x = app.stage.x + e.Δx * -1
@@ -123,7 +124,7 @@ when isMainModule:
   # --- UI ---
   setRenderer createDom, "app"
 
-  # --- Init ---
+  # --- Canvas ---
   500.setTimeout proc =
     with app:
       stage = newStage "board"
@@ -133,24 +134,25 @@ when isMainModule:
     with app.stage:
       width = window.innerWidth
       height = window.innerHeight
+      on "click", onStageClick
+      on "mousedown pointerdown", mouseDownStage
+      on "mousemove pointermove", mouseMoveStage
+      on "mouseup pointerup", mouseUpStage
+      add app.layer
+    addEventListener app.stage.container, "wheel", onWheel, nonPassive
 
-    app.layer.add tempCircle(0, 0, 16, "red")
-    app.layer.add tempCircle(0, 0, 1, "black")
-    app.layer.add tempCircle(app.stage.width / 2, 0, 16, "yellow")
-    app.layer.add tempCircle(app.stage.width, 0, 16, "orange")
-    app.layer.add tempCircle(app.stage.width / 2, app.stage.height / 2, 16, "green")
-    app.layer.add tempCircle(app.stage.width, app.stage.height / 2, 16, "purple")
-    app.layer.add tempCircle(app.stage.width / 2, app.stage.height, 16, "pink")
-    app.layer.add tempCircle(0, app.stage.height / 2, 16, "cyan")
-    app.layer.add tempCircle(0, app.stage.height, 16, "khaki")
-    app.layer.add tempCircle(app.stage.width, app.stage.height, 16, "blue")
-    app.layer.add app.transformer
-    app.stage.add app.layer
-    app.stage.on "click", onStageClick
-    app.stage.on "mousedown pointerdown", mouseDownStage
-    app.stage.on "mousemove pointermove", mouseMoveStage
-    app.stage.on "mouseup pointerup", mouseUpStage
-    app.stage.container.onNonPassive "wheel", onWheel
+    with app.layer:
+      add tempCircle(0, 0, 16, "red")
+      add tempCircle(0, 0, 1, "black")
+      add tempCircle(app.stage.width / 2, 0, 16, "yellow")
+      add tempCircle(app.stage.width, 0, 16, "orange")
+      add tempCircle(app.stage.width / 2, app.stage.height / 2, 16, "green")
+      add tempCircle(app.stage.width, app.stage.height / 2, 16, "purple")
+      add tempCircle(app.stage.width / 2, app.stage.height, 16, "pink")
+      add tempCircle(0, app.stage.height / 2, 16, "cyan")
+      add tempCircle(0, app.stage.height, 16, "khaki")
+      add tempCircle(app.stage.width, app.stage.height, 16, "blue")
+      add app.transformer
 
 
   addHotkey "delete", proc(ev: Event, h: JsObject) =

@@ -1,9 +1,8 @@
 import std/[strformat]
-import karax/[karaxdsl, vdom, vstyles]
+import karax/[karaxdsl, vdom, vstyles, karax]
 import utils
 
 when defined js:
-  include karax/prelude
   import std/[dom, jsconsole]
 
 
@@ -77,7 +76,17 @@ proc createDom*: VNode =
                   a(class = "card-link", href = "#"):
                     text "Another link"
 
-      # aside(class="tool-bar")
+      aside(class="tool-bar btn-group-vertical position-absolute"):
+        button(class="btn btn-light py-3 px-2"):
+          icon "download"
+
+        button(class="btn btn-light py-3 px-2"):
+          icon "circle-dot"
+
+        button(class="btn btn-light py-3 px-2"):
+          icon "object-group"
+
+
       # footer(class="")
 
 

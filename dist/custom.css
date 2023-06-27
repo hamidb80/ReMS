@@ -18,3 +18,8 @@
   width: 4px;
   cursor: e-resize;
 }
+
+.tool-bar{
+  left: 0;
+  margin-top: calc(-50%);
+}
