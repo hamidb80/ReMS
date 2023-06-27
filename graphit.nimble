@@ -13,7 +13,7 @@ bin           = @["graphit"]
 requires "nim >= 1.6.12"
 
 task script, "generate script.js file in ./dist":
-  exec "nim js --hints:off -o:./dist/script.js src/main.nim"
+  exec "nim js --hints:off --warning:CStringConv:off -o:./dist/script.js src/main.nim"
 
 task html, "generate index.html ./dist":
   exec "nim r src/ui.nim"

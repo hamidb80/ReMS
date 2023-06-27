@@ -3,7 +3,7 @@ import karax/[karaxdsl, vdom, vstyles, karax]
 import utils
 
 when defined js:
-  import std/[dom, jsconsole]
+  import std/[dom]
 
 
 # --- components ---

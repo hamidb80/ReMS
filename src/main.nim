@@ -21,16 +21,13 @@ var app: AppData
 
 # --- helpers ---
 
-proc realPos(p: Vector): Vector =
-  let
-    s = ||app.stage.scale
-    sx = app.stage.x
-    sy = app.stage.y
+func realPos(mousePos: Vector, scale, offsetx, offsety: Float): Vector =
+  v(
+    (-offsetx + mousePos.x)/scale,
+    (-offsety + mousePos.y)/scale)
 
-    gx = (-sx + p.x)/s
-    gy = (-sy + p.y)/s
-
-  v(gx, gy)
+proc realPos(p: Vector, s: Stage): Vector =
+  realPos p, ||s.scale, s.x, s.y
 
 proc center(stage: Stage): Vector =
   ## real coordinate of center of the canvas
@@ -41,6 +38,7 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
+# proc newScale(mouse, real: Vector, Δscale: Float) =
 proc newScale(⊡: Vector, Δscale: Float) =
   ## ⊡: center
 
@@ -88,7 +86,7 @@ proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
   app.isMouseDown = true
 
 proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
-  app.lastMousePos = realPos v(ke.evt.clientx, ke.evt.clienty)
+  app.lastMousePos = realPos(v(ke.evt.x, ke.evt.y), app.stage)
 
 proc onStageClick(ke: JsObject as KonvaClickEvent) {.caster.} =
   if issome app.selectedObject:
@@ -104,7 +102,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
   preventDefault e
 
   let mp = v(e.x, e.y)
-  app.lastMousePos = realPos mp
+  app.lastMousePos = realPos(mp, app.stage)
 
   if e.ctrlKey: # pinch-zoom
     let
@@ -113,7 +111,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
 
 
     newScale app.stage.center, s*(⋊s - 1)
-    
+
 
   else: # panning
     app.stage.x = app.stage.x + e.Δx * -1
