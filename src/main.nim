@@ -38,10 +38,7 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
-# proc newScale(mouse, real: Vector, Δscale: Float) =
-proc newScale(⊡: Vector, Δscale: Float) =
-  ## ⊡: center
-
+proc changeScale(mouse, real: Vector, Δscale: Float) =
   let
     s = ||app.stage.scale
     s′ = max(s + Δscale, ⌊scale⌋)
@@ -49,11 +46,19 @@ proc newScale(⊡: Vector, Δscale: Float) =
     w = app.stage.width
     h = app.stage.height
 
-    ⊡′ = ⊡ * s′
+    realϟ = real * s′
 
   app.stage.scale = s′
-  app.stage.x = -⊡′.x + w/2
-  app.stage.y = -⊡′.y + h/2
+  app.stage.x = -realϟ.x + w/2
+  app.stage.y = -realϟ.y + h/2
+
+  let
+    real′ = realPos(mouse, app.stage)
+    d = real′ - real
+
+  app.stage.x = app.stage.x + d.x * s′
+  app.stage.y = app.stage.y + d.y * s′
+
 
 proc resetSelected =
   reset app.selectedObject
@@ -109,8 +114,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
       s = ||app.stage.scale
       ⋊s = exp(-e.Δy / 100)
 
-
-    newScale app.stage.center, s*(⋊s - 1)
+    changeScale mp, app.lastMousePos, s*(⋊s - 1)
 
 
   else: # panning

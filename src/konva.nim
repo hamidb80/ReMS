@@ -81,8 +81,17 @@ func asScalar*(v: Vector): Float =
 func `+`*(v: Vector, t: Float): Vector =
   v(v.x + t, v.y + t)
 
+func `+`*(v1, v2: Vector): Vector =
+  v(v1.x + v2.x, v1.y + v2.y)
+
+func `-`*(v: Vector): Vector =
+  v(-v.x, -v.y)
+
 func `-`*(v: Vector, t: Float): Vector =
   v + -t
+
+func `-`*(v1, v2: Vector): Vector =
+  v1 + -v2
 
 func `*`*(v: Vector, t: Float): Vector =
   v(v.x * t, v.y * t)
