@@ -1,0 +1,10 @@
+.side-bar{
+  width: 40%;
+  right: 0;
+  height: 100%;
+}
+
+.content-wrapper{
+  overflow-y: scroll;
+  max-height: calc(100% - 40px);
+}

@@ -3,11 +3,10 @@ import konva
 
 
 # proc makeClickable(k: KonvaShape) = 
-#   k.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
-#     stopPropagate ke
+#   k.on "click", proc(e: auto) {.caster.} =
+#     stopPropagate e
 #     k.draggable = true
 #     app.transformer.nodes = [k]
-#     app.layer.add app.transformer
 #     app.layer.batchDraw
 #     app.selectedObject = some KonvaObject k
 
@@ -27,13 +26,3 @@ proc tempCircle*(x, y, r: Float, f: string): Circle =
     fill = f
     stroke = "black"
     strokeWidth = 2
-
-# proc imageComponent*(x, y, r: Float, f: string): Circle =
-#   newImageFromUrl data, proc(img: Image) =
-#     with img:
-#       x = app.lastMousePos.x
-#       y = app.lastMousePos.y
-#       makeClickable()
-#       makeTransformable()
-    
-#     app.layer.add img

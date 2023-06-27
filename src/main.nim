@@ -9,6 +9,7 @@ type
   AppData = object
     stage: Stage
     layer: Layer
+    # TODO add background layer
     transformer: Transformer
     selectedObject: Option[KonvaObject]
     lastMousePos: Vector
@@ -57,7 +58,6 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       stopPropagate ke
       img.draggable = true
       app.transformer.nodes = [KonvaShape img]
-      app.layer.add app.transformer
       app.layer.batchDraw
       app.selectedObject = some KonvaObject img
 
@@ -68,6 +68,10 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
 
     app.layer.add img
 
+proc resetSelected = 
+  reset app.selectedObject
+  app.transformer.nodes = []
+  app.transformer.remove
 
 # --- events ---
 proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
@@ -79,11 +83,9 @@ proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
 proc onStageClick(ke: JsObject as KonvaClickEvent) {.caster.} =
   if issome app.selectedObject:
     app.selectedObject.get.draggable = false
+    resetSelected()
 
   stopPropagate ke
-  reset app.selectedObject
-  app.transformer.nodes = []
-  app.transformer.remove
 
 proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
   app.isMouseDown = false
@@ -138,6 +140,7 @@ when isMainModule:
     app.layer.add tempCircle(0, app.stage.height / 2, 16, "cyan")
     app.layer.add tempCircle(0, app.stage.height, 16, "khaki")
     app.layer.add tempCircle(app.stage.width, app.stage.height, 16, "blue")
+    app.layer.add app.transformer
     app.stage.add app.layer
     app.stage.on "click", onStageClick
     app.stage.on "mousedown pointerdown", mouseDownStage
