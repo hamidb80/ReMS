@@ -40,7 +40,7 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
-proc changeScale(mouse: Vector, Δscale: Float) =
+proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
 
@@ -50,7 +50,7 @@ proc changeScale(mouse: Vector, Δscale: Float) =
     w = app.stage.width
     h = app.stage.height
 
-    real = realPos(mouse, app.stage)
+    real = realPos(mouse🖱️, app.stage)
     realϟ = real * s′
 
   app.stage.scale = s′
@@ -58,7 +58,7 @@ proc changeScale(mouse: Vector, Δscale: Float) =
   app.stage.y = -realϟ.y + h/2
 
   let
-    real′ = realPos(mouse, app.stage)
+    real′ = realPos(mouse🖱️, app.stage)
     d = real′ - real
 
   app.stage.x = app.stage.x + d.x * s′

@@ -10,6 +10,9 @@
 
 # Helpful contents
 
+## store meta data
+https://konvajs.org/api/Konva.Node.html#setAttr
+
 ## Icon Search
 https://fontawesome.com/icons/
 
