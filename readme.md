@@ -10,6 +10,9 @@
 
 # Helpful contents
 
+## convert pdf to image
+user `imagemagic`
+
 ## store meta data
 https://konvajs.org/api/Konva.Node.html#setAttr
 
