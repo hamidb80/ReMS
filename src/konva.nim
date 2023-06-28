@@ -66,10 +66,7 @@ macro konva(def): untyped =
 
 # --- types ---
 
-proc valueAsNumber*(el: Element): Float {.importjs: "#.valueAsNumber".}
-
 func toFloat[F: SomeFloat](f: F): F = f
-
 
 func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
   Vector(x: x.toFloat, y: y.toFloat)
@@ -100,6 +97,7 @@ func `/`*(v: Vector, t: Float): Vector =
   v(v.x / t, v.y / t)
 
 # --- utils ---
+
 proc movement*(ke: KonvaMouseEvent): Vector =
   v(ke.evt.movementx.toFloat, ke.evt.movementy.toFloat)
 
@@ -135,6 +133,8 @@ proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
 proc `nodes=`*(t: Transformer, elems: openArray[KonvaShape]) {.konva.}
 proc `nodes`*(t: Transformer): seq[KonvaObject] {.konva.}
+proc `setAttr`*[V](k: KonvaShape, key: string, value: V) {.konva.}
+proc `getAttr`*[V](k: KonvaShape, key: string): V {.konva.}
 
 # --- visual properties ---
 proc `width=`*[N: Number](k: KonvaObject, v: N) {.konva.}

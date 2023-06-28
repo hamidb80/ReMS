@@ -1,25 +1,11 @@
-import std/[strformat]
-import karax/[karaxdsl, vdom, vstyles]
-import utils, conventions
+import std/[strformat, strutils, sugar]
+import std/[dom, jsconsole]
+import karax/[karaxdsl, vdom, vstyles, karax]
+import utils, conventions, browser
 
-
-whenjs:
-  import std/[dom, jsconsole]
-  import karax/[karax]
-  import browser
-
-
-# --- aliases ---
-func extCss(url: string): VNode =
-  buildHtml link(rel = "stylesheet", href = url)
-
-func extJs(url: string, defered: bool = false): VNode =
-  if defered:
-    buildHtml script(src = url, `defer` = "")
-  else:
-    buildHtml script(src = url)
 
 # --- components ---
+
 func icon(class: string): VNode =
   buildHtml:
     bold(class = "fa-solid fa-" & class)
@@ -31,8 +17,29 @@ func konva(id: cstring): VNode =
 
 # --- views ---
 
-var sidebarWidth = 400
-proc createDom*(): VNode {.whenjs.} =
+type
+  State = enum
+    BookView
+    MessagesView
+    PropertiesView
+
+var
+  sidebarWidth = 400
+  page = 1
+  state = BookView
+
+
+proc changeStateGen(to: State): proc = 
+  proc = 
+    state = to
+
+proc changePdfPageGen(updater: int -> int): proc = 
+  proc = 
+    page = updater page
+    redraw()
+
+
+proc createDom*(): VNode =
   let freeze = winel.onmousemove != nil
   echo "just updated"
 
@@ -61,35 +68,56 @@ proc createDom*(): VNode {.whenjs.} =
         tdiv(class = "d-flex flex-column w-100"):
           header(class = "nav nav-tabs d-flex flex-row bg-light mb-3"):
 
-            tdiv(class = "nav-item"):
-              span(class = "nav-link active px-3 pointer"):
+            tdiv(class = "nav-item", onclick = changeStateGen MessagesView):
+              span(class = "nav-link px-3 pointer" & iff(state == MessagesView, " active")):
                 text "Messages "
                 icon "message"
 
-            tdiv(class = "nav-item"):
-              span(class = "nav-link px-3 pointer"):
+            tdiv(class = "nav-item", onclick = changeStateGen BookView):
+              span(class = "nav-link px-3 pointer" & iff(state == BookView, " active")):
                 text "Books "
                 icon "book"
 
-            tdiv(class = "nav-item"):
-              span(class = "nav-link px-3 pointer"):
-                text "Settings "
-                icon "wrench"
+            tdiv(class = "nav-item", onclick = changeStateGen PropertiesView):
+              span(class = "nav-link px-3 pointer" & 
+                iff(state == PropertiesView, " active")):
+                text "Properties "
+                icon "circle-info"
 
           main(class = "p-4 content-wrapper"):
-            for i in 1..20:
-              tdiv(class = "card mb-4"):
+            if state == BookView:
+              tdiv(class = "pagination d-flex align-items-center mb-3"):
+
+                tdiv(class = "page-item pointer", onclick = changePdfPageGen (a) => pred a):
+                  icon "chevron-left page-link"
+
+                input(type = "number", id="page-number-input", class = "form-control mx-2", value = $page,
+                  onchange = changePdfPageGen _ => valueAsNumber[int](qi"page-number-input"))
+
+                tdiv(class = "page-item pointer", onclick = changePdfPageGen (a) => succ a):
+                  icon "chevron-right page-link"
+
+
+              let p = "http://127.0.0.1:8080/" & align($page, 2, '0') & ".png"
+              tdiv(class = "pdf-page card mb-4"):
                 tdiv(class = "card-body"):
-                  h4(class = "card-title"):
-                    text "Card title"
-                  h6(class = "card-subtitle mb-2 text-muted"):
-                    text "Card subtitle"
-                  p(class = "card-text"):
-                    text """Some quick example text to build on the card title and make up the bulk of the card's content."""
-                  a(class = "card-link", href = "#"):
-                    text "Card link"
-                  a(class = "card-link", href = "#"):
-                    text "Another link"
+                  img(src = p, class = "w-100")
+                  h6(class = "card-subtitle mb-2 text-center text-muted"):
+                    text fmt"page {page}"
+
+            # for i in 1..20:
+              # tdiv(class = "card mb-4"):
+              #   tdiv(class = "card-body"):
+              #     h4(class = "card-title"):
+              #       text "Card title"
+              #     h6(class = "card-subtitle mb-2 text-muted"):
+              #       text "Card subtitle"
+              #     p(class = "card-text"):
+              #       text """Some quick example text to build on the card title and make up the bulk of the card's content."""
+              #     a(class = "card-link", href = "#"):
+              #       text "Card link"
+              #     a(class = "card-link", href = "#"):
+              #       text "Another link"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-light border border-secondary border-start-0 rounded-right"):
         button(class = "btn invisible p-0")
@@ -108,27 +136,3 @@ proc createDom*(): VNode {.whenjs.} =
 
         button(class = "btn invisible p-0")
 
-# --- pages ---
-func index*(pageTitle: string): VNode =
-  buildHtml html:
-    head:
-      meta(charset = "UTF-8")
-      meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
-      title: text pageTitle
-
-      extJs "https://unpkg.com/konva@9/konva.min.js"
-      extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
-      extJs "./page.js", true
-      extJs "./script.js", true
-
-      extCss "https://bootswatch.com/5/flatly/bootstrap.min.css"
-      extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      extCss "./custom.css"
-
-    body:
-      tdiv(id = "app")
-
-
-when isMainModule:
-  writeFile "./dist/index.html":
-    $ index "RMS - Remembering Manangement System"

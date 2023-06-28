@@ -10,6 +10,8 @@ template winEl*: untyped =
 proc downloadUrl*(name, data: cstring)
   {.importjs: "downloadUrl(@)".}
 
+proc valueAsNumber*[T](el: Element): T {.importjs: "#.valueAsNumber".}
+
 let nonPassive* = AddEventListenerOptions(passive: false)
 
 proc setTimeout*(delay: Natural, action: proc) =

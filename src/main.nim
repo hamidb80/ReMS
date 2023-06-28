@@ -22,28 +22,24 @@ var app: AppData
 
 # --- helpers ---
 
-func coordinate(m: Vector, s, ox, oy: Float): Vector =
+func coordinate(mouse: Vector, scale, offsetx, offsety: Float): Vector =
   v(
-    (-ox + m.x)/s,
-    (-oy + m.y)/s)
+    (-offsetx + mouse.x) / scale,
+    (-offsety + mouse.y) / scale)
 
-proc coordinate(p: Vector, s: Stage): Vector =
-  coordinate p, ||s.scale, s.x, s.y
+proc coordinate(pos: Vector, stage: Stage): Vector =
+  coordinate pos, ||stage.scale, stage.x, stage.y
 
-func center(s, ox, oy, w, h: Float): Vector =
+
+func center(scale, offsetx, offsety, width, height: Float): Vector =
   ## real coordinate of center of the canvas
-  ## s: scale
-  ## o[x/y]: offset x/y
-  ## w: width
-  ## h: height
-  
-  v((w/2 - ox) / s,
-    (h/2 - oy) / s)
+  v((width/2 - offsetx) / scale,
+    (height/2 - offsety) / scale)
 
 proc center(stage: Stage): Vector =
   ## real coordinate of center of the canvas
   center(
-    ||app.stage.scale, 
+    ||app.stage.scale,
     app.stage.x, app.stage.y,
     app.stage.width, app.stage.height)
 

@@ -1,4 +1,9 @@
 /* global */
+
+.btn{
+  cursor: pointer;
+}
+
 .pointer {
   cursor: pointer;
 }
