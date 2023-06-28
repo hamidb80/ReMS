@@ -16,27 +16,36 @@ type
     lastMousePos: Vector
     isMouseDown: bool
 
-
 # TODO define maximum map [boarders to not go further if not nessesarry]
 const ⌊scale⌋ = 0.01 # minimum amount of scale
 var app: AppData
 
 # --- helpers ---
 
-func realPos(mousePos: Vector, scale, offsetx, offsety: Float): Vector =
+func coordinate(m: Vector, s, ox, oy: Float): Vector =
   v(
-    (-offsetx + mousePos.x)/scale,
-    (-offsety + mousePos.y)/scale)
+    (-ox + m.x)/s,
+    (-oy + m.y)/s)
 
-proc realPos(p: Vector, s: Stage): Vector =
-  realPos p, ||s.scale, s.x, s.y
+proc coordinate(p: Vector, s: Stage): Vector =
+  coordinate p, ||s.scale, s.x, s.y
+
+func center(s, ox, oy, w, h: Float): Vector =
+  ## real coordinate of center of the canvas
+  ## s: scale
+  ## o[x/y]: offset x/y
+  ## w: width
+  ## h: height
+  
+  v((w/2 - ox) / s,
+    (h/2 - oy) / s)
 
 proc center(stage: Stage): Vector =
   ## real coordinate of center of the canvas
-  let s = ||app.stage.scale
-  v(
-    ( -app.stage.x + app.stage.width / 2) / s,
-    ( -app.stage.y + app.stage.height / 2) / s)
+  center(
+    ||app.stage.scale, 
+    app.stage.x, app.stage.y,
+    app.stage.width, app.stage.height)
 
 # --- actions ---
 
@@ -50,7 +59,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
     w = app.stage.width
     h = app.stage.height
 
-    real = realPos(mouse🖱️, app.stage)
+    real = coordinate(mouse🖱️, app.stage)
     realϟ = real * s′
 
   app.stage.scale = s′
@@ -58,7 +67,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   app.stage.y = -realϟ.y + h/2
 
   let
-    real′ = realPos(mouse🖱️, app.stage)
+    real′ = coordinate(mouse🖱️, app.stage)
     d = real′ - real
 
   app.stage.x = app.stage.x + d.x * s′
@@ -96,7 +105,7 @@ proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
   app.isMouseDown = true
 
 proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
-  app.lastMousePos = realPos(v(ke.evt.x, ke.evt.y), app.stage)
+  app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
 
 proc onStageClick(ke: JsObject as KonvaClickEvent) {.caster.} =
   if issome app.selectedObject:
@@ -112,7 +121,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
   preventDefault e
 
   let mp = v(e.x, e.y)
-  app.lastMousePos = realPos(mp, app.stage)
+  app.lastMousePos = coordinate(mp, app.stage)
 
   if e.ctrlKey: # pinch-zoom
     let
