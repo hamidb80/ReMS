@@ -1,9 +1,12 @@
 import std/[strformat]
-import karax/[karaxdsl, vdom, vstyles, karax]
-import utils
+import karax/[karaxdsl, vdom, vstyles]
+import utils, conventions
 
-when defined js:
-  import std/[dom]
+
+whenjs:
+  import std/[dom, jsconsole]
+  import karax/[karax]
+  import browser
 
 
 # --- components ---
@@ -17,28 +20,25 @@ func konva(id: cstring): VNode =
   """
 
 # --- views ---
-template winEl: untyped =
-  window.document.body
-
-template iff(cond, val): untyped =
-  if cond: val
-  else: default type val
 
 var sidebarWidth = 400
-proc createDom*: VNode =
+proc createDom*(): VNode {.whenjs.} =
   let freeze = winel.onmousemove != nil
   echo "just updated"
 
   buildHtml:
     tdiv(class = "karax"):
-      main(class = "board-wrapper border border-dark rounded overflow-hidden h-100 w-100"):
+      main(class = "board-wrapper overflow-hidden h-100 w-100"):
         konva "board"
+
+      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-light border-top border-secondary"):
+        discard
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none"),
           style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
 
-        tdiv(class = "extender h-100 bg-light"):
+        tdiv(class = "extender h-100 btn btn-light p-0"):
           proc onMouseDown(ev: Event, n: VNode) =
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
               let amount = window.innerWIdth - e.clientX
@@ -49,15 +49,20 @@ proc createDom*: VNode =
               reset winel.onmousemove
 
         tdiv(class = "d-flex flex-column w-100"):
-          header(class = "nav nav-tabs d-flex flex-row justify-content-between bg-light mb-3"):
+          header(class = "nav nav-tabs d-flex flex-row bg-light mb-3"):
 
             tdiv(class = "nav-item"):
-              span(class = "nav-link active pointer"):
+              span(class = "nav-link active px-3 pointer"):
                 text "Messages "
                 icon "message"
 
             tdiv(class = "nav-item"):
-              span(class = "nav-link pointer"):
+              span(class = "nav-link px-3 pointer"):
+                text "Books "
+                icon "book"
+
+            tdiv(class = "nav-item"):
+              span(class = "nav-link px-3 pointer"):
                 text "Settings "
                 icon "wrench"
 
@@ -76,23 +81,24 @@ proc createDom*: VNode =
                   a(class = "card-link", href = "#"):
                     text "Another link"
 
-      aside(class="tool-bar btn-group-vertical position-absolute bg-light rounded-right border border-secondary"):
-        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+      aside(class = "tool-bar btn-group-vertical position-absolute bg-light border border-secondary border-start-0 rounded-right"):
+        button(class = "btn invisible p-0")
+
+        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "download fa-lg"
 
-        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "crop-simple fa-lg"
 
-        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "expand fa-lg"
 
-        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "vector-square fa-lg"
 
+        button(class = "btn invisible p-0")
 
-      # footer(class="")
-
-
+# --- pages ---
 func index*(t = "RMS - Remembering Manangement System"): VNode =
   buildHtml:
     html(lang = "en"):

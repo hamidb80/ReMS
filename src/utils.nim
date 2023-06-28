@@ -2,6 +2,11 @@ import std/macros
 import macroplus
 
 
+macro whenjs*(def): untyped = 
+  when defined js: def
+  else: newEmptyNode()
+
+
 macro caster*(def): untyped =
   ## support for cast in args,
   ##

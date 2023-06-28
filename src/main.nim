@@ -128,6 +128,8 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
 
 
 when isMainModule:
+  echo "compiled at: ", CompileTime
+
   # --- UI ---
   setRenderer createDom, "app"
 

@@ -4,6 +4,9 @@ import std/[dom]
 proc qi*(id: string): Element =
   document.getElementById id
 
+template winEl*: untyped =
+  window.document.body
+
 proc downloadUrl*(name, data: cstring)
   {.importjs: "downloadUrl(@)".}
 
