@@ -1,7 +1,9 @@
 import std/[with, dom, math, options]
 from std/jsffi import JsObject
 import karax/[karax]
-import konva, hotkeys, browser, ui, canvas, utils, conventions
+
+import konva, hotkeys, browser
+import ui, canvas, utils, conventions
 
 
 type
@@ -38,15 +40,17 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
-proc changeScale(mouse, real: Vector, Δscale: Float) =
+proc changeScale(mouse: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
+
     s = ||app.stage.scale
     s′ = max(s + Δscale, ⌊scale⌋)
 
     w = app.stage.width
     h = app.stage.height
 
+    real = realPos(mouse, app.stage)
     realϟ = real * s′
 
   app.stage.scale = s′
@@ -59,7 +63,6 @@ proc changeScale(mouse, real: Vector, Δscale: Float) =
 
   app.stage.x = app.stage.x + d.x * s′
   app.stage.y = app.stage.y + d.y * s′
-
 
 proc resetSelected =
   reset app.selectedObject
@@ -116,7 +119,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
       s = ||app.stage.scale
       ⋊s = exp(-e.Δy / 100)
 
-    changeScale mp, app.lastMousePos, s*(⋊s - 1)
+    changeScale mp, s*(⋊s - 1)
 
 
   else: # panning

@@ -1,13 +1,21 @@
 ## Stack
 - konva
 - hotkeys
-- bootstrap + bootswatch
-- font awesome v6
+- bootstrap
+- font-awesome v6
 - nim
+- karax
 - jester
 - poinari
 
 # Helpful contents
+
+## Icon Search
+https://fontawesome.com/icons/
+
+## Theme
+https://bootswatch.com/
+
 ## Pinch Zoom
 https://gist.github.com/Martin-Pitt/2756cf86dca90e179b4e75003d7a1a2b
 

@@ -17,7 +17,7 @@ func konva(id: cstring): VNode =
   """
 
 # --- views ---
-template winel: untyped =
+template winEl: untyped =
   window.document.body
 
 template iff(cond, val): untyped =
@@ -46,10 +46,10 @@ proc createDom*: VNode =
               redraw()
 
             winel.addEventListener "mouseup", proc(e: Event) =
-              winel.onmousemove.reset
+              reset winel.onmousemove
 
         tdiv(class = "d-flex flex-column w-100"):
-          header(class = "nav nav-tabs d-flex flex-row justify-content-between bg-light"):
+          header(class = "nav nav-tabs d-flex flex-row justify-content-between bg-light mb-3"):
 
             tdiv(class = "nav-item"):
               span(class = "nav-link active pointer"):
@@ -76,15 +76,18 @@ proc createDom*: VNode =
                   a(class = "card-link", href = "#"):
                     text "Another link"
 
-      aside(class="tool-bar btn-group-vertical position-absolute"):
-        button(class="btn btn-light py-3 px-2"):
-          icon "download"
+      aside(class="tool-bar btn-group-vertical position-absolute bg-light rounded-right border border-secondary"):
+        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+          icon "download fa-lg"
 
-        button(class="btn btn-light py-3 px-2"):
-          icon "circle-dot"
+        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+          icon "crop-simple fa-lg"
 
-        button(class="btn btn-light py-3 px-2"):
-          icon "object-group"
+        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+          icon "expand fa-lg"
+
+        button(class="btn btn-outline-primary border-0 px-3 py-4"):
+          icon "vector-square fa-lg"
 
 
       # footer(class="")
