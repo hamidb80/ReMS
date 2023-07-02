@@ -69,10 +69,19 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   app.stage.x = app.stage.x + d.x * s′
   app.stage.y = app.stage.y + d.y * s′
 
+proc moveStage(v: Vector) =
+  app.stage.x = app.stage.x + v.x
+  app.stage.y = app.stage.y + v.y
+
 proc resetSelected =
   reset app.selectedObject
   app.transformer.nodes = []
   app.transformer.remove
+
+proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
+  t.nodes = objs
+  layer.add t
+  layer.batchDraw
 
 # --- events ---
 
@@ -81,14 +90,15 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
     with img:
       x = app.lastMousePos.x
       y = app.lastMousePos.y
+      strokeWidth = 2
+      stroke = "black"
+      # setAttr
 
     img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
       stopPropagate ke
       img.draggable = true
-      app.transformer.nodes = [KonvaShape img]
-      app.layer.add app.transformer
-      app.layer.batchDraw
       app.selectedObject = some KonvaObject img
+      app.transformer.incl [KonvaShape img], app.layer
 
     img.on "transformend", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
       img.width = img.width * img.scale.x
@@ -126,10 +136,8 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
 
     changeScale mp, s*(⋊s - 1)
 
-
   else: # panning
-    app.stage.x = app.stage.x + e.Δx * -1
-    app.stage.y = app.stage.y + e.Δy * -1
+    moveStage v(e.Δx, e.Δy) * -1
 
 
 when isMainModule:
@@ -156,17 +164,9 @@ when isMainModule:
     addEventListener app.stage.container, "wheel", onWheel, nonPassive
 
     with app.layer:
-      add tempCircle(0, 0, 16, "red")
-      add tempCircle(0, 0, 1, "black")
-      add tempCircle(app.stage.width / 2, 0, 16, "yellow")
-      add tempCircle(app.stage.width, 0, 16, "orange")
-      add tempCircle(app.stage.width / 2, app.stage.height / 2, 16, "green")
-      add tempCircle(app.stage.width, app.stage.height / 2, 16, "purple")
-      add tempCircle(app.stage.width / 2, app.stage.height, 16, "pink")
-      add tempCircle(0, app.stage.height / 2, 16, "cyan")
-      add tempCircle(0, app.stage.height, 16, "khaki")
-      add tempCircle(app.stage.width, app.stage.height, 16, "blue")
+      add tempCircle(0, 0, 8, "black")
 
+    moveStage app.stage.center
 
   addHotkey "delete", proc(ev: Event, h: JsObject) =
     app.selectedObject.get.destroy

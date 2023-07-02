@@ -16,6 +16,7 @@ func konva(id: cstring): VNode =
   """
 
 func invisibleText: Vnode =
+  ## used to fix inconsistent UI behaviours
   buildHtml:
     span(class = "invisible"):
       text "i"
@@ -29,7 +30,11 @@ type
     MessagesView
     PropertiesView
 
-const defaultWidth = 440
+const
+  defaultWidth = 500
+  ciriticalWidth = 400
+  minimizeWidth = 260
+
 var
   sidebarWidth = defaultWidth
   page = 1
@@ -84,74 +89,77 @@ proc createDom*(): VNode =
         button(class = "btn invisible p-0")
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
-          iff(freeze, "user-select-none"),
+          iff(freeze, "user-select-none ") & iff(sidebarWidth < ciriticalWidth,
+              "icons-only "),
           style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
 
         tdiv(class = "extender h-100 btn btn-light p-0"):
-          proc onMouseDown(ev: Event, n: VNode) =
+          proc onMouseDown =
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              let amount = window.innerWIdth - e.clientX
-              sidebarWidth = max(amount, 300)
+              sidebarWidth = max(window.innerWidth - e.x, minimizeWidth)
               redraw()
 
-            winel.addEventListener "mouseup", proc(e: Event) =
+            winel.onmouseup = proc(e: Event) =
               reset winel.onmousemove
+              reset winel.onmouseup
 
         tdiv(class = "d-flex flex-column w-100"):
-          header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-3"):
+          header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
 
             tdiv(class = "d-flex flex-row"):
               tdiv(class = "nav-item", onclick = changeStateGen MessagesView):
-                span(class = "nav-link px-3 pointer" & iff(state ==
-                    MessagesView, " active")):
-                  text "Messages "
+                span(class = "nav-link px-3 pointer" &
+                    iff(state == MessagesView, " active")):
+                  span(class = "caption"):
+                    text "Messages "
                   icon "message"
 
               tdiv(class = "nav-item", onclick = changeStateGen BookView):
-                span(class = "nav-link px-3 pointer" & iff(state == BookView, " active")):
-                  text "Books "
+                span(class = "nav-link px-3 pointer" &
+                    iff(state == BookView, " active")):
+                  span(class = "caption"):
+                    text "Books "
                   icon "book"
 
               tdiv(class = "nav-item", onclick = changeStateGen PropertiesView):
                 span(class = "nav-link px-3 pointer" &
                   iff(state == PropertiesView, " active")):
-                  text "Properties "
+                  span(class = "caption"):
+                    text "Properties "
                   icon "circle-info"
 
-            tdiv:
-              tdiv(class = "nav-item", onclick = maximize):
-                span(class = "nav-link px-3 pointer"):
-                  invisibleText()
+            tdiv(class = "nav-item d-flex flex-row px-2"):
+              span(class = "nav-link px-1 pointer", onclick = maximize):
+                invisibleText()
 
-                  if isMaximized():
-                    icon "window-minimize"
-                  else:
-                    icon "window-maximize"
+                icon(
+                    if isMaximized(): "window-minimize"
+                    else: "window-maximize")
 
           main(class = "p-4 content-wrapper"):
             if state == BookView:
               tdiv(class = "pagination d-flex align-items-center mb-3"):
 
-                tdiv(class = "page-item pointer", onclick = changePdfPageGen (
-                    a) => pred a):
+                tdiv(class = "page-item pointer",
+                    onclick = changePdfPageGen (a) => pred a):
                   icon "chevron-left page-link"
 
                 input(type = "number", id = "page-number-input",
                   class = "form-control mx-2", value = $page,
-                  onchange = changePdfPageGen _ => valueAsNumber[int](
-                      qi"page-number-input"))
+                  onchange = changePdfPageGen _ =>
+                    valueAsNumber[int](qi"page-number-input"))
 
-                tdiv(class = "page-item pointer", onclick = changePdfPageGen (
-                    a) => succ a):
+                tdiv(class = "page-item pointer",
+                    onclick = changePdfPageGen (a) => succ a):
                   icon "chevron-right page-link"
 
-
-              let p = "http://127.0.0.1:8080/" & align($page, 2, '0') & ".png"
-              tdiv(class = "pdf-page card mb-4"):
-                tdiv(class = "card-body"):
-                  img(src = p, class = "w-100")
-                  h6(class = "card-subtitle mb-2 text-center text-muted"):
-                    text fmt"page {page}"
+              for n in 1..98:
+                let p = "http://127.0.0.1:8080/" & align($n, 2, '0') & ".png"
+                tdiv(class = "pdf-page card mb-4"):
+                  tdiv(class = "card-body"):
+                    img(src = p, class = "w-100")
+                    h6(class = "card-subtitle mb-2 text-center text-muted"):
+                      text fmt"page {n}"
 
             # for i in 1..20:
               # tdiv(class = "card mb-4"):
@@ -167,3 +175,4 @@ proc createDom*(): VNode =
               #     a(class = "card-link", href = "#"):
               #       text "Another link"
 
+          footer(class="mt-2")

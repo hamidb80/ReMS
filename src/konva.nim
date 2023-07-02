@@ -135,6 +135,7 @@ proc `nodes=`*(t: Transformer, elems: openArray[KonvaShape]) {.konva.}
 proc `nodes`*(t: Transformer): seq[KonvaObject] {.konva.}
 proc `setAttr`*[V](k: KonvaShape, key: string, value: V) {.konva.}
 proc `getAttr`*[V](k: KonvaShape, key: string): V {.konva.}
+proc `attr`*[V](k: KonvaShape, key: string): V = k.getAttr key
 
 # --- visual properties ---
 proc `width=`*[N: Number](k: KonvaObject, v: N) {.konva.}
