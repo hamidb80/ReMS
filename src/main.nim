@@ -45,10 +45,13 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
+proc moveStage(v: Vector) =
+  app.stage.x = app.stage.x + v.x
+  app.stage.y = app.stage.y + v.y
+
 proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
-
     s = ||app.stage.scale
     s′ = max(s + Δscale, ⌊scale⌋)
 
@@ -66,12 +69,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
     real′ = coordinate(mouse🖱️, app.stage)
     d = real′ - real
 
-  app.stage.x = app.stage.x + d.x * s′
-  app.stage.y = app.stage.y + d.y * s′
-
-proc moveStage(v: Vector) =
-  app.stage.x = app.stage.x + v.x
-  app.stage.y = app.stage.y + v.y
+  moveStage d * s′
 
 proc resetSelected =
   reset app.selectedObject

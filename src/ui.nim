@@ -30,6 +30,7 @@ type
     MessagesView
     PropertiesView
 
+# TODO: develop ncss
 const
   defaultWidth = 500
   ciriticalWidth = 400
