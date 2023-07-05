@@ -60,9 +60,16 @@ proc maximize =
     else: window.innerWidth
   redraw()
 
-proc createDom*(): VNode =
+
+proc createDom*(data: RouterData): VNode =
   let freeze = winel.onmousemove != nil
-  echo "just updated"
+  console.info "just updated the whole virtual DOM"
+
+  # data.hashpart:
+  # startsWith "#/": all
+  # startsWith "#/completed": completed
+  # startsWith "#/active": active
+
 
   buildHtml:
     tdiv(class = "karax"):
@@ -155,7 +162,8 @@ proc createDom*(): VNode =
                   icon "chevron-right page-link"
 
               for n in 1..98:
-                let p = "http://127.0.0.1:8080/" & align($n, 2, '0') & ".png"
+                let p = "http://localhost:8080/" & align($n, 2, '0') & ".png"
+
                 tdiv(class = "pdf-page card mb-4"):
                   tdiv(class = "card-body"):
                     img(src = p, class = "w-100")
