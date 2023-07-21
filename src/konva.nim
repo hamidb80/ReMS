@@ -49,11 +49,13 @@ type
   Number = SomeNumber
 
   KonvaEventKinds = enum
-    mouseover, mouseout, mouseenter, mouseleave, mousemove, mousedown, mouseup, wheel, click, dblclick # Mouse events
-    touchstart, touchmove, touchend, tap, dbltap # Touch events
-    pointerdown, pointermove, pointereup, pointercancel, pointerover, pointerenter, pointerout,pointerleave, pointerclick, pointerdblclick # Pointer events
-    dragstart, dragmove, dragend # Drag events
-    transformstart, transform, transformend # Transform events
+    mouseover, mouseout, mouseenter, mouseleave, mousemove, mousedown, mouseup,
+        wheel, click, dblclick                           # Mouse events
+    touchstart, touchmove, touchend, tap, dbltap         # Touch events
+    pointerdown, pointermove, pointereup, pointercancel, pointerover,
+        pointerenter, pointerout, pointerleave, pointerclick, pointerdblclick # Pointer events
+    dragstart, dragmove, dragend                         # Drag events
+    transformstart, transform, transformend              # Transform events
 
 
 proc toKonvaMethod(def: NimNode): NimNode =
@@ -113,7 +115,8 @@ proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
 proc newImage*: Image {.importjs: "new Konva.Image()".}
 proc newTransformer*: Transformer {.importjs: "new Konva.Transformer()".}
-proc newImageFromUrl*(url: Str, onSuccess: proc(img: Image), onError = noOp) {.importjs: "Konva.Image.fromURL(@)".}
+proc newImageFromUrl*(url: Str, onSuccess: proc(img: Image),
+    onError = noOp) {.importjs: "Konva.Image.fromURL(@)".}
 
 # --- settings ---
 proc toDataURL*(wrapper: KonvaContainer,
@@ -133,6 +136,8 @@ proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
 proc `nodes=`*(t: Transformer, elems: openArray[KonvaShape]) {.konva.}
 proc `nodes`*(t: Transformer): seq[KonvaObject] {.konva.}
+proc `id=`*(t: Transformer, id: Str) {.konva.}
+proc `id`*(t: Transformer): Str {.konva.}
 proc `setAttr`*[V](k: KonvaShape, key: string, value: V) {.konva.}
 proc `getAttr`*[V](k: KonvaShape, key: string): V {.konva.}
 proc `attr`*[V](k: KonvaShape, key: string): V = k.getAttr key
@@ -152,9 +157,74 @@ proc `stroke=`*(k: KonvaShape, color: Str) {.konva.}
 proc `stroke`*(k: KonvaShape): Str {.konva.}
 proc `strokeWidth=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `strokeWidth`*(k: KonvaShape): Float {.konva.}
+proc `strokeEnabled=`*(k: KonvaShape, v: bool) {.konva.}
+proc `strokeEnabled`*(k: KonvaShape): bool {.konva.}
 proc `radius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
 proc `radius`*(k: KonvaShape): Float {.konva.}
+proc `cornerRadius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `cornerRadius=`*[N: Number](k: KonvaShape, tl, tr, br, bl: N)
+    {.importjs: "#.cornerRadius([@])".}
+proc `cornerRadius`*(k: KonvaShape): Float {.konva.}
+# proc `cornerRadius`*(k: KonvaShape): Float {.konva.} # FIXME it can get array of radiuses ...
+
+proc `shadowBlur=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `shadowBlur`*(k: KonvaShape): Float {.konva.}
+proc `shadowColor=`*(k: KonvaShape, v: Str) {.konva.}
+proc `shadowColor`*(k: KonvaShape): Str {.konva.}
+proc `shadowEnabled=`*(k: KonvaShape, v: bool) {.konva.}
+proc `shadowEnabled`*(k: KonvaShape): bool {.konva.}
+# TODO shadowOffset
+proc `shadowOffsetX=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `shadowOffsetX`*(k: KonvaShape): Float {.konva.}
+proc `shadowOffsetY=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `shadowOffsetY`*(k: KonvaShape): Float {.konva.}
+proc `shadowOpacity=`*(k: KonvaShape, v: Float) {.konva.}
+proc `shadowOpacity`*(k: KonvaShape): Float {.konva.}
+
+# TODO size
+# TODO skew
+proc `skewX=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `skewX`*(k: KonvaShape): Float {.konva.}
+proc `skewY=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `skewY`*(k: KonvaShape): Float {.konva.}
+
+proc `offsetX=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `offsetX`*(k: KonvaShape): Float {.konva.}
+proc `offsetY=`*[N: Number](k: KonvaShape, v: N) {.konva.}
+proc `offsetY`*(k: KonvaShape): Float {.konva.}
+
+proc `noise=`*(k: KonvaShape, v: Float) {.konva.}
+proc `noise`*(k: KonvaShape): Float {.konva.}
+
 proc `scale=`*(k: KonvaObject, v: Vector) {.konva.}
 proc `scale=`*[N: Number](k: KonvaObject, v: N) =
   k.scale = v(v.toFloat, v.toFloat)
 proc `scale`*(k: KonvaObject): Vector {.konva.}
+proc `zIndex=`*(k: KonvaShape, v: int) {.konva.}
+proc `zIndex`*(k: KonvaShape): int {.konva.}
+
+proc `name=`*(k: KonvaShape, v: Str) {.konva.}
+proc `name`*(k: KonvaShape): Str {.konva.}
+
+# -------- query?
+proc hasName*(k: KonvaShape): bool {.konva.}
+proc hasFill*(k: KonvaShape): bool {.konva.}
+proc hasShadow*(k: KonvaShape): bool {.konva.}
+proc hasStroke*(k: KonvaShape): bool {.konva.}
+proc isCached*(k: KonvaShape): bool {.konva.}
+proc isDragging*(k: KonvaShape): bool {.konva.}
+proc isListening*(k: KonvaShape): bool {.konva.}
+proc isVisible*(k: KonvaShape): bool {.konva.}
+
+# -------- actions
+proc addName*(k: KonvaShape, name: Str) {.konva.}
+proc show*(k: KonvaShape) {.konva.}
+proc hide*(k: KonvaShape) {.konva.}
+proc off*(k: KonvaShape, eventSrc: Str) {.konva.}
+proc startDrag*(k: KonvaShape) {.konva.}
+proc stopDrag*(k: KonvaShape) {.konva.}
+proc clearCache*(k: KonvaShape) {.konva.}
+proc moveDown*(k: KonvaShape) {.konva.}
+proc moveToBottom*(k: KonvaShape) {.konva.}
+proc moveUp*(k: KonvaShape) {.konva.}
+proc moveToTop*(k: KonvaShape) {.konva.}

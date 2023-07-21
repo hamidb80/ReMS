@@ -1,9 +1,10 @@
-import std/[with, dom, math, options]
+import std/[with, math, options]
 from std/jsffi import JsObject
-import karax/[karax]
+import std/[dom, jsconsole]
+import karax/[karax], caster
 
 import konva, hotkeys, browser
-import ui, canvas, utils, conventions
+import ui, canvas, conventions
 
 
 type
@@ -83,6 +84,8 @@ proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
 
 # --- events ---
 
+# TODO remove exportc and make all of the codes written in Nim
+
 proc onPasteOnScreen(data: cstring) {.exportc.} =
   newImageFromUrl data, proc(img: Image) =
     with img:
@@ -104,6 +107,22 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       img.scale = v(1, 1)
 
     app.layer.add img
+
+proc createNode() = 
+  let node = newRect()
+
+  with node:
+    x = app.lastMousePos.x
+    y = app.lastMousePos.y
+    width = 100
+    height = 40
+    strokeWidth = 2
+    fill = "#ffdda9"
+    stroke = "rgb(169, 108, 17)"
+    cornerRadius = 10
+
+  app.layer.add node
+
 
 proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
   app.isMouseDown = true
@@ -139,7 +158,7 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
 
 
 when isMainModule:
-  echo "compiled at: ", CompileTime
+  echo "compiled at: ", CompileDate, ' ', CompileTime
 
   # --- UI ---
   setRenderer createDom, "app"
@@ -160,6 +179,8 @@ when isMainModule:
       on "mouseup pointerup", mouseUpStage
       add app.layer
     addEventListener app.stage.container, "wheel", onWheel, nonPassive
+    addEventListener app.stage.container, "contextmenu", proc(
+        e: Event) = e.preventDefault
 
     with app.layer:
       add tempCircle(0, 0, 8, "black")
@@ -169,3 +190,7 @@ when isMainModule:
   addHotkey "delete", proc(ev: Event, h: JsObject) =
     app.selectedObject.get.destroy
     app.transformer.nodes = []
+
+  addHotkey "n", proc(ev: Event, h: JsObject) =
+    console.log ev
+    createNode()

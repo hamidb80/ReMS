@@ -14,11 +14,12 @@ requires "nim >= 1.6.12"
 requires "macroplus >= 0.2.5"
 requires "karax == 1.3.0"
 requires "urlon"
+requires "caster"
 
 # Tasks
 
 task genscript, "generate script.js file in ./dist":
-  exec "nim js --hints:off --warning:CStringConv:off -o:./dist/script.js src/main.nim"
+  exec "nim js -o:./dist/script.js src/main.nim"
 
 task html, "generate index.html ./dist":
   exec "nim r src/page.nim"

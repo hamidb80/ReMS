@@ -35,4 +35,4 @@ func index*(pageTitle: string): VNode =
 
 when isMainModule:
   writeFile "./dist/index.html":
-    $ index "RMS - Remembering Manangement System"
+    $ index "ReMS - Remembering Manangement System"
