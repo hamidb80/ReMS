@@ -109,7 +109,12 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
     app.layer.add img
 
 proc createNode() =
-  let node = newRect()
+  var
+    node = newRect()
+    txt = newText()
+
+  with txt:
+    fontFamily = "Vazirmatn"
 
   with node:
     x = app.lastMousePos.x

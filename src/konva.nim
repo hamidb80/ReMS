@@ -4,6 +4,27 @@ import std/[jsffi, dom]
 ## TODO publish it as an independent library
 
 type
+  Vector* = object
+    x*, y*: Float
+
+  Size* = object
+    width*, height*: Float
+
+  RectData* = object
+    x*, y*, width*, height*: Float
+
+  Float* = float64
+  Str = cstring
+  Number = SomeNumber
+
+  Probablity = range[0.0 .. +1.0]
+  UnitAxis = range[-1.0 .. +1.0]
+  ImaginaryPercent = range[-100.0 .. +100.0]
+  ColorChannel = range[0 .. 255]
+  Degree = range[0.0 .. 360.0]
+
+
+type
   KonvaObject* = ref object of JsObject
   KonvaContainer* = ref object of KonvaObject
   KonvaShape* = ref object of KonvaObject
@@ -17,18 +38,9 @@ type
   Image* = ref object of KonvaShape
   Ellipse* = ref object of KonvaShape
   Text* = ref object of KonvaShape
-
   Transformer* = ref object of KonvaContainer
 
-  Vector* = object
-    x*, y*: Float
-
-  Size* = object
-    width*, height*: Float
-
-  RectData* = object
-    x*, y*, width*, height*: Float
-
+type
   KonvaEvent*[Event] = ref object of JsObject
     evt*: Event
     cancelBubble*: bool
@@ -51,15 +63,51 @@ type
 
   KonvaCallback* = proc or proc(ke: KonvaEvent)
 
-  Float* = float64
-  Str = cstring
-  Number = SomeNumber
+type
+  FontVariant* = enum
+    fvVormal = "normal"
+    fvSmallCaps = "small-caps"
 
-  Probablity = range[0.0 .. +1.0]
-  UnitAxis = range[-1.0 .. +1.0]
-  ImaginaryPercent = range[-100.0 .. +100.0]
-  ColorChannel = range[0 .. 255]
-  Degree = range[0.0 .. 360.0]
+  LineCap* = enum
+    lcButt = "butt"
+    lcRound = "round"
+    lcSquare = "square"
+
+  LineJoin* = enum
+    ljMiter = "miter"
+    ljRound = "round"
+    ljBevel = "bevel"
+
+  TransformsOption* = enum
+    toAll = "all"
+    toNone = "none"
+    toPosition = "position"
+
+  VerticalAlign* = enum
+    vaTop = "top"
+    vaMiddle = "middle"
+    vaBottom = "bottom"
+
+  HorizontalAlign* = enum
+    hzLeft = "left"
+    hzCenter = "center"
+    hzRight = "right"
+
+  WrapOption* = enum
+    woWord = "word"
+    woChar = "char"
+    woNone = "none"
+
+  FontStyle* = enum
+    fsNormal = "normal"
+    fsBold = "bold"
+    fsItalic = "italic"
+    fsItalicBold = "italic bold"
+
+  TextDecoration* = enum
+    tdNothing = ""
+    tdLineThrough = "line-through"
+    tdUnderline = "underline"
 
   KonvaEventKinds = enum
     mouseover, mouseout, mouseenter, mouseleave, mousemove, mousedown, mouseup,
