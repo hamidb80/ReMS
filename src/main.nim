@@ -108,7 +108,7 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
 
     app.layer.add img
 
-proc createNode() = 
+proc createNode() =
   let node = newRect()
 
   with node:
