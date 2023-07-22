@@ -3,6 +3,7 @@
 dist/script.js
 dist/index.html
 dist/pics/
+dist/pages/
 
 src/*.js
 

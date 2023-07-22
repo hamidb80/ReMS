@@ -19,7 +19,7 @@ requires "caster"
 # Tasks
 
 task genscript, "generate script.js file in ./dist":
-  exec "nim js -o:./dist/script.js src/main.nim"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/main.nim"
 
 task html, "generate index.html ./dist":
   exec "nim r src/page.nim"

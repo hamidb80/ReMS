@@ -61,7 +61,7 @@ type
 
   KonvaClickEvent* = ref object of KonvaMouseEvent
 
-  KonvaCallback* = proc or proc(ke: KonvaEvent)
+  KonvaCallback* = proc(ke: JsObject)
 
 type
   FontVariant* = enum
@@ -271,7 +271,6 @@ proc `draggable`*(k: KonvaObject): bool {.konva.}
 proc `container=`*(k: Stage, id: Str) {.konva.}
 proc `container=`*(k: Stage, element: Element) {.konva.}
 proc `container`*(k: Stage): Element {.konva.}
-
 proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
 
@@ -280,14 +279,14 @@ proc `nodes`*(t: KonvaContainer): seq[KonvaObject] {.konva.}
 
 proc `id=`*(t: KonvaShape, id: Str) {.konva.}
 proc `id`*(t: KonvaShape): Str {.konva.}
-
 proc `setAttr`*[V](k: KonvaShape, key: string, value: V) {.konva.}
 proc `getAttr`*[V](k: KonvaShape, key: string): V {.konva.}
 proc `attr`*[V](k: KonvaShape, key: string): V = k.getAttr key
 
 proc `visible=`*(t: KonvaShape, v: bool) {.konva.}
 proc `visible`*(t: KonvaShape): bool {.konva.}
-
+proc `listening=`*(t: KonvaShape, v: bool) {.konva.}
+proc `listening`*(t: KonvaShape): bool {.konva.}
 proc `value=`*(t: KonvaShape, v: Float) {.konva.}
 proc `value`*(t: KonvaShape): Float {.konva.}
 
@@ -333,6 +332,7 @@ proc `fontStyle`*(t: KonvaShape): Str {.konva.}
 proc `fontSize=`*[N: Number](t: KonvaShape, v: N) {.konva.}
 proc `fontSize`*(t: KonvaShape): Float {.konva.}
 proc measureSize*(t: KonvaShape, s: Str): Size {.konva.}
+proc measureSize*(t: KonvaShape): Size {.konva.}
 
 proc `lineHeight=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `lineHeight`*(k: KonvaObject): Float {.konva.}
@@ -374,9 +374,9 @@ proc getAbsoluteOpacity*(k: KonvaShape): Float {.konva.}
 proc getAbsoluteRotation*(k: KonvaShape): Float {.konva.}
 proc getAbsoluteScale*(k: KonvaShape): Vector {.konva.}
 proc getAbsoluteTransform*(k: KonvaShape): Transformer {.konva.}
-proc getAbsoluteZIndex*(k: KonvaObject): Natural
-proc getAbsolutePosition*(k: KonvaObject): Vector
-proc getAbsolutePosition*(k: KonvaObject, o: KonvaObject): Vector
+proc getAbsoluteZIndex*(k: KonvaObject): Natural {.konva.}
+proc getAbsolutePosition*(k: KonvaObject): Vector {.konva.}
+proc getAbsolutePosition*(k: KonvaObject, o: KonvaObject): Vector {.konva.}
 proc getClassName*(k: KonvaObject): Str {.konva.}
 proc getClientRect*(k: KonvaObject): RectData {.konva.}
 proc getSelfRect*(k: KonvaObject): Vector {.konva.}
@@ -390,9 +390,10 @@ proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
 # findAncestors
 
 # -------- actions
-proc on*[CB: KonvaCallback](k: KonvaObject, event: Str, procedure: CB) {.konva.}
-proc off*(k: KonvaShape, eventSrc: Str) {.konva.}
-# fire
+proc on*(k: KonvaObject, event: Str, procedure: KonvaCallback) {.konva.}
+proc off*(k: KonvaObject, event: Str) {.konva.}
+proc fire*(k: KonvaObject, event: Str, data: JsObject = nil,
+    bubles = true) {.konva.}
 
 proc addName*(k: KonvaShape, name: Str) {.konva.}
 proc removeName*(k: KonvaShape, name: Str) {.konva.}
