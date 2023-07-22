@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat]
+import std/[with, math, options, lenientops, strformat, random]
 from std/jsffi import JsObject
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -8,6 +8,23 @@ import konva, hotkeys, browser
 import ui, canvas, conventions
 
 # TODO FontFaceObserver
+
+type
+  ColorTheme = tuple
+    bg, fg: string
+
+const
+  red: ColorTheme = ("#ffcfc9", "#b26156")
+  yellow: ColorTheme = ("#fef5a6", "#958505")
+  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
+  green: ColorTheme = ("#cbfbad", "#479417")
+  tin: ColorTheme = ("#aef0e4", "#017962")
+  purple: ColorTheme = ("#dac4fd", "#7453ab")
+  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
+  pink: ColorTheme = ("#fbc4e2", "#af467e")
+  orange: ColorTheme = ("#ffdda9", "#a7690e")
+
+  colorThemes = [red, yellow, blue, green, tin, purple, purpleLow, pink, orange]
 
 type
   AppState = enum
@@ -21,8 +38,10 @@ type
     transformer: Transformer
     selectedObject: Option[KonvaObject]
     lastMousePos: Vector
-    isMouseDown: bool
-
+    leftClicked: bool
+    isCtrlDown: bool
+    isSpaceDown: bool
+    selectedColor: Natural
     state: AppState
     sidebarWidth: Natural
 
@@ -111,13 +130,13 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       stroke = "black"
       # setAttr
 
-    # img.on "click", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+    # img.on "click", proc(ke: JsObject as   KonvaMouseEvent) {.caster.} =
     #   stopPropagate ke
     #   img.draggable = true
     #   app.selectedObject = some KonvaObject img
     #   app.transformer.incl [KonvaShape img], app.layer
 
-    # img.on "transformend", proc(ke: JsObject as KonvaClickEvent) {.caster.} =
+    # img.on "transformend", proc(ke: JsObject as   KonvaMouseEvent) {.caster.} =
     #   img.width = img.width * img.scale.x
     #   img.height = img.height * img.scale.y
     #   img.scale = v(1, 1)
@@ -128,25 +147,34 @@ proc createNode() =
   var
     node = newRect()
     txt = newText()
+    c = colorThemes[app.selectedColor]
+    pad = 10
 
   with txt:
     x = app.lastMousePos.x
     y = app.lastMousePos.y
     fontFamily = "Vazirmatn"
-    fill = "rgb(169, 108, 17)"
+    fill = c.fg
     fontSize = 20
     align = $hzCenter
-    text = "سلام دوستانس\nچطورید؟"
+    text = "سلام دوستان\nچطورید؟"
+    text = "سلام دوستان چطورید؟"
     listening = false
 
+
   with node:
-    x = app.lastMousePos.x
-    y = app.lastMousePos.y
-    width = txt.getClientRect.width
-    height = txt.getClientRect.height
+    x = app.lastMousePos.x - pad
+    y = app.lastMousePos.y - pad
+    width = txt.getClientRect.width + pad*2
+    height = txt.getClientRect.height + pad*2
     strokeWidth = 2
-    fill = "#ffdda9"
+    fill = c.bg
     cornerRadius = 10
+
+    shadowColor = c.fg
+    shadowOffsetY = 6
+    shadowBlur = 8
+    shadowOpacity = 0.2
 
 
   node.on "mouseover", proc(ke: JsObject) =
@@ -167,21 +195,21 @@ proc createNode() =
   app.layer.add node
   app.layer.add txt
 
-proc mouseDownStage(jo: JsObject as KonvaClickEvent) {.caster.} =
-  app.isMouseDown = true
+proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
+  app.leftClicked = true
 
-proc mouseMoveStage(ke: JsObject as KonvaClickEvent) {.caster.} =
+proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
 
-proc onStageClick(ke: JsObject as KonvaClickEvent) {.caster.} =
+proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
   if issome app.selectedObject:
     app.selectedObject.get.draggable = false
     resetSelected()
 
   stopPropagate ke
 
-proc mouseUpStage(jo: JsObject as KonvaClickEvent) {.caster.} =
-  app.isMouseDown = false
+proc mouseUpStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
+  app.leftClicked = false
 
 proc onWheel(e: Event as WheelEvent) {.caster.} =
   preventDefault e
@@ -231,6 +259,17 @@ proc getMsg() {.async.} =
 
 discard getMsg()
 
+proc colorSelectBtn(i: Natural, c: ColorTheme): Vnode= 
+  buildHTML:
+    tdiv(class= "px-1 h-100 d-flex align-items-center " & iff(i == app.selectedColor, "bg-light")):
+      tdiv(class = "color-square mx-2 pointer", style = style(
+        (StyleAttr.background,  cstring c.bg),
+        (StyleAttr.borderColor, cstring c.fg),
+      )):
+        proc onclick(e: Event, v: Vnode) = 
+          app.selectedColor = i
+
+
 proc createDom*(data: RouterData): VNode =
   let freeze = winel.onmousemove != nil
   console.info "just updated the whole virtual DOM"
@@ -242,27 +281,25 @@ proc createDom*(data: RouterData): VNode =
 
   buildHtml:
     tdiv(class = "karax"):
-      main(class = "board-wrapper overflow-hidden h-100 w-100"):
+      main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-light border-top border-secondary"):
-        discard
+      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle d-flex align-items-center"):
+        for i, ct in colorThemes:
+          colorSelectBtn(i, ct)
 
-      aside(class = "tool-bar btn-group-vertical position-absolute bg-light border border-secondary border-start-0 rounded-right rounded-0"):
+      aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "plus fa-lg"
+
+        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          icon "circle-nodes fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "download fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "crop-simple fa-lg"
-
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "expand fa-lg"
-
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "vector-square fa-lg"
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
@@ -274,7 +311,12 @@ proc createDom*(data: RouterData): VNode =
             window.document.body.style.cursor = "e-resize"
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              app.sidebarWidth = max(window.innerWidth - e.x, minimizeWidth)
+              let w = window.innerWidth - e.x
+              let w′ =
+                if w < minimizeWidth div 2: 10
+                else: max(w, minimizeWidth)
+
+              app.sidebarWidth = w′
               redraw()
 
             winel.onmouseup = proc(e: Event) =
@@ -319,7 +361,6 @@ proc createDom*(data: RouterData): VNode =
           footer(class = "mt-2"):
             discard
 
-
 when isMainModule:
   echo "compiled at: ", CompileDate, ' ', CompileTime
 
@@ -342,11 +383,35 @@ when isMainModule:
       on "mouseup pointerup", mouseUpStage
       add app.layer
     addEventListener app.stage.container, "wheel", onWheel, nonPassive
-    addEventListener app.stage.container, "contextmenu", proc(
-        e: Event) = e.preventDefault
+    addEventListener app.stage.container,
+      "contextmenu",
+      proc(e: Event) = e.preventDefault
+
 
     with app.layer:
       add tempCircle(0, 0, 8, "black")
+
+    app.stage.on "mousedown", proc(e: JsObject) =
+      app.leftClicked = true
+
+    window.document.body.addEventListener "keydown", proc(
+        e: Event as KeyboardEvent) {.caster.} =
+      if e.key == cstring" ":
+        app.isSpaceDown = true
+        window.document.body.style.cursor = "move"
+
+    window.document.body.addEventListener "keyup", proc(
+        e: Event as KeyboardEvent) {.caster.} =
+      if app.isSpaceDown:
+        app.isSpaceDown = false
+        window.document.body.style.cursor = ""
+
+    app.stage.on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
+      if app.leftClicked and app.isSpaceDown:
+        moveStage movement e
+
+    app.stage.on "mouseup", proc(e: JsObject) =
+      app.leftClicked = false
 
     moveStage app.stage.center
 

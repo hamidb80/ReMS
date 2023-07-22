@@ -59,7 +59,7 @@ type
   KonvaMouseEvent* = ref object of KonvaEvent[MouseEvent]
     pointerId*: int
 
-  KonvaClickEvent* = ref object of KonvaMouseEvent
+  KonvakeyboardEvent* = ref object of KonvaEvent[KeyboardEvent]
 
   KonvaCallback* = proc(ke: JsObject)
 
@@ -110,7 +110,8 @@ type
     tdUnderline = "underline"
 
   KonvaEventKinds = enum
-    mouseover, mouseout, mouseenter, mouseleave, mousemove, mousedown, mouseup,
+    mouseover, mouseout, mouseenter, mouseleave, 
+    mousemove, mousedown, mouseup,
         wheel, click, dblclick                           # Mouse events
     touchstart, touchmove, touchend, tap, dbltap         # Touch events
     pointerdown, pointermove, pointereup, pointercancel, pointerover,

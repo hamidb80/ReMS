@@ -8,6 +8,17 @@
   cursor: pointer;
 }
 
+body {
+  overflow: hidden;
+}
+
+.color-square {
+  width: 26px;
+  height: 26px;
+  border-width: 2px;
+  border-style: solid;
+}
+
 /* specific */
 
 .side-bar {
@@ -36,6 +47,7 @@
 
 .regions {
   height: 40px;
+  border-top-width: 2px !important;
 }
 
 .tw-content img {
