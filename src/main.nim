@@ -7,34 +7,25 @@ import caster
 import konva, hotkeys, browser
 import ui, canvas, conventions
 
-# TODO FontFaceObserver
+# TODO use FontFaceObserver
 
 type
   ColorTheme = tuple
     bg, fg: string
 
-const
-  red: ColorTheme = ("#ffcfc9", "#b26156")
-  yellow: ColorTheme = ("#fef5a6", "#958505")
-  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
-  green: ColorTheme = ("#cbfbad", "#479417")
-  tin: ColorTheme = ("#aef0e4", "#017962")
-  purple: ColorTheme = ("#dac4fd", "#7453ab")
-  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
-  pink: ColorTheme = ("#fbc4e2", "#af467e")
-  orange: ColorTheme = ("#ffdda9", "#a7690e")
-
-  colorThemes = [red, yellow, blue, green, tin, purple, purpleLow, pink, orange]
-
-type
   AppState = enum
     asMessagesView
     asPropertiesView
 
+  FooterState = enum
+    fsOverview
+    fsColor
+    fsFont
+    fsBorder
+
   AppData = object
     stage: Stage
-    layer: Layer
-    # TODO add background layer
+    shapeLayer, connectionLayer: Layer
     transformer: Transformer
     selectedObject: Option[KonvaObject]
     lastMousePos: Vector
@@ -43,16 +34,43 @@ type
     isSpaceDown: bool
     selectedColor: Natural
     state: AppState
+    footerState: FooterState
     sidebarWidth: Natural
 
-# TODO: read these from css
+
 const
+  # TODO define maximum map [boarders to not go further if not nessesarry]
+  ⌊scale⌋ = 0.01 # minimum amount of scale
+
+  # TODO: read these from css
   defaultWidth = 500
   ciriticalWidth = 400
-  minimizeWidth = 260
+  minimizeWidth = 360
 
-# TODO define maximum map [boarders to not go further if not nessesarry]
-const ⌊scale⌋ = 0.01 # minimum amount of scale
+  white: ColorTheme = ("#ffffff", "#889bad")
+  smoke = ("#ecedef", "#778696")
+  road = ("#dfe2e4", "#617288")
+  yellow = ("#fef5a6", "#958505")
+  orange = ("#ffdda9", "#a7690e")
+  red = ("#ffcfc9", "#b26156")
+  peach = ("#fbc4e2", "#af467e")
+  pink = ("#f3d2ff", "#7a5a86")
+  purple = ("#dac4fd", "#7453ab")
+  purpleLow = ("#d0d5fe", "#4e57a3")
+  blue = ("#b6e5ff", "#2d7aa5")
+  diomand = ("#adefe3", "#027b64")
+  mint = ("#c4fad6", "#298849")
+  green = ("#cbfbad", "#479417")
+  lemon = ("#e6f8a0", "#617900")
+
+  colorThemes = [
+    white, smoke, road,
+    yellow, orange, red,
+    peach, pink, purple,
+    purpleLow, blue, diomand,
+    mint, green, lemon]
+
+
 var app: AppData
 app.sidebarWidth = defaultWidth
 
@@ -130,18 +148,18 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       stroke = "black"
       # setAttr
 
-    # img.on "click", proc(ke: JsObject as   KonvaMouseEvent) {.caster.} =
-    #   stopPropagate ke
-    #   img.draggable = true
-    #   app.selectedObject = some KonvaObject img
-    #   app.transformer.incl [KonvaShape img], app.layer
+    img.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+      stopPropagate ke
+      img.draggable = true
+      app.selectedObject = some KonvaObject img
+      app.transformer.incl [KonvaShape img], app.shapeLayer
 
-    # img.on "transformend", proc(ke: JsObject as   KonvaMouseEvent) {.caster.} =
-    #   img.width = img.width * img.scale.x
-    #   img.height = img.height * img.scale.y
-    #   img.scale = v(1, 1)
+    img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+      img.width = img.width * img.scale.x
+      img.height = img.height * img.scale.y
+      img.scale = v(1, 1)
 
-    app.layer.add img
+    app.shapeLayer.add img
 
 proc createNode() =
   var
@@ -192,8 +210,8 @@ proc createNode() =
 
   console.log node
 
-  app.layer.add node
-  app.layer.add txt
+  app.shapeLayer.add node
+  app.shapeLayer.add txt
 
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
   app.leftClicked = true
@@ -259,15 +277,18 @@ proc getMsg() {.async.} =
 
 discard getMsg()
 
-proc colorSelectBtn(i: Natural, c: ColorTheme): Vnode= 
+proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
   buildHTML:
-    tdiv(class= "px-1 h-100 d-flex align-items-center " & iff(i == app.selectedColor, "bg-light")):
+    tdiv(class = "px-1 h-100 d-flex align-items-center " &
+      iff(i == app.selectedColor, "bg-light")):
       tdiv(class = "color-square mx-2 pointer", style = style(
-        (StyleAttr.background,  cstring c.bg),
+        (StyleAttr.background, cstring c.bg),
         (StyleAttr.borderColor, cstring c.fg),
       )):
-        proc onclick(e: Event, v: Vnode) = 
-          app.selectedColor = i
+        proc onclick(e: Event, v: Vnode) =
+          if selectable:
+            app.selectedColor = i
+            app.footerState = fsOverview
 
 
 proc createDom*(data: RouterData): VNode =
@@ -285,8 +306,38 @@ proc createDom*(data: RouterData): VNode =
         konva "board"
 
       footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle d-flex align-items-center"):
-        for i, ct in colorThemes:
-          colorSelectBtn(i, ct)
+        case app.footerState
+        of fsOverview:
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "Color: "
+            colorSelectBtn(-1, colorThemes[app.selectedColor], false)
+
+            proc onclick =
+              app.footerState = fsColor
+              redraw()
+
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "Font: "
+            span: text "Vazirmatn"
+
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "20px"
+
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "connection: "
+
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "style "
+
+          tdiv(class = "d-inline-flex mx-2 pointer"):
+            span: text "border "
+
+        of fsColor:
+          for i, ct in colorThemes:
+            colorSelectBtn(i, ct, true)
+
+        else:
+          text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -313,8 +364,9 @@ proc createDom*(data: RouterData): VNode =
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
               let w = window.innerWidth - e.x
               let w′ =
-                if w < minimizeWidth div 2: 10
-                else: max(w, minimizeWidth)
+                if w > minimizeWidth: max(w, minimizeWidth)
+                elif w in (minimizeWidth div 2)..minimizeWidth: minimizeWidth
+                else: 10
 
               app.sidebarWidth = w′
               redraw()
@@ -371,7 +423,7 @@ when isMainModule:
   500.setTimeout proc =
     with app:
       stage = newStage "board"
-      layer = newLayer()
+      shapeLayer = newLayer()
       transformer = newTransformer()
 
     with app.stage:
@@ -381,14 +433,14 @@ when isMainModule:
       on "mousedown pointerdown", mouseDownStage
       on "mousemove pointermove", mouseMoveStage
       on "mouseup pointerup", mouseUpStage
-      add app.layer
+      add app.shapeLayer
     addEventListener app.stage.container, "wheel", onWheel, nonPassive
     addEventListener app.stage.container,
       "contextmenu",
       proc(e: Event) = e.preventDefault
 
 
-    with app.layer:
+    with app.shapeLayer:
       add tempCircle(0, 0, 8, "black")
 
     app.stage.on "mousedown", proc(e: JsObject) =

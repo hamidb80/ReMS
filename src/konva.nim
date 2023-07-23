@@ -225,6 +225,8 @@ proc `shadowColor=`*(k: KonvaObject, v: Str) {.konva.}
 proc `shadowColor`*(k: KonvaObject): Str {.konva.}
 proc `shadowEnabled=`*(k: KonvaObject, v: bool) {.konva.}
 proc `shadowEnabled`*(k: KonvaObject): bool {.konva.}
+proc `shadowForStrokeEnabled=`*(k: KonvaObject, v: bool) {.konva.}
+proc `shadowForStrokeEnabled`*(k: KonvaObject): bool {.konva.}
 proc `shadowOffset=`*(k: KonvaObject, v: Vector) {.konva.}
 proc `shadowOffset`*(k: KonvaObject): Vector {.konva.}
 proc `shadowOffsetX=`*[N: Number](k: KonvaObject, v: N) {.konva.}
@@ -356,6 +358,9 @@ proc `rotation=`*[N: Number](t: KonvaShape, v: N) {.konva.}
 proc `rotation`*(t: KonvaShape): Float {.konva.}
 proc `levels=`*(t: KonvaShape, v: Float) {.konva.}
 proc `levels`*(t: KonvaShape): Float {.konva.}
+
+proc `transformsEnabled=`*(t: KonvaShape, v: Str) {.konva.}
+proc `transformsEnabled`*(t: KonvaShape): Str {.konva.}
 
 # -------- query?
 proc hasName*(k: KonvaShape): bool {.konva.}
