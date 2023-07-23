@@ -50,6 +50,12 @@ body {
   border-top-width: 2px !important;
 }
 
+.regions .inside{
+  overflow-x: scroll;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .tw-content img {
   max-width: 100%;
 }

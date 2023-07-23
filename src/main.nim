@@ -20,7 +20,8 @@ type
   FooterState = enum
     fsOverview
     fsColor
-    fsFont
+    fsFontFamily
+    fsFontSize
     fsBorder
 
   AppData = object
@@ -35,6 +36,8 @@ type
     selectedColor: Natural
     state: AppState
     footerState: FooterState
+    fontSize: int
+    fontFamily: string
     sidebarWidth: Natural
 
 
@@ -70,9 +73,15 @@ const
     purpleLow, blue, diomand,
     mint, green, lemon]
 
+  fontFamilies = [
+    "Vazirmatn", "cursive", "monospace",
+  ]
+
 
 var app: AppData
 app.sidebarWidth = defaultWidth
+app.fontFamily = "Vazirmatn"
+app.fontSize = 20
 
 # --- helpers ---
 
@@ -166,29 +175,25 @@ proc createNode() =
     node = newRect()
     txt = newText()
     c = colorThemes[app.selectedColor]
-    pad = 10
+    pad = app.fontSize / 2
 
   with txt:
     x = app.lastMousePos.x
     y = app.lastMousePos.y
-    fontFamily = "Vazirmatn"
+    fontFamily = app.fontFamily
     fill = c.fg
-    fontSize = 20
+    fontSize = app.fontSize
     align = $hzCenter
-    text = "سلام دوستان\nچطورید؟"
-    text = "سلام دوستان چطورید؟"
+    text = "Hello World"
     listening = false
-
 
   with node:
     x = app.lastMousePos.x - pad
     y = app.lastMousePos.y - pad
     width = txt.getClientRect.width + pad*2
     height = txt.getClientRect.height + pad*2
-    strokeWidth = 2
     fill = c.bg
-    cornerRadius = 10
-
+    cornerRadius = app.fontSize / 2
     shadowColor = c.fg
     shadowOffsetY = 6
     shadowBlur = 8
@@ -285,9 +290,35 @@ proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
         (StyleAttr.background, cstring c.bg),
         (StyleAttr.borderColor, cstring c.fg),
       )):
-        proc onclick(e: Event, v: Vnode) =
+        proc onclick =
           if selectable:
             app.selectedColor = i
+            app.footerState = fsOverview
+
+proc fontSizeSelectBtn(size: int, selectable: bool): Vnode =
+  buildHTML:
+    tdiv(class = "px-1 h-100 d-flex align-items-center " &
+      iff(size == app.fontSize, "bg-light")):
+      tdiv(class = "mx-2 pointer"):
+        span:
+          text $size
+
+        proc onclick =
+          if selectable:
+            app.fontSize = size
+            app.footerState = fsOverview
+
+proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
+  buildHTML:
+    tdiv(class = "px-1 h-100 d-flex align-items-center " &
+      iff(name == app.fontFamily, "bg-light")):
+      tdiv(class = "mx-2 pointer"):
+        span:
+          text name
+
+        proc onclick =
+          if selectable:
+            app.fontFamily = name
             app.footerState = fsOverview
 
 
@@ -305,39 +336,59 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle d-flex align-items-center"):
-        case app.footerState
-        of fsOverview:
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "Color: "
-            colorSelectBtn(-1, colorThemes[app.selectedColor], false)
+      # TODO add zoom in/out buttons
 
-            proc onclick =
-              app.footerState = fsColor
-              redraw()
+      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
+        tdiv(class = "inside h-100 d-flex align-items-center", style = style(
+            StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
+          case app.footerState
+          of fsOverview:
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              bold: text "Color: "
+              colorSelectBtn(-1, colorThemes[app.selectedColor], false)
 
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "Font: "
-            span: text "Vazirmatn"
+              proc onclick =
+                app.footerState = fsColor
+                redraw()
 
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "20px"
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              bold: text "Font: "
+              span: text app.fontFamily
 
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "connection: "
+              proc onclick =
+                app.footerState = fsFontFamily
+                redraw()
 
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "style "
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              span: text $app.fontSize
 
-          tdiv(class = "d-inline-flex mx-2 pointer"):
-            span: text "border "
+              proc onclick =
+                app.footerState = fsFontSize
+                redraw()
 
-        of fsColor:
-          for i, ct in colorThemes:
-            colorSelectBtn(i, ct, true)
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              bold: text "connection: "
 
-        else:
-          text "not defined"
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              span: text "style "
+
+            tdiv(class = "d-inline-flex mx-2 pointer"):
+              span: text "border "
+
+          of fsFontFamily:
+            for f in fontFamilies:
+              fontFamilySelectBtn(f, true)
+
+          of fsFontSize:
+            for s in countup(10, 100, 2):
+              fontSizeSelectBtn(s, true)
+
+          of fsColor:
+            for i, ct in colorThemes:
+              colorSelectBtn(i, ct, true)
+
+          else:
+            text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
