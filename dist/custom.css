@@ -8,10 +8,6 @@
   cursor: pointer;
 }
 
-body {
-  overflow: hidden;
-}
-
 .color-square {
   width: 26px;
   height: 26px;
