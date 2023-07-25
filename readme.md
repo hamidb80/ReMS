@@ -35,7 +35,11 @@ Remembering management system!
 ## Helpful contents
 
 ### convert pdf to image
-user `imagemagic`
+user [`imagemagic`](https://linuxhint.com/imagemagick-convert-pdf-png/)
+
+[help 1](https://stackoverflow.com/questions/32466112/imagemagick-convert-pdf-to-jpeg-failedtoexecutecommand-gswin32c-exe-pdfdel)
+
+[help 2](https://imagemagick.org/Usage/windows/#conversion)
 
 ### store meta data
 https://konvajs.org/api/Konva.Node.html#setAttr
@@ -51,3 +55,10 @@ https://gist.github.com/Martin-Pitt/2756cf86dca90e179b4e75003d7a1a2b
 
 ### Touch
 https://konvajs.org/docs/sandbox/Multi-touch_Scale_Stage.html
+
+### File Uploader UI
+https://design.gs.com/components/input/file-upload
+
+### File upload with progress using Axios
+https://stackoverflow.com/questions/41088022/how-to-get-onuploadprogress-in-axios
+ 

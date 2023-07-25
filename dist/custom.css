@@ -50,10 +50,14 @@ body {
   border-top-width: 2px !important;
 }
 
-.regions .inside{
+.regions .inside {
   overflow-x: scroll;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.regions .inside::-webkit-scrollbar {
+  display: none;
 }
 
 .tw-content img {
@@ -134,4 +138,23 @@ figure {
 
 .tw-content .list-latin {
   list-style-type: lower-latin;
+}
+
+/* ------------------- */
+.border-dashed{
+  border-style: dashed !important;
+}
+
+.grab{
+  cursor: grab;
+}
+
+.dropper {
+  height: 400px;
+  width: 50vw;
+  max-height: 30vh;
+}
+
+.limited-progress{
+  width: 30%;
 }

@@ -401,23 +401,24 @@ proc off*(k: KonvaObject, event: Str) {.konva.}
 proc fire*(k: KonvaObject, event: Str, data: JsObject = nil,
     bubles = true) {.konva.}
 
-proc addName*(k: KonvaShape, name: Str) {.konva.}
-proc removeName*(k: KonvaShape, name: Str) {.konva.}
-proc clearCache*(k: KonvaShape) {.konva.}
+proc addName*(k: KonvaObject, name: Str) {.konva.}
+proc removeName*(k: KonvaObject, name: Str) {.konva.}
+proc clearCache*(k: KonvaObject) {.konva.}
+proc cache*(k: KonvaObject) {.konva.}
 
-proc startDrag*(k: KonvaShape) {.konva.}
-proc stopDrag*(k: KonvaShape) {.konva.}
+proc startDrag*(k: KonvaObject) {.konva.}
+proc stopDrag*(k: KonvaObject) {.konva.}
 
-proc rotate*[N: Number](k: KonvaShape, deg: N) {.konva.}
+proc rotate*[N: Number](k: KonvaObject, deg: N) {.konva.}
 
-proc show*(k: KonvaShape) {.konva.}
-proc hide*(k: KonvaShape) {.konva.}
+proc show*(k: KonvaObject) {.konva.}
+proc hide*(k: KonvaObject) {.konva.}
 
-proc move(k: KonvaShape, v: Vector) {.konva.}
-proc moveDown*(k: KonvaShape) {.konva.}
-proc moveToBottom*(k: KonvaShape) {.konva.}
-proc moveUp*(k: KonvaShape) {.konva.}
-proc moveToTop*(k: KonvaShape) {.konva.}
+proc move(k: KonvaObject, v: Vector) {.konva.}
+proc moveDown*(k: KonvaObject) {.konva.}
+proc moveToBottom*(k: KonvaObject) {.konva.}
+proc moveUp*(k: KonvaObject) {.konva.}
+proc moveToTop*(k: KonvaObject) {.konva.}
 
 proc draw*(l: Layer) {.konva.}
 proc batchDraw*(l: Layer) {.konva.}

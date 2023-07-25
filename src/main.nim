@@ -1,5 +1,4 @@
 import std/[with, math, options, lenientops, strformat, random]
-from std/jsffi import JsObject
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -38,6 +37,7 @@ type
     footerState: FooterState
     fontSize: int
     fontFamily: string
+    fontStyle: FontStyle # TODO apply this
     sidebarWidth: Natural
 
 
@@ -463,6 +463,14 @@ proc createDom*(data: RouterData): VNode =
 
           footer(class = "mt-2"):
             discard
+
+document.addEventListener "paste", proc(pasteEvent: Event) =
+  let file = pasteEvent.clipboardData.files[0]
+
+  # if file && file.type.startsWith("image"):
+  #   imageDataUrl(file).then(onPasteOnScreen)
+  # else:
+  #   console.log("WTF")
 
 when isMainModule:
   echo "compiled at: ", CompileDate, ' ', CompileTime

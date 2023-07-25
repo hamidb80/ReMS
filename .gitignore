@@ -1,7 +1,8 @@
 .vscode
 
+dist/script*.js
 dist/script.js
-dist/index.html
+dist/*.html
 dist/pics/
 dist/pages/
 
