@@ -10,6 +10,15 @@ type
   ColorTheme = tuple
     bg, fg: string
 
+  AppState = enum
+    asInit
+    asSelectIcon
+
+  TagAbstract = object
+    name: string
+    theme: ColorTheme
+    hasValue, showName: bool
+
 const
   white: ColorTheme = ("#ffffff", "#889bad")
   smoke = ("#ecedef", "#778696")
@@ -27,7 +36,7 @@ const
   green = ("#cbfbad", "#479417")
   lemon = ("#e6f8a0", "#617900")
 
-  icons  = [
+  icons = [
     "fa-hashtag",
     "fa-clock",
     "fa-stopwatch",
@@ -144,9 +153,24 @@ const
     "fa-fire",
     "fa-file-lines",
     "fa-bell",
-    "fa-filter",]
+    "fa-filter", ]
 
-func tag(name: string, c: ColorTheme, selected: bool): VNode =
+  none = -1
+
+var
+  state = asInit
+  selectedTagI = none
+  tags = @[
+
+  ]
+
+
+func tag(
+  name: string,
+  c: ColorTheme,
+  selected: bool,
+  onclick: proc(icon: string)
+): VNode =
   buildHtml:
     tdiv(class = "badge border-1 solid-border rounded-pill mx-2 my-1 pointer",
       style = style(
@@ -182,52 +206,61 @@ proc createDom: Vnode =
         text "Config"
 
       tdiv(class = "form-control"):
-        # name
-        tdiv(class = "form-group d-inline-block mx-2"):
-          label(class = "form-check-label"):
-            text "name: "
-
-          input(`type` = "text", class = "form-control tag-input")
-
-        # icon
         if state == asChooseIcon:
           tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
             for c in icons:
               tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
                 italic(class = "m-2 fa-solid " & c)
+
         else:
-          discard
+          # name
+          tdiv(class = "form-group d-inline-block mx-2"):
+            label(class = "form-check-label"):
+              text "name: "
 
-        # show name
-        tdiv(class = "form-check form-switch"):
-          input(class = "form-check-input", `type` = "checkbox")
-          label(class = "form-check-label"):
-            text "show name"
+            input(`type` = "text", class = "form-control tag-input")
 
-        # has value
-        tdiv(class = "form-check form-switch"):
-          input(class = "form-check-input", `type` = "checkbox")
-          label(class = "form-check-label"):
-            text "has value"
+          # icon
+          tdiv(class = "form-check"):
+            label(class = "form-check-label"):
+              text "icon: "
 
-        tdiv(class = "form-group d-inline-block mx-2"):
-          label(class = "form-check-label"):
-            text "background color: "
+            tdiv(class = "d-inline-block"):
+              tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
+                italic(class = "m-2 fa-solid " & c)
 
-          input(`type` = "color", class = "form-control")
+          # show name
+          tdiv(class = "form-check form-switch"):
+            input(class = "form-check-input", `type` = "checkbox")
+            label(class = "form-check-label"):
+              text "show name"
 
-        tdiv(class = "form-group d-inline-block mx-2"):
-          label(class = "form-check-label"):
-            text "foreground color: "
+          # has value
+          tdiv(class = "form-check form-switch"):
+            input(class = "form-check-input", `type` = "checkbox")
+            label(class = "form-check-label"):
+              text "has value"
 
-          input(`type` = "color", class = "form-control")
+          tdiv(class = "form-group d-inline-block mx-2"):
+            label(class = "form-check-label"):
+              text "background color: "
+
+            input(`type` = "color", class = "form-control")
+
+          tdiv(class = "form-group d-inline-block mx-2"):
+            label(class = "form-check-label"):
+              text "foreground color: "
+
+            input(`type` = "color", class = "form-control")
 
 
-      # ------------- demo ----------------
+        # ------------- demo ----------------
 
-      # if select == none:
-      #   btn "add"
-      # else: "update"
+        if selectedTagI == none:
+          btn "add"
+        else: 
+          btn "update"
+
 
 when isMainModule:
   setRenderer createDom

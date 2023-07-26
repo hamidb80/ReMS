@@ -24,7 +24,7 @@ func index*(pageTitle: string): VNode =
       extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
       extJs "./script.js", true
 
-      extCss "https://bootswatch.com/5/flatly/bootstrap.min.css"
+      extCss "https://bootswatch.com/5/litera/bootstrap.min.css"
       extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       extCss "./custom.css"
 
