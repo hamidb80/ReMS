@@ -19,10 +19,13 @@ requires "caster"
 # Tasks
 
 task genscript, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/main"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/pages/main"
 
 task genas, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/assets"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/pages/assets"
+
+task gentg, "generate script.js file in ./dist":
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/pages/tags"
 
 task html, "generate index.html ./dist":
-  exec "nim r src/page.nim"
+  exec "nim r src/pages/html.nim"

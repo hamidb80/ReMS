@@ -49,6 +49,24 @@ func assets*(pageTitle: string): VNode =
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
+func tags*(pageTitle: string): VNode =
+  buildHtml html:
+    head:
+      meta(charset = "UTF-8")
+      meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
+      title: text pageTitle
+
+      extJs "https://unpkg.com/konva@9/konva.min.js"
+      extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
+      extJs "./script-tags.js", true
+
+      extCss "https://bootswatch.com/5/litera/bootstrap.min.css"
+      extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      extCss "./custom.css"
+
+    body(class = "bg-light"):
+      tdiv(id = "ROOT")
+
 
 when isMainModule:
   writeFile "./dist/index.html":
@@ -56,3 +74,6 @@ when isMainModule:
 
   writeFile "./dist/assets.html":
     $ assets "asset manager"
+
+  writeFile "./dist/tags.html":
+    $ tags "tag manager"

@@ -62,3 +62,32 @@ https://design.gs.com/components/input/file-upload
 ### File upload with progress using Axios
 https://stackoverflow.com/questions/41088022/how-to-get-onuploadprogress-in-axios
  
+### Paste
+- https://www.techiedelight.com/paste-image-from-clipboard-using-javascript/
+- https://github.com/AlejandroAkbal/Paste-Image-to-Download
+
+```js
+function applyPasteEvent(el) {
+  el.onpaste = (pasteEvent) => {
+    var file = pasteEvent.clipboardData.files[0]
+
+    if (file.type.startsWith("image")) {
+      var reader = new FileReader()
+
+      reader.onload = e => {
+        fetch("/save-clipboard",
+          {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: e.target.result,
+          }
+        ).then(res => {
+          res.text().then(t => { el.value = t })
+        })
+      }
+
+      reader.readAsDataURL(file)
+    }
+  }
+}
+```

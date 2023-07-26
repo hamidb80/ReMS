@@ -154,3 +154,12 @@ figure {
 .limited-progress{
   width: 30%;
 }
+
+.tag-input{
+  width: 8rem !important;
+}
+
+.solid-border{
+  border-style: solid;
+  border-width: 1px;
+}

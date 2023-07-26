@@ -3,7 +3,7 @@ import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import hotkeys, browser
+import ../[hotkeys, browser]
 
 
 proc dropHandler(ev: Event) =
@@ -35,17 +35,20 @@ type
     gt   #  >
     like #  %
 
-func tagSearch(name: string, compareOperator: Option[CmpOperator]): VNode =
+func tagSearch(name, color: string,
+  # TODO inputType = int/string/...
+  compareOperator: Option[CmpOperator]): VNode =
+
   buildHtml:
-    tdiv(class = "form-group"):
+    tdiv(class = "form-group d-inline-block mx-2"):
       tdiv(class = "input-group mb-3"):
         span(class = "input-group-text"):
-          italic(class = "fa-solid fa-hashtag")
+          italic(class = "fa-solid fa-hashtag me-2")
+          span:
+            text name
 
         if issome compareOperator:
-          input(class = "form-control", `type` = "text", readonly = "")
-
-          span(class = "input-group-text"):
+          button(class = "input-group-text pointer btn btn-outline-primary"):
             let ic =
               case get compareOperator
               of lt: "fa-solid fa-less-than"
@@ -58,13 +61,9 @@ func tagSearch(name: string, compareOperator: Option[CmpOperator]): VNode =
 
             italic(class = ic)
 
-          input(class = "form-control", `type` = "text")
+          input(class = "form-control tag-input", `type` = "text")
 
-        else:
-          input(class = "form-control", `type` = "text")
-
-
-        tdiv(class = "input-group-text btn btn-danger d-flex align-items-center justify-content-center"):
+        tdiv(class = "input-group-text btn btn-outline-danger d-flex align-items-center justify-content-center p-2"):
           italic(class = "fa-solid fa-xmark")
 
 proc createDom: Vnode =
@@ -72,8 +71,8 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-light"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
+          italic(class = "fa-solid fa-box fa-xl me-3 ms-1")
           text "Assets"
-          italic(class = "fa-solid fa-box fa-xl mx-2")
 
     tdiv(class = "p-4 m-4"):
       h6(class = "mb-3"):
@@ -82,11 +81,12 @@ proc createDom: Vnode =
 
       tdiv(class = "rounded p-3 rounded bg-white d-flex flex-column align-items-center justify-content-center"):
         tdiv(class = "form-group w-100"):
-          input(class = "form-control", `type` = "file", placeholder = "select a file"):
+          input(class = "form-control", `type` = "file",
+              placeholder = "select a file"):
             proc oninput(e: Event, v: VNode) =
               discard
-        
-        tdiv(class="my-3")
+
+        tdiv(class = "my-3")
 
         tdiv(class = """dropper bg-light border-secondary grab
               border border-4 border-dashed rounded-2 user-select-none
@@ -128,18 +128,30 @@ proc createDom: Vnode =
           italic(class = "fa-solid fa-hashtag me-2")
           text "search by tags"
 
-        tagSearch("id", some neq)
-        tagSearch("extention", some lte)
-        tagSearch("time", none CmpOperator)
+        tagSearch("id", "red", some neq)
+        tagSearch("extention", "black", some lte)
+        tagSearch("time", "gray", none CmpOperator)
 
         button(class = "btn btn-success w-100 my-2"):
           text "add tag"
           italic(class = "fa-solid fa-plus ms-2")
 
+        h6(class = "mb-3"):
+          italic(class = "fa-solid fa-arrow-up-wide-short me-2")
+          text "order results by"
+
+      tdiv(class = "form-group"):
         button(class = "btn btn-primary w-100"):
           text "search"
           italic(class = "fa-solid fa-magnifying-glass ms-2")
 
+      tdiv(class = ""):
+        # switch list/block view
+        for i in 0..10:
+          discard # files uploaded
+
+
+      tdiv(class = "form-group"):
         button(class = "btn btn-warning w-100 mt-3"):
           text "load more"
           italic(class = "fa-solid fa-angles-right ms-2")

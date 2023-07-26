@@ -3,8 +3,8 @@ import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import konva, hotkeys, browser
-import ui, canvas, conventions
+import ../[konva, hotkeys, browser]
+import ../[ui, canvas, conventions]
 
 # TODO use FontFaceObserver
 
