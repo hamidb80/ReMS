@@ -18,6 +18,9 @@ proc dropHandler(ev: Event) =
   #   for i, file in ev.dataTransfer.files:
   #     console.log file
 
+# TODO add "order by"
+# TODO make tag searcher common in all modules [graph, assets, notes]
+
 func progressbar(percent: float): Vnode =
   buildHtml:
     tdiv(class = "progress limited-progress"):
@@ -68,7 +71,7 @@ func tagSearch(name, color: string,
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
-    nav(class = "navbar navbar-expand-lg bg-light"):
+    nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
           italic(class = "fa-solid fa-box fa-xl me-3 ms-1")
@@ -114,6 +117,8 @@ proc createDom: Vnode =
         tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
           text "Cras justo odio"
           progressbar 50.0
+          # TODO add cancel button
+
 
         tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
           text "Dapibus ac facilisis in"
@@ -134,6 +139,7 @@ proc createDom: Vnode =
 
         button(class = "btn btn-success w-100 my-2"):
           text "add tag"
+          # TODO remove this, add all tags below
           italic(class = "fa-solid fa-plus ms-2")
 
         h6(class = "mb-3"):
