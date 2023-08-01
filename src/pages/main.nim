@@ -210,11 +210,12 @@ proc createNode() =
   node.on "mouseleave", proc(ke: JsObject) =
     window.document.body.style.cursor = ""
 
-  node.on "click", proc(ke: JsObject) =
+  node.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
     app.state = asMessagesView
-    console.log ke
     node.fill = "red"
     txt.fill = "white"
+    # TODO assign id to node with the proc `id=` 
+    # and map it to a tables of properties
     redraw()
 
   console.log node
