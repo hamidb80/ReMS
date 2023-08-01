@@ -43,7 +43,8 @@ type
 
 const
   # TODO define maximum map [boarders to not go further if not nessesarry]
-  ⌊scale⌋ = 0.01 # minimum amount of scale
+  ⌊scale⌋ = 0.10 # minimum amount of scale
+  ⌈scale⌉ = 10.0
 
   # TODO: read these from css
   defaultWidth = 500
@@ -108,6 +109,9 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
+func applyRange[T](value: T, rng: Slice[T]): T =
+  min(max(value, rng.a), rng.b)
+
 proc moveStage(v: Vector) =
   app.stage.x = app.stage.x + v.x
   app.stage.y = app.stage.y + v.y
@@ -116,7 +120,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
     s = ||app.stage.scale
-    s′ = max(s + Δscale, ⌊scale⌋)
+    s′ = applyRange(s + Δscale, ⌊scale⌋ .. ⌈scale⌉)
 
     w = app.stage.width
     h = app.stage.height
@@ -465,7 +469,8 @@ proc createDom*(data: RouterData): VNode =
             discard
 
 document.addEventListener "paste", proc(pasteEvent: Event) =
-  let file = pasteEvent.clipboardData.files[0]
+  discard
+  # let file = pasteEvent.clipboardData.files[0]
 
   # if file && file.type.startsWith("image"):
   #   imageDataUrl(file).then(onPasteOnScreen)

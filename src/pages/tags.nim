@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, random]
+import std/[with, strutils, sequtils, options]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -14,177 +14,133 @@ type
     asInit
     asSelectIcon
 
-  TagAbstract = object
-    name: string
+  Tag = object
+    name, icon, value: string
     theme: ColorTheme
     hasValue, showName: bool
 
+
 const
   white: ColorTheme = ("#ffffff", "#889bad")
-  smoke = ("#ecedef", "#778696")
-  road = ("#dfe2e4", "#617288")
-  yellow = ("#fef5a6", "#958505")
-  orange = ("#ffdda9", "#a7690e")
-  red = ("#ffcfc9", "#b26156")
-  peach = ("#fbc4e2", "#af467e")
-  pink = ("#f3d2ff", "#7a5a86")
-  purple = ("#dac4fd", "#7453ab")
-  purpleLow = ("#d0d5fe", "#4e57a3")
-  blue = ("#b6e5ff", "#2d7aa5")
-  diomand = ("#adefe3", "#027b64")
-  mint = ("#c4fad6", "#298849")
-  green = ("#cbfbad", "#479417")
-  lemon = ("#e6f8a0", "#617900")
+  smoke: ColorTheme = ("#ecedef", "#778696")
+  road: ColorTheme = ("#dfe2e4", "#617288")
+  yellow: ColorTheme = ("#fef5a6", "#958505")
+  orange: ColorTheme = ("#ffdda9", "#a7690e")
+  red: ColorTheme = ("#ffcfc9", "#b26156")
+  peach: ColorTheme = ("#fbc4e2", "#af467e")
+  pink: ColorTheme = ("#f3d2ff", "#7a5a86")
+  purple: ColorTheme = ("#dac4fd", "#7453ab")
+  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
+  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
+  diomand: ColorTheme = ("#adefe3", "#027b64")
+  mint: ColorTheme = ("#c4fad6", "#298849")
+  green: ColorTheme = ("#cbfbad", "#479417")
+  lemon: ColorTheme = ("#e6f8a0", "#617900")
 
-  icons = [
-    "fa-hashtag",
-    "fa-clock",
-    "fa-stopwatch",
-    "fa-calendar",
-    "fa-user",
-    "fa-users",
-    "fa-globe",
-    "fa-heart",
-    "fa-house",
-    "fa-phone",
-    "fa-sun",
-    "fa-moon",
-    "fa-tree",
-    "fa-spa",
-    "fa-seedling",
-    "fa-plane",
-    "fa-paper-plane",
-    "fa-ruler",
-    "fa-poop",
-    "fa-gift",
-    "fa-umbrella",
-    "fa-bookmark",
-    "fa-book",
-    "fa-dna",
-    "fa-life-ring",
-    "fa-mug-saucer",
-    "fa-quote-left",
-    "fa-cookie-bite",
-    "fa-dumbbell",
-    "fa-fish",
-    "fa-shapes",
-    "fa-shield-halved",
-    "fa-note-sticky",
-    "fa-location-crosshairs",
-    "fa-city",
-    "fa-infinity",
-    "fa-skull",
-    "fa-graduation-cap",
-    "fa-question",
-    "fa-info",
-    "fa-cloud",
-    "fa-plug",
-    "fa-pen",
-    "fa-bolt",
-    "fa-check",
-    "fa-xmark",
-    "fa-atom",
-    "fa-ghost",
-    "fa-vial",
-    "fa-flask",
-    "fa-face-laugh",
-    "fa-face-smile",
-    "fa-face-meh",
-    "fa-face-sad-cry",
-    "fa-face-surprise",
-    "fa-face-angry",
-    "fa-robot",
-    "fa-feather",
-    "fa-bed",
-    "fa-code",
-    "fa-filter",
-    "fa-ellipsis",
-    "fa-cube",
-    "fa-circle-nodes",
-    "fa-apple-whole",
-    "fa-florin-sign",
-    "fa-hands-clapping",
-    "fa-hand-fist",
-    "fa-anchor",
-    "fa-microchip",
-    "fa-paperclip",
-    "fa-link",
-    "fa-star",
-    "fa-asterisk",
-    "fa-thumbtack",
-    "fa-person",
-    "fa-palette",
-    "fa-gamepad",
-    "fa-marker",
-    "fa-trophy",
-    "fa-crown",
-    "fa-recycle",
-    "fa-satellite",
-    "fa-satellite-dish",
-    "fa-road-barrier",
-    "fa-ribbon",
-    "fa-mountain",
-    "fa-mosque",
-    "fa-microphone-lines",
-    "fa-lock",
-    "fa-lock-open",
-    "fa-ice-cream",
-    "fa-hourglass-end",
-    "fa-helicopter",
-    "fa-gun",
-    "fa-gem",
-    "fa-fan",
-    "fa-explosion",
-    "fa-couch",
-    "fa-chess-knight",
-    "fa-meteor",
-    "fa-bomb",
-    "fa-triangle-exclamation",
-    "fa-radiation",
-    "fa-comment",
-    "fa-glasses",
-    "fa-lightbulb",
-    "fa-compass",
-    "fa-location-dot",
-    "fa-map-pin",
-    "fa-key",
-    "fa-snowflake",
-    "fa-stairs",
-    "fa-fire",
-    "fa-file-lines",
-    "fa-bell",
-    "fa-filter", ]
-
-  none = -1
+  icons = splitlines staticRead "./icons.txt"
+  defaultIcon = icons[0]
+  noIndex = -1
+  defaultTag = Tag(
+    icon: defaultIcon,
+    theme: road,
+    showName: true,
+    name: "empty")
 
 var
   state = asInit
-  selectedTagI = none
+  currentTag = defaultTag
+  selectedTagI = noIndex
   tags = @[
+    Tag(name: "Idea",
+      icon: "fa-lightbulb",
+      theme: pink,
+      hasValue: false, showName: true),
+    Tag(name: "Critical",
+      icon: "fa-gun",
+      theme: red,
+      hasValue: false, showName: true),
+    Tag(name: "Date",
+      icon: "fa-clock",
+      theme: blue,
+      hasValue: true, showName: false),
+    Tag(name: "Session",
+      icon: "fa-chair",
+      theme: lemon,
+      hasValue: true, showName: false)]
 
-  ]
+proc onIconSelected(icon: string) =
+  currentTag.icon = icon
+  state = asInit
 
+proc genChangeSelectedTagi(i: int): proc() =
+  proc =
+    if selectedTagI == i:
+      selectedTagI = noIndex
+      currentTag = defaultTag
+    else:
+      selectedTagI = i
+      currentTag = tags[i]
 
-func tag(
-  name: string,
-  c: ColorTheme,
+proc noop = discard
+
+proc tag(
+  t: Tag,
+  value: string,
   selected: bool,
-  onclick: proc(icon: string)
+  forceShowName: bool,
+  clickHandler: proc()
 ): VNode =
+  let showNameForce = forceShowName or t.showName
+
   buildHtml:
-    tdiv(class = "badge border-1 solid-border rounded-pill mx-2 my-1 pointer",
+    tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
+      badge border-1 solid-border rounded-pill pointer""",
+      onclick = clickHandler,
       style = style(
-      (StyleAttr.background, c.bg.cstring),
-      (StyleAttr.color, c.fg.cstring),
-      (StyleAttr.borderColor, c.fg.cstring),
+      (StyleAttr.background, t.theme.bg.cstring),
+      (StyleAttr.color, t.theme.fg.cstring),
+      (StyleAttr.borderColor, t.theme.fg.cstring),
     )):
-      italic(class = "fa-solid fa-hashtag me-2")
-      span:
-        text name
+      italic(class = "fa-solid " & t.icon)
+
+      if showNameForce or t.hasValue:
+        span(dir = "auto", class = "ms-2"):
+          if showNameForce:
+            text t.name
+
+          if showNameForce and t.hasValue:
+            text ": "
+
+          if t.hasValue:
+            text value
+
+proc classes(list: openArray[tuple[add: bool, class: string]]): string =
+  for (add, class) in list:
+    if add:
+      result.add ' '
+      result.add class
+
+proc checkbox(checked: bool, changeHandler: proc(b: bool)): VNode =
+  result = buildHtml:
+    input(class = "form-check-input", `type` = "checkbox"):
+      proc oninput(e: Event, v: Vnode) =
+        changeHandler e.target.checked
+
+  if checked:
+    result.setAttr "checked"
+
+
+proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
+  buildHtml:
+    tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-1 p-2"):
+      italic(class = "m-2 fa-solid " & icon)
+      proc onclick =
+        setIcon icon
+
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
-    nav(class = "navbar navbar-expand-lg bg-light"):
+    nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
           italic(class = "fa-solid fa-hashtag fa-xl me-3 ms-1")
@@ -196,9 +152,9 @@ proc createDom: Vnode =
         text "All Tags"
 
       tdiv(class = "d-flex flex-row"):
-        tag("hey", lemon, true)
-        tag("hey", blue, false)
-        tag("hey", peach, false)
+        for i, t in tags:
+          tag(t, "val", t.icon == currentTag.icon, true,
+              genChangeSelectedTagi i)
 
     tdiv(class = "p-4 mx-4 my-2"):
       h6(class = "mb-3"):
@@ -206,11 +162,10 @@ proc createDom: Vnode =
         text "Config"
 
       tdiv(class = "form-control"):
-        if state == asChooseIcon:
+        if state == asSelectIcon:
           tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
             for c in icons:
-              tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
-                italic(class = "m-2 fa-solid " & c)
+              iconSelectionBLock(c, onIconSelected)
 
         else:
           # name
@@ -218,7 +173,10 @@ proc createDom: Vnode =
             label(class = "form-check-label"):
               text "name: "
 
-            input(`type` = "text", class = "form-control tag-input")
+            input(`type` = "text", class = "form-control tag-input",
+                value = currentTag.name):
+              proc oninput(e: Event, v: Vnode) =
+                currentTag.name = $e.target.value
 
           # icon
           tdiv(class = "form-check"):
@@ -227,39 +185,64 @@ proc createDom: Vnode =
 
             tdiv(class = "d-inline-block"):
               tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
-                italic(class = "m-2 fa-solid " & c)
+                italic(class = "m-2 fa-solid " & currentTag.icon)
+
+              proc onclick =
+                state = asSelectIcon
 
           # show name
           tdiv(class = "form-check form-switch"):
-            input(class = "form-check-input", `type` = "checkbox")
+            checkbox(currentTag.showName,
+              proc(b: bool) =
+              currentTag.showName = b)
+
             label(class = "form-check-label"):
               text "show name"
 
           # has value
           tdiv(class = "form-check form-switch"):
-            input(class = "form-check-input", `type` = "checkbox")
+            checkbox(currentTag.hasValue,
+              proc (b: bool) =
+              currentTag.hasValue = b)
+
             label(class = "form-check-label"):
               text "has value"
 
+          # color theme
+          # background
           tdiv(class = "form-group d-inline-block mx-2"):
             label(class = "form-check-label"):
               text "background color: "
 
-            input(`type` = "color", class = "form-control")
+            input(`type` = "color",
+                class = "form-control",
+                value = currentTag.theme.bg):
+              proc oninput(e: Event, v: Vnode) =
+                currentTag.theme.bg = $e.target.value
 
+          # foreground
           tdiv(class = "form-group d-inline-block mx-2"):
             label(class = "form-check-label"):
               text "foreground color: "
 
-            input(`type` = "color", class = "form-control")
+            input(`type` = "color",
+                class = "form-control",
+                value = currentTag.theme.fg):
+              proc oninput(e: Event, v: Vnode) =
+                currentTag.theme.fg = $e.target.value
 
+        # demo
+        tdiv:
+          tag(currentTag, "val", false, false, noop)
 
-        # ------------- demo ----------------
-
-        if selectedTagI == none:
-          btn "add"
-        else: 
-          btn "update"
+        if selectedTagI == noIndex:
+          button(class = "btn btn-success w-100 mt-2 mb-4"):
+            text "add"
+            italic(class="fa-solid mx-2 fa-plus")
+        else:
+          button(class = "btn btn-primary w-100 mt-2 mb-4"):
+            text "update"
+            italic(class="fa-solid mx-2 fa-repeat")
 
 
 when isMainModule:
