@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, random]
+import std/[with, math, options, lenientops, strformat, random, sets, tables]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -23,49 +23,65 @@ type
     fsFontSize
     fsBorder
 
+  UUID = string # TODO distinct string + hash
+
+  Graph[T] = Table[T, seq[T]]
+
   AppData = object
     stage: Stage
-    shapeLayer, connectionLayer: Layer
+    shapeLayer: Layer
+    # connectionLayer: Layer
     transformer: Transformer
-    selectedObject: Option[KonvaObject]
+    selectedKonvaObject: Option[KonvaObject]
     lastMousePos: Vector
     leftClicked: bool
     isCtrlDown: bool
     isSpaceDown: bool
     selectedColor: Natural
     state: AppState
+    font: FontConfig
     footerState: FooterState
-    fontSize: int
-    fontFamily: string
-    fontStyle: FontStyle # TODO apply this
     sidebarWidth: Natural
+    
+    edges: Graph[UUID]
+    objects: Table[UUID, VisualNode]
+
+  FontConfig = object
+    family: string
+    size: int
+    style: FontStyle
+
+  VisualNode = object
+    id: UUID
+    text: string
+    font: FontConfig
+
 
 
 const
-  # TODO define maximum map [boarders to not go further if not nessesarry]
-  ⌊scale⌋ = 0.10 # minimum amount of scale
-  ⌈scale⌉ = 10.0
-
   # TODO: read these from css
+  # TODO define maximum map [boarders to not go further if not nessesarry]
+  minScale = 0.10 # minimum amount of scale
+  maxScale = 10.0
   defaultWidth = 500
   ciriticalWidth = 400
   minimizeWidth = 360
 
   white: ColorTheme = ("#ffffff", "#889bad")
-  smoke = ("#ecedef", "#778696")
-  road = ("#dfe2e4", "#617288")
-  yellow = ("#fef5a6", "#958505")
-  orange = ("#ffdda9", "#a7690e")
-  red = ("#ffcfc9", "#b26156")
-  peach = ("#fbc4e2", "#af467e")
-  pink = ("#f3d2ff", "#7a5a86")
-  purple = ("#dac4fd", "#7453ab")
-  purpleLow = ("#d0d5fe", "#4e57a3")
-  blue = ("#b6e5ff", "#2d7aa5")
-  diomand = ("#adefe3", "#027b64")
-  mint = ("#c4fad6", "#298849")
-  green = ("#cbfbad", "#479417")
-  lemon = ("#e6f8a0", "#617900")
+  smoke: ColorTheme = ("#ecedef", "#778696")
+  road: ColorTheme = ("#dfe2e4", "#617288")
+  yellow: ColorTheme = ("#fef5a6", "#958505")
+  orange: ColorTheme = ("#ffdda9", "#a7690e")
+  red: ColorTheme = ("#ffcfc9", "#b26156")
+  peach: ColorTheme = ("#fbc4e2", "#af467e")
+  pink: ColorTheme = ("#f3d2ff", "#7a5a86")
+  purple: ColorTheme = ("#dac4fd", "#7453ab")
+  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
+  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
+  diomand: ColorTheme = ("#adefe3", "#027b64")
+  mint: ColorTheme = ("#c4fad6", "#298849")
+  green: ColorTheme = ("#cbfbad", "#479417")
+  lemon: ColorTheme = ("#e6f8a0", "#617900")
 
   colorThemes = [
     white, smoke, road,
@@ -75,14 +91,14 @@ const
     mint, green, lemon]
 
   fontFamilies = [
-    "Vazirmatn", "cursive", "monospace",
+    "Vazirmatn", "cursive", "monospace"
   ]
 
 
-var app: AppData
+var app = AppData()
 app.sidebarWidth = defaultWidth
-app.fontFamily = "Vazirmatn"
-app.fontSize = 20
+app.font.family = "Vazirmatn"
+app.font.size = 20
 
 # --- helpers ---
 
@@ -120,7 +136,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
     s = ||app.stage.scale
-    s′ = applyRange(s + Δscale, ⌊scale⌋ .. ⌈scale⌉)
+    s′ = applyRange(s + Δscale, minScale .. maxScale)
 
     w = app.stage.width
     h = app.stage.height
@@ -139,7 +155,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   moveStage d * s′
 
 proc resetSelected =
-  reset app.selectedObject
+  reset app.selectedKonvaObject
   app.transformer.nodes = []
   app.transformer.remove
 
@@ -164,7 +180,7 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
     img.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
       stopPropagate ke
       img.draggable = true
-      app.selectedObject = some KonvaObject img
+      app.selectedKonvaObject = some KonvaObject img
       app.transformer.incl [KonvaShape img], app.shapeLayer
 
     img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
@@ -179,14 +195,14 @@ proc createNode() =
     node = newRect()
     txt = newText()
     c = colorThemes[app.selectedColor]
-    pad = app.fontSize / 2
+    pad = app.font.size / 2
 
   with txt:
     x = app.lastMousePos.x
     y = app.lastMousePos.y
-    fontFamily = app.fontFamily
+    fontFamily = app.font.family
     fill = c.fg
-    fontSize = app.fontSize
+    fontSize = app.font.size
     align = $hzCenter
     text = "Hello World"
     listening = false
@@ -197,7 +213,7 @@ proc createNode() =
     width = txt.getClientRect.width + pad*2
     height = txt.getClientRect.height + pad*2
     fill = c.bg
-    cornerRadius = app.fontSize / 2
+    cornerRadius = app.font.size / 2
     shadowColor = c.fg
     shadowOffsetY = 6
     shadowBlur = 8
@@ -212,9 +228,10 @@ proc createNode() =
 
   node.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
     app.state = asMessagesView
-    node.fill = "red"
-    txt.fill = "white"
-    # TODO assign id to node with the proc `id=` 
+    node.fill = red.bg
+    txt.fill = red.fg
+    app.selectedKonvaObject = some node.KonvaObject
+    # TODO assign id to node with the proc `id=`
     # and map it to a tables of properties
     redraw()
 
@@ -230,10 +247,6 @@ proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
 
 proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
-  if issome app.selectedObject:
-    app.selectedObject.get.draggable = false
-    resetSelected()
-
   stopPropagate ke
 
 proc mouseUpStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
@@ -303,27 +316,27 @@ proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
 proc fontSizeSelectBtn(size: int, selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
-      iff(size == app.fontSize, "bg-light")):
+      iff(size == app.font.size, "bg-light")):
       tdiv(class = "mx-2 pointer"):
         span:
           text $size
 
         proc onclick =
           if selectable:
-            app.fontSize = size
+            app.font.size = size
             app.footerState = fsOverview
 
 proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
-      iff(name == app.fontFamily, "bg-light")):
+      iff(name == app.font.family, "bg-light")):
       tdiv(class = "mx-2 pointer"):
         span:
           text name
 
         proc onclick =
           if selectable:
-            app.fontFamily = name
+            app.font.family = name
             app.footerState = fsOverview
 
 
@@ -346,6 +359,13 @@ proc createDom*(data: RouterData): VNode =
       footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
             StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
+
+          tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
+            if issome app.selectedKonvaObject:
+              italic(class = "fa-solid fa-crosshairs")
+            else:
+              italic(class = "fa-solid fa-earth-asia")
+
           case app.footerState
           of fsOverview:
             tdiv(class = "d-inline-flex mx-2 pointer"):
@@ -358,14 +378,14 @@ proc createDom*(data: RouterData): VNode =
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Font: "
-              span: text app.fontFamily
+              span: text app.font.family
 
               proc onclick =
                 app.footerState = fsFontFamily
                 redraw()
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text $app.fontSize
+              span: text $app.font.size
 
               proc onclick =
                 app.footerState = fsFontSize
@@ -533,7 +553,8 @@ when isMainModule:
     moveStage app.stage.center
 
   addHotkey "delete", proc(ev: Event, h: JsObject) =
-    app.selectedObject.get.destroy
+    console.log app.selectedKonvaObject
+    app.selectedKonvaObject.get.destroy
     app.transformer.nodes = []
 
   addHotkey "n", proc(ev: Event, h: JsObject) =

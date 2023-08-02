@@ -242,7 +242,7 @@ proc createDom: Vnode =
         else:
           button(class = "btn btn-primary w-100 mt-2 mb-4"):
             text "update"
-            italic(class="fa-solid mx-2 fa-repeat")
+            italic(class="fa-solid mx-2 fa-sync")
 
 
 when isMainModule:

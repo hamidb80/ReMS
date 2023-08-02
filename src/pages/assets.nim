@@ -74,7 +74,7 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          italic(class = "fa-solid fa-box fa-xl me-3 ms-1")
+          italic(class = "fa-solid fa-box-open fa-xl me-3 ms-1")
           text "Assets"
 
     tdiv(class = "p-4 m-4"):
@@ -110,7 +110,7 @@ proc createDom: Vnode =
             e.preventdefault
 
       h6(class = "mt-4 mb-3"):
-        italic(class = "fa-solid fa-spinner me-2")
+        italic(class = "fa-solid fa-spinner fa-spin-pulse me-2")
         text "in progress uploads"
 
       tdiv(class = "list-group mb-4"):
