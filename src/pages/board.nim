@@ -28,21 +28,28 @@ type
   Graph[T] = Table[T, seq[T]]
 
   AppData = object
+    # konva states
     stage: Stage
     shapeLayer: Layer
-    # connectionLayer: Layer
     transformer: Transformer
     selectedKonvaObject: Option[KonvaObject]
+    
+    # mouse states
     lastMousePos: Vector
     leftClicked: bool
+    
+    # keyboard states
     isCtrlDown: bool
     isSpaceDown: bool
+    
+    # app states
     selectedColor: Natural
     state: AppState
     font: FontConfig
     footerState: FooterState
     sidebarWidth: Natural
     
+    # board data
     edges: Graph[UUID]
     objects: Table[UUID, VisualNode]
 
