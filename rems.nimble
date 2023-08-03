@@ -18,6 +18,15 @@ requires "caster"
 requires "uuid4"
 
 # Tasks
+import std/[os, strutils, strformat]
+
+proc getArgs: string = 
+  let 
+    paramsAll = commandLineParams()
+    startIndex = paramsAll.find("html")
+    params = paramsAll[startIndex+1 .. ^1]
+  result = params.join " "
+
 
 task genb, "generate script.js file in ./dist":
   exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/pages/board"
@@ -29,4 +38,5 @@ task gentg, "generate script.js file in ./dist":
   exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/pages/tags"
 
 task html, "generate index.html ./dist":
-  exec "nim r src/pages/html.nim"
+  # -d:localdev 
+  exec fmt"nim {getArgs()} -d:ssl r src/pages/html.nim "

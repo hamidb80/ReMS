@@ -31,34 +31,36 @@ type
     shapeLayer: Layer
     transformer: Transformer
     selectedKonvaObject: Option[KonvaObject]
-    selectedId: Option[UUID]
-    
+    selectedVisualNode: Option[VisualNode]
+
     # mouse states
     lastMousePos: Vector
     leftClicked: bool
-    
+
     # keyboard states
     isCtrlDown: bool
     isSpaceDown: bool
-    
+
     # app states
-    selectedColor: Natural
+    selectedThemeIndex: Natural
     state: AppState
     font: FontConfig
     footerState: FooterState
     sidebarWidth: Natural
-    
+
     # board data
-    edges: Graph[UUID]
-    objects: Table[UUID, VisualNode]
+    edges: Graph[cstring]
+    objects: Table[cstring, VisualNode]
 
   FontConfig = object
     family: string
     size: int
+    lineHeight: float # TODO apply
     style: FontStyle
 
   VisualNode = ref object
     id: cstring
+    theme: ColorTheme
     text: cstring
     font: FontConfig
     konvaNode: Group
@@ -98,14 +100,95 @@ const
     mint, green, lemon]
 
   fontFamilies = [
-    "Vazirmatn", "cursive", "monospace"
-  ]
+    "Vazirmatn", "cursive", "monospace"]
 
 
 var app = AppData()
 app.sidebarWidth = defaultWidth
 app.font.family = "Vazirmatn"
 app.font.size = 20
+
+
+proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
+  with box:
+    fill = theme.bg
+    shadowColor = theme.fg
+    shadowOffsetY = 6
+    shadowBlur = 8
+    shadowOpacity = 0.2
+
+  with txt:
+    fill = theme.fg
+
+proc applyFont(txt: KonvaObject, font: FontConfig) =
+  with txt:
+    fontFamily = font.family
+    fontSize = font.size
+
+proc setText(v: VisualNode, t: cstring) =
+  v.konvaNode.find1("Text").text = t
+
+proc redrawSizeNode(v: KonvaObject, font: FontConfig) =
+  let
+    node = v.find1 "Rect"
+    txt = v.find1 "Text"
+    pad = font.size / 2
+
+  with txt:
+    applyFont font
+
+  with node:
+    x = -pad
+    y = -pad
+    width = txt.width + pad*2
+    height = txt.height + pad*2
+    cornerRadius = pad
+
+proc getFocusedFont(): FontConfig =
+  if issome app.selectedVisualNode:
+    app.selectedVisualNode.get.font
+  else:
+    app.font
+
+proc setFocusedFontFamily(fn: string) =
+  if issome app.selectedVisualNode:
+    let v = app.selectedVisualNode.get
+    v.font.family = fn
+    redrawSizeNode v.konvaNode, v.font
+  else:
+    app.font.family = fn
+
+proc setFocusedFontSize(s: int) =
+  if issome app.selectedVisualNode:
+    app.selectedVisualNode.get.font.size = s
+
+    let v = app.selectedVisualNode.get
+    v.font.size = s
+    redrawSizeNode v.konvaNode, v.font
+  else:
+    app.font.size = s
+
+
+proc getFocusedTheme: ColorTheme =
+  if issome app.selectedVisualNode:
+    app.selectedVisualNode.get.theme
+  else:
+    colorThemes[app.selectedThemeIndex]
+
+proc setFocusedTheme(themeIndex: int) =
+  if issome app.selectedVisualNode:
+    let
+      c = colorThemes[themeIndex]
+      v = app.selectedVisualNode.get
+      box = v.konvaNode.find1("Rect")
+      txt = v.konvaNode.find1("Text")
+
+    v.theme = c
+    applyTheme txt, box, c
+
+  else:
+    app.selectedThemeIndex = themeIndex
+
 
 # --- helpers ---
 
@@ -167,7 +250,7 @@ proc resetSelected =
   app.transformer.remove
 
 proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
-  t.nodes = objs
+  # t.nodes = objs
   layer.add t
   layer.batchDraw
 
@@ -202,40 +285,32 @@ proc createNode =
     wrapper = newGroup()
     node = newRect()
     txt = newText()
-    vn = VisualNode(text: "Hello World")
-    
-    uid = uuid4()
-    theme = colorThemes[app.selectedColor]
-    pad = app.font.size / 2
+    vn = VisualNode()
+
+    uid = cstring $uuid4()
+    theme = colorThemes[app.selectedThemeIndex]
+
+  with vn:
+    font = app.font
+    text = "Hello"
+    theme = colorThemes[app.selectedThemeIndex]
 
   with txt:
     x = 0
     y = 0
-    fontFamily = app.font.family
-    fill = theme.fg
-    fontSize = app.font.size
     align = $hzCenter
-    text = vn.text
     listening = false
-
-  with node:
-    x = -pad
-    y = -pad
-    width = txt.getClientRect.width + pad*2
-    height = txt.getClientRect.height + pad*2
-    fill = theme.bg
-    cornerRadius = app.font.size / 2
-    shadowColor = theme.fg
-    shadowOffsetY = 6
-    shadowBlur = 8
-    shadowOpacity = 0.2
+    text = vn.text
 
   with wrapper:
-    id = cstring $uid
+    id = uid
     x = app.lastMousePos.x
     y = app.lastMousePos.y
     add node
     add txt
+
+  redrawSizeNode wrapper, vn.font
+  applyTheme txt, node, vn.theme
 
   node.on "mouseover", proc(ke: JsObject) =
     window.document.body.style.cursor = "pointer"
@@ -244,12 +319,7 @@ proc createNode =
     window.document.body.style.cursor = ""
 
   node.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-    app.state = asMessagesView
-    node.fill = red.bg
-    txt.fill = red.fg
-    app.selectedKonvaObject = some node.KonvaObject
-    app.selectedId = some uid
-    txt.text = cstring txt.text & "d"
+    app.selectedVisualNode = some vn
     redraw()
 
   vn.konvaNode = wrapper
@@ -319,14 +389,14 @@ discard getMsg()
 proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
-      iff(i == app.selectedColor, "bg-light")):
+      iff(i == app.selectedThemeIndex, "bg-light")):
       tdiv(class = "color-square mx-2 pointer", style = style(
         (StyleAttr.background, cstring c.bg),
         (StyleAttr.borderColor, cstring c.fg),
       )):
         proc onclick =
           if selectable:
-            app.selectedColor = i
+            setFocusedTheme i
             app.footerState = fsOverview
 
 proc fontSizeSelectBtn(size: int, selectable: bool): Vnode =
@@ -339,7 +409,7 @@ proc fontSizeSelectBtn(size: int, selectable: bool): Vnode =
 
         proc onclick =
           if selectable:
-            app.font.size = size
+            setFocusedFontSize size
             app.footerState = fsOverview
 
 proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
@@ -352,7 +422,7 @@ proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
 
         proc onclick =
           if selectable:
-            app.font.family = name
+            setFocusedFontFamily name
             app.footerState = fsOverview
 
 
@@ -377,16 +447,20 @@ proc createDom*(data: RouterData): VNode =
             StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
 
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
-            if issome app.selectedKonvaObject:
+            if issome app.selectedVisualNode:
               italic(class = "fa-solid fa-crosshairs")
             else:
               italic(class = "fa-solid fa-earth-asia")
 
           case app.footerState
           of fsOverview:
+            let
+              font = getFocusedFont()
+              theme = getFocusedTheme()
+
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Color: "
-              colorSelectBtn(-1, colorThemes[app.selectedColor], false)
+              colorSelectBtn(-1, theme, false)
 
               proc onclick =
                 app.footerState = fsColor
@@ -394,14 +468,14 @@ proc createDom*(data: RouterData): VNode =
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Font: "
-              span: text app.font.family
+              span: text font.family
 
               proc onclick =
                 app.footerState = fsFontFamily
                 redraw()
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text $app.font.size
+              span: text $font.size
 
               proc onclick =
                 app.footerState = fsFontSize
@@ -504,16 +578,21 @@ proc createDom*(data: RouterData): VNode =
                       verbatim msg
 
             of asPropertiesView:
-              if app.selectedId.issome:
-                let 
-                  sid = app.selectedId.get
-                  obj = app.objects[sid]
+              let vn = app.selectedVisualNode
 
-                input(`type` = "text", value=obj.text, placeholder="text ..."):
-                  proc oninput(e: Event, v: Vnode) = 
-                    let t = obj.konvaNode.getChildren
-                    t[1].text = e.target.value
-                
+              if issome vn:
+                let obj = vn.get
+
+                tdiv(class = "form-group"):
+                  input(`type` = "string", class = "form-control",
+                      placeholder = "text ...", value = obj.text):
+
+                    proc oninput(e: Event, v: Vnode) =
+                      let
+                        t = obj.konvaNode.getChildren
+                        s = e.target.value
+                      setText obj, s
+                      redrawSizeNode obj.konvaNode, obj.font
 
           footer(class = "mt-2"):
             discard
@@ -588,3 +667,7 @@ when isMainModule:
 
   addHotkey "n", proc(ev: Event, h: JsObject) =
     createNode()
+
+  addHotkey "Escape", proc(ev: Event, h: JsObject) =  
+    reset app.selectedVisualNode
+    redraw()

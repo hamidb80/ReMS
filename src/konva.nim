@@ -211,14 +211,14 @@ proc `strokeWidth=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `strokeWidth`*(k: KonvaObject): Float {.konva.}
 proc `strokeEnabled=`*(k: KonvaObject, v: bool) {.konva.}
 proc `strokeEnabled`*(k: KonvaObject): bool {.konva.}
-proc `radius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
-proc `radius`*(k: KonvaShape): Float {.konva.}
-proc `cornerRadius=`*[N: Number](k: KonvaShape, v: N) {.konva.}
-proc `cornerRadius=`*[N: Number](k: KonvaShape, tl, tr, br, bl: N)
+proc `radius=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `radius`*(k: KonvaObject): Float {.konva.}
+proc `cornerRadius=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `cornerRadius=`*[N: Number](k: KonvaObject, tl, tr, br, bl: N)
     {.importjs: "#.cornerRadius([@])".}
-proc `cornerRadius`*(k: KonvaShape): JsObject {.konva.}
-proc `perfectDrawEnabled=`*(t: KonvaShape, v: bool) {.konva.}
-proc `perfectDrawEnabled`*(t: KonvaShape): bool {.konva.}
+proc `cornerRadius`*(k: KonvaObject): JsObject {.konva.}
+proc `perfectDrawEnabled=`*(t: KonvaObject, v: bool) {.konva.}
+proc `perfectDrawEnabled`*(t: KonvaObject): bool {.konva.}
 
 proc `shadowBlur=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `shadowBlur`*(k: KonvaObject): Float {.konva.}
@@ -289,9 +289,15 @@ proc `container`*(k: Stage): Element {.konva.}
 proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
 
-# TODO getChildren, findOne, find, findAncestors
+# TODO findAncestors
+proc findOne*(k: KonvaObject, selector: Str): KonvaObject {.konva.}
+proc find1*(k: KonvaObject, selector: Str): KonvaObject = k.findOne selector
+proc find*(k: KonvaObject, selector: Str): seq[KonvaObject] {.konva.}
+proc getChildren*(k: KonvaObject, filter: proc(k: KonvaObject): bool): 
+  seq[KonvaObject] {.konva.}
+proc getChildren*(k: KonvaObject): seq[KonvaObject] {.konva.}
 
-proc `nodes=`*(t: KonvaContainer, elems: openArray[KonvaShape]) {.konva.}
+proc `nodes=`*(t: KonvaContainer, elems: openArray[KonvaObject]) {.konva.}
 proc `nodes`*(t: KonvaContainer): seq[KonvaObject] {.konva.}
 
 proc `id=`*(t: KonvaObject, id: Str) {.konva.}
@@ -300,36 +306,36 @@ proc `setAttr`*[V](k: KonvaObject, key: string, value: V) {.konva.}
 proc `getAttr`*[V](k: KonvaObject, key: string): V {.konva.}
 proc `attr`*[V](k: KonvaObject, key: string): V = k.getAttr key
 
-proc `visible=`*(t: KonvaShape, v: bool) {.konva.}
-proc `visible`*(t: KonvaShape): bool {.konva.}
-proc `listening=`*(t: KonvaShape, v: bool) {.konva.}
-proc `listening`*(t: KonvaShape): bool {.konva.}
-proc `value=`*(t: KonvaShape, v: Float) {.konva.}
-proc `value`*(t: KonvaShape): Float {.konva.}
+proc `visible=`*(t: KonvaObject, v: bool) {.konva.}
+proc `visible`*(t: KonvaObject): bool {.konva.}
+proc `listening=`*(t: KonvaObject, v: bool) {.konva.}
+proc `listening`*(t: KonvaObject): bool {.konva.}
+proc `value=`*(t: KonvaObject, v: Float) {.konva.}
+proc `value`*(t: KonvaObject): Float {.konva.}
 
 # TODO filters(filters) getter/setter
-proc `brightness=`*(t: KonvaShape, v: UnitAxis) {.konva.}
-proc `brightness`*(t: KonvaShape): UnitAxis {.konva.}
-proc `hue=`*(t: KonvaShape, v: Degree) {.konva.}
-proc `hue`*(t: KonvaShape): Degree {.konva.}
-proc `contrast=`*(t: KonvaShape, v: ImaginaryPercent) {.konva.}
-proc `contrast`*(t: KonvaShape): ImaginaryPercent {.konva.}
-proc `saturation=`*(t: KonvaShape, v: Float) {.konva.}
-proc `saturation`*(t: KonvaShape): Float {.konva.}
-proc `enhance=`*(t: KonvaShape, v: UnitAxis) {.konva.}
-proc `enhance`*(t: KonvaShape): UnitAxis {.konva.}
-proc `pixelSize=`*(t: KonvaShape, v: Natural) {.konva.}
-proc `pixelSize`*(t: KonvaShape): Natural {.konva.}
-proc `embossBlend=`*(t: KonvaShape, v: bool) {.konva.}
-proc `embossBlend`*(t: KonvaShape): bool {.konva.}
-proc `kaleidoscopePower=`*(t: KonvaShape, v: int) {.konva.}
-proc `kaleidoscopePower`*(t: KonvaShape): int {.konva.}
-proc `kaleidoscopeAngle=`*(t: KonvaShape, v: int) {.konva.}
-proc `kaleidoscopeAngle`*(t: KonvaShape): int {.konva.}
-proc `noise=`*(k: KonvaShape, v: Float) {.konva.}
-proc `noise`*(k: KonvaShape): Float {.konva.}
-proc `threshold=`*(t: KonvaShape, v: Probablity) {.konva.}
-proc `threshold`*(t: KonvaShape): Probablity {.konva.}
+proc `brightness=`*(t: KonvaObject, v: UnitAxis) {.konva.}
+proc `brightness`*(t: KonvaObject): UnitAxis {.konva.}
+proc `hue=`*(t: KonvaObject, v: Degree) {.konva.}
+proc `hue`*(t: KonvaObject): Degree {.konva.}
+proc `contrast=`*(t: KonvaObject, v: ImaginaryPercent) {.konva.}
+proc `contrast`*(t: KonvaObject): ImaginaryPercent {.konva.}
+proc `saturation=`*(t: KonvaObject, v: Float) {.konva.}
+proc `saturation`*(t: KonvaObject): Float {.konva.}
+proc `enhance=`*(t: KonvaObject, v: UnitAxis) {.konva.}
+proc `enhance`*(t: KonvaObject): UnitAxis {.konva.}
+proc `pixelSize=`*(t: KonvaObject, v: Natural) {.konva.}
+proc `pixelSize`*(t: KonvaObject): Natural {.konva.}
+proc `embossBlend=`*(t: KonvaObject, v: bool) {.konva.}
+proc `embossBlend`*(t: KonvaObject): bool {.konva.}
+proc `kaleidoscopePower=`*(t: KonvaObject, v: int) {.konva.}
+proc `kaleidoscopePower`*(t: KonvaObject): int {.konva.}
+proc `kaleidoscopeAngle=`*(t: KonvaObject, v: int) {.konva.}
+proc `kaleidoscopeAngle`*(t: KonvaObject): int {.konva.}
+proc `noise=`*(k: KonvaObject, v: Float) {.konva.}
+proc `noise`*(k: KonvaObject): Float {.konva.}
+proc `threshold=`*(t: KonvaObject, v: Probablity) {.konva.}
+proc `threshold`*(t: KonvaObject): Probablity {.konva.}
 
 proc `text=`*(t: KonvaObject, v: Str) {.konva.}
 proc `text`*(t: KonvaObject): Str {.konva.}
@@ -349,7 +355,7 @@ proc `fontStyle`*(t: KonvaObject): Str {.konva.}
 proc `fontSize=`*[N: Number](t: KonvaObject, v: N) {.konva.}
 proc `fontSize`*(t: KonvaObject): Float {.konva.}
 proc measureSize*(t: KonvaObject, s: Str): Size {.konva.}
-proc measureSize*(t: KonvaShape): Size {.konva.}
+proc measureSize*(t: KonvaObject): Size {.konva.}
 
 proc `lineHeight=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `lineHeight`*(k: KonvaObject): Float {.konva.}
@@ -358,44 +364,42 @@ proc `lineCap`*(k: KonvaObject): Str {.konva.}
 proc `lineJoin=`*(k: KonvaObject, mode: Str) {.konva.}
 proc `lineJoin`*(k: KonvaObject): Str {.konva.}
 
-proc `align=`*(t: KonvaShape, v: Str) {.konva.}
-proc `align`*(t: KonvaShape): Str {.konva.}
-proc `verticalAlign=`*(t: KonvaShape, v: Str) {.konva.}
-proc `verticalAlign`*(t: KonvaShape): Str {.konva.}
-proc `wrap=`*(t: KonvaShape, v: Str) {.konva.}
-proc `wrap`*(t: KonvaShape): Str {.konva.}
+proc `align=`*(t: KonvaObject, v: Str) {.konva.}
+proc `align`*(t: KonvaObject): Str {.konva.}
+proc `verticalAlign=`*(t: KonvaObject, v: Str) {.konva.}
+proc `verticalAlign`*(t: KonvaObject): Str {.konva.}
+proc `wrap=`*(t: KonvaObject, v: Str) {.konva.}
+proc `wrap`*(t: KonvaObject): Str {.konva.}
 
-proc `padding=`*[N: Number](t: KonvaShape, v: N) {.konva.}
-proc `padding`*(t: KonvaShape): Float {.konva.}
+proc `padding=`*[N: Number](t: KonvaObject, v: N) {.konva.}
+proc `padding`*(t: KonvaObject): Float {.konva.}
 
-proc `rotation=`*[N: Number](t: KonvaShape, v: N) {.konva.}
-proc `rotation`*(t: KonvaShape): Float {.konva.}
-proc `levels=`*(t: KonvaShape, v: Float) {.konva.}
-proc `levels`*(t: KonvaShape): Float {.konva.}
+proc `rotation=`*[N: Number](t: KonvaObject, v: N) {.konva.}
+proc `rotation`*(t: KonvaObject): Float {.konva.}
+proc `levels=`*(t: KonvaObject, v: Float) {.konva.}
+proc `levels`*(t: KonvaObject): Float {.konva.}
 
-proc `transformsEnabled=`*(t: KonvaShape, v: Str) {.konva.}
-proc `transformsEnabled`*(t: KonvaShape): Str {.konva.}
+proc `transformsEnabled=`*(t: KonvaObject, v: Str) {.konva.}
+proc `transformsEnabled`*(t: KonvaObject): Str {.konva.}
 
 # -------- query?
-proc hasName*(k: KonvaShape): bool {.konva.}
-proc hasFill*(k: KonvaShape): bool {.konva.}
-proc hasShadow*(k: KonvaShape): bool {.konva.}
-proc hasStroke*(k: KonvaShape): bool {.konva.}
-proc isCached*(k: KonvaShape): bool {.konva.}
-proc isDragging*(k: KonvaShape): bool {.konva.}
-proc isListening*(k: KonvaShape): bool {.konva.}
-proc isVisible*(k: KonvaShape): bool {.konva.}
-proc isClientRectOnScreen*(k: KonvaShape): bool {.konva.}
-proc isClientRectOnScreen*(k: KonvaShape, v: Vector): bool {.konva.}
-proc intersects*(k: KonvaShape, v: Vector): bool {.konva.}
+proc hasName*(k: KonvaObject): bool {.konva.}
+proc hasFill*(k: KonvaObject): bool {.konva.}
+proc hasShadow*(k: KonvaObject): bool {.konva.}
+proc hasStroke*(k: KonvaObject): bool {.konva.}
+proc isCached*(k: KonvaObject): bool {.konva.}
+proc isDragging*(k: KonvaObject): bool {.konva.}
+proc isListening*(k: KonvaObject): bool {.konva.}
+proc isVisible*(k: KonvaObject): bool {.konva.}
+proc isClientRectOnScreen*(k: KonvaObject): bool {.konva.}
+proc isClientRectOnScreen*(k: KonvaObject, v: Vector): bool {.konva.}
+proc intersects*(k: KonvaObject, v: Vector): bool {.konva.}
 
 # -------- getter
-proc getChildren*(t: KonvaContainer): seq[KonvaObject] {.konva.}
-# TODO getChildren with filter func
-proc getAbsoluteOpacity*(k: KonvaShape): Float {.konva.}
-proc getAbsoluteRotation*(k: KonvaShape): Float {.konva.}
-proc getAbsoluteScale*(k: KonvaShape): Vector {.konva.}
-proc getAbsoluteTransform*(k: KonvaShape): Transformer {.konva.}
+proc getAbsoluteOpacity*(k: KonvaObject): Float {.konva.}
+proc getAbsoluteRotation*(k: KonvaObject): Float {.konva.}
+proc getAbsoluteScale*(k: KonvaObject): Vector {.konva.}
+proc getAbsoluteTransform*(k: KonvaObject): Transformer {.konva.}
 proc getAbsoluteZIndex*(k: KonvaObject): Natural {.konva.}
 proc getAbsolutePosition*(k: KonvaObject): Vector {.konva.}
 proc getAbsolutePosition*(k: KonvaObject, o: KonvaObject): Vector {.konva.}
@@ -404,9 +408,9 @@ proc getClientRect*(k: KonvaObject): RectData {.konva.}
 proc getSelfRect*(k: KonvaObject): Vector {.konva.}
 proc getRelativePointerPosition*(k: KonvaObject): Vector {.konva.}
 proc getDepth*(k: KonvaObject): Natural {.konva.}
-proc getLayer*(k: KonvaShape): Layer {.konva.}
-proc getParent*(k: KonvaShape): KonvaObject {.konva.}
-proc getStage*(k: KonvaShape): Stage {.konva.}
+proc getLayer*(k: KonvaObject): Layer {.konva.}
+proc getParent*(k: KonvaObject): KonvaObject {.konva.}
+proc getStage*(k: KonvaObject): Stage {.konva.}
 proc getTextWidth*(k: Text): Float {.konva.}
 proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
 
