@@ -25,7 +25,7 @@ type
 
 
 type
-  KonvaObject* = ref object of JsObject
+  KonvaObject* = ref object of JsRoot
   KonvaContainer* = ref object of KonvaObject
   KonvaShape* = ref object of KonvaObject
 
@@ -110,7 +110,7 @@ type
     tdUnderline = "underline"
 
   KonvaEventKinds = enum
-    mouseover, mouseout, mouseenter, mouseleave, 
+    mouseover, mouseout, mouseenter, mouseleave,
     mousemove, mousedown, mouseup,
         wheel, click, dblclick                           # Mouse events
     touchstart, touchmove, touchend, tap, dbltap         # Touch events
@@ -177,6 +177,7 @@ proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
 proc newImage*: Image {.importjs: "new Konva.Image()".}
 proc newText*: Text {.importjs: "new Konva.Text()".}
+proc newGroup*: Group {.importjs: "new Konva.Group()".}
 proc newTransformer*: Transformer {.importjs: "new Konva.Transformer()".}
 proc newImageFromUrl*(url: Str, onSuccess: proc(img: Image),
     onError = noOp) {.importjs: "Konva.Image.fromURL(@)".}
@@ -245,6 +246,17 @@ proc `green`*(k: KonvaObject): ColorChannel {.konva.}
 proc `blue=`*(k: KonvaObject, v: ColorChannel) {.konva.}
 proc `blue`*(k: KonvaObject): ColorChannel {.konva.}
 
+proc `clip=`*(k: KonvaObject, v: RectData) {.konva.}
+proc `clip`*(k: KonvaObject): RectData {.konva.}
+proc `clipX=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `clipX`*(k: KonvaObject): Float {.konva.}
+proc `clipY=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `clipY`*(k: KonvaObject): Float {.konva.}
+proc `clipWidth=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `clipWidth`*(k: KonvaObject): Float {.konva.}
+proc `clipHeight=`*[N: Number](k: KonvaObject, v: N) {.konva.}
+proc `clipHeight`*(k: KonvaObject): Float {.konva.}
+
 proc `skew=`*(k: KonvaObject, v: Vector) {.konva.}
 proc `skew`*(k: KonvaObject): Vector {.konva.}
 proc `skewX=`*[N: Number](k: KonvaObject, v: N) {.konva.}
@@ -277,14 +289,16 @@ proc `container`*(k: Stage): Element {.konva.}
 proc `image=`*(k: Image, element: ImageElement) {.konva.}
 proc `image`*(k: Image): ImageElement {.konva.}
 
+# TODO getChildren, findOne, find, findAncestors
+
 proc `nodes=`*(t: KonvaContainer, elems: openArray[KonvaShape]) {.konva.}
 proc `nodes`*(t: KonvaContainer): seq[KonvaObject] {.konva.}
 
-proc `id=`*(t: KonvaShape, id: Str) {.konva.}
-proc `id`*(t: KonvaShape): Str {.konva.}
-proc `setAttr`*[V](k: KonvaShape, key: string, value: V) {.konva.}
-proc `getAttr`*[V](k: KonvaShape, key: string): V {.konva.}
-proc `attr`*[V](k: KonvaShape, key: string): V = k.getAttr key
+proc `id=`*(t: KonvaObject, id: Str) {.konva.}
+proc `id`*(t: KonvaObject): Str {.konva.}
+proc `setAttr`*[V](k: KonvaObject, key: string, value: V) {.konva.}
+proc `getAttr`*[V](k: KonvaObject, key: string): V {.konva.}
+proc `attr`*[V](k: KonvaObject, key: string): V = k.getAttr key
 
 proc `visible=`*(t: KonvaShape, v: bool) {.konva.}
 proc `visible`*(t: KonvaShape): bool {.konva.}
@@ -317,24 +331,24 @@ proc `noise`*(k: KonvaShape): Float {.konva.}
 proc `threshold=`*(t: KonvaShape, v: Probablity) {.konva.}
 proc `threshold`*(t: KonvaShape): Probablity {.konva.}
 
-proc `text=`*(t: KonvaShape, v: Str) {.konva.}
-proc `text`*(t: KonvaShape): Str {.konva.}
-proc `textDecoration=`*(t: KonvaShape, v: Str) {.konva.}
-proc `textDecoration`*(t: KonvaShape): Str {.konva.}
+proc `text=`*(t: KonvaObject, v: Str) {.konva.}
+proc `text`*(t: KonvaObject): Str {.konva.}
+proc `textDecoration=`*(t: KonvaObject, v: Str) {.konva.}
+proc `textDecoration`*(t: KonvaObject): Str {.konva.}
 proc `letterSpacing=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `letterSpacing`*(k: KonvaObject): Float {.konva.}
-proc `ellipsis=`*(t: KonvaShape, v: bool) {.konva.}
-proc `ellipsis`*(t: KonvaShape): bool {.konva.}
+proc `ellipsis=`*(t: KonvaObject, v: bool) {.konva.}
+proc `ellipsis`*(t: KonvaObject): bool {.konva.}
 
-proc `fontVariant=`*(t: KonvaShape, v: Str) {.konva.}
-proc `fontVariant`*(t: KonvaShape): Str {.konva.}
-proc `fontFamily=`*(t: KonvaShape, v: Str) {.konva.}
-proc `fontFamily`*(t: KonvaShape): Str {.konva.}
-proc `fontStyle=`*(t: KonvaShape, v: Str) {.konva.}
-proc `fontStyle`*(t: KonvaShape): Str {.konva.}
-proc `fontSize=`*[N: Number](t: KonvaShape, v: N) {.konva.}
-proc `fontSize`*(t: KonvaShape): Float {.konva.}
-proc measureSize*(t: KonvaShape, s: Str): Size {.konva.}
+proc `fontVariant=`*(t: KonvaObject, v: Str) {.konva.}
+proc `fontVariant`*(t: KonvaObject): Str {.konva.}
+proc `fontFamily=`*(t: KonvaObject, v: Str) {.konva.}
+proc `fontFamily`*(t: KonvaObject): Str {.konva.}
+proc `fontStyle=`*(t: KonvaObject, v: Str) {.konva.}
+proc `fontStyle`*(t: KonvaObject): Str {.konva.}
+proc `fontSize=`*[N: Number](t: KonvaObject, v: N) {.konva.}
+proc `fontSize`*(t: KonvaObject): Float {.konva.}
+proc measureSize*(t: KonvaObject, s: Str): Size {.konva.}
 proc measureSize*(t: KonvaShape): Size {.konva.}
 
 proc `lineHeight=`*[N: Number](k: KonvaObject, v: N) {.konva.}
@@ -376,6 +390,8 @@ proc isClientRectOnScreen*(k: KonvaShape, v: Vector): bool {.konva.}
 proc intersects*(k: KonvaShape, v: Vector): bool {.konva.}
 
 # -------- getter
+proc getChildren*(t: KonvaContainer): seq[KonvaObject] {.konva.}
+# TODO getChildren with filter func
 proc getAbsoluteOpacity*(k: KonvaShape): Float {.konva.}
 proc getAbsoluteRotation*(k: KonvaShape): Float {.konva.}
 proc getAbsoluteScale*(k: KonvaShape): Vector {.konva.}
@@ -393,9 +409,10 @@ proc getParent*(k: KonvaShape): KonvaObject {.konva.}
 proc getStage*(k: KonvaShape): Stage {.konva.}
 proc getTextWidth*(k: Text): Float {.konva.}
 proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
-# findAncestors
 
 # -------- actions
+proc removeChildren*(k: KonvaObject) {.konva.}
+
 proc on*(k: KonvaObject, event: Str, procedure: KonvaCallback) {.konva.}
 proc off*(k: KonvaObject, event: Str) {.konva.}
 proc fire*(k: KonvaObject, event: Str, data: JsObject = nil,
@@ -430,5 +447,8 @@ proc remove*(k: KonvaObject) {.konva.}
 proc preventDefault*(k: KonvaObject) {.konva.}
 proc clone*(k: KonvaObject): KonvaObject {.konva.}
 
+proc toJSON*(k: KonvaObject) {.konva.}
+proc toObject*(k: KonvaObject) {.konva.}
 proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
   {.importjs: "#.toDataURL({ pixelRatio: # })".}
+# TODO toImage

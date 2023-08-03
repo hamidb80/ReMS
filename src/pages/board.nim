@@ -1,7 +1,7 @@
 import std/[with, math, options, lenientops, strformat, random, sets, tables]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster
+import caster, uuid4
 
 import ../[konva, hotkeys, browser]
 import ../[ui, canvas, conventions]
@@ -23,8 +23,6 @@ type
     fsFontSize
     fsBorder
 
-  UUID = string # TODO distinct string + hash
-
   Graph[T] = Table[T, seq[T]]
 
   AppData = object
@@ -33,6 +31,7 @@ type
     shapeLayer: Layer
     transformer: Transformer
     selectedKonvaObject: Option[KonvaObject]
+    selectedId: Option[UUID]
     
     # mouse states
     lastMousePos: Vector
@@ -58,10 +57,11 @@ type
     size: int
     style: FontStyle
 
-  VisualNode = object
-    id: UUID
-    text: string
+  VisualNode = ref object
+    id: cstring
+    text: cstring
     font: FontConfig
+    konvaNode: Group
 
 
 
@@ -197,35 +197,45 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
 
     app.shapeLayer.add img
 
-proc createNode() =
+proc createNode =
   var
+    wrapper = newGroup()
     node = newRect()
     txt = newText()
-    c = colorThemes[app.selectedColor]
+    vn = VisualNode(text: "Hello World")
+    
+    uid = uuid4()
+    theme = colorThemes[app.selectedColor]
     pad = app.font.size / 2
 
   with txt:
-    x = app.lastMousePos.x
-    y = app.lastMousePos.y
+    x = 0
+    y = 0
     fontFamily = app.font.family
-    fill = c.fg
+    fill = theme.fg
     fontSize = app.font.size
     align = $hzCenter
-    text = "Hello World"
+    text = vn.text
     listening = false
 
   with node:
-    x = app.lastMousePos.x - pad
-    y = app.lastMousePos.y - pad
+    x = -pad
+    y = -pad
     width = txt.getClientRect.width + pad*2
     height = txt.getClientRect.height + pad*2
-    fill = c.bg
+    fill = theme.bg
     cornerRadius = app.font.size / 2
-    shadowColor = c.fg
+    shadowColor = theme.fg
     shadowOffsetY = 6
     shadowBlur = 8
     shadowOpacity = 0.2
 
+  with wrapper:
+    id = cstring $uid
+    x = app.lastMousePos.x
+    y = app.lastMousePos.y
+    add node
+    add txt
 
   node.on "mouseover", proc(ke: JsObject) =
     window.document.body.style.cursor = "pointer"
@@ -238,14 +248,13 @@ proc createNode() =
     node.fill = red.bg
     txt.fill = red.fg
     app.selectedKonvaObject = some node.KonvaObject
-    # TODO assign id to node with the proc `id=`
-    # and map it to a tables of properties
+    app.selectedId = some uid
+    txt.text = cstring txt.text & "d"
     redraw()
 
-  console.log node
-
-  app.shapeLayer.add node
-  app.shapeLayer.add txt
+  vn.konvaNode = wrapper
+  app.objects[uid] = vn
+  app.shapeLayer.add wrapper
 
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
   app.leftClicked = true
@@ -486,12 +495,25 @@ proc createDom*(data: RouterData): VNode =
                     else: "window-maximize")
 
           main(class = "p-4 content-wrapper"):
-            if app.state == asMessagesView:
+            case app.state
+            of asMessagesView:
               for i in 1..3:
                 tdiv(class = "card mb-4"):
                   tdiv(class = "card-body"):
                     tdiv(class = "tw-content"):
                       verbatim msg
+
+            of asPropertiesView:
+              if app.selectedId.issome:
+                let 
+                  sid = app.selectedId.get
+                  obj = app.objects[sid]
+
+                input(`type` = "text", value=obj.text, placeholder="text ..."):
+                  proc oninput(e: Event, v: Vnode) = 
+                    let t = obj.konvaNode.getChildren
+                    t[1].text = e.target.value
+                
 
           footer(class = "mt-2"):
             discard

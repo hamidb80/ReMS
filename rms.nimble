@@ -15,10 +15,11 @@ requires "macroplus >= 0.2.5"
 requires "karax == 1.3.0"
 # requires "urlon"
 requires "caster"
+requires "uuid4"
 
 # Tasks
 
-task genph, "generate script.js file in ./dist":
+task genb, "generate script.js file in ./dist":
   exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/pages/board"
 
 task genas, "generate script.js file in ./dist":
