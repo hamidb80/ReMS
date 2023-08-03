@@ -71,7 +71,7 @@ const
   # TODO: read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
   minScale = 0.10 # minimum amount of scale
-  maxScale = 10.0
+  maxScale = 20.0
   defaultWidth = 500
   ciriticalWidth = 400
   minimizeWidth = 360
@@ -126,6 +126,7 @@ proc applyFont(txt: KonvaObject, font: FontConfig) =
     fontSize = font.size
 
 proc setText(v: VisualNode, t: cstring) =
+  v.text = t
   v.konvaNode.find1("Text").text = t
 
 proc redrawSizeNode(v: KonvaObject, font: FontConfig) =
@@ -325,6 +326,8 @@ proc createNode =
   vn.konvaNode = wrapper
   app.objects[uid] = vn
   app.shapeLayer.add wrapper
+  app.selectedVisualNode = some vn
+  redraw()
 
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
   app.leftClicked = true
@@ -390,7 +393,7 @@ proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(i == app.selectedThemeIndex, "bg-light")):
-      tdiv(class = "color-square mx-2 pointer", style = style(
+      tdiv(class = "color-square mx-1 pointer", style = style(
         (StyleAttr.background, cstring c.bg),
         (StyleAttr.borderColor, cstring c.fg),
       )):
@@ -467,7 +470,7 @@ proc createDom*(data: RouterData): VNode =
                 redraw()
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              bold: text "Font: "
+              bold(class = "me-2"): text "Font: "
               span: text font.family
 
               proc onclick =
@@ -500,7 +503,8 @@ proc createDom*(data: RouterData): VNode =
 
           of fsColor:
             for i, ct in colorThemes:
-              colorSelectBtn(i, ct, true)
+              span(class = "mx-1"):
+                colorSelectBtn(i, ct, true)
 
           else:
             text "not defined"
@@ -660,14 +664,22 @@ when isMainModule:
 
     moveStage app.stage.center
 
-  addHotkey "delete", proc(ev: Event, h: JsObject) =
+  addHotkey "delete", proc =
     console.log app.selectedKonvaObject
     app.selectedKonvaObject.get.destroy
     app.transformer.nodes = []
 
-  addHotkey "n", proc(ev: Event, h: JsObject) =
-    createNode()
-
-  addHotkey "Escape", proc(ev: Event, h: JsObject) =  
+  addHotkey "Escape", proc =
     reset app.selectedVisualNode
     redraw()
+
+  addHotkey "n", createNode
+
+  # TODO move
+  addHotkey "m", proc = discard
+
+  # TODO make connection
+  addHotkey "c", proc = discard
+
+  # TODO show/hide side bar
+  addHotkey "b", proc = discard
