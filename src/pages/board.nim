@@ -81,18 +81,17 @@ type
   EdgeInfo = object
     color: ColorTheme
     width: Float
-    centerShape: ConnectionCenterShape
+    centerShape: ConnectionCenterShape # TODO apply
     line: Line
 
-
-  ConnectionCenterShape = enum
-    ccsNothing
+  ConnectionCenterShapeKind = enum
     # directed connection
     ccsTriangle
     ccsDoubleTriangle
     # undirected connection
     ccsCircle
     ccsDiomand
+    ccsSquare
 
 
 const
@@ -130,7 +129,11 @@ const
   fontFamilies = [
     "Vazirmatn", "cursive", "monospace"]
 
-
+# TODO easier control when creating connection
+# TODO add hover view when selecting a node
+# TODO live view when making connection
+# TODO add center shape for connection to be with hover when click to remove 
+# or change color or change curve
 var app = AppData()
 app.sidebarWidth = defaultWidth
 app.font.family = "Vazirmatn"
@@ -167,7 +170,7 @@ func center(vn: VisualNode): Vector =
   let
     w = vn.konva.wrapper
     b = vn.konva.box
-  w.position + b.size.v / 2
+  w.position + b.position + b.size.v / 2
 
 proc redrawSizeNode(v: VisualNode, font: FontConfig) =
   let pad = font.size / 2
@@ -625,13 +628,11 @@ proc createDom*(data: RouterData): VNode =
           icon "plus fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "circle-nodes fa-lg"
+          # TODO show shortcut and name via a tooltip
+          icon "expand fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "download fa-lg"
-
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "expand fa-lg"
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
