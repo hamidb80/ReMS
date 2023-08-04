@@ -33,6 +33,8 @@ type
   Layer* = ref object of KonvaContainer
   Group* = ref object of KonvaContainer
 
+  Line* = ref object of KonvaShape
+  Path* = ref object of KonvaShape
   Rect* = ref object of KonvaShape
   Circle* = ref object of KonvaShape
   Image* = ref object of KonvaShape
@@ -162,17 +164,24 @@ func `/`*(v: Vector, t: Float): Vector =
 
 # --- utils ---
 
+proc noOp = discard
+
 proc movement*(ke: KonvaMouseEvent): Vector =
   v(ke.evt.movementx.toFloat, ke.evt.movementy.toFloat)
 
 proc stopPropagate*[E](ke: KonvaEvent[E]) =
   ke.cancelBubble = true
 
-proc noOp = discard
+func spreadPoints*(vs: seq[Vector]): seq[Float] =
+  for v in vs:
+    result.add v.x
+    result.add v.y
 
 # ---------- constructors
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}
 proc newLayer*: Layer {.importjs: "new Konva.Layer()".}
+proc newLine*: Line {.importjs: "new Konva.Line()".}
+proc newPath*: Path {.importjs: "new Konva.Path()".}
 proc newRect*: Rect {.importjs: "new Konva.Rect()".}
 proc newCircle*: Circle {.importjs: "new Konva.Circle()".}
 proc newImage*: Image {.importjs: "new Konva.Image()".}
@@ -199,8 +208,16 @@ proc `height`*(k: KonvaObject): Float {.konva.}
 proc `size=`*(k: KonvaObject, v: Size) {.konva.}
 proc `size`*(k: KonvaObject): Size {.konva.}
 
+proc `data=`*(k: KonvaObject, v: cstring) {.konva.}
+proc `data`*(k: KonvaObject): cstring {.konva.}
+proc `points=`*[N: SomeNumber](k: KonvaObject, v: seq[N]) {.konva.}
+proc `points=`*(k: KonvaObject, v: seq[Vector]) = k.points = v.spreadPoints
+proc `points`*(k: KonvaObject): seq[float] {.konva.}
+
 proc `fill=`*(k: KonvaObject, color: Str) {.konva.}
 proc `fill`*(k: KonvaObject): Str {.konva.}
+proc `fillEnabled=`*(k: KonvaObject, v: bool) {.konva.}
+proc `fillEnabled`*(k: KonvaObject): bool {.konva.}
 proc `dash=`*[N: Number](k: KonvaObject, dashArray: openArray[N]) {.konva.}
 proc `dash`*(k: KonvaObject): openArray[Float] {.konva.}
 proc `dashEnabled=`*(k: KonvaObject, v: bool) {.konva.}
@@ -237,6 +254,8 @@ proc `shadowOffsetY`*(k: KonvaObject): Float {.konva.}
 proc `shadowOpacity=`*(k: KonvaObject, v: Float) {.konva.}
 proc `shadowOpacity`*(k: KonvaObject): Float {.konva.}
 
+proc `opacity=`*(k: KonvaObject, v: Float) {.konva.}
+proc `opacity`*(k: KonvaObject): Float {.konva.}
 proc `alpha=`*(k: KonvaObject, v: Probablity) {.konva.}
 proc `alpha`*(k: KonvaObject): Probablity {.konva.}
 proc `red=`*(k: KonvaObject, v: ColorChannel) {.konva.}

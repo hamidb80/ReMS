@@ -4,7 +4,7 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4
 
 import ../[konva, hotkeys, browser]
-import ../[ui, canvas, conventions]
+import ../[ui, canvas, conventions, graph]
 
 # TODO use FontFaceObserver
 
@@ -27,12 +27,14 @@ type
     fsFontSize
     fsBorder
 
-  Graph[T] = Table[T, seq[T]]
+  ID = cstring
 
   AppData = object
     # konva states
     stage: Stage
-    shapeLayer: Layer
+    hoverGroup: Group
+    mainGroup: Group
+    bottomGroup: Group
     transformer: Transformer
     selectedKonvaObject: Option[KonvaObject]
     selectedVisualNode: Option[VisualNode]
@@ -54,8 +56,9 @@ type
     sidebarWidth: Natural
 
     # board data
-    edges: Graph[cstring]
-    objects: Table[cstring, VisualNode]
+    objects: Table[ID, VisualNode]
+    edges: Graph[ID]
+    edgeInfo: Table[Slice[ID], EdgeInfo]
 
   FontConfig = object
     family: string
@@ -75,6 +78,20 @@ type
     box: Rect
     txt: Text
 
+  EdgeInfo = object
+    color: ColorTheme
+    width: Float
+    shape: ConnectionCenterShape
+
+  ConnectionCenterShape = enum
+    # directed connection
+    ccsTriangle
+    ccsDoubleTriangle
+
+    # undirected connection
+    ccsCircle
+    ccsDiomand
+    ccsNothing
 
 
 const
@@ -117,6 +134,11 @@ var app = AppData()
 app.sidebarWidth = defaultWidth
 app.font.family = "Vazirmatn"
 app.font.size = 20
+
+
+func sorted[T](s: Slice[T]): Slice[T] =
+  if s.a < s.b: s
+  else: s.b .. s.a
 
 
 proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
@@ -280,19 +302,19 @@ proc onPasteOnScreen(data: cstring) {.exportc.} =
       stopPropagate ke
       img.draggable = true
       app.selectedKonvaObject = some KonvaObject img
-      app.transformer.incl [KonvaShape img], app.shapeLayer
+      app.transformer.incl [KonvaShape img], app.mainGroup.getLayer
 
     img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
       img.width = img.width * img.scale.x
       img.height = img.height * img.scale.y
       img.scale = v(1, 1)
 
-    app.shapeLayer.add img
+    app.mainGroup.add img
 
 proc createNode =
   var
     wrapper = newGroup()
-    node = newRect()
+    box = newRect()
     txt = newText()
     vn = VisualNode()
 
@@ -300,13 +322,14 @@ proc createNode =
     theme = colorThemes[app.selectedThemeIndex]
 
   with vn:
+    id = uid
     font = app.font
     text = "Hello"
     theme = colorThemes[app.selectedThemeIndex]
 
   with vn.konva:
     wrapper = wrapper
-    box = node
+    box = box
     txt = txt
 
   with txt:
@@ -320,38 +343,81 @@ proc createNode =
     id = uid
     x = app.lastMousePos.x
     y = app.lastMousePos.y
-    add node
+    add box
     add txt
     draggable = true
 
   redrawSizeNode vn, vn.font
-  applyTheme txt, node, vn.theme
+  applyTheme txt, box, vn.theme
 
-  node.on "mouseover", proc =
+  box.on "mouseover", proc =
     window.document.body.style.cursor = "pointer"
 
-  node.on "mouseleave", proc =
+  box.on "mouseleave", proc =
     window.document.body.style.cursor = ""
 
-  node.on "click", proc =
-    # let sv = app.selectedVisualNode
-    
-    # if issome sv:
-    #   if sv.get == vn:
+  box.on "click", proc =
+    let sv = app.selectedVisualNode
 
+    case app.boardState
+    of bsFree:
+      if issome sv:
+        if sv.get == vn:
+          sv.get.konva.wrapper.opacity = 0.5
+          app.boardState = bsMakeConnection
+        else:
+          app.selectedVisualNode = some vn
+      else:
+        app.selectedVisualNode = some vn
+
+
+    of bsMakeConnection:
+      if sv.get == vn:
+        discard
+      else:
+        app.selectedVisualNode = some vn
+
+        let
+          b1 = box
+          b2 = sv.get.konva.box
+          w2 = sv.get.konva.wrapper
+          v1 = wrapper.position + v(b1.width, b1.height) / 2
+          v2 = w2.position + v(b2.width, b2.height) / 2
+          id1 = uid
+          id2 = sv.get.id
+          conn = sorted id1..id2
+          path = @[v1, v2]
+
+        var
+          line = newLine()
+          ei = EdgeInfo()
+
+        with line:
+          strokeWidth = 2
+          stroke = getFocusedTheme().fg
+          points = path
+
+        app.bottomGroup.add line
+        console.log line
+        console.log line.points
+        console.log path
         
-    app.selectedVisualNode = some vn
+        app.edges.addConn conn
+        app.edgeInfo[conn] = ei
+        app.boardState = bsFree
+        w2.opacity = 1
+
     redraw()
 
-  wrapper.on "dragstart", proc = 
+  wrapper.on "dragstart", proc =
     window.document.body.style.cursor = "move"
 
-  wrapper.on "dragend", proc = 
+  wrapper.on "dragend", proc =
     window.document.body.style.cursor = "pointer"
 
 
   app.objects[uid] = vn
-  app.shapeLayer.add wrapper
+  app.mainGroup.getLayer.add wrapper
   app.selectedVisualNode = some vn
   redraw()
 
@@ -394,7 +460,7 @@ proc maximize* =
     else: window.innerWidth
   redraw()
 
-proc changeStateGen*(to: AppState): proc =
+proc changeStateGen*(to: SidebarState): proc =
   proc =
     app.sidebarState = to
 
@@ -642,10 +708,14 @@ when isMainModule:
 
   # --- Canvas ---
   500.setTimeout proc =
+    let layer = newLayer()
+
     with app:
       stage = newStage "board"
-      shapeLayer = newLayer()
       transformer = newTransformer()
+      hoverGroup = newGroup()
+      mainGroup = newGroup()
+      bottomGroup = newGroup()
 
     with app.stage:
       width = window.innerWidth
@@ -654,18 +724,30 @@ when isMainModule:
       on "mousedown pointerdown", mouseDownStage
       on "mousemove pointermove", mouseMoveStage
       on "mouseup pointerup", mouseUpStage
-      add app.shapeLayer
+      add layer
+
     addEventListener app.stage.container, "wheel", onWheel, nonPassive
-    addEventListener app.stage.container,
-      "contextmenu",
-      proc(e: Event) = e.preventDefault
+    addEventListener app.stage.container, "contextmenu", proc(e: Event) =
+      e.preventDefault
 
-
-    with app.shapeLayer:
+    with layer:
       add tempCircle(0, 0, 8, "black")
+      add app.bottomGroup
+      add app.mainGroup
+      add app.hoverGroup
 
-    app.stage.on "mousedown", proc(e: JsObject) =
-      app.leftClicked = true
+    with app.stage:
+      add layer
+
+      on "mousedown", proc =
+        app.leftClicked = true
+
+      on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
+        if app.leftClicked and app.isSpaceDown:
+          moveStage movement e
+
+      on "mouseup", proc =
+        app.leftClicked = false
 
     window.document.body.addEventListener "keydown", proc(
         e: Event as KeyboardEvent) {.caster.} =
@@ -678,13 +760,6 @@ when isMainModule:
       if app.isSpaceDown:
         app.isSpaceDown = false
         window.document.body.style.cursor = ""
-
-    app.stage.on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-      if app.leftClicked and app.isSpaceDown:
-        moveStage movement e
-
-    app.stage.on "mouseup", proc(e: JsObject) =
-      app.leftClicked = false
 
     moveStage app.stage.center
 
