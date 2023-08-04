@@ -81,17 +81,18 @@ type
   EdgeInfo = object
     color: ColorTheme
     width: Float
-    shape: ConnectionCenterShape
+    centerShape: ConnectionCenterShape
+    line: Line
+
 
   ConnectionCenterShape = enum
+    ccsNothing
     # directed connection
     ccsTriangle
     ccsDoubleTriangle
-
     # undirected connection
     ccsCircle
     ccsDiomand
-    ccsNothing
 
 
 const
@@ -162,6 +163,12 @@ proc setText(v: VisualNode, t: cstring) =
   v.text = t
   v.konva.txt.text = t
 
+func center(vn: VisualNode): Vector =
+  let
+    w = vn.konva.wrapper
+    b = vn.konva.box
+  w.position + b.size.v / 2
+
 proc redrawSizeNode(v: VisualNode, font: FontConfig) =
   let pad = font.size / 2
 
@@ -191,6 +198,18 @@ proc setFocusedFontFamily(fn: string) =
   else:
     app.font.family = fn
 
+
+proc redrawConnectionsTo(uid: Id) =
+  for id in app.edges[uid]:
+    let
+      ei = app.edgeInfo[sorted id..uid]
+      ps = ei.line.points.foldPoints
+
+    ei.line.points = [
+      app.objects[id].center,
+      app.objects[uid].center]
+
+
 proc setFocusedFontSize(s: int) =
   if issome app.selectedVisualNode:
     app.selectedVisualNode.get.font.size = s
@@ -198,6 +217,7 @@ proc setFocusedFontSize(s: int) =
     let v = app.selectedVisualNode.get
     v.font.size = s
     redrawSizeNode v, v.font
+    redrawConnectionsTo v.id
   else:
     app.font.size = s
 
@@ -284,6 +304,7 @@ proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
   # t.nodes = objs
   layer.add t
   layer.batchDraw
+
 
 # --- events ---
 
@@ -375,37 +396,32 @@ proc createNode =
       if sv.get == vn:
         discard
       else:
-        app.selectedVisualNode = some vn
-
         let
-          b1 = box
-          b2 = sv.get.konva.box
-          w2 = sv.get.konva.wrapper
-          v1 = wrapper.position + v(b1.width, b1.height) / 2
-          v2 = w2.position + v(b2.width, b2.height) / 2
           id1 = uid
           id2 = sv.get.id
           conn = sorted id1..id2
-          path = @[v1, v2]
 
         var
           line = newLine()
           ei = EdgeInfo()
 
-        with line:
-          strokeWidth = 2
-          stroke = getFocusedTheme().fg
-          points = path
+        if conn notin app.edgeInfo:
+          with ei:
+            color = getFocusedTheme()
+            width = 2
+            centerShape = ccsNothing
+            line = line
 
-        app.bottomGroup.add line
-        console.log line
-        console.log line.points
-        console.log path
-        
-        app.edges.addConn conn
-        app.edgeInfo[conn] = ei
-        app.boardState = bsFree
-        w2.opacity = 1
+          with line:
+            strokeWidth = ei.width
+            stroke = ei.color.fg
+            points = @[vn.center, sv.get.center]
+
+          app.bottomGroup.add line
+          app.edges.addConn conn
+          app.edgeInfo[conn] = ei
+          app.boardState = bsFree
+          sv.get.konva.wrapper.opacity = 1
 
     redraw()
 
@@ -415,6 +431,9 @@ proc createNode =
   wrapper.on "dragend", proc =
     window.document.body.style.cursor = "pointer"
 
+
+  wrapper.on "dragmove", proc =
+    redrawConnectionsTo uid
 
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper

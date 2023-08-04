@@ -162,6 +162,9 @@ func `*`*(v: Vector, t: Float): Vector =
 func `/`*(v: Vector, t: Float): Vector =
   v(v.x / t, v.y / t)
 
+func v*(s: Size): Vector =
+  v(s.width, s.height)
+
 # --- utils ---
 
 proc noOp = discard
@@ -172,10 +175,15 @@ proc movement*(ke: KonvaMouseEvent): Vector =
 proc stopPropagate*[E](ke: KonvaEvent[E]) =
   ke.cancelBubble = true
 
-func spreadPoints*(vs: seq[Vector]): seq[Float] =
+func spreadPoints*(vs: openArray[Vector]): seq[Float] =
   for v in vs:
     result.add v.x
     result.add v.y
+
+func foldPoints*(s: openArray[Float]): seq[Vector] =
+  assert s.len mod 2 == 0
+  for i in countup(0, s.high, 2):
+    result.add v(s[i], s[i+1])
 
 # ---------- constructors
 proc newStage*(container: Str): Stage {.importjs: "new Konva.Stage({container: #})".}
@@ -210,8 +218,8 @@ proc `size`*(k: KonvaObject): Size {.konva.}
 
 proc `data=`*(k: KonvaObject, v: cstring) {.konva.}
 proc `data`*(k: KonvaObject): cstring {.konva.}
-proc `points=`*[N: SomeNumber](k: KonvaObject, v: seq[N]) {.konva.}
-proc `points=`*(k: KonvaObject, v: seq[Vector]) = k.points = v.spreadPoints
+proc `points=`*[N: SomeNumber](k: KonvaObject, v: openArray[N]) {.konva.}
+proc `points=`*(k: KonvaObject, v: openArray[Vector]) = k.points = v.spreadPoints
 proc `points`*(k: KonvaObject): seq[float] {.konva.}
 
 proc `fill=`*(k: KonvaObject, color: Str) {.konva.}
