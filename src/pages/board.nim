@@ -12,9 +12,13 @@ type
   ColorTheme = tuple
     bg, fg: string
 
-  AppState = enum
-    asMessagesView
-    asPropertiesView
+  SideBarState = enum
+    ssMessagesView
+    ssPropertiesView
+
+  BoardState = enum
+    bsFree
+    bsMakeConnection
 
   FooterState = enum
     fsOverview
@@ -43,7 +47,8 @@ type
 
     # app states
     selectedThemeIndex: Natural
-    state: AppState
+    sidebarState: SideBarState
+    boardState: BoardState
     font: FontConfig
     footerState: FooterState
     sidebarWidth: Natural
@@ -63,7 +68,12 @@ type
     theme: ColorTheme
     text: cstring
     font: FontConfig
-    konvaNode: Group
+    konva: VisualNodeParts
+
+  VisualNodeParts = object
+    wrapper: Group
+    box: Rect
+    txt: Text
 
 
 
@@ -120,6 +130,7 @@ proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with txt:
     fill = theme.fg
 
+
 proc applyFont(txt: KonvaObject, font: FontConfig) =
   with txt:
     fontFamily = font.family
@@ -127,25 +138,24 @@ proc applyFont(txt: KonvaObject, font: FontConfig) =
 
 proc setText(v: VisualNode, t: cstring) =
   v.text = t
-  v.konvaNode.find1("Text").text = t
+  v.konva.txt.text = t
 
-proc redrawSizeNode(v: KonvaObject, font: FontConfig) =
-  let
-    node = v.find1 "Rect"
-    txt = v.find1 "Text"
-    pad = font.size / 2
+proc redrawSizeNode(v: VisualNode, font: FontConfig) =
+  let pad = font.size / 2
 
-  with txt:
+  with v.konva.txt:
     applyFont font
 
-  with node:
+  with v.konva.box:
     x = -pad
     y = -pad
-    width = txt.width + pad*2
-    height = txt.height + pad*2
+    width = v.konva.txt.width + pad*2
+    height = v.konva.txt.height + pad*2
     cornerRadius = pad
 
-proc getFocusedFont(): FontConfig =
+# TODO remove implicit global argument `app` and make it explicit
+
+proc getFocusedFont: FontConfig =
   if issome app.selectedVisualNode:
     app.selectedVisualNode.get.font
   else:
@@ -155,7 +165,7 @@ proc setFocusedFontFamily(fn: string) =
   if issome app.selectedVisualNode:
     let v = app.selectedVisualNode.get
     v.font.family = fn
-    redrawSizeNode v.konvaNode, v.font
+    redrawSizeNode v, v.font
   else:
     app.font.family = fn
 
@@ -165,7 +175,7 @@ proc setFocusedFontSize(s: int) =
 
     let v = app.selectedVisualNode.get
     v.font.size = s
-    redrawSizeNode v.konvaNode, v.font
+    redrawSizeNode v, v.font
   else:
     app.font.size = s
 
@@ -181,11 +191,9 @@ proc setFocusedTheme(themeIndex: int) =
     let
       c = colorThemes[themeIndex]
       v = app.selectedVisualNode.get
-      box = v.konvaNode.find1("Rect")
-      txt = v.konvaNode.find1("Text")
 
     v.theme = c
-    applyTheme txt, box, c
+    applyTheme v.konva.txt, v.konva.box, c
 
   else:
     app.selectedThemeIndex = themeIndex
@@ -296,6 +304,11 @@ proc createNode =
     text = "Hello"
     theme = colorThemes[app.selectedThemeIndex]
 
+  with vn.konva:
+    wrapper = wrapper
+    box = node
+    txt = txt
+
   with txt:
     x = 0
     y = 0
@@ -309,21 +322,34 @@ proc createNode =
     y = app.lastMousePos.y
     add node
     add txt
+    draggable = true
 
-  redrawSizeNode wrapper, vn.font
+  redrawSizeNode vn, vn.font
   applyTheme txt, node, vn.theme
 
-  node.on "mouseover", proc(ke: JsObject) =
+  node.on "mouseover", proc =
     window.document.body.style.cursor = "pointer"
 
-  node.on "mouseleave", proc(ke: JsObject) =
+  node.on "mouseleave", proc =
     window.document.body.style.cursor = ""
 
-  node.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+  node.on "click", proc =
+    # let sv = app.selectedVisualNode
+    
+    # if issome sv:
+    #   if sv.get == vn:
+
+        
     app.selectedVisualNode = some vn
     redraw()
 
-  vn.konvaNode = wrapper
+  wrapper.on "dragstart", proc = 
+    window.document.body.style.cursor = "move"
+
+  wrapper.on "dragend", proc = 
+    window.document.body.style.cursor = "pointer"
+
+
   app.objects[uid] = vn
   app.shapeLayer.add wrapper
   app.selectedVisualNode = some vn
@@ -370,7 +396,7 @@ proc maximize* =
 
 proc changeStateGen*(to: AppState): proc =
   proc =
-    app.state = to
+    app.sidebarState = to
 
 var msg = cstring"loading ..."
 
@@ -550,16 +576,16 @@ proc createDom*(data: RouterData): VNode =
           header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
 
             tdiv(class = "d-flex flex-row"):
-              tdiv(class = "nav-item", onclick = changeStateGen asMessagesView):
+              tdiv(class = "nav-item", onclick = changeStateGen ssMessagesView):
                 span(class = "nav-link px-3 pointer" &
-                    iff(app.state == asMessagesView, " active")):
+                    iff(app.sidebarState == ssMessagesView, " active")):
                   span(class = "caption"):
                     text "Messages "
                   icon "message"
 
-              tdiv(class = "nav-item", onclick = changeStateGen asPropertiesView):
+              tdiv(class = "nav-item", onclick = changeStateGen ssPropertiesView):
                 span(class = "nav-link px-3 pointer" &
-                  iff(app.state == asPropertiesView, " active")):
+                  iff(app.sidebarState == ssPropertiesView, " active")):
                   span(class = "caption"):
                     text "Properties "
                   icon "circle-info"
@@ -573,15 +599,15 @@ proc createDom*(data: RouterData): VNode =
                     else: "window-maximize")
 
           main(class = "p-4 content-wrapper"):
-            case app.state
-            of asMessagesView:
+            case app.sidebarState
+            of ssMessagesView:
               for i in 1..3:
                 tdiv(class = "card mb-4"):
                   tdiv(class = "card-body"):
                     tdiv(class = "tw-content"):
                       verbatim msg
 
-            of asPropertiesView:
+            of ssPropertiesView:
               let vn = app.selectedVisualNode
 
               if issome vn:
@@ -592,11 +618,9 @@ proc createDom*(data: RouterData): VNode =
                       placeholder = "text ...", value = obj.text):
 
                     proc oninput(e: Event, v: Vnode) =
-                      let
-                        t = obj.konvaNode.getChildren
-                        s = e.target.value
+                      let s = e.target.value
                       setText obj, s
-                      redrawSizeNode obj.konvaNode, obj.font
+                      redrawSizeNode obj, obj.font
 
           footer(class = "mt-2"):
             discard

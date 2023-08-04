@@ -109,7 +109,7 @@ type
     tdLineThrough = "line-through"
     tdUnderline = "underline"
 
-  KonvaEventKinds = enum
+  KonvaEventKind* = enum
     mouseover, mouseout, mouseenter, mouseleave,
     mousemove, mousedown, mouseup,
         wheel, click, dblclick                           # Mouse events
@@ -293,7 +293,7 @@ proc `image`*(k: Image): ImageElement {.konva.}
 proc findOne*(k: KonvaObject, selector: Str): KonvaObject {.konva.}
 proc find1*(k: KonvaObject, selector: Str): KonvaObject = k.findOne selector
 proc find*(k: KonvaObject, selector: Str): seq[KonvaObject] {.konva.}
-proc getChildren*(k: KonvaObject, filter: proc(k: KonvaObject): bool): 
+proc getChildren*(k: KonvaObject, filter: proc(k: KonvaObject): bool):
   seq[KonvaObject] {.konva.}
 proc getChildren*(k: KonvaObject): seq[KonvaObject] {.konva.}
 
@@ -304,6 +304,7 @@ proc `id=`*(t: KonvaObject, id: Str) {.konva.}
 proc `id`*(t: KonvaObject): Str {.konva.}
 proc `setAttr`*[V](k: KonvaObject, key: string, value: V) {.konva.}
 proc `getAttr`*[V](k: KonvaObject, key: string): V {.konva.}
+proc `attrs`*(k: KonvaObject): JsObject {.importjs: "#.attrs".}
 proc `attr`*[V](k: KonvaObject, key: string): V = k.getAttr key
 
 proc `visible=`*(t: KonvaObject, v: bool) {.konva.}
@@ -418,6 +419,7 @@ proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
 proc removeChildren*(k: KonvaObject) {.konva.}
 
 proc on*(k: KonvaObject, event: Str, procedure: KonvaCallback) {.konva.}
+proc on*(k: KonvaObject, event: Str, procedure: proc()) {.konva.}
 proc off*(k: KonvaObject, event: Str) {.konva.}
 proc fire*(k: KonvaObject, event: Str, data: JsObject = nil,
     bubles = true) {.konva.}
