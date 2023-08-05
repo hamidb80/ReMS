@@ -35,25 +35,30 @@ type
     hoverGroup: Group
     mainGroup: Group
     bottomGroup: Group
+
+    tempEdge: Line
     transformer: Transformer
-    selectedKonvaObject: Option[KonvaObject]
+    # selectedKonvaObject: Option[KonvaObject]
+
+    # app states
+    hoverVisualNode: Option[VisualNode]
     selectedVisualNode: Option[VisualNode]
 
-    # mouse states
+    font: FontConfig
+    edge: EdgeConfig
+
+    sidebarState: SideBarState
+    boardState: BoardState
+    footerState: FooterState
+
+    selectedThemeIndex: Natural
+    sidebarWidth: Natural
+
     lastMousePos: Vector
     leftClicked: bool
 
-    # keyboard states
     isCtrlDown: bool
     isSpaceDown: bool
-
-    # app states
-    selectedThemeIndex: Natural
-    sidebarState: SideBarState
-    boardState: BoardState
-    font: FontConfig
-    footerState: FooterState
-    sidebarWidth: Natural
 
     # board data
     objects: Table[ID, VisualNode]
@@ -65,6 +70,11 @@ type
     size: int
     lineHeight: float # TODO apply
     style: FontStyle
+
+  EdgeConfig = object
+    color: ColorTheme
+    width: Float
+    centerShape: ConnectionCenterShapeKind # TODO apply
 
   VisualNode = ref object
     id: cstring
@@ -79,10 +89,8 @@ type
     txt: Text
 
   EdgeInfo = object
-    color: ColorTheme
-    width: Float
-    centerShape: ConnectionCenterShape # TODO apply
-    line: Line
+    config: EdgeConfig
+    konva: Line
 
   ConnectionCenterShapeKind = enum
     # directed connection
@@ -92,6 +100,13 @@ type
     ccsCircle
     ccsDiomand
     ccsSquare
+
+  CssCursor = enum
+    ccNone = ""
+    ccMove = "move"
+    ccPointer = "pointer"
+    ccResizex = "e-resize"
+    # ccAdd
 
 
 const
@@ -132,7 +147,7 @@ const
 # TODO easier control when creating connection
 # TODO add hover view when selecting a node
 # TODO live view when making connection
-# TODO add center shape for connection to be with hover when click to remove 
+# TODO add center shape for connection to be with hover when click to remove
 # or change color or change curve
 var app = AppData()
 app.sidebarWidth = defaultWidth
@@ -156,21 +171,16 @@ proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with txt:
     fill = theme.fg
 
-
 proc applyFont(txt: KonvaObject, font: FontConfig) =
   with txt:
     fontFamily = font.family
     fontSize = font.size
 
-proc setText(v: VisualNode, t: cstring) =
-  v.text = t
-  v.konva.txt.text = t
-
 func center(vn: VisualNode): Vector =
   let
     w = vn.konva.wrapper
     b = vn.konva.box
-  w.position + b.position + b.size.v / 2
+  w.position + b.center
 
 proc redrawSizeNode(v: VisualNode, font: FontConfig) =
   let pad = font.size / 2
@@ -206,12 +216,21 @@ proc redrawConnectionsTo(uid: Id) =
   for id in app.edges[uid]:
     let
       ei = app.edgeInfo[sorted id..uid]
-      ps = ei.line.points.foldPoints
+      ps = ei.konva.points.foldPoints
 
-    ei.line.points = [
+    ei.konva.points = [
       app.objects[id].center,
       app.objects[uid].center]
 
+proc setCursor(c: CssCursor) =
+  window.document.body.style.cursor = $c
+
+# TODO keep the center of node when changing size or text or ...
+proc setText(v: VisualNode, t: cstring) =
+  v.text = t
+  v.konva.txt.text = t
+  redrawSizeNode v, v.font
+  redrawConnectionsTo v.id
 
 proc setFocusedFontSize(s: int) =
   if issome app.selectedVisualNode:
@@ -243,6 +262,26 @@ proc setFocusedTheme(themeIndex: int) =
   else:
     app.selectedThemeIndex = themeIndex
 
+
+proc hover(vn: VisualNode) =
+  app.hoverVisualNode = some vn
+
+proc unhover(vn: VisualNode) =
+  reset app.hoverVisualNode
+
+proc select(vn: VisualNode) =
+  app.selectedVisualNode = some vn
+
+proc highlight(vn: VisualNode) =
+  vn.konva.wrapper.opacity = 0.5
+
+proc removeHighlight(vn: VisualNode) =
+  vn.konva.wrapper.opacity = 1
+
+proc unselect =
+  if issome app.selectedVisualNode:
+    removeHighlight app.selectedVisualNode.get
+    reset app.selectedVisualNode
 
 # --- helpers ---
 
@@ -299,9 +338,10 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   moveStage d * s′
 
 proc resetSelected =
-  reset app.selectedKonvaObject
-  app.transformer.nodes = []
-  app.transformer.remove
+  discard
+  # reset app.selectedKonvaObject
+  # app.transformer.nodes = []
+  # app.transformer.remove
 
 proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
   # t.nodes = objs
@@ -313,27 +353,28 @@ proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
 
 # TODO remove exportc and make all of the codes written in Nim
 
-proc onPasteOnScreen(data: cstring) {.exportc.} =
-  newImageFromUrl data, proc(img: Image) =
-    with img:
-      x = app.lastMousePos.x
-      y = app.lastMousePos.y
-      strokeWidth = 2
-      stroke = "black"
-      # setAttr
+proc onPasteOnScreen(data: cstring) =
+  discard
+  # newImageFromUrl data, proc(img: Image) =
+  #   with img:
+  #     x = app.lastMousePos.x
+  #     y = app.lastMousePos.y
+  #     strokeWidth = 2
+  #     stroke = "black"
+  #     # setAttr
 
-    img.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-      stopPropagate ke
-      img.draggable = true
-      app.selectedKonvaObject = some KonvaObject img
-      app.transformer.incl [KonvaShape img], app.mainGroup.getLayer
+  #   img.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+  #     stopPropagate ke
+  #     img.draggable = true
+  #     app.selectedKonvaObject = some KonvaObject img
+  #     app.transformer.incl [KonvaShape img], app.mainGroup.getLayer
 
-    img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-      img.width = img.width * img.scale.x
-      img.height = img.height * img.scale.y
-      img.scale = v(1, 1)
+  #   img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+  #     img.width = img.width * img.scale.x
+  #     img.height = img.height * img.scale.y
+  #     img.scale = v(1, 1)
 
-    app.mainGroup.add img
+  #   app.mainGroup.add img
 
 proc createNode =
   var
@@ -375,10 +416,12 @@ proc createNode =
   applyTheme txt, box, vn.theme
 
   box.on "mouseover", proc =
-    window.document.body.style.cursor = "pointer"
+    hover vn
+    setCursor ccPointer
 
   box.on "mouseleave", proc =
-    window.document.body.style.cursor = ""
+    unhover vn
+    setCursor ccNone
 
   box.on "click", proc =
     let sv = app.selectedVisualNode
@@ -387,12 +430,12 @@ proc createNode =
     of bsFree:
       if issome sv:
         if sv.get == vn:
-          sv.get.konva.wrapper.opacity = 0.5
+          highlight sv.get
           app.boardState = bsMakeConnection
         else:
-          app.selectedVisualNode = some vn
+          select vn
       else:
-        app.selectedVisualNode = some vn
+        select vn
 
 
     of bsMakeConnection:
@@ -409,38 +452,38 @@ proc createNode =
           ei = EdgeInfo()
 
         if conn notin app.edgeInfo:
-          with ei:
+          ei.konva = line
+          with ei.config:
             color = getFocusedTheme()
             width = 2
-            centerShape = ccsNothing
-            line = line
+            centerShape = ccsCircle
 
           with line:
-            strokeWidth = ei.width
-            stroke = ei.color.fg
+            strokeWidth = ei.config.width
+            stroke = ei.config.color.fg
             points = @[vn.center, sv.get.center]
 
           app.bottomGroup.add line
           app.edges.addConn conn
           app.edgeInfo[conn] = ei
           app.boardState = bsFree
-          sv.get.konva.wrapper.opacity = 1
+          app.tempEdge.points = []
+          removeHighlight sv.get
 
     redraw()
 
   wrapper.on "dragstart", proc =
-    window.document.body.style.cursor = "move"
+    setCursor ccMove
 
   wrapper.on "dragend", proc =
-    window.document.body.style.cursor = "pointer"
-
+    setCursor ccPointer
 
   wrapper.on "dragmove", proc =
     redrawConnectionsTo uid
 
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
-  app.selectedVisualNode = some vn
+  select vn
   redraw()
 
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
@@ -448,6 +491,16 @@ proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
 
 proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
+
+  if app.boardState == bsMakeConnection:
+    let
+      head = app.selectedVisualNode.get.center
+      tail =
+        if isNone app.hoverVisualNode: app.lastMousePos
+        else: app.hoverVisualNode.get.center
+
+    app.tempEdge.points = [head, tail]
+
 
 proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
   stopPropagate ke
@@ -605,7 +658,7 @@ proc createDom*(data: RouterData): VNode =
               span: text "style "
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text "border "
+              span: text "width "
 
           of fsFontFamily:
             for f in fontFamilies:
@@ -641,7 +694,7 @@ proc createDom*(data: RouterData): VNode =
 
         tdiv(class = "extender h-100 btn btn-light p-0"):
           proc onMouseDown =
-            window.document.body.style.cursor = "e-resize"
+            setCursor ccresizex
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
               let w = window.innerWidth - e.x
@@ -706,7 +759,6 @@ proc createDom*(data: RouterData): VNode =
                     proc oninput(e: Event, v: Vnode) =
                       let s = e.target.value
                       setText obj, s
-                      redrawSizeNode obj, obj.font
 
           footer(class = "mt-2"):
             discard
@@ -736,6 +788,7 @@ when isMainModule:
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
+      tempEdge = newLine()
 
     with app.stage:
       width = window.innerWidth
@@ -750,9 +803,14 @@ when isMainModule:
     addEventListener app.stage.container, "contextmenu", proc(e: Event) =
       e.preventDefault
 
+    with app.tempEdge:
+      strokeWidth = 2
+      stroke = "red"
+
     with layer:
       add tempCircle(0, 0, 8, "black")
       add app.bottomGroup
+      add app.tempEdge
       add app.mainGroup
       add app.hoverGroup
 
@@ -773,23 +831,26 @@ when isMainModule:
         e: Event as KeyboardEvent) {.caster.} =
       if e.key == cstring" ":
         app.isSpaceDown = true
-        window.document.body.style.cursor = "move"
+        setCursor ccMove
 
     window.document.body.addEventListener "keyup", proc(
         e: Event as KeyboardEvent) {.caster.} =
       if app.isSpaceDown:
         app.isSpaceDown = false
-        window.document.body.style.cursor = ""
+        setCursor ccNone
 
     moveStage app.stage.center
 
   addHotkey "delete", proc =
-    console.log app.selectedKonvaObject
-    app.selectedKonvaObject.get.destroy
-    app.transformer.nodes = []
+    # console.log app.selectedKonvaObject
+    # app.selectedKonvaObject.get.destroy
+    # app.transformer.nodes = []
+    discard
 
   addHotkey "Escape", proc =
-    reset app.selectedVisualNode
+    app.boardState = bsFree
+    app.tempEdge.points = []
+    unselect()
     redraw()
 
   addHotkey "n", createNode

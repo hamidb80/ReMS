@@ -441,6 +441,8 @@ proc getParent*(k: KonvaObject): KonvaObject {.konva.}
 proc getStage*(k: KonvaObject): Stage {.konva.}
 proc getTextWidth*(k: Text): Float {.konva.}
 proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
+proc getIntersection*(s: Stage, pos: Vector): KonvaObject {.konva.}
+proc getAllIntersections*(k: KonvaContainer, pos: Vector): seq[KonvaObject] {.konva.}
 
 # -------- actions
 proc removeChildren*(k: KonvaObject) {.konva.}
@@ -485,3 +487,8 @@ proc toObject*(k: KonvaObject) {.konva.}
 proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
   {.importjs: "#.toDataURL({ pixelRatio: # })".}
 # TODO toImage
+
+# --------- Helper
+
+func center*(k: KonvaObject): Vector =
+  k.position + v(k.size) / 2
