@@ -1,7 +1,7 @@
 import std/[with, math, options, lenientops, strformat, random, sets, tables]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster, uuid4
+import caster, uuid4, questionable
 
 import ../[konva, hotkeys, browser]
 import ../[ui, canvas, conventions, graph]
@@ -159,6 +159,12 @@ func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
   else: s.b .. s.a
 
+template `?`(a): untyped =
+  issome a
+
+template `.!`(a, b): untyped = 
+  a.get.b
+
 
 proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with box:
@@ -198,8 +204,8 @@ proc redrawSizeNode(v: VisualNode, font: FontConfig) =
 # TODO remove implicit global argument `app` and make it explicit
 
 proc getFocusedFont: FontConfig =
-  if issome app.selectedVisualNode:
-    app.selectedVisualNode.get.font
+  if v =? app.selectedVisualNode:
+    v.font
   else:
     app.font
 
@@ -233,10 +239,7 @@ proc setText(v: VisualNode, t: cstring) =
   redrawConnectionsTo v.id
 
 proc setFocusedFontSize(s: int) =
-  if issome app.selectedVisualNode:
-    app.selectedVisualNode.get.font.size = s
-
-    let v = app.selectedVisualNode.get
+  if v =? app.selectedVisualNode:
     v.font.size = s
     redrawSizeNode v, v.font
     redrawConnectionsTo v.id
@@ -245,20 +248,16 @@ proc setFocusedFontSize(s: int) =
 
 
 proc getFocusedTheme: ColorTheme =
-  if issome app.selectedVisualNode:
-    app.selectedVisualNode.get.theme
+  if v =? app.selectedVisualNode:
+    v.theme
   else:
     colorThemes[app.selectedThemeIndex]
 
 proc setFocusedTheme(themeIndex: int) =
-  if issome app.selectedVisualNode:
-    let
-      c = colorThemes[themeIndex]
-      v = app.selectedVisualNode.get
-
+  if v =? app.selectedVisualNode:
+    let c = colorThemes[themeIndex]
     v.theme = c
     applyTheme v.konva.txt, v.konva.box, c
-
   else:
     app.selectedThemeIndex = themeIndex
 
@@ -279,8 +278,8 @@ proc removeHighlight(vn: VisualNode) =
   vn.konva.wrapper.opacity = 1
 
 proc unselect =
-  if issome app.selectedVisualNode:
-    removeHighlight app.selectedVisualNode.get
+  if v =? app.selectedVisualNode:
+    removeHighlight v
     reset app.selectedVisualNode
 
 # --- helpers ---
@@ -424,27 +423,25 @@ proc createNode =
     setCursor ccNone
 
   box.on "click", proc =
-    let sv = app.selectedVisualNode
-
     case app.boardState
     of bsFree:
-      if issome sv:
-        if sv.get == vn:
-          highlight sv.get
+      if sv =? app.selectedVisualNode:
+        if sv == vn:
+          highlight sv
           app.boardState = bsMakeConnection
         else:
           select vn
       else:
         select vn
 
-
     of bsMakeConnection:
-      if sv.get == vn:
+      let sv = !app.selectedVisualNode
+      if sv == vn:
         discard
       else:
         let
           id1 = uid
-          id2 = sv.get.id
+          id2 = sv.id
           conn = sorted id1..id2
 
         var
@@ -461,14 +458,14 @@ proc createNode =
           with line:
             strokeWidth = ei.config.width
             stroke = ei.config.color.fg
-            points = @[vn.center, sv.get.center]
+            points = @[vn.center, sv.center]
 
           app.bottomGroup.add line
           app.edges.addConn conn
           app.edgeInfo[conn] = ei
           app.boardState = bsFree
           app.tempEdge.points = []
-          removeHighlight sv.get
+          removeHighlight sv
 
     redraw()
 
@@ -494,10 +491,11 @@ proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
 
   if app.boardState == bsMakeConnection:
     let
-      head = app.selectedVisualNode.get.center
+      v = app.hoverVisualNode
+      head = app.selectedVisualNode.!center
       tail =
-        if isNone app.hoverVisualNode: app.lastMousePos
-        else: app.hoverVisualNode.get.center
+        if ?v: v.!center
+        else: app.lastMousePos
 
     app.tempEdge.points = [head, tail]
 
@@ -843,7 +841,7 @@ when isMainModule:
 
   addHotkey "delete", proc =
     # console.log app.selectedKonvaObject
-    # app.selectedKonvaObject.get.destroy
+    # app.selectedKonvaObject.?destroy
     # app.transformer.nodes = []
     discard
 

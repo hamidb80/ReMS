@@ -16,6 +16,8 @@ requires "karax == 1.3.0"
 # requires "urlon"
 requires "caster"
 requires "uuid4"
+requires "questionable"
+
 
 # Tasks
 import std/[os, strutils, strformat]
