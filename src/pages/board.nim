@@ -4,13 +4,13 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable
 
 import ../[konva, hotkeys, browser]
-import ../[ui, canvas, conventions, graph]
+import ../[ui, conventions, graph]
 
 # TODO use FontFaceObserver
 
 type
   ColorTheme = tuple
-    bg, fg: string
+    bg, fg, st: string
 
   SideBarState = enum
     ssMessagesView
@@ -25,7 +25,8 @@ type
     fsColor
     fsFontFamily
     fsFontSize
-    fsBorder
+    fsBorderWidth
+    fsBorderShape
 
   ID = cstring
 
@@ -52,7 +53,7 @@ type
     boardState: BoardState
     footerState: FooterState
 
-    selectedThemeIndex: Natural # TODO use ColorTheme object directly
+    theme: ColorTheme
     sidebarWidth: Natural
 
     lastMousePos: Vector
@@ -73,8 +74,8 @@ type
     # lineHeight: float
 
   EdgeConfig = object
-    color: ColorTheme
-    width: Float
+    color: cstring
+    width: Tenth
     centerShape: ConnectionCenterShapeKind # TODO
 
   VisualNode = ref object
@@ -89,18 +90,21 @@ type
     box: Rect
     txt: Text
 
+  Tenth = distinct int
+
   EdgeInfo = object
     config: EdgeConfig
     konva: Line
 
   ConnectionCenterShapeKind = enum
-    # directed connection
-    ccsTriangle
-    ccsDoubleTriangle
     # undirected connection
+    ccsNothing
     ccsCircle
     ccsDiomand
     ccsSquare
+    # directed connection
+    ccsTriangle
+    ccsDoubleTriangle
 
   CssCursor = enum
     ccNone = ""
@@ -119,21 +123,22 @@ const
   ciriticalWidth = 400
   minimizeWidth = 360
 
-  white: ColorTheme = ("#ffffff", "#889bad")
-  smoke: ColorTheme = ("#ecedef", "#778696")
-  road: ColorTheme = ("#dfe2e4", "#617288")
-  yellow: ColorTheme = ("#fef5a6", "#958505")
-  orange: ColorTheme = ("#ffdda9", "#a7690e")
-  red: ColorTheme = ("#ffcfc9", "#b26156")
-  peach: ColorTheme = ("#fbc4e2", "#af467e")
-  pink: ColorTheme = ("#f3d2ff", "#7a5a86")
-  purple: ColorTheme = ("#dac4fd", "#7453ab")
-  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
-  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
-  diomand: ColorTheme = ("#adefe3", "#027b64")
-  mint: ColorTheme = ("#c4fad6", "#298849")
-  green: ColorTheme = ("#cbfbad", "#479417")
-  lemon: ColorTheme = ("#e6f8a0", "#617900")
+  invalidTheme: ColorTheme = ("", "", "")
+  white: ColorTheme = ("#ffffff", "#889bad", "#a5b7cf")
+  smoke: ColorTheme = ("#ecedef", "#778696", "#9eaabb")
+  road: ColorTheme = ("#dfe2e4", "#617288", "#808fa6")
+  yellow: ColorTheme = ("#fef5a6", "#958505", "#dec908")
+  orange: ColorTheme = ("#ffdda9", "#a7690e", "#e99619")
+  red: ColorTheme = ("#ffcfc9", "#b26156", "#ff634e")
+  peach: ColorTheme = ("#fbc4e2", "#af467e", "#e43e97")
+  pink: ColorTheme = ("#f3d2ff", "#7a5a86", "#c86fe9")
+  purple: ColorTheme = ("#dac4fd", "#7453ab", "#a46bff")
+  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3", "#7886f4")
+  blue: ColorTheme = ("#b6e5ff", "#2d7aa5", "#399bd3")
+  diomand: ColorTheme = ("#adefe3", "#027b64", "#00d2ad")
+  mint: ColorTheme = ("#c4fad6", "#298849", "#25ba58")
+  green: ColorTheme = ("#cbfbad", "#479417", "#52d500")
+  lemon: ColorTheme = ("#e6f8a0", "#617900", "#a5cc08")
 
   colorThemes = [
     white, smoke, road,
@@ -151,6 +156,7 @@ const
 # TODO add center shape for connection to be with hover when click to remove
 # or change color or change curve
 var app = AppData()
+app.theme = white
 app.sidebarWidth = defaultWidth
 app.font.family = "Vazirmatn"
 app.font.size = 20
@@ -166,11 +172,27 @@ template `?`(a): untyped =
 template `.!`(a, b): untyped = 
   a.get.b
 
+func `==`(a,b: Tenth): bool {.borrow.}
+
+func `$`(t: Tenth): string = 
+  let 
+    n = t.int
+    a = n div 10
+    b = n mod 10
+
+  $a & '.' & $b
+
+func toFloat(t: Tenth): float = 
+  t.int / 10
+
+func toTenth(f: float): Tenth = 
+  let n = toint f * 10
+  Tenth n
 
 proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with box:
     fill = theme.bg
-    shadowColor = theme.fg
+    shadowColor = theme.st
     shadowOffsetY = 6
     shadowBlur = 8
     shadowOpacity = 0.2
@@ -247,20 +269,23 @@ proc setFocusedFontSize(s: int) =
   else:
     app.font.size = s
 
+proc setFocusedEdgeWidth(w: Tenth) =
+  app.edge.width = w
+
+proc getFocusedEdgeWidth: Tenth =
+  app.edge.width
 
 proc getFocusedTheme: ColorTheme =
   if v =? app.selectedVisualNode:
     v.theme
-  else:
-    colorThemes[app.selectedThemeIndex]
+  else: app.theme
 
-proc setFocusedTheme(themeIndex: int) =
+proc setFocusedTheme(theme: ColorTheme) =
   if v =? app.selectedVisualNode:
-    let c = colorThemes[themeIndex]
-    v.theme = c
-    applyTheme v.konva.txt, v.konva.box, c
-  else:
-    app.selectedThemeIndex = themeIndex
+    v.theme = theme
+    applyTheme v.konva.txt, v.konva.box, theme
+  else: 
+    app.theme = theme
 
 
 proc hover(vn: VisualNode) =
@@ -382,15 +407,13 @@ proc createNode =
     box = newRect()
     txt = newText()
     vn = VisualNode()
-
     uid = cstring $uuid4()
-    theme = colorThemes[app.selectedThemeIndex]
 
   with vn:
     id = uid
     font = app.font
     text = "Hello"
-    theme = colorThemes[app.selectedThemeIndex]
+    theme = app.theme
 
   with vn.konva:
     wrapper = wrapper
@@ -429,6 +452,8 @@ proc createNode =
       if sv =? app.selectedVisualNode:
         if sv == vn:
           highlight sv
+          app.tempEdge.stroke = getFocusedTheme().st
+          app.tempEdge.strokeWidth = toFloat getFocusedEdgeWidth()
           app.boardState = bsMakeConnection
         else:
           select vn
@@ -452,13 +477,13 @@ proc createNode =
         if conn notin app.edgeInfo:
           ei.konva = line
           with ei.config:
-            color = getFocusedTheme()
-            width = 2
+            color = app.tempEdge.stroke
+            width = app.tempEdge.strokeWidth.toTenth
             centerShape = ccsCircle
 
           with line:
-            strokeWidth = ei.config.width
-            stroke = ei.config.color.fg
+            strokeWidth = app.tempEdge.strokeWidth
+            stroke = ei.config.color
             points = @[vn.center, sv.center]
 
           app.bottomGroup.add line
@@ -555,31 +580,30 @@ proc getMsg() {.async.} =
 
 discard getMsg()
 
-proc colorSelectBtn(i: int, c: ColorTheme, selectable: bool): Vnode =
+proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
-      iff(i == app.selectedThemeIndex, "bg-light")):
+      iff(selectedTheme == theme, "bg-light")):
       tdiv(class = "color-square mx-1 pointer", style = style(
-        (StyleAttr.background, cstring c.bg),
-        (StyleAttr.borderColor, cstring c.fg),
+        (StyleAttr.background, cstring  theme.bg),
+        (StyleAttr.borderColor, cstring theme.fg),
       )):
         proc onclick =
           if selectable:
-            setFocusedTheme i
+            setFocusedTheme theme
             app.footerState = fsOverview
 
-proc fontSizeSelectBtn(size: int, selectable: bool): Vnode =
+proc fontSizeSelectBtn[T](size, selected: T, selectable: bool, fn: proc()): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
-      iff(size == app.font.size, "bg-light")):
+      iff(size == selected, "bg-light")):
       tdiv(class = "mx-2 pointer"):
         span:
           text $size
 
         proc onclick =
           if selectable:
-            setFocusedFontSize size
-            app.footerState = fsOverview
+            fn()
 
 proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
   buildHTML:
@@ -629,7 +653,7 @@ proc createDom*(data: RouterData): VNode =
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Color: "
-              colorSelectBtn(-1, theme, false)
+              colorSelectBtn(invalidTheme, theme, false)
 
               proc onclick =
                 app.footerState = fsColor
@@ -654,10 +678,17 @@ proc createDom*(data: RouterData): VNode =
               bold: text "connection: "
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text "style "
+              span: text "shape "
+
+              proc onclick = 
+                app.footerState = fsBorderShape
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text "width "
+              span: text "width: "
+              span: text $getFocusedEdgeWidth()
+
+              proc onclick = 
+                app.footerState = fsBorderWidth
 
           of fsFontFamily:
             for f in fontFamilies:
@@ -665,12 +696,20 @@ proc createDom*(data: RouterData): VNode =
 
           of fsFontSize:
             for s in countup(10, 200, 10):
-              fontSizeSelectBtn(s, true)
+              fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc = 
+                setFocusedFontSize s
+                app.footerState = fsOverview)
+
+          of fsBorderWidth:
+            for w in countup(10, 100, 5):
+              fontSizeSelectBtn w.Tenth, app.edge.width, true, capture(w, proc = 
+                setFocusedEdgeWidth w.Tenth
+                app.footerState = fsOverview)
 
           of fsColor:
             for i, ct in colorThemes:
               span(class = "mx-1"):
-                colorSelectBtn(i, ct, true)
+                colorSelectBtn(invalidTheme, ct, true)
 
           else:
             text "not defined"

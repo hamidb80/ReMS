@@ -21,6 +21,7 @@ Remembering management system!
 - PDF annonator
 - note taking
 - https://excalidraw.com/
+- https://yqnn.github.io/svg-path-editor/
 
 ## Helpful contents
 
