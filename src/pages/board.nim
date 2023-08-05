@@ -43,6 +43,7 @@ type
     # app states
     hoverVisualNode: Option[VisualNode]
     selectedVisualNode: Option[VisualNode]
+    # selectedEdge: Option[Edge]
 
     font: FontConfig
     edge: EdgeConfig
@@ -51,7 +52,7 @@ type
     boardState: BoardState
     footerState: FooterState
 
-    selectedThemeIndex: Natural
+    selectedThemeIndex: Natural # TODO use ColorTheme object directly
     sidebarWidth: Natural
 
     lastMousePos: Vector
@@ -68,13 +69,13 @@ type
   FontConfig = object
     family: string
     size: int
-    lineHeight: float # TODO apply
     style: FontStyle
+    # lineHeight: float
 
   EdgeConfig = object
     color: ColorTheme
     width: Float
-    centerShape: ConnectionCenterShapeKind # TODO apply
+    centerShape: ConnectionCenterShapeKind # TODO
 
   VisualNode = ref object
     id: cstring
@@ -663,7 +664,7 @@ proc createDom*(data: RouterData): VNode =
               fontFamilySelectBtn(f, true)
 
           of fsFontSize:
-            for s in countup(10, 100, 2):
+            for s in countup(10, 200, 10):
               fontSizeSelectBtn(s, true)
 
           of fsColor:
@@ -806,7 +807,6 @@ when isMainModule:
       stroke = "red"
 
     with layer:
-      add tempCircle(0, 0, 8, "black")
       add app.bottomGroup
       add app.tempEdge
       add app.mainGroup
@@ -848,6 +848,7 @@ when isMainModule:
   addHotkey "Escape", proc =
     app.boardState = bsFree
     app.tempEdge.points = []
+    app.footerState = fsOverview
     unselect()
     redraw()
 
