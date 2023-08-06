@@ -37,14 +37,14 @@ type
     mainGroup: Group
     bottomGroup: Group
 
-    tempEdge: Line
+    tempEdge: Edge
     transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
     # app states
     hoverVisualNode: Option[VisualNode]
     selectedVisualNode: Option[VisualNode]
-    # selectedEdge: Option[Edge]
+    selectedEdge: Option[Edge]
 
     font: FontConfig
     edge: EdgeConfig
@@ -65,18 +65,13 @@ type
     # board data
     objects: Table[ID, VisualNode]
     edges: Graph[ID]
-    edgeInfo: Table[Slice[ID], EdgeInfo]
+    edgeInfo: Table[Slice[ID], Edge]
 
   FontConfig = object
     family: string
     size: int
     style: FontStyle
     # lineHeight: float
-
-  EdgeConfig = object
-    color: cstring
-    width: Tenth
-    centerShape: ConnectionCenterShapeKind # TODO
 
   VisualNode = ref object
     id: cstring
@@ -92,9 +87,19 @@ type
 
   Tenth = distinct int
 
-  EdgeInfo = object
+  Edge = ref object
     config: EdgeConfig
-    konva: Line
+    konva: EdgeKonvaNodes
+
+  EdgeKonvaNodes = object
+    wrapper: Group
+    shape: KonvaShape
+    line: Line
+
+  EdgeConfig = object
+    theme: ColorTheme
+    width: Tenth
+    centerShape: ConnectionCenterShapeKind # TODO
 
   ConnectionCenterShapeKind = enum
     # undirected connection
@@ -160,6 +165,7 @@ app.theme = white
 app.sidebarWidth = defaultWidth
 app.font.family = "Vazirmatn"
 app.font.size = 20
+app.edge.width = 10.Tenth
 
 
 func sorted[T](s: Slice[T]): Slice[T] =
@@ -169,23 +175,23 @@ func sorted[T](s: Slice[T]): Slice[T] =
 template `?`(a): untyped =
   issome a
 
-template `.!`(a, b): untyped = 
+template `.!`(a, b): untyped =
   a.get.b
 
-func `==`(a,b: Tenth): bool {.borrow.}
+func `==`(a, b: Tenth): bool {.borrow.}
 
-func `$`(t: Tenth): string = 
-  let 
+func `$`(t: Tenth): string =
+  let
     n = t.int
     a = n div 10
     b = n mod 10
 
   $a & '.' & $b
 
-func toFloat(t: Tenth): float = 
+func toFloat(t: Tenth): float =
   t.int / 10
 
-func toTenth(f: float): Tenth = 
+func toTenth(f: float): Tenth =
   let n = toint f * 10
   Tenth n
 
@@ -232,6 +238,9 @@ proc getFocusedFont: FontConfig =
   else:
     app.font
 
+proc setCursor(c: CssCursor) =
+  window.document.body.style.cursor = $c
+
 proc setFocusedFontFamily(fn: string) =
   if issome app.selectedVisualNode:
     let v = app.selectedVisualNode.get
@@ -240,19 +249,100 @@ proc setFocusedFontFamily(fn: string) =
   else:
     app.font.family = fn
 
+proc hover(vn: VisualNode) =
+  app.hoverVisualNode = some vn
+
+proc unhover(vn: VisualNode) =
+  reset app.hoverVisualNode
+
+proc select(vn: VisualNode) =
+  app.selectedVisualNode = some vn
+
+proc select(e: Edge) =
+  app.selectedEdge = some e
+
+proc highlight(vn: VisualNode) =
+  vn.konva.wrapper.opacity = 0.5
+
+proc removeHighlight(vn: VisualNode) =
+  vn.konva.wrapper.opacity = 1
+
+proc unselect =
+  if v =? app.selectedVisualNode:
+    removeHighlight v
+    reset app.selectedVisualNode
+  if e =? app.selectedEdge:
+    reset app.selectedEdge
+
+
+proc newEdge(c: EdgeConfig): Edge =
+  let k = EdgeKonvaNodes(
+    wrapper: newGroup(),
+    shape: newCircle(),
+    line: newLine())
+
+  with k.line:
+    listening = false
+
+  with k.shape:
+    radius = 10
+    stroke = "red"
+    strokeWidth = 1
+    fill = "gray"
+
+    on "mouseenter", proc =
+      setCursor ccPointer
+
+    on "mouseleave", proc =
+      setCursor ccNone
+
+    on "click", proc =
+      echo "Hey!"
+
+  with k.wrapper:
+    add k.line
+    add k.shape
+
+  Edge(config: c, konva: k)
+
+proc updateEdge(e: Edge, head, tail: Vector) =
+  e.konva.line.points = [head, tail]
+  e.konva.shape.position = (head + tail) / 2
+
+proc updateEdge(e: Edge, w: Tenth) =
+  e.konva.line.strokeWidth = toFloat w
+
+proc updateEdge(e: Edge, t: ColorTheme) =
+  e.konva.line.stroke = t.st
+
+proc cloneEdge(e: Edge): Edge =
+  result = Edge(
+    konva: EdgeKonvaNodes(
+      line: Line clone e.konva.line,
+      shape: KonvaShape clone e.konva.shape,
+      wrapper: newGroup()))
+
+  with result.konva.wrapper:
+    add result.konva.line
+    add result.konva.shape
+
+  with result.konva.shape:
+    off "click"
+    on "click", proc = 
+      unselect()
+      app.selectedEdge = some result
+      redraw()
+
 
 proc redrawConnectionsTo(uid: Id) =
   for id in app.edges[uid]:
     let
       ei = app.edgeInfo[sorted id..uid]
-      ps = ei.konva.points.foldPoints
+      ps = ei.konva.line.points.foldPoints
+      head = app.objects[id].center
+      tail = app.objects[uid].center
 
-    ei.konva.points = [
-      app.objects[id].center,
-      app.objects[uid].center]
-
-proc setCursor(c: CssCursor) =
-  window.document.body.style.cursor = $c
+    updateEdge ei, head, tail
 
 # TODO keep the center of node when changing size or text or ...
 proc setText(v: VisualNode, t: cstring) =
@@ -270,43 +360,33 @@ proc setFocusedFontSize(s: int) =
     app.font.size = s
 
 proc setFocusedEdgeWidth(w: Tenth) =
-  app.edge.width = w
+  if e =? app.selectedEdge:
+    e.config.width = w
+    updateEdge e, w
+  else:
+    app.edge.width = w
 
 proc getFocusedEdgeWidth: Tenth =
-  app.edge.width
+  if e =? app.selectedEdge:
+    e.config.width
+  else:
+    app.edge.width
 
 proc getFocusedTheme: ColorTheme =
-  if v =? app.selectedVisualNode:
-    v.theme
+  if v =? app.selectedVisualNode: v.theme
+  elif e =? app.selectedEdge: e.config.theme
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
   if v =? app.selectedVisualNode:
     v.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
-  else: 
+  elif e =? app.selectedEdge:
+    e.config.theme = theme
+    e.konva.line.stroke = theme.st
+  else:
     app.theme = theme
 
-
-proc hover(vn: VisualNode) =
-  app.hoverVisualNode = some vn
-
-proc unhover(vn: VisualNode) =
-  reset app.hoverVisualNode
-
-proc select(vn: VisualNode) =
-  app.selectedVisualNode = some vn
-
-proc highlight(vn: VisualNode) =
-  vn.konva.wrapper.opacity = 0.5
-
-proc removeHighlight(vn: VisualNode) =
-  vn.konva.wrapper.opacity = 1
-
-proc unselect =
-  if v =? app.selectedVisualNode:
-    removeHighlight v
-    reset app.selectedVisualNode
 
 # --- helpers ---
 
@@ -452,8 +532,11 @@ proc createNode =
       if sv =? app.selectedVisualNode:
         if sv == vn:
           highlight sv
-          app.tempEdge.stroke = getFocusedTheme().st
-          app.tempEdge.strokeWidth = toFloat getFocusedEdgeWidth()
+          # TODO make a function
+          show app.tempEdge.konva.wrapper
+          updateEdge app.tempEdge, vn.center, vn.center
+          updateEdge app.tempEdge, getFocusedTheme()
+          updateEdge app.tempEdge, getFocusedEdgeWidth()
           app.boardState = bsMakeConnection
         else:
           select vn
@@ -470,27 +553,14 @@ proc createNode =
           id2 = sv.id
           conn = sorted id1..id2
 
-        var
-          line = newLine()
-          ei = EdgeInfo()
+        var ei = cloneEdge app.tempEdge
 
         if conn notin app.edgeInfo:
-          ei.konva = line
-          with ei.config:
-            color = app.tempEdge.stroke
-            width = app.tempEdge.strokeWidth.toTenth
-            centerShape = ccsCircle
-
-          with line:
-            strokeWidth = app.tempEdge.strokeWidth
-            stroke = ei.config.color
-            points = @[vn.center, sv.center]
-
-          app.bottomGroup.add line
+          app.bottomGroup.add ei.konva.wrapper
           app.edges.addConn conn
           app.edgeInfo[conn] = ei
           app.boardState = bsFree
-          app.tempEdge.points = []
+          hide app.tempEdge.konva.wrapper
           removeHighlight sv
 
     redraw()
@@ -523,7 +593,7 @@ proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
         if ?v: v.!center
         else: app.lastMousePos
 
-    app.tempEdge.points = [head, tail]
+    updateEdge app.tempEdge, head, tail
 
 
 proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
@@ -585,7 +655,7 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
       tdiv(class = "color-square mx-1 pointer", style = style(
-        (StyleAttr.background, cstring  theme.bg),
+        (StyleAttr.background, cstring theme.bg),
         (StyleAttr.borderColor, cstring theme.fg),
       )):
         proc onclick =
@@ -640,8 +710,10 @@ proc createDom*(data: RouterData): VNode =
             StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
 
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
-            if issome app.selectedVisualNode:
+            if ?app.selectedVisualNode:
               italic(class = "fa-solid fa-crosshairs")
+            elif ?app.selectedEdge:
+              italic(class = "fa-solid fa-grip-lines")
             else:
               italic(class = "fa-solid fa-earth-asia")
 
@@ -680,14 +752,14 @@ proc createDom*(data: RouterData): VNode =
             tdiv(class = "d-inline-flex mx-2 pointer"):
               span: text "shape "
 
-              proc onclick = 
+              proc onclick =
                 app.footerState = fsBorderShape
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               span: text "width: "
               span: text $getFocusedEdgeWidth()
 
-              proc onclick = 
+              proc onclick =
                 app.footerState = fsBorderWidth
 
           of fsFontFamily:
@@ -696,13 +768,13 @@ proc createDom*(data: RouterData): VNode =
 
           of fsFontSize:
             for s in countup(10, 200, 10):
-              fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc = 
+              fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc =
                 setFocusedFontSize s
                 app.footerState = fsOverview)
 
           of fsBorderWidth:
             for w in countup(10, 100, 5):
-              fontSizeSelectBtn w.Tenth, app.edge.width, true, capture(w, proc = 
+              fontSizeSelectBtn w.Tenth, app.edge.width, true, capture(w, proc =
                 setFocusedEdgeWidth w.Tenth
                 app.footerState = fsOverview)
 
@@ -826,7 +898,7 @@ when isMainModule:
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
-      tempEdge = newLine()
+      tempEdge = newEdge(EdgeConfig())
 
     with app.stage:
       width = window.innerWidth
@@ -841,13 +913,9 @@ when isMainModule:
     addEventListener app.stage.container, "contextmenu", proc(e: Event) =
       e.preventDefault
 
-    with app.tempEdge:
-      strokeWidth = 2
-      stroke = "red"
-
     with layer:
       add app.bottomGroup
-      add app.tempEdge
+      add app.tempEdge.konva.wrapper
       add app.mainGroup
       add app.hoverGroup
 
@@ -863,6 +931,8 @@ when isMainModule:
 
       on "mouseup", proc =
         app.leftClicked = false
+
+    hide app.tempEdge.konva.wrapper
 
     window.document.body.addEventListener "keydown", proc(
         e: Event as KeyboardEvent) {.caster.} =
@@ -886,7 +956,8 @@ when isMainModule:
 
   addHotkey "Escape", proc =
     app.boardState = bsFree
-    app.tempEdge.points = []
+    # TODO do not set points of line by manually, use a function
+    hide app.tempEdge.konva.wrapper
     app.footerState = fsOverview
     unselect()
     redraw()

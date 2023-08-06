@@ -480,7 +480,7 @@ proc destroy*(k: KonvaObject) {.konva.}
 proc remove*(k: KonvaObject) {.konva.}
 
 proc preventDefault*(k: KonvaObject) {.konva.}
-proc clone*(k: KonvaObject): KonvaObject {.konva.}
+proc clone*(k: KonvaObject, options: JsObject = jsUndefined): KonvaObject {.konva.}
 
 proc toJSON*(k: KonvaObject) {.konva.}
 proc toObject*(k: KonvaObject) {.konva.}
