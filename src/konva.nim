@@ -1,5 +1,6 @@
 import std/[macros, strformat]
 import std/[jsffi, dom]
+# import prettyvec # vmathObjBased
 
 ## TODO publish it as an independent library
 
@@ -12,6 +13,9 @@ type
 
   RectData* = object
     x*, y*, width*, height*: Float
+
+  Area* = object
+    x1*, x2*, y1*, y2*: Float
 
   Float* = float64
   Str = cstring
@@ -219,7 +223,8 @@ proc `size`*(k: KonvaObject): Size {.konva.}
 proc `data=`*(k: KonvaObject, v: cstring) {.konva.}
 proc `data`*(k: KonvaObject): cstring {.konva.}
 proc `points=`*[N: SomeNumber](k: KonvaObject, v: openArray[N]) {.konva.}
-proc `points=`*(k: KonvaObject, v: openArray[Vector]) = k.points = v.spreadPoints
+proc `points=`*(k: KonvaObject, v: openArray[
+    Vector]) = k.points = v.spreadPoints
 proc `points`*(k: KonvaObject): seq[float] {.konva.}
 
 proc `fill=`*(k: KonvaObject, color: Str) {.konva.}
@@ -442,7 +447,8 @@ proc getStage*(k: KonvaObject): Stage {.konva.}
 proc getTextWidth*(k: Text): Float {.konva.}
 proc getAncestors*(k: KonvaObject): seq[KonvaObject] {.konva.}
 proc getIntersection*(s: Stage, pos: Vector): KonvaObject {.konva.}
-proc getAllIntersections*(k: KonvaContainer, pos: Vector): seq[KonvaObject] {.konva.}
+proc getAllIntersections*(k: KonvaContainer, pos: Vector): seq[
+    KonvaObject] {.konva.}
 
 # -------- actions
 proc removeChildren*(k: KonvaObject) {.konva.}
@@ -492,3 +498,14 @@ proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
 
 func center*(k: KonvaObject): Vector =
   k.position + v(k.size) / 2
+
+func area*(k: KonvaObject): Area = 
+  let 
+    p = k.position
+    s = k.size
+
+  Area(
+    x1: p.x, 
+    x2: p.x + s.width,
+    y1: p.y,
+    y2: p.y + s.height)

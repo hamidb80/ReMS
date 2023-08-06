@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, random, sets, tables]
+import std/[with, math, options, lenientops, strformat, random, sets, tables, math]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable
@@ -157,15 +157,7 @@ const
 
 # TODO easier control when creating connection
 # TODO add hover view when selecting a node
-# TODO live view when making connection
-# TODO add center shape for connection to be with hover when click to remove
-# or change color or change curve
 var app = AppData()
-app.theme = white
-app.sidebarWidth = defaultWidth
-app.font.family = "Vazirmatn"
-app.font.size = 20
-app.edge.width = 10.Tenth
 
 
 func sorted[T](s: Slice[T]): Slice[T] =
@@ -255,12 +247,6 @@ proc hover(vn: VisualNode) =
 proc unhover(vn: VisualNode) =
   reset app.hoverVisualNode
 
-proc select(vn: VisualNode) =
-  app.selectedVisualNode = some vn
-
-proc select(e: Edge) =
-  app.selectedEdge = some e
-
 proc highlight(vn: VisualNode) =
   vn.konva.wrapper.opacity = 0.5
 
@@ -271,9 +257,45 @@ proc unselect =
   if v =? app.selectedVisualNode:
     removeHighlight v
     reset app.selectedVisualNode
+  
   if e =? app.selectedEdge:
     reset app.selectedEdge
 
+proc select(vn: VisualNode) =
+  unselect()
+  app.selectedVisualNode = some vn
+
+proc select(e: Edge) =
+  unselect()
+  app.selectedEdge = some e
+
+
+proc updateEdge(e: Edge, head, tail: KonvaShape) =
+  let 
+    a1 = area head
+    a2 = area tail
+    c1 = center head
+    c2 = center tail
+    d = c2 - c1
+    angle = arctan2(d.y, d.x) # rad
+
+  e.konva.line.points = [head, tail]
+  e.konva.shape.position = (head + tail) / 2
+
+proc updateEdgeWidth(e: Edge, w: Tenth) =
+  let v = toFloat w
+  e.config.width = w
+  e.konva.line.strokeWidth = v
+  with e.konva.shape:
+    strokeWidth = v
+    radius = v * 5
+
+proc updateEdgeTheme(e: Edge, t: ColorTheme) =
+  e.config.theme = t
+  e.konva.line.stroke = t.st
+  with e.konva.shape:
+    stroke = t.st
+    fill = t.bg
 
 proc newEdge(c: EdgeConfig): Edge =
   let k = EdgeKonvaNodes(
@@ -285,11 +307,6 @@ proc newEdge(c: EdgeConfig): Edge =
     listening = false
 
   with k.shape:
-    radius = 10
-    stroke = "red"
-    strokeWidth = 1
-    fill = "gray"
-
     on "mouseenter", proc =
       setCursor ccPointer
 
@@ -305,18 +322,9 @@ proc newEdge(c: EdgeConfig): Edge =
 
   Edge(config: c, konva: k)
 
-proc updateEdge(e: Edge, head, tail: Vector) =
-  e.konva.line.points = [head, tail]
-  e.konva.shape.position = (head + tail) / 2
-
-proc updateEdge(e: Edge, w: Tenth) =
-  e.konva.line.strokeWidth = toFloat w
-
-proc updateEdge(e: Edge, t: ColorTheme) =
-  e.konva.line.stroke = t.st
-
 proc cloneEdge(e: Edge): Edge =
   result = Edge(
+    config: e.config,
     konva: EdgeKonvaNodes(
       line: Line clone e.konva.line,
       shape: KonvaShape clone e.konva.shape,
@@ -328,21 +336,20 @@ proc cloneEdge(e: Edge): Edge =
 
   with result.konva.shape:
     off "click"
-    on "click", proc = 
+    on "click", proc =
       unselect()
       app.selectedEdge = some result
       redraw()
-
 
 proc redrawConnectionsTo(uid: Id) =
   for id in app.edges[uid]:
     let
       ei = app.edgeInfo[sorted id..uid]
       ps = ei.konva.line.points.foldPoints
-      head = app.objects[id].center
-      tail = app.objects[uid].center
+      n1 = app.objects[id].center
+      n2 = app.objects[uid].center
 
-    updateEdge ei, head, tail
+    updateEdge ei, n1, n2
 
 # TODO keep the center of node when changing size or text or ...
 proc setText(v: VisualNode, t: cstring) =
@@ -361,8 +368,7 @@ proc setFocusedFontSize(s: int) =
 
 proc setFocusedEdgeWidth(w: Tenth) =
   if e =? app.selectedEdge:
-    e.config.width = w
-    updateEdge e, w
+    updateEdgeWidth e, w
   else:
     app.edge.width = w
 
@@ -382,11 +388,9 @@ proc setFocusedTheme(theme: ColorTheme) =
     v.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
   elif e =? app.selectedEdge:
-    e.config.theme = theme
-    e.konva.line.stroke = theme.st
+    updateEdgeTheme e, theme
   else:
     app.theme = theme
-
 
 # --- helpers ---
 
@@ -397,7 +401,6 @@ func coordinate(mouse: Vector, scale, offsetx, offsety: Float): Vector =
 
 proc coordinate(pos: Vector, stage: Stage): Vector =
   coordinate pos, ||stage.scale, stage.x, stage.y
-
 
 func center(scale, offsetx, offsety, width, height: Float): Vector =
   ## real coordinate of center of the canvas
@@ -413,7 +416,7 @@ proc center(stage: Stage): Vector =
 
 # --- actions ---
 
-func applyRange[T](value: T, rng: Slice[T]): T =
+func limit[T](value: T, rng: Slice[T]): T =
   min(max(value, rng.a), rng.b)
 
 proc moveStage(v: Vector) =
@@ -424,7 +427,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
     s = ||app.stage.scale
-    s′ = applyRange(s + Δscale, minScale .. maxScale)
+    s′ = limit(s + Δscale, minScale .. maxScale)
 
     w = app.stage.width
     h = app.stage.height
@@ -455,31 +458,6 @@ proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
 
 
 # --- events ---
-
-# TODO remove exportc and make all of the codes written in Nim
-
-proc onPasteOnScreen(data: cstring) =
-  discard
-  # newImageFromUrl data, proc(img: Image) =
-  #   with img:
-  #     x = app.lastMousePos.x
-  #     y = app.lastMousePos.y
-  #     strokeWidth = 2
-  #     stroke = "black"
-  #     # setAttr
-
-  #   img.on "click", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-  #     stopPropagate ke
-  #     img.draggable = true
-  #     app.selectedKonvaObject = some KonvaObject img
-  #     app.transformer.incl [KonvaShape img], app.mainGroup.getLayer
-
-  #   img.on "transformend", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-  #     img.width = img.width * img.scale.x
-  #     img.height = img.height * img.scale.y
-  #     img.scale = v(1, 1)
-
-  #   app.mainGroup.add img
 
 proc createNode =
   var
@@ -534,9 +512,9 @@ proc createNode =
           highlight sv
           # TODO make a function
           show app.tempEdge.konva.wrapper
-          updateEdge app.tempEdge, vn.center, vn.center
-          updateEdge app.tempEdge, getFocusedTheme()
-          updateEdge app.tempEdge, getFocusedEdgeWidth()
+          updateEdge app.tempEdge, vn, vn
+          updateEdgeTheme app.tempEdge, getFocusedTheme()
+          updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
           app.boardState = bsMakeConnection
         else:
           select vn
@@ -582,18 +560,22 @@ proc createNode =
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
   app.leftClicked = true
 
+proc newPoint(pos: Vector): Circle = 
+  result = newCircle()
+  with result:
+    radius = 0
+    position = pos
+
 proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
 
   if app.boardState == bsMakeConnection:
     let
       v = app.hoverVisualNode
-      head = app.selectedVisualNode.!center
-      tail =
-        if ?v: v.!center
-        else: app.lastMousePos
+      n1 = !app.selectedVisualNode
+      n2 = v |? newPoint(app.lastMousePos)
 
-    updateEdge app.tempEdge, head, tail
+    updateEdge app.tempEdge, n1, n2
 
 
 proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
@@ -619,7 +601,6 @@ proc onWheel(e: Event as WheelEvent) {.caster.} =
     moveStage v(e.Δx, e.Δy) * -1
 
 
-
 proc isMaximized*: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
 
@@ -633,12 +614,12 @@ proc changeStateGen*(to: SidebarState): proc =
   proc =
     app.sidebarState = to
 
-var msg = cstring"loading ..."
-
 template set(vari, data): untyped =
   vari = data
 
 
+# discard getMsg()
+var msg = cstring"loading ..."
 proc getMsg() {.async.} =
   await:
     fetch(cstring"/pages/2.html")
@@ -647,8 +628,6 @@ proc getMsg() {.async.} =
     .catch((err: Error) => console.log("Request Failed", err))
 
   redraw()
-
-discard getMsg()
 
 proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
   buildHTML:
@@ -756,7 +735,7 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsBorderShape
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text "width: "
+              span(class="me-2"): text "width: "
               span: text $getFocusedEdgeWidth()
 
               proc onclick =
@@ -873,23 +852,12 @@ proc createDom*(data: RouterData): VNode =
           footer(class = "mt-2"):
             discard
 
-document.addEventListener "paste", proc(pasteEvent: Event) =
-  discard
-  # let file = pasteEvent.clipboardData.files[0]
-
-  # if file && file.type.startsWith("image"):
-  #   imageDataUrl(file).then(onPasteOnScreen)
-  # else:
-  #   console.log("WTF")
-
 when isMainModule:
   echo "compiled at: ", CompileDate, ' ', CompileTime
 
-  # --- UI ---
   setRenderer createDom, "app"
 
-  # --- Canvas ---
-  500.setTimeout proc =
+  setTimeout 500, proc =
     let layer = newLayer()
 
     with app:
@@ -908,10 +876,6 @@ when isMainModule:
       on "mousemove pointermove", mouseMoveStage
       on "mouseup pointerup", mouseUpStage
       add layer
-
-    addEventListener app.stage.container, "wheel", onWheel, nonPassive
-    addEventListener app.stage.container, "contextmenu", proc(e: Event) =
-      e.preventDefault
 
     with layer:
       add app.bottomGroup
@@ -932,43 +896,67 @@ when isMainModule:
       on "mouseup", proc =
         app.leftClicked = false
 
-    hide app.tempEdge.konva.wrapper
+    block global_events:
+      addEventListener app.stage.container, "wheel", onWheel, nonPassive
+      addEventListener app.stage.container, "contextmenu", proc(e: Event) =
+        e.preventDefault
 
-    window.document.body.addEventListener "keydown", proc(
-        e: Event as KeyboardEvent) {.caster.} =
-      if e.key == cstring" ":
-        app.isSpaceDown = true
-        setCursor ccMove
+      window.document.body.addEventListener "keydown", proc(
+          e: Event as KeyboardEvent) {.caster.} =
+        if e.key == cstring" ":
+          app.isSpaceDown = true
+          setCursor ccMove
 
-    window.document.body.addEventListener "keyup", proc(
-        e: Event as KeyboardEvent) {.caster.} =
-      if app.isSpaceDown:
-        app.isSpaceDown = false
-        setCursor ccNone
+      window.document.body.addEventListener "keyup", proc(
+          e: Event as KeyboardEvent) {.caster.} =
+        if app.isSpaceDown:
+          app.isSpaceDown = false
+          setCursor ccNone
+          
+      document.addEventListener "paste", proc(pasteEvent: Event) =
+        discard
+        # let file = pasteEvent.clipboardData.files[0]
 
-    moveStage app.stage.center
+        # if file && file.type.startsWith("image"):
+        #   imageDataUrl(file).then(onPasteOnScreen)
+        # else:
+        #   console.log("WTF")
+        
+    block init:
+      app.sidebarWidth = defaultWidth
+      app.font.family = "Vazirmatn"
+      app.font.size = 20
+      app.theme = white
+      app.edge.theme = white
+      app.edge.width = 10.Tenth
 
-  addHotkey "delete", proc =
-    # console.log app.selectedKonvaObject
-    # app.selectedKonvaObject.?destroy
-    # app.transformer.nodes = []
-    discard
+    block prepare:
+      hide app.tempEdge.konva.wrapper
+      moveStage app.stage.center
+      redraw()
 
-  addHotkey "Escape", proc =
-    app.boardState = bsFree
-    # TODO do not set points of line by manually, use a function
-    hide app.tempEdge.konva.wrapper
-    app.footerState = fsOverview
-    unselect()
-    redraw()
+  block shortcuts:
+    addHotkey "delete", proc =
+      # console.log app.selectedKonvaObject
+      # app.selectedKonvaObject.?destroy
+      # app.transformer.nodes = []
+      discard
 
-  addHotkey "n", createNode
+    addHotkey "Escape", proc =
+      app.boardState = bsFree
+      # TODO do not set points of line by manually, use a function
+      hide app.tempEdge.konva.wrapper
+      app.footerState = fsOverview
+      unselect()
+      redraw()
 
-  # TODO move
-  addHotkey "m", proc = discard
+    addHotkey "n", createNode
 
-  # TODO make connection
-  addHotkey "c", proc = discard
+    # TODO move
+    addHotkey "m", proc = discard
 
-  # TODO show/hide side bar
-  addHotkey "b", proc = discard
+    # TODO make connection
+    addHotkey "c", proc = discard
+
+    # TODO show/hide side bar
+    addHotkey "b", proc = discard
