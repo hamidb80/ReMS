@@ -1,12 +1,11 @@
 import std/[macros, strformat]
 import std/[jsffi, dom]
-# import prettyvec # vmathObjBased
+import prettyvec
 
 ## TODO publish it as an independent library
 
 type
-  Vector* = object
-    x*, y*: Float
+  Vector* = Vec2Obj
 
   Size* = object
     width*, height*: Float
@@ -144,27 +143,6 @@ func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
 func asScalar*(v: Vector): Float =
   assert v.x == v.y
   v.x
-
-func `+`*(v: Vector, t: Float): Vector =
-  v(v.x + t, v.y + t)
-
-func `+`*(v1, v2: Vector): Vector =
-  v(v1.x + v2.x, v1.y + v2.y)
-
-func `-`*(v: Vector): Vector =
-  v(-v.x, -v.y)
-
-func `-`*(v: Vector, t: Float): Vector =
-  v + -t
-
-func `-`*(v1, v2: Vector): Vector =
-  v1 + -v2
-
-func `*`*(v: Vector, t: Float): Vector =
-  v(v.x * t, v.y * t)
-
-func `/`*(v: Vector, t: Float): Vector =
-  v(v.x / t, v.y / t)
 
 func v*(s: Size): Vector =
   v(s.width, s.height)
@@ -499,13 +477,13 @@ proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
 func center*(k: KonvaObject): Vector =
   k.position + v(k.size) / 2
 
-func area*(k: KonvaObject): Area = 
-  let 
+func area*(k: KonvaObject): Area =
+  let
     p = k.position
     s = k.size
 
   Area(
-    x1: p.x, 
+    x1: p.x,
     x2: p.x + s.width,
     y1: p.y,
     y2: p.y + s.height)

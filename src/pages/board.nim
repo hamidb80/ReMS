@@ -1,7 +1,7 @@
 import std/[with, math, options, lenientops, strformat, random, sets, tables, math]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster, uuid4, questionable
+import caster, uuid4, questionable, prettyvec
 
 import ../[konva, hotkeys, browser]
 import ../[ui, conventions, graph]
@@ -204,10 +204,7 @@ proc applyFont(txt: KonvaObject, font: FontConfig) =
     fontSize = font.size
 
 func center(vn: VisualNode): Vector =
-  let
-    w = vn.konva.wrapper
-    b = vn.konva.box
-  w.position + b.center
+  vn.konva.wrapper.center
 
 proc redrawSizeNode(v: VisualNode, font: FontConfig) =
   let pad = font.size / 2
@@ -257,7 +254,7 @@ proc unselect =
   if v =? app.selectedVisualNode:
     removeHighlight v
     reset app.selectedVisualNode
-  
+
   if e =? app.selectedEdge:
     reset app.selectedEdge
 
@@ -270,17 +267,19 @@ proc select(e: Edge) =
   app.selectedEdge = some e
 
 
-proc updateEdge(e: Edge, head, tail: KonvaShape) =
-  let 
+proc updateEdge(e: Edge, head, tail: KonvaObject) =
+  let
     a1 = area head
     a2 = area tail
     c1 = center head
     c2 = center tail
-    d = c2 - c1
-    angle = arctan2(d.y, d.x) # rad
+    angle = angleTo(c1, c2)
+    unitx = v(1, 0)
+    d = unitx.rotate(angle) * size(head).v / 2
+    # XXX
 
-  e.konva.line.points = [head, tail]
-  e.konva.shape.position = (head + tail) / 2
+  e.konva.line.points = [c1, c2]
+  # e.konva.shape.position = (head + tail) / 2
 
 proc updateEdgeWidth(e: Edge, w: Tenth) =
   let v = toFloat w
@@ -346,10 +345,10 @@ proc redrawConnectionsTo(uid: Id) =
     let
       ei = app.edgeInfo[sorted id..uid]
       ps = ei.konva.line.points.foldPoints
-      n1 = app.objects[id].center
-      n2 = app.objects[uid].center
+      n1 = app.objects[id]
+      n2 = app.objects[uid]
 
-    updateEdge ei, n1, n2
+    updateEdge ei, n1.konva.wrapper, n2.konva.wrapper
 
 # TODO keep the center of node when changing size or text or ...
 proc setText(v: VisualNode, t: cstring) =
@@ -509,10 +508,11 @@ proc createNode =
     of bsFree:
       if sv =? app.selectedVisualNode:
         if sv == vn:
+          let w = vn.konva.wrapper
           highlight sv
           # TODO make a function
           show app.tempEdge.konva.wrapper
-          updateEdge app.tempEdge, vn, vn
+          updateEdge app.tempEdge, w, w
           updateEdgeTheme app.tempEdge, getFocusedTheme()
           updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
           app.boardState = bsMakeConnection
@@ -560,7 +560,7 @@ proc createNode =
 proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
   app.leftClicked = true
 
-proc newPoint(pos: Vector): Circle = 
+proc newPoint(pos: Vector): Circle =
   result = newCircle()
   with result:
     radius = 0
@@ -572,8 +572,10 @@ proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   if app.boardState == bsMakeConnection:
     let
       v = app.hoverVisualNode
-      n1 = !app.selectedVisualNode
-      n2 = v |? newPoint(app.lastMousePos)
+      n1 = (!app.selectedVisualNode).konva.wrapper
+      n2 =
+        if ?v: (!v).konva.wrapper
+        else: newPoint app.lastMousePos
 
     updateEdge app.tempEdge, n1, n2
 
@@ -735,7 +737,7 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsBorderShape
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
-              span(class="me-2"): text "width: "
+              span(class = "me-2"): text "width: "
               span: text $getFocusedEdgeWidth()
 
               proc onclick =
@@ -912,7 +914,7 @@ when isMainModule:
         if app.isSpaceDown:
           app.isSpaceDown = false
           setCursor ccNone
-          
+
       document.addEventListener "paste", proc(pasteEvent: Event) =
         discard
         # let file = pasteEvent.clipboardData.files[0]
@@ -921,7 +923,7 @@ when isMainModule:
         #   imageDataUrl(file).then(onPasteOnScreen)
         # else:
         #   console.log("WTF")
-        
+
     block init:
       app.sidebarWidth = defaultWidth
       app.font.family = "Vazirmatn"

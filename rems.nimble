@@ -17,6 +17,7 @@ requires "karax == 1.3.0"
 requires "caster"
 requires "uuid4"
 requires "questionable"
+requires "prettyvec"
 
 
 # Tasks
