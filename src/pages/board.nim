@@ -6,7 +6,6 @@ import caster, uuid4, questionable, prettyvec
 import ../[konva, hotkeys, browser]
 import ../[ui, conventions, graph]
 
-# TODO use FontFaceObserver
 
 type
   ColorTheme = tuple
@@ -164,12 +163,18 @@ const
   fontFamilies = [
     "Vazirmatn", "cursive", "monospace"]
 
+# TODO use FontFaceObserver
 # TODO easier control when creating connection
 # TODO add hover view when selecting a node
+# TODO remove implicit global argument `app` and make it explicit
+# TODO add beizier curve
 var app = AppData()
 
 
 # ----- Util
+
+func limit[T](value: T, rng: Slice[T]): T =
+  min(max(value, rng.a), rng.b)
 
 func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
@@ -180,6 +185,9 @@ template `?`(a): untyped =
 
 template `.!`(a, b): untyped =
   a.get.b
+
+template set(vari, data): untyped =
+  vari = data
 
 # ----- Degree
 
@@ -242,7 +250,7 @@ func center(vn: VisualNode): Vector =
   let
     w = vn.konva.wrapper
     b = vn.konva.box
-  
+
   w.position + b.position + b.size.v / 2
 
 func area(vn: VisualNode): Area =
@@ -265,8 +273,6 @@ proc redrawSizeNode(v: VisualNode, font: FontConfig) =
     width = v.konva.txt.width + pad*2
     height = v.konva.txt.height + pad*2
     cornerRadius = pad
-
-# TODO remove implicit global argument `app` and make it explicit
 
 proc getFocusedFont: FontConfig =
   if v =? app.selectedVisualNode:
@@ -333,7 +339,7 @@ func onBorder(axis: Axis, limit: Float, θ: Degree): Vector =
 func onBorder(dd: (Axis, Float), θ: Degree): Vector =
   onBorder dd[0], dd[1], θ
 
-func aaa(a: Area, r: Region): tuple[axis: Axis, limit: Float] =
+func rectSide(a: Area, r: Region): tuple[axis: Axis, limit: Float] =
   case r
   of 1: (aVertical, a.x2)
   of 3: (aVertical, a.x1)
@@ -374,10 +380,10 @@ proc updateEdge(e: Edge, a1: Area, c1: Vector, a2: Area, c2: Vector) =
     r2 = whichRegion(θ, a2)
     h =
       if c2 in a1: c1
-      else: c1 + onBorder(aaa(a1 + -c1, r1), θ)
+      else: c1 + onBorder(rectSide(a1 + -c1, r1), θ)
     t =
       if c2 in a1: c1
-      else: c2 - onBorder(aaa(a2 + -c2, r2), θ)
+      else: c2 - onBorder(rectSide(a2 + -c2, r2), θ)
 
   e.konva.line.points = [c1, c2]
   e.konva.shape.position = (h + t) / 2
@@ -388,7 +394,7 @@ proc updateEdgeWidth(e: Edge, w: Tenth) =
   e.konva.line.strokeWidth = v
   with e.konva.shape:
     strokeWidth = v
-    radius = v * 5
+    radius = max(6, v * 3)
 
 proc updateEdgeTheme(e: Edge, t: ColorTheme) =
   e.config.theme = t
@@ -451,7 +457,6 @@ proc redrawConnectionsTo(uid: Id) =
 
     updateEdge ei, n1.area, n1.center, n2.area, n2.center
 
-# TODO keep the center of node when changing size or text or ...
 proc setText(v: VisualNode, t: cstring) =
   v.text = t
   v.konva.txt.text = t
@@ -492,7 +497,6 @@ proc setFocusedTheme(theme: ColorTheme) =
   else:
     app.theme = theme
 
-# --- helpers ---
 
 func coordinate(mouse: Vector, scale, offsetx, offsety: Float): Vector =
   v(
@@ -514,10 +518,6 @@ proc center(stage: Stage): Vector =
     app.stage.x, app.stage.y,
     app.stage.width, app.stage.height)
 
-# --- actions ---
-
-func limit[T](value: T, rng: Slice[T]): T =
-  min(max(value, rng.a), rng.b)
 
 proc moveStage(v: Vector) =
   app.stage.x = app.stage.x + v.x
@@ -545,19 +545,10 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
 
   moveStage d * s′
 
-proc resetSelected =
-  discard
-  # reset app.selectedKonvaObject
-  # app.transformer.nodes = []
-  # app.transformer.remove
-
 proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
   # t.nodes = objs
   layer.add t
   layer.batchDraw
-
-
-# --- events ---
 
 proc createNode =
   var
@@ -629,6 +620,7 @@ proc createNode =
             app.edges.addConn conn
             app.edgeInfo[conn] = ei
             app.boardState = bsFree
+            select ei
             hide app.tempEdge.konva.wrapper
             removeHighlight sv
 
@@ -659,70 +651,13 @@ proc createNode =
   select vn
   redraw()
 
-proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
-  app.leftClicked = true
-
 proc newPoint(pos: Vector): Circle =
   result = newCircle()
   with result:
     radius = 1
     position = pos
 
-proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
-  app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
-
-  if app.boardState == bsMakeConnection:
-    let
-      v = app.hoverVisualNode
-      n1 = !app.selectedVisualNode
-
-    if ?v:
-      let n2 = !v
-      updateEdge app.tempEdge, n1.area, n1.center, n2.area, n2.center
-    else: 
-      let t = newPoint app.lastMousePos
-      updateEdge app.tempEdge, n1.area, n1.center, t.area, t.position
-
-
-proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
-  stopPropagate ke
-
-proc mouseUpStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
-  app.leftClicked = false
-
-proc onWheel(e: Event as WheelEvent) {.caster.} =
-  preventDefault e
-
-  let mp = v(e.x, e.y)
-  app.lastMousePos = coordinate(mp, app.stage)
-
-  if e.ctrlKey: # pinch-zoom
-    let
-      s = ||app.stage.scale
-      ⋊s = exp(-e.Δy / 100)
-
-    changeScale mp, s*(⋊s - 1)
-
-  else: # panning
-    moveStage v(e.Δx, e.Δy) * -1
-
-
-proc isMaximized*: bool =
-  app.sidebarWidth >= window.innerWidth * 2/3
-
-proc maximize* =
-  app.sidebarWidth =
-    if isMaximized(): defaultWidth
-    else: window.innerWidth
-  redraw()
-
-proc changeStateGen*(to: SidebarState): proc =
-  proc =
-    app.sidebarState = to
-
-template set(vari, data): untyped =
-  vari = data
-
+# ----- UI
 
 # discard getMsg()
 var msg = cstring"loading ..."
@@ -734,6 +669,19 @@ proc getMsg() {.async.} =
     .catch((err: Error) => console.log("Request Failed", err))
 
   redraw()
+
+proc isMaximized*: bool =
+  app.sidebarWidth >= window.innerWidth * 2/3
+
+proc maximize* =
+  app.sidebarWidth =
+    if isMaximized(): defaultWidth
+    else: window.innerWidth
+  redraw()
+
+proc sidebarStateMutator*(to: SidebarState): proc =
+  proc =
+    app.sidebarState = to
 
 proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
   buildHTML:
@@ -773,15 +721,9 @@ proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
             setFocusedFontFamily name
             app.footerState = fsOverview
 
-
 proc createDom*(data: RouterData): VNode =
   let freeze = winel.onmousemove != nil
   console.info "just updated the whole virtual DOM"
-
-  # data.hashpart:
-  # startsWith "#/": all
-  # startsWith "#/completed": completed
-  # startsWith "#/active": active
 
   buildHtml:
     tdiv(class = "karax"):
@@ -910,14 +852,14 @@ proc createDom*(data: RouterData): VNode =
           header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
 
             tdiv(class = "d-flex flex-row"):
-              tdiv(class = "nav-item", onclick = changeStateGen ssMessagesView):
+              tdiv(class = "nav-item", onclick = sidebarStateMutator ssMessagesView):
                 span(class = "nav-link px-3 pointer" &
                     iff(app.sidebarState == ssMessagesView, " active")):
                   span(class = "caption"):
                     text "Messages "
                   icon "message"
 
-              tdiv(class = "nav-item", onclick = changeStateGen ssPropertiesView):
+              tdiv(class = "nav-item", onclick = sidebarStateMutator ssPropertiesView):
                 span(class = "nav-link px-3 pointer" &
                   iff(app.sidebarState == ssPropertiesView, " active")):
                   span(class = "caption"):
@@ -958,13 +900,12 @@ proc createDom*(data: RouterData): VNode =
           footer(class = "mt-2"):
             discard
 
+
 when isMainModule:
   echo "compiled at: ", CompileDate, ' ', CompileTime
-
   setRenderer createDom, "app"
-
   setTimeout 500, proc =
-    let 
+    let
       layer = newLayer()
       centerCircle = newCircle()
 
@@ -974,7 +915,6 @@ when isMainModule:
       radius = 2
       stroke = "black"
       strokeWidth = 2
-
 
     with app:
       stage = newStage "board"
@@ -987,14 +927,32 @@ when isMainModule:
     with app.stage:
       width = window.innerWidth
       height = window.innerHeight
-      on "click", onStageClick
-      on "mousedown pointerdown", mouseDownStage
-      on "mousemove pointermove", mouseMoveStage
-      on "mouseup pointerup", mouseUpStage
       add layer
 
+      on "mousedown pointerdown", proc =
+        app.leftClicked = true
+
+      on "mouseup pointerup", proc =
+        app.leftClicked = false
+
+      on "mousemove pointermove":
+        proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+          app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
+
+          if app.boardState == bsMakeConnection:
+            let
+              v = app.hoverVisualNode
+              n1 = !app.selectedVisualNode
+
+            if ?v:
+              let n2 = !v
+              updateEdge app.tempEdge, n1.area, n1.center, n2.area, n2.center
+            else:
+              let t = newPoint app.lastMousePos
+              updateEdge app.tempEdge, n1.area, n1.center, t.area, t.position
+
     with layer:
-      add centerCircle 
+      add centerCircle
       add app.bottomGroup
       add app.tempEdge.konva.wrapper
       add app.mainGroup
@@ -1014,6 +972,22 @@ when isMainModule:
         app.leftClicked = false
 
     block global_events:
+      proc onWheel(e: Event as WheelEvent) {.caster.} =
+        preventDefault e
+
+        let mp = v(e.x, e.y)
+        app.lastMousePos = coordinate(mp, app.stage)
+
+        if e.ctrlKey: # pinch-zoom
+          let
+            s = ||app.stage.scale
+            ⋊s = exp(-e.Δy / 100)
+
+          changeScale mp, s*(⋊s - 1)
+
+        else: # panning
+          moveStage v(e.Δx, e.Δy) * -1
+
       addEventListener app.stage.container, "wheel", onWheel, nonPassive
       addEventListener app.stage.container, "contextmenu", proc(e: Event) =
         e.preventDefault
@@ -1052,28 +1026,28 @@ when isMainModule:
       moveStage app.stage.center
       redraw()
 
-  block shortcuts:
-    addHotkey "delete", proc =
-      # console.log app.selectedKonvaObject
-      # app.selectedKonvaObject.?destroy
-      # app.transformer.nodes = []
-      discard
+    block shortcuts:
+      addHotkey "delete", proc =
+        # console.log app.selectedKonvaObject
+        # app.selectedKonvaObject.?destroy
+        # app.transformer.nodes = []
+        discard
 
-    addHotkey "Escape", proc =
-      app.boardState = bsFree
-      # TODO do not set points of line by manually, use a function
-      hide app.tempEdge.konva.wrapper
-      app.footerState = fsOverview
-      unselect()
-      redraw()
+      addHotkey "Escape", proc =
+        app.boardState = bsFree
+        # TODO do not set points of line by manually, use a function
+        hide app.tempEdge.konva.wrapper
+        app.footerState = fsOverview
+        unselect()
+        redraw()
 
-    addHotkey "n", createNode
+      addHotkey "n", createNode
 
-    # TODO move
-    addHotkey "m", proc = discard
+      # TODO move
+      addHotkey "m", proc = discard
 
-    # TODO make connection
-    addHotkey "c", proc = discard
+      # TODO make connection
+      addHotkey "c", proc = discard
 
-    # TODO show/hide side bar
-    addHotkey "b", proc = discard
+      # TODO show/hide side bar
+      addHotkey "b", proc = discard
