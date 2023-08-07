@@ -87,16 +87,18 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 proc index*(pageTitle: string): VNode =
   buildHtml html:
     commonHead pageTitle, [
-      extJs("https://unpkg.com/konva@9/konva.min.js"),
-      extJs("./script.js", true),
-      extJs("https://unpkg.com/hotkeys-js/dist/hotkeys.min.js")]
+      extJs "https://unpkg.com/konva@9/konva.min.js",
+      extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js",
+      extJs("./script.js", true)]
 
     body(class = "overflow-hidden"):
       tdiv(id = "app")
 
 proc assets*(pageTitle: string): VNode =
   buildHtml html:
-    commonHead pageTitle, [extJs("./script-assets.js", true)]
+    commonHead pageTitle, [
+      extJs("./script-assets.js", true),
+      extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"]
 
     body(class = "bg-light"):
       tdiv(id = "ROOT")

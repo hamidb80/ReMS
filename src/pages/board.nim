@@ -164,7 +164,6 @@ const
     "Vazirmatn", "cursive", "monospace"]
 
 # TODO use FontFaceObserver
-# TODO easier control when creating connection
 # TODO add hover view when selecting a node
 # TODO remove implicit global argument `app` and make it explicit
 # TODO add beizier curve
@@ -179,6 +178,10 @@ func limit[T](value: T, rng: Slice[T]): T =
 func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
   else: s.b .. s.a
+
+func `or`[S: string or cstring](a, b: S): S = 
+  if a == "": b
+  else: a
 
 template `?`(a): untyped =
   issome a
@@ -448,7 +451,7 @@ proc cloneEdge(e: Edge): Edge =
       redraw()
 
 proc redrawConnectionsTo(uid: Id) =
-  for id in app.edges[uid]:
+  for id in app.edges.getOrDefault(uid):
     let
       ei = app.edgeInfo[sorted id..uid]
       ps = ei.konva.line.points.foldPoints
@@ -459,7 +462,7 @@ proc redrawConnectionsTo(uid: Id) =
 
 proc setText(v: VisualNode, t: cstring) =
   v.text = t
-  v.konva.txt.text = t
+  v.konva.txt.text = t or "  ...  "
   redrawSizeNode v, v.font
   redrawConnectionsTo v.id
 
@@ -561,7 +564,6 @@ proc createNode =
   with vn:
     id = uid
     font = app.font
-    text = "Hello"
     theme = app.theme
 
   with vn.konva:
@@ -642,13 +644,15 @@ proc createNode =
 
     on "dragmove", proc =
       redrawConnectionsTo uid
-
-  redrawSizeNode vn, vn.font
-  applyTheme txt, box, vn.theme
-
+  
+  
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
   select vn
+  applyTheme txt, box, vn.theme
+  setText vn, ""
+  redrawSizeNode vn, vn.font
+  app.sidebarState = ssPropertiesView
   redraw()
 
 proc newPoint(pos: Vector): Circle =
@@ -758,20 +762,22 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsColor
                 redraw()
 
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              bold(class = "me-2"): text "Font: "
-              span: text font.family
+            if not ?app.selectedEdge:
 
-              proc onclick =
-                app.footerState = fsFontFamily
-                redraw()
+              tdiv(class = "d-inline-flex mx-2 pointer"):
+                bold(class = "me-2"): text "Font: "
+                span: text font.family
 
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text $font.size
+                proc onclick =
+                  app.footerState = fsFontFamily
+                  redraw()
 
-              proc onclick =
-                app.footerState = fsFontSize
-                redraw()
+              tdiv(class = "d-inline-flex mx-2 pointer"):
+                span: text $font.size
+
+                proc onclick =
+                  app.footerState = fsFontSize
+                  redraw()
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "connection: "
@@ -1015,7 +1021,7 @@ when isMainModule:
 
     block init:
       app.sidebarWidth = defaultWidth
-      app.font.family = "Vazirmatn"
+      app.font.family = fontFamilies[1]
       app.font.size = 20
       app.theme = white
       app.edge.theme = white

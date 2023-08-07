@@ -5,30 +5,22 @@ import caster
 
 import ../[hotkeys, browser]
 
-
-proc dropHandler(ev: Event) =
-  console.log ev
-
-  # if ev.dataTransfer.items:
-  #   for i, item in ev.dataTransfer.items:
-  #     # If dropped items aren't files, reject them
-  #     if item.kind == "file":
-  #       console.log item.getAsFile()
-  # else:
-  #   for i, file in ev.dataTransfer.files:
-  #     console.log file
-
-# TODO add "order by"
-# TODO make tag searcher common in all modules [graph, assets, notes]
-
-func progressbar(percent: float): Vnode =
-  buildHtml:
-    tdiv(class = "progress limited-progress"):
-      tdiv(class = "progress-bar progress-bar-striped progress-bar-animated",
-          style = style(StyleAttr.width, $percent & "%"))
-
-
 type
+  Percent = range[0.0 .. 100.0]
+
+  UploadStatus = enum
+    usPrepare
+    usInProgress
+    usWait
+    usFailed
+    usCompleted
+
+  Upload = object
+    name: cstring
+    status: UploadStatus
+    progress: Percent
+    file: DFile
+
   CmpOperator = enum
     lt   #  <
     lte  #  <=
@@ -37,6 +29,44 @@ type
     gte  # >=
     gt   #  >
     like #  %
+
+
+var uploads: seq[Upload]
+
+# TODO Upload
+# https://github.com/axios/axios/blob/main/examples/upload/index.html
+# TODO add cancel button
+# https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
+# TODO add "order by"
+# TODO make tag searcher common in all modules [graph, assets, notes]
+
+
+proc pushToUpload(files: seq[DFile]) =
+  console.log files
+
+  for f in files:
+    uploads.add Upload(
+      source: usFile,
+      name: f.name,
+      status: usPrepare,
+      progress: 0.0,
+      file: f)
+
+# ----- Events
+
+proc dropHandler(ev: Event as DragEvent) {.caster.} =
+  pushToUpload ev.dataTransfer.filesArray
+
+proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
+  pushToUpload e.clipboardData.filesArray
+
+# ----- UI
+
+func progressbar(percent: float): Vnode =
+  buildHtml:
+    tdiv(class = "progress limited-progress"):
+      tdiv(class = "progress-bar progress-bar-striped progress-bar-animated",
+          style = style(StyleAttr.width, $percent & "%"))
 
 func tagSearch(name, color: string,
   # TODO inputType = int/string/...
@@ -74,7 +104,7 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          italic(class = "fa-solid fa-box-open fa-xl me-3 ms-1")
+          italic(class = "fa-solid fa-box fa-xl me-3 ms-1")
           text "Assets"
 
     tdiv(class = "p-4 m-4"):
@@ -86,17 +116,18 @@ proc createDom: Vnode =
         tdiv(class = "form-group w-100"):
           input(class = "form-control", `type` = "file",
               placeholder = "select a file"):
+
             proc oninput(e: Event, v: VNode) =
-              discard
+              pushToUpload e.currentTarget.filesArray
 
         tdiv(class = "my-3")
 
         tdiv(class = """dropper bg-light border-secondary grab
               border border-4 border-dashed rounded-2 user-select-none
-              d-flex justify-content-center align-items-center"""):
+              d-flex flex-column justify-content-center align-items-center"""):
 
           tdiv():
-            text "drag file or copy something here"
+            text "drag file or paste something here"
 
           tdiv():
             text "when hover"
@@ -114,19 +145,10 @@ proc createDom: Vnode =
         text "in progress uploads"
 
       tdiv(class = "list-group mb-4"):
-        tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
-          text "Cras justo odio"
-          progressbar 50.0
-          # TODO add cancel button
-
-
-        tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
-          text "Dapibus ac facilisis in"
-          progressbar 50.0
-
-        tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action disabled"):
-          text "Morbi leo risus"
-          progressbar 50.0
+        for u in uploads:
+          tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
+            text u.name
+            progressbar u.progress
 
       tdiv(class = "form-group"):
         h6(class = "mb-3"):
@@ -162,8 +184,11 @@ proc createDom: Vnode =
           text "load more"
           italic(class = "fa-solid fa-angles-right ms-2")
 
+
 when isMainModule:
-  window.addEventListener "paste", proc(e: Event) =
-    console.log e
+  document.body.addEventListener "paste", proc(
+      e: Event as ClipboardEvent) {.caster.} =
+    pushToUpload e.clipboardData.filesArray
+    redraw()
 
   setRenderer createDom
