@@ -9,10 +9,9 @@ type
   Percent = range[0.0 .. 100.0]
 
   UploadStatus = enum
-    usPrepare
     usInProgress
-    usWait
     usFailed
+    usCancelled
     usCompleted
 
   Upload = ref object
@@ -55,7 +54,10 @@ proc startUpload(u: Upload) =
 
   discard u.promise.catch proc(r: Error) =
     u.status = usFailed
-    echo "failed"
+    redraw()
+
+  discard u.promise.then proc(r: AxiosResponse) =
+    u.status = usCompleted
     redraw()
 
   u.status = usInProgress
@@ -72,13 +74,12 @@ proc pushToUpload(files: seq[DFile]) =
   for f in files:
     let u = Upload(
       name: f.name,
-      status: usPrepare,
+      status: usInProgress,
       progress: 0.0,
       file: f)
 
+    startUpload u
     uploads.add u
-    setTimeout 1000, proc = 
-      startUpload u
 
 # ----- Events
 
@@ -90,21 +91,25 @@ proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
 
 # ----- UI
 
+func statusColor(status: UploadStatus): cstring =
+  case status
+  of usInProgress: "bg-primary"
+  of usFailed: "bg-danger"
+  of usCancelled: "bg-warning"
+  of usCompleted: "bg-success"
+
 func progressbar(percent: Percent, status: UploadStatus): Vnode =
+  let cond = status == usInProgress
+
   buildHtml:
     tdiv(class = "progress limited-progress"):
-      tdiv(class = classes {
-        "progress-bar": true,
-        "bg-primary": status == usInProgress,
-        "bg-dark-subtle": status == usPrepare,
-        "bg-warning": status == usWait,
-        "bg-danger": status == usFailed,
-        "bg-success": status == usCompleted,
-        "progress-bar-striped progress-bar-animated": status in {usInProgress,
-            usPrepare},
-      },
-          style = style(StyleAttr.width, $iff(status == usInProgress, percent,
-              100) & "%"))
+      tdiv(
+        class = "progress-bar " &
+          statusColor(status) &
+          iff(cond, "progress-bar-striped progress-bar-animated"),
+        style = style(
+          StyleAttr.width,
+          $iff(cond, percent, 100) & "%"))
 
 func tagSearch(name, color: string,
   compareOperator: Option[CmpOperator]): VNode =
