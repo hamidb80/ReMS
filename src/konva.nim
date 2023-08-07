@@ -474,9 +474,7 @@ proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
 
 # --------- Helper
 
-func center*(k: KonvaObject): Vector =
-  k.position + v(k.size) / 2
-
+func `-`*(a: Vector): Vector = v(-a.x, -a.y) 
 func area*(k: KonvaObject): Area =
   let
     p = k.position
@@ -487,3 +485,22 @@ func area*(k: KonvaObject): Area =
     x2: p.x + s.width,
     y1: p.y,
     y2: p.y + s.height)
+
+func topLeft*(a: Area): Vector = v(a.x1, a.y1)
+func topRight*(a: Area): Vector = v(a.x2, a.y1)
+func bottomLeft*(a: Area): Vector = v(a.x1, a.y2)
+func bottomRight*(a: Area): Vector = v(a.x2, a.y2)
+func center*(a: Area): Vector = v(a.x1+a.x2, a.y1+a.y2) / 2
+func `+`*(a: Area, v: Vector): Area = 
+  Area(
+    x1:a.x1+v.x,
+    x2:a.x2+v.x,
+    y1:a.y1+v.y,
+    y2:a.y2+v.y)
+
+func center*(k: KonvaObject): Vector =
+  k.position + v(k.size) / 2
+
+func contains*(a: Area, v: Vector): bool =
+  v.x in a.x1..a.x2 and
+  v.y in a.y1..a.y2

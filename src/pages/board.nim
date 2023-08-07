@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, random, sets, tables, math]
+import std/[with, math, options, lenientops, strformat, random, sets, tables]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
@@ -29,6 +29,15 @@ type
     fsBorderShape
 
   ID = cstring
+
+  Region = range[1..4]
+
+  Axis = enum
+    aVertical
+    aHorizontal
+
+  Degree = distinct float
+  Radian = distinct float
 
   AppData = object
     # konva states
@@ -71,7 +80,7 @@ type
     family: string
     size: int
     style: FontStyle
-    # lineHeight: float
+    # lineHeight: Float
 
   VisualNode = ref object
     id: cstring
@@ -160,6 +169,8 @@ const
 var app = AppData()
 
 
+# ----- Util
+
 func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
   else: s.b .. s.a
@@ -169,6 +180,29 @@ template `?`(a): untyped =
 
 template `.!`(a, b): untyped =
   a.get.b
+
+# ----- Degree
+
+func `<`(a, b: Degree): bool {.borrow.}
+func `==`(a, b: Degree): bool {.borrow.}
+func `<=`(a, b: Degree): bool {.borrow.}
+func `-`(a, b: Degree): Degree {.borrow.}
+func `+`(a, b: Degree): Degree {.borrow.}
+func `$`(a: Degree): string {.borrow.}
+
+func degToRad(d: Degree): Radian =
+  Radian degToRad d.float
+
+func tan(d: Degree): float =
+  tan float degToRad d
+
+func cot(d: Degree): float =
+  cot float degToRad d
+
+func `-`(d: Degree): Degree =
+  Degree 360 - d.float
+
+# ----- Tenth
 
 func `==`(a, b: Tenth): bool {.borrow.}
 
@@ -180,12 +214,13 @@ func `$`(t: Tenth): string =
 
   $a & '.' & $b
 
-func toFloat(t: Tenth): float =
+func toFloat(t: Tenth): Float =
   t.int / 10
 
-func toTenth(f: float): Tenth =
+func toTenth(f: Float): Tenth =
   let n = toint f * 10
   Tenth n
+
 
 proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with box:
@@ -204,9 +239,21 @@ proc applyFont(txt: KonvaObject, font: FontConfig) =
     fontSize = font.size
 
 func center(vn: VisualNode): Vector =
-  vn.konva.wrapper.center
+  let
+    w = vn.konva.wrapper
+    b = vn.konva.box
+  
+  w.position + b.position + b.size.v / 2
+
+func area(vn: VisualNode): Area =
+  let
+    w = vn.konva.wrapper
+    b = vn.konva.box
+
+  b.area + w.position
 
 proc redrawSizeNode(v: VisualNode, font: FontConfig) =
+  # TODO keep center
   let pad = font.size / 2
 
   with v.konva.txt:
@@ -267,19 +314,73 @@ proc select(e: Edge) =
   app.selectedEdge = some e
 
 
-proc updateEdge(e: Edge, head, tail: KonvaObject) =
+func onBorder(axis: Axis, limit: Float, θ: Degree): Vector =
+  case axis
+  of aVertical:
+    let
+      m = tan θ
+      y = m * limit
+
+    v(limit, -y)
+
+  of aHorizontal:
+    let
+      m⁻¹ = cot θ
+      x = m⁻¹ * limit
+
+    v(-x, limit)
+
+func onBorder(dd: (Axis, Float), θ: Degree): Vector =
+  onBorder dd[0], dd[1], θ
+
+func aaa(a: Area, r: Region): tuple[axis: Axis, limit: Float] =
+  case r
+  of 1: (aVertical, a.x2)
+  of 3: (aVertical, a.x1)
+  of 2: (aHorizontal, a.y1)
+  of 4: (aHorizontal, a.y2)
+
+func normalize(θ: Degree): Degree =
   let
-    a1 = area head
-    a2 = area tail
-    c1 = center head
-    c2 = center tail
-    angle = angleTo(c1, c2)
-    unitx = v(1, 0)
-    d = unitx.rotate(angle) * size(head).v / 2
-    # XXX
+    d = θ.float
+    (i, f) = splitDecimal d
+    i′ = (i mod 360)
+
+  if d >= 0: Degree i′ + f
+  else: Degree 360 + i′ + f
+
+func arctan(v: Vector): Degree =
+  normalize arctan2(-v.y, v.x).radToDeg.Degree
+
+func whichRegion(θ: Degree, a: Area): Region =
+  ## devides the rectangle into 4 regions according to its diameters
+  let
+    d = a.topRight - a.center
+    λ = normalize arctan d
+  assert θ >= Degree 0.0
+  assert λ >= Degree 0.0
+
+  if θ <= λ: 1
+  elif θ <= Degree(180.0) - λ: 2
+  elif θ <= Degree(180.0) + λ: 3
+  elif θ <= Degree(360.0) - λ: 4
+  else: 1
+
+proc updateEdge(e: Edge, a1: Area, c1: Vector, a2: Area, c2: Vector) =
+  let
+    d = c2 - c1
+    θ = arctan d
+    r1 = whichRegion(θ, a1)
+    r2 = whichRegion(θ, a2)
+    h =
+      if c2 in a1: c1
+      else: c1 + onBorder(aaa(a1 + -c1, r1), θ)
+    t =
+      if c2 in a1: c1
+      else: c2 - onBorder(aaa(a2 + -c2, r2), θ)
 
   e.konva.line.points = [c1, c2]
-  # e.konva.shape.position = (head + tail) / 2
+  e.konva.shape.position = (h + t) / 2
 
 proc updateEdgeWidth(e: Edge, w: Tenth) =
   let v = toFloat w
@@ -348,7 +449,7 @@ proc redrawConnectionsTo(uid: Id) =
       n1 = app.objects[id]
       n2 = app.objects[uid]
 
-    updateEdge ei, n1.konva.wrapper, n2.konva.wrapper
+    updateEdge ei, n1.area, n1.center, n2.area, n2.center
 
 # TODO keep the center of node when changing size or text or ...
 proc setText(v: VisualNode, t: cstring) =
@@ -484,73 +585,74 @@ proc createNode =
     listening = false
     text = vn.text
 
+  with box:
+    on "mouseover", proc =
+      hover vn
+      setCursor ccPointer
+
+    on "mouseleave", proc =
+      unhover vn
+      setCursor ccNone
+
+    on "click", proc =
+      case app.boardState
+      of bsFree:
+        if sv =? app.selectedVisualNode:
+          if sv == vn:
+            let w = vn.konva.wrapper
+            # TODO make a function
+            highlight sv
+            show app.tempEdge.konva.wrapper
+            updateEdge app.tempEdge, w.area, w.center, w.area, w.center
+            updateEdgeTheme app.tempEdge, getFocusedTheme()
+            updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
+            app.boardState = bsMakeConnection
+          else:
+            select vn
+        else:
+          select vn
+
+      of bsMakeConnection:
+        let sv = !app.selectedVisualNode
+        if sv == vn:
+          discard
+        else:
+          let
+            id1 = uid
+            id2 = sv.id
+            conn = sorted id1..id2
+
+          var ei = cloneEdge app.tempEdge
+
+          if conn notin app.edgeInfo:
+            app.bottomGroup.add ei.konva.wrapper
+            app.edges.addConn conn
+            app.edgeInfo[conn] = ei
+            app.boardState = bsFree
+            hide app.tempEdge.konva.wrapper
+            removeHighlight sv
+
+      redraw()
+
   with wrapper:
-    id = uid
     x = app.lastMousePos.x
     y = app.lastMousePos.y
+    id = uid
     add box
     add txt
     draggable = true
 
+    on "dragstart", proc =
+      setCursor ccMove
+
+    on "dragend", proc =
+      setCursor ccPointer
+
+    on "dragmove", proc =
+      redrawConnectionsTo uid
+
   redrawSizeNode vn, vn.font
   applyTheme txt, box, vn.theme
-
-  box.on "mouseover", proc =
-    hover vn
-    setCursor ccPointer
-
-  box.on "mouseleave", proc =
-    unhover vn
-    setCursor ccNone
-
-  box.on "click", proc =
-    case app.boardState
-    of bsFree:
-      if sv =? app.selectedVisualNode:
-        if sv == vn:
-          let w = vn.konva.wrapper
-          highlight sv
-          # TODO make a function
-          show app.tempEdge.konva.wrapper
-          updateEdge app.tempEdge, w, w
-          updateEdgeTheme app.tempEdge, getFocusedTheme()
-          updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
-          app.boardState = bsMakeConnection
-        else:
-          select vn
-      else:
-        select vn
-
-    of bsMakeConnection:
-      let sv = !app.selectedVisualNode
-      if sv == vn:
-        discard
-      else:
-        let
-          id1 = uid
-          id2 = sv.id
-          conn = sorted id1..id2
-
-        var ei = cloneEdge app.tempEdge
-
-        if conn notin app.edgeInfo:
-          app.bottomGroup.add ei.konva.wrapper
-          app.edges.addConn conn
-          app.edgeInfo[conn] = ei
-          app.boardState = bsFree
-          hide app.tempEdge.konva.wrapper
-          removeHighlight sv
-
-    redraw()
-
-  wrapper.on "dragstart", proc =
-    setCursor ccMove
-
-  wrapper.on "dragend", proc =
-    setCursor ccPointer
-
-  wrapper.on "dragmove", proc =
-    redrawConnectionsTo uid
 
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
@@ -563,7 +665,7 @@ proc mouseDownStage(jo: JsObject as KonvaMouseEvent) {.caster.} =
 proc newPoint(pos: Vector): Circle =
   result = newCircle()
   with result:
-    radius = 0
+    radius = 1
     position = pos
 
 proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
@@ -572,12 +674,14 @@ proc mouseMoveStage(ke: JsObject as KonvaMouseEvent) {.caster.} =
   if app.boardState == bsMakeConnection:
     let
       v = app.hoverVisualNode
-      n1 = (!app.selectedVisualNode).konva.wrapper
-      n2 =
-        if ?v: (!v).konva.wrapper
-        else: newPoint app.lastMousePos
+      n1 = !app.selectedVisualNode
 
-    updateEdge app.tempEdge, n1, n2
+    if ?v:
+      let n2 = !v
+      updateEdge app.tempEdge, n1.area, n1.center, n2.area, n2.center
+    else: 
+      let t = newPoint app.lastMousePos
+      updateEdge app.tempEdge, n1.area, n1.center, t.area, t.position
 
 
 proc onStageClick(ke: JsObject as KonvaMouseEvent) {.caster.} =
@@ -860,7 +964,17 @@ when isMainModule:
   setRenderer createDom, "app"
 
   setTimeout 500, proc =
-    let layer = newLayer()
+    let 
+      layer = newLayer()
+      centerCircle = newCircle()
+
+    with centerCircle:
+      x = 0
+      y = 0
+      radius = 2
+      stroke = "black"
+      strokeWidth = 2
+
 
     with app:
       stage = newStage "board"
@@ -880,6 +994,7 @@ when isMainModule:
       add layer
 
     with layer:
+      add centerCircle 
       add app.bottomGroup
       add app.tempEdge.konva.wrapper
       add app.mainGroup
