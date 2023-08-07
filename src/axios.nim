@@ -1,11 +1,11 @@
-import std/[jsffi, asyncjs, httpclient]
+import std/[jsffi, asyncjs, httpcore, jsformdata]
 import ./browser
 
 type
-  AxiosConfig* = ref object of JsObject
+  AxiosConfig*[D: JsObject or FormData or cstring] = ref object of JsObject
     headers*: JsObject
     params*: JsObject
-    data*: JsObject
+    data*: D
     timeout*: int      # default is `0` (no timeout)
     maxRedirects*: int # default 5
     onUploadProgress*: proc(pe: ProgressEvent)
@@ -17,8 +17,7 @@ type
     status: HttpCode
     statusText: cstring
     headers: JsObject
-    config: AxiosConfig
-    # request: AxiosRequest
+    config: AxiosConfig[JsObject]
 
 
 proc axios*(
@@ -26,7 +25,7 @@ proc axios*(
   config: AxiosConfig = nil
 ): Future[AxiosResponse] {.importjs: """
   axios({
-    method: #
+    method: #,
     url: #,
     config: #})""".}
 

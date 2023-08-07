@@ -1,9 +1,9 @@
-import std/[with, math, options, lenientops, strformat, random]
-import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
+import std/[with, math, options, lenientops, strformat, random, httpcore]
+import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../[hotkeys, browser]
+import ../[hotkeys, browser, ui, axios, conventions]
 
 type
   Percent = range[0.0 .. 100.0]
@@ -15,11 +15,13 @@ type
     usFailed
     usCompleted
 
-  Upload = object
+  Upload = ref object
     name: cstring
     status: UploadStatus
     progress: Percent
     file: DFile
+    promise: Future[AxiosResponse]
+
 
   CmpOperator = enum
     lt   #  <
@@ -33,24 +35,50 @@ type
 
 var uploads: seq[Upload]
 
-# TODO Upload
-# https://github.com/axios/axios/blob/main/examples/upload/index.html
-# TODO add cancel button
-# https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
 # TODO add "order by"
 # TODO make tag searcher common in all modules [graph, assets, notes]
 
+
+proc startUpload(u: Upload) =
+  # https://github.com/axios/axios/blob/main/examples/upload/index.html
+
+  var
+    form = newFormData()
+    cfg = AxiosConfig[FormData]()
+
+  form.add "file".cstring, u.file
+  cfg.onUploadProgress = proc(pe: ProgressEvent) =
+    u.progress = pe.loaded / pe.total
+    redraw()
+
+  u.promise = axios(HttpPost, "https://google.com/", cfg)
+
+  discard u.promise.catch proc(r: Error) =
+    u.status = usFailed
+    echo "failed"
+    redraw()
+
+  u.status = usInProgress
+  redraw()
+
+
+proc cancelUpload(u: Upload) =
+  # https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
+  discard
 
 proc pushToUpload(files: seq[DFile]) =
   console.log files
 
   for f in files:
-    uploads.add Upload(
-      source: usFile,
+    let u = Upload(
       name: f.name,
       status: usPrepare,
       progress: 0.0,
       file: f)
+
+    uploads.add u
+    setTimeout 1000, proc = 
+      startUpload u
 
 # ----- Events
 
@@ -62,14 +90,23 @@ proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
 
 # ----- UI
 
-func progressbar(percent: float): Vnode =
+func progressbar(percent: Percent, status: UploadStatus): Vnode =
   buildHtml:
     tdiv(class = "progress limited-progress"):
-      tdiv(class = "progress-bar progress-bar-striped progress-bar-animated",
-          style = style(StyleAttr.width, $percent & "%"))
+      tdiv(class = classes {
+        "progress-bar": true,
+        "bg-primary": status == usInProgress,
+        "bg-dark-subtle": status == usPrepare,
+        "bg-warning": status == usWait,
+        "bg-danger": status == usFailed,
+        "bg-success": status == usCompleted,
+        "progress-bar-striped progress-bar-animated": status in {usInProgress,
+            usPrepare},
+      },
+          style = style(StyleAttr.width, $iff(status == usInProgress, percent,
+              100) & "%"))
 
 func tagSearch(name, color: string,
-  # TODO inputType = int/string/...
   compareOperator: Option[CmpOperator]): VNode =
 
   buildHtml:
@@ -114,10 +151,12 @@ proc createDom: Vnode =
 
       tdiv(class = "rounded p-3 rounded bg-white d-flex flex-column align-items-center justify-content-center"):
         tdiv(class = "form-group w-100"):
-          input(class = "form-control", `type` = "file",
-              placeholder = "select a file"):
+          input(class = "form-control",
+              `type` = "file",
+              multiple = "multiple",
+              placeholder = "select as many as files you want!"):
 
-            proc oninput(e: Event, v: VNode) =
+            proc onInput(e: Event, v: VNode) =
               pushToUpload e.currentTarget.filesArray
 
         tdiv(class = "my-3")
@@ -148,7 +187,7 @@ proc createDom: Vnode =
         for u in uploads:
           tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
             text u.name
-            progressbar u.progress
+            progressbar u.progress, u.status
 
       tdiv(class = "form-group"):
         h6(class = "mb-3"):

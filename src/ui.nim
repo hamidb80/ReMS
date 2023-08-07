@@ -6,6 +6,13 @@ import conventions, browser
 
 # --- components ---
 
+func classes*(ccs: openArray[(string, bool)]): cstring =
+  ## classes with conditions, something like in VueJS
+  for (cls, cond) in ccs:
+    if cond:
+      result.add cls
+      result.add " "
+
 func icon*(class: string): VNode =
   buildHtml:
     bold(class = "fa-solid fa-" & class)

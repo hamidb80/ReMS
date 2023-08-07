@@ -1,4 +1,4 @@
-import std/[dom, jsffi, asyncjs]
+import std/[dom, jsffi, asyncjs, jsformdata]
 import std/[sugar]
 
 type
@@ -10,6 +10,9 @@ type
   DFile* = dom.File
 
 let nonPassive* = AddEventListenerOptions(passive: false)
+
+func add*(self: FormData; name: cstring; value: Blob) {.importjs: "#.append(#, #)".}
+
 
 proc qi*(id: string): Element =
   document.getElementById id
