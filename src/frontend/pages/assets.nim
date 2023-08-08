@@ -221,19 +221,19 @@ proc createDom: Vnode =
 
               case u.status
               of usInProgress:
-                button(class = "ms-2 btn btn-outline-primary rounded border"):
+                button(class = "ms-2 btn btn-outline-primary rounded"):
                   icon "fa-times"
 
               of usFailed:
-                button(class = "ms-2 btn btn-outline-danger rounded border"):
+                button(class = "ms-2 btn btn-outline-danger rounded"):
                   icon "fa-sync"
 
               of usCancelled:
-                button(class = "ms-2 btn btn-outline-warning rounded border"):
+                button(class = "ms-2 btn btn-outline-warning rounded"):
                   icon "fa-sync"
 
               of usCompleted:
-                button(class = "ms-2 btn btn-outline-success rounded border"):
+                button(class = "ms-2 btn btn-outline-success rounded"):
                   icon "fa-check"
 
               # TODO show error message as a tooltip
@@ -266,7 +266,7 @@ proc createDom: Vnode =
       tdiv(class = "list-group my-4"):
         for i in 0..10:
           if i == selectedAssetIndex:
-            tdiv(class = "p-4 border"):
+            tdiv(class = "p-4 bg-white"):
               h2:
                 text "hello!"
 

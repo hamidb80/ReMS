@@ -115,12 +115,6 @@ proc tag(
           if t.hasValue:
             text value
 
-proc classes(list: openArray[tuple[add: bool, class: string]]): string =
-  for (add, class) in list:
-    if add:
-      result.add ' '
-      result.add class
-
 proc checkbox(checked: bool, changeHandler: proc(b: bool)): VNode =
   result = buildHtml:
     input(class = "form-check-input", `type` = "checkbox"):
