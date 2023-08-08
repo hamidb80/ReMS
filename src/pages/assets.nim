@@ -3,7 +3,8 @@ import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../[hotkeys, browser, ui, axios, conventions]
+import ../jslib/[hotkeys, axios]
+import ../utils/[browser, ui, conventions]
 
 type
   Percent = range[0.0 .. 100.0]

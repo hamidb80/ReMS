@@ -3,8 +3,8 @@ import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
-import ../[konva, hotkeys, browser]
-import ../[ui, conventions, graph]
+import ../jslib/[konva, hotkeys]
+import ../utils/[ui, conventions, graph, browser]
 
 
 type

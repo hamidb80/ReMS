@@ -1,5 +1,5 @@
 import std/[jsffi, asyncjs, httpcore, jsformdata]
-import ./browser
+import ../utils/browser
 
 type
   AxiosConfig*[D: JsObject or FormData or cstring] = ref object of JsObject

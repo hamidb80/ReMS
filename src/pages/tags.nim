@@ -3,7 +3,8 @@ import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../[hotkeys, browser, ui]
+import ../jslib/[hotkeys]
+import ../utils/[browser, ui]
 
 
 type
