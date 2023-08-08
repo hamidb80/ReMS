@@ -4,7 +4,8 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
 import ../jslib/[konva, hotkeys]
-import ../utils/[ui, conventions, graph, browser]
+import ../utils/[ui, browser]
+import ../../common/[conventions, graph]
 
 
 type
@@ -171,6 +172,9 @@ var app = AppData()
 
 
 # ----- Util
+template `Δy`*(e): untyped = e.deltaY
+template `Δx`*(e): untyped = e.deltaX
+template `||`*(v): untyped = v.asScalar
 
 func limit[T](value: T, rng: Slice[T]): T =
   min(max(value, rng.a), rng.b)
@@ -179,7 +183,7 @@ func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
   else: s.b .. s.a
 
-func `or`[S: string or cstring](a, b: S): S = 
+func `or`[S: string or cstring](a, b: S): S =
   if a == "": b
   else: a
 
@@ -644,8 +648,8 @@ proc createNode =
 
     on "dragmove", proc =
       redrawConnectionsTo uid
-  
-  
+
+
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
   select vn

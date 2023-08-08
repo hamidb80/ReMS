@@ -4,7 +4,8 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
 import ../jslib/[hotkeys, axios]
-import ../utils/[browser, ui, conventions]
+import ../utils/[browser, ui]
+import ../../common/[conventions]
 
 type
   Percent = range[0.0 .. 100.0]

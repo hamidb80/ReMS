@@ -32,14 +32,14 @@ proc getArgs: string =
 
 
 task genb, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/pages/board"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/frontend/pages/board"
 
 task genas, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/pages/assets"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/frontend/pages/assets"
 
 task gentg, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/pages/tags"
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
 
 task html, "generate index.html ./dist":
   # -d:localdev 
-  exec fmt"nim {getArgs()} -d:ssl r src/pages/html.nim "
+  exec fmt"nim {getArgs()} -d:ssl r src/frontend/pages/html.nim "
