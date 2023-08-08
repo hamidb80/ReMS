@@ -15,7 +15,7 @@ import conventions, browser
 
 func icon*(class: string): VNode =
   buildHtml:
-    bold(class = "fa-solid fa-" & class)
+    bold(class = "fa-solid " & class)
 
 func konva*(id: cstring): VNode =
   verbatim fmt"""

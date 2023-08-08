@@ -1,4 +1,4 @@
-import std/[options, lenientops, strformat, httpcore]
+import std/[options, lenientops, strformat, httpcore, sequtils]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -45,7 +45,7 @@ type
 const
   noIndex = -1
 
-var 
+var
   uploads: seq[Upload]
   assets: seq[Asset]
   selectedAssetIndex: int = 3 # noIndex
@@ -58,7 +58,7 @@ proc startUpload(u: Upload) =
 
   form.add "file".cstring, u.file
   cfg.onUploadProgress = proc(pe: ProgressEvent) =
-    u.progress = pe.loaded / pe.total
+    u.progress = pe.loaded / pe.total * 100
     redraw()
 
   u.promise = axios(HttpPost, "https://google.com/", cfg)
@@ -130,7 +130,7 @@ func tagSearch(name, color: string,
     tdiv(class = "form-group d-inline-block mx-2"):
       tdiv(class = "input-group mb-3"):
         span(class = "input-group-text"):
-          italic(class = "fa-solid fa-hashtag me-2")
+          icon("fa-hashtag me-2")
           span:
             text name
 
@@ -146,12 +146,12 @@ func tagSearch(name, color: string,
               of gt: "fa-solid fa-greater-than"
               of like: "fa-solid fa-percent"
 
-            italic(class = ic)
+            icon ic
 
           input(class = "form-control tag-input", `type` = "text")
 
         tdiv(class = "input-group-text btn btn-outline-danger d-flex align-items-center justify-content-center p-2"):
-          italic(class = "fa-solid fa-xmark")
+          icon("fa-xmark")
 
 # TODO add "order by"
 proc createDom: Vnode =
@@ -159,12 +159,12 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          italic(class = "fa-solid fa-box fa-xl me-3 ms-1")
+          icon("fa-box fa-xl me-3 ms-1")
           text "Assets"
 
     tdiv(class = "p-4 m-4"):
       h6(class = "mb-3"):
-        italic(class = "fa-solid fa-arrow-pointer me-2")
+        icon("fa-arrow-pointer me-2")
         text "Select / Paste / Drag"
 
       tdiv(class = "rounded p-3 rounded bg-white d-flex flex-column align-items-center justify-content-center"):
@@ -198,19 +198,47 @@ proc createDom: Vnode =
             e.preventdefault
 
       h6(class = "mt-4 mb-3"):
-        italic(class = "fa-solid fa-spinner fa-spin-pulse me-2")
-        text "in progress uploads"
+        tdiv(class = "d-flex flex-row justify-content-between align-items-center"):
+          tdiv:
+            if uploads.anyIt it.status == usInProgress:
+              icon("fa-spinner fa-spin-pulse me-2")
+            else:
+              icon("fa-check-double me-2")
+
+            text "in progress uploads"
+          tdiv(class = "btn btn-outline-dark"):
+            text "clear"
+            icon "fa-trash-can ms-2"
 
       tdiv(class = "list-group mb-4"):
         for u in uploads:
           tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
             text u.name
-            progressbar u.progress, u.status
-            # TODO show error message as a tooltip
+            tdiv(class = "d-flex flex-row align-items-center justify-content-between"):
+              progressbar u.progress, u.status
+
+              case u.status
+              of usInProgress:
+                button(class = "ms-2 btn btn-outline-primary rounded border"):
+                  icon "fa-times"
+
+              of usFailed:
+                button(class = "ms-2 btn btn-outline-danger rounded border"):
+                  icon "fa-sync"
+
+              of usCancelled:
+                button(class = "ms-2 btn btn-outline-warning rounded border"):
+                  icon "fa-sync"
+
+              of usCompleted:
+                button(class = "ms-2 btn btn-outline-success rounded border"):
+                  icon "fa-check"
+
+              # TODO show error message as a tooltip
 
       tdiv(class = "form-group"):
         h6(class = "mb-3"):
-          italic(class = "fa-solid fa-hashtag me-2")
+          icon("fa-hashtag me-2")
           text "search by tags"
 
         tagSearch("id", "red", some neq)
@@ -220,23 +248,23 @@ proc createDom: Vnode =
         button(class = "btn btn-success w-100 my-2"):
           text "add tag"
           # TODO remove this, add all tags below
-          italic(class = "fa-solid fa-plus ms-2")
+          icon("fa-plus ms-2")
 
         h6(class = "mb-3"):
-          italic(class = "fa-solid fa-arrow-up-wide-short me-2")
+          icon("fa-arrow-up-wide-short me-2")
           text "order results by"
 
       tdiv(class = "form-group"):
         button(class = "btn btn-primary w-100"):
           text "search"
-          italic(class = "fa-solid fa-magnifying-glass ms-2")
+          icon("fa-magnifying-glass ms-2")
 
 
       # uploaded files
       tdiv(class = "list-group my-4"):
         for i in 0..10:
           if i == selectedAssetIndex:
-            tdiv(class="p-4 border" ):
+            tdiv(class = "p-4 border"):
               h2:
                 text "hello!"
 
@@ -248,12 +276,12 @@ proc createDom: Vnode =
 
               # + size
               # + dropdown button
-          
+
 
       tdiv(class = "form-group"):
         button(class = "btn btn-warning w-100 mt-3"):
           text "load more"
-          italic(class = "fa-solid fa-angles-right ms-2")
+          icon("fa-angles-right ms-2")
 
 
 when isMainModule:

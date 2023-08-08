@@ -3,7 +3,7 @@ import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../[hotkeys, browser]
+import ../[hotkeys, browser, ui]
 
 
 type
@@ -101,7 +101,7 @@ proc tag(
       (StyleAttr.color, t.theme.fg.cstring),
       (StyleAttr.borderColor, t.theme.fg.cstring),
     )):
-      italic(class = "fa-solid " & t.icon)
+      icon t.icon
 
       if showNameForce or t.hasValue:
         span(dir = "auto", class = "ms-2"):
@@ -133,7 +133,7 @@ proc checkbox(checked: bool, changeHandler: proc(b: bool)): VNode =
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
     tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-1 p-2"):
-      italic(class = "m-2 fa-solid " & icon)
+      icon " m-2 " & icon
       proc onclick =
         setIcon icon
 
@@ -143,12 +143,12 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          italic(class = "fa-solid fa-hashtag fa-xl me-3 ms-1")
+          icon "fa-hashtag fa-xl me-3 ms-1"
           text "Tags"
 
     tdiv(class = "p-4 mx-4 my-2"):
       h6(class = "mb-3"):
-        italic(class = "fa-solid fa-bars-staggered me-2")
+        icon "fa-bars-staggered me-2"
         text "All Tags"
 
       tdiv(class = "d-flex flex-row"):
@@ -158,7 +158,7 @@ proc createDom: Vnode =
 
     tdiv(class = "p-4 mx-4 my-2"):
       h6(class = "mb-3"):
-        italic(class = "fa-solid fa-gear me-2")
+        icon "fa-gear me-2"
         text "Config"
 
       tdiv(class = "form-control"):
@@ -185,7 +185,7 @@ proc createDom: Vnode =
 
             tdiv(class = "d-inline-block"):
               tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
-                italic(class = "m-2 fa-solid " & currentTag.icon)
+                icon "m-2 " & currentTag.icon
 
               proc onclick =
                 state = asSelectIcon
@@ -238,11 +238,11 @@ proc createDom: Vnode =
         if selectedTagI == noIndex:
           button(class = "btn btn-success w-100 mt-2 mb-4"):
             text "add"
-            italic(class="fa-solid mx-2 fa-plus")
+            icon "mx-2 fa-plus"
         else:
           button(class = "btn btn-primary w-100 mt-2 mb-4"):
             text "update"
-            italic(class="fa-solid mx-2 fa-sync")
+            icon "mx-2 fa-sync"
 
 
 when isMainModule:

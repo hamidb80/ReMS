@@ -742,11 +742,11 @@ proc createDom*(data: RouterData): VNode =
 
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
             if ?app.selectedVisualNode:
-              italic(class = "fa-solid fa-crosshairs")
+              icon "fa-crosshairs"
             elif ?app.selectedEdge:
-              italic(class = "fa-solid fa-grip-lines")
+              icon "fa-grip-lines"
             else:
-              italic(class = "fa-solid fa-earth-asia")
+              icon "fa-earth-asia"
 
           case app.footerState
           of fsOverview:
