@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, random, httpcore]
+import std/[options, lenientops, strformat, httpcore]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -20,8 +20,19 @@ type
     progress: Percent
     file: DFile
     promise: Future[AxiosResponse]
+    reason: cstring
 
 
+  Tag = object # import from tags.nim
+
+  Asset = object
+    filename: string
+    description: string
+    mimeType: string
+    # owner: ID
+    tags: seq[Tag]
+
+  # TODO make tag searcher common in all modules [graph, assets, notes]
   CmpOperator = enum
     lt   #  <
     lte  #  <=
@@ -31,16 +42,16 @@ type
     gt   #  >
     like #  %
 
+const
+  noIndex = -1
 
-var uploads: seq[Upload]
-
-# TODO add "order by"
-# TODO make tag searcher common in all modules [graph, assets, notes]
+var 
+  uploads: seq[Upload]
+  assets: seq[Asset]
+  selectedAssetIndex: int = 3 # noIndex
 
 
 proc startUpload(u: Upload) =
-  # https://github.com/axios/axios/blob/main/examples/upload/index.html
-
   var
     form = newFormData()
     cfg = AxiosConfig[FormData]()
@@ -52,8 +63,9 @@ proc startUpload(u: Upload) =
 
   u.promise = axios(HttpPost, "https://google.com/", cfg)
 
-  discard u.promise.catch proc(r: Error) =
+  discard u.promise.catch proc(e: Error) =
     u.status = usFailed
+    u.reason = e.message
     redraw()
 
   discard u.promise.then proc(r: AxiosResponse) =
@@ -68,7 +80,7 @@ proc cancelUpload(u: Upload) =
   # https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
   discard
 
-proc pushToUpload(files: seq[DFile]) =
+proc pushUploads(files: seq[DFile]) =
   console.log files
 
   for f in files:
@@ -84,10 +96,10 @@ proc pushToUpload(files: seq[DFile]) =
 # ----- Events
 
 proc dropHandler(ev: Event as DragEvent) {.caster.} =
-  pushToUpload ev.dataTransfer.filesArray
+  pushUploads ev.dataTransfer.filesArray
 
 proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
-  pushToUpload e.clipboardData.filesArray
+  pushUploads e.clipboardData.filesArray
 
 # ----- UI
 
@@ -141,6 +153,7 @@ func tagSearch(name, color: string,
         tdiv(class = "input-group-text btn btn-outline-danger d-flex align-items-center justify-content-center p-2"):
           italic(class = "fa-solid fa-xmark")
 
+# TODO add "order by"
 proc createDom: Vnode =
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
@@ -162,7 +175,7 @@ proc createDom: Vnode =
               placeholder = "select as many as files you want!"):
 
             proc onInput(e: Event, v: VNode) =
-              pushToUpload e.currentTarget.filesArray
+              pushUploads e.currentTarget.filesArray
 
         tdiv(class = "my-3")
 
@@ -193,6 +206,7 @@ proc createDom: Vnode =
           tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
             text u.name
             progressbar u.progress, u.status
+            # TODO show error message as a tooltip
 
       tdiv(class = "form-group"):
         h6(class = "mb-3"):
@@ -217,11 +231,24 @@ proc createDom: Vnode =
           text "search"
           italic(class = "fa-solid fa-magnifying-glass ms-2")
 
-      tdiv(class = ""):
-        # switch list/block view
-        for i in 0..10:
-          discard # files uploaded
 
+      # uploaded files
+      tdiv(class = "list-group my-4"):
+        for i in 0..10:
+          if i == selectedAssetIndex:
+            tdiv(class="p-4 border" ):
+              h2:
+                text "hello!"
+
+          else:
+            tdiv(class = "list-group-item list-group-item-action"):
+              # + file type logo like image or video or ...
+              bold:
+                text " file name"
+
+              # + size
+              # + dropdown button
+          
 
       tdiv(class = "form-group"):
         button(class = "btn btn-warning w-100 mt-3"):
@@ -230,9 +257,9 @@ proc createDom: Vnode =
 
 
 when isMainModule:
-  document.body.addEventListener "paste", proc(
-      e: Event as ClipboardEvent) {.caster.} =
-    pushToUpload e.clipboardData.filesArray
-    redraw()
+  document.body.addEventListener "paste":
+    proc(e: Event as ClipboardEvent) {.caster.} =
+      pushUploads e.clipboardData.filesArray
+      redraw()
 
   setRenderer createDom
