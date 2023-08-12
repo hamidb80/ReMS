@@ -113,15 +113,15 @@ proc tags*(pageTitle: string): VNode =
 
 proc editor*(pageTitle: string): VNode =
   buildHtml html:
-    commonHead pageTitle, [extJs("./script-editor.js", true)]
+    commonHead pageTitle, [
+      extJs("./script-editor.js", true),
+      extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"]
 
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
 
 when isMainModule:
-  echo "🏃 started ..."
-
   writeFile "./dist/index.html":
     $ index "ReMS - Remembering Manangement System"
 

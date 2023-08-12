@@ -1,4 +1,4 @@
-import std/[sequtils,cstrutils ,strutils, sets, with, strformat, sugar, tables]
+import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables]
 import std/[dom, jsconsole]
 
 import karax/[karax, karaxdsl, vdom]
@@ -28,6 +28,7 @@ app.register [
   h5Component,
   h6Component,
   latexComponent,
+  mdComponent,
   verticalSpaceComponent,
   imageComponent,
   videoComponent,

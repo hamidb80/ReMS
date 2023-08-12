@@ -2,6 +2,7 @@ import std/[jsffi, dom, jsconsole]
 import std/[with, sequtils, tables, sugar, jsre]
 import core
 import ../../utils/[browser, js]
+import ../../jslib/[katex, marked]
 import ../../../common/conventions
 
 
@@ -302,9 +303,6 @@ proc initLink: Hooks =
           updateCallback: mutState(setUrl, cstring)))]
 
 
-func latexToHtml(latex: cstring, inline: bool): cstring
-  {.importjs: "katex.renderToString(#, {displayMode: !#})".}
-
 proc initLatex: Hooks =
   let
     el = createElement("div", {"class": "tw-latex"})
@@ -572,13 +570,53 @@ proc initCustomHtml: Hooks =
           updateCallback: mutState(cset, cstring)))]
 
 
-# ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
-# ----- Code + language + text/link
-# ----- Embed | from youtube, aparat, github
-# ----- :Custom Component:
-# ----- Slide
+proc initMd: Hooks =
+  let
+    el = createElement("div", {"class": "tw-md"})
+    (content, cset) = genState c""
+    (inline, iset) = genState false
+    # TODO add dire="auto"
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = noTags
+    capture = () => <*{
+      "content": content(),
+      "inline": inline()}
+
+    restore = proc(input: JsObject) =
+      cset input["content"].to cstring
+      iset input["inline"].to bool
+
+    render = proc =
+      el.ctrlClass displayInlineClass, inline()
+      el.innerHTML = mdparse(content())
+
+    settings = () => @[
+      SettingsPart(
+        field: "markdown code",
+        icon: "bi bi-markdown",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs content(),
+          updateCallback: mutState(cset, cstring))),
+
+      SettingsPart(
+        field: "inline",
+        icon: "bi bi-displayport",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: toJs inline(),
+          updateCallback: mutState(iset, bool)))]
+
+
+
 # ----- MarkDownNode
-# ----- FootNote
+# ----- Code[language + (text/link)]
+# ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
+# ----- Embed | from youtube, aparat, github
+# ----- Slide
+# ----- :Custom Component:
 # ----- Table Of Contents
 
 # ----- Export ------------------------
@@ -661,6 +699,12 @@ defComponent latexComponent,
   "bi bi-regex",
   @["inline", "block"],
   initLatex
+
+defComponent mdComponent,
+  "markdown",
+  "bi bi-markdown",
+  @["inline", "block"],
+  initMd
 
 defComponent verticalSpaceComponent,
   "vertical-space",
