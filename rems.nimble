@@ -40,6 +40,9 @@ task genas, "generate script.js file in ./dist":
 task gentg, "generate script.js file in ./dist":
   exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
 
+task gened, "generate script.js file in ./dist":
+  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
+
 task html, "generate index.html ./dist":
   # -d:localdev 
   exec fmt"nim {getArgs()} -d:ssl r src/frontend/pages/html.nim "

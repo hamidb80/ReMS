@@ -163,3 +163,80 @@ figure {
   border-style: solid;
   border-width: 1px;
 }
+
+/* ------------------------ */
+#tw-side-bar {
+  overflow-y: scroll;
+  height: 100vh;
+  width: 46vw;
+}
+
+.tw-focus-hover {
+  background-color: #9dadff4f;
+}
+
+.tw-pointer {
+  cursor: pointer;
+}
+
+.tw-mouse-hover {
+  background-color: #00720f4f;
+}
+
+figure {
+  padding: 6px;
+}
+
+.katex {
+  direction: ltr;
+}
+
+#tw-render {
+  width: 50vw;
+  height: 100vh;
+}
+
+.tw-image-wrapper {
+  text-align: center;
+}
+
+.tw-image-wrapper img {
+  max-width: 100%;
+  object-fit: contain
+}
+
+/* --------------------------- */
+
+.tw-content .content-list {
+  display: table;
+  padding-left: 1em;
+  list-style-position: inside;
+}
+
+.tw-content p {
+  display: inline-block;
+}
+
+.tw-content .content-list p {
+  margin-bottom: 0;
+}
+
+.tw-content .list-persian-number {
+  list-style-type: persian;
+}
+
+.tw-content .list-decimal {
+  list-style-type: decimal;
+}
+
+.tw-content .list-disc {
+  list-style-type: disc;
+}
+
+.tw-content .list-roman {
+  list-style-type: upper-roman;
+}
+
+.tw-content .list-latin {
+  list-style-type: lower-latin;
+}

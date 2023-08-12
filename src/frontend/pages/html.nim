@@ -20,7 +20,7 @@ proc download(url, path: string) =
 const
   saveDir = "./dist/"
   loadDir = "./"
-  cannot = ["font-awesome"]
+  cannot = ["font-awesome", "katex.min.css", "bootstrap-icons"]
 
 func normalizeOsName(url: string): string =
   for ch in url:
@@ -64,10 +64,13 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     # JS libraries
     extJs "https://unpkg.com/konva@9/konva.min.js"
     extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
+    extJs "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
 
     # UI libraries
     extCss "https://bootswatch.com/5/litera/bootstrap.min.css"
+    extCss "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
     extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    extCss "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
 
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
@@ -78,9 +81,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     # custom
     extCss "./custom.css"
 
-
-    for e in extra:
-      e
+    for e in extra: e
 
 # ----- pages -----
 
@@ -110,6 +111,13 @@ proc tags*(pageTitle: string): VNode =
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
+proc editor*(pageTitle: string): VNode =
+  buildHtml html:
+    commonHead pageTitle, [extJs("./script-editor.js", true)]
+
+    body(class = "bg-light"):
+      tdiv(id = "ROOT")
+
 
 when isMainModule:
   echo "🏃 started ..."
@@ -122,5 +130,8 @@ when isMainModule:
 
   writeFile "./dist/tags.html":
     $ tags "tag manager"
+
+  writeFile "./dist/editor.html":
+    $ editor "editor"
 
   echo "👋 asset files are ready!"
