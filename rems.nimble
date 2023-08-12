@@ -10,14 +10,19 @@ bin           = @["rms"]
 
 # Dependencies
 
-requires "nim >= 1.6.12"
+requires "nim >= 1.6.14"
 requires "macroplus >= 0.2.5"
+
+requires "poinari"
+requires "jester" 
+# XXX https://nimble.directory/pkg/mummy
+
 requires "karax == 1.3.0"
-# requires "urlon"
 requires "caster"
 requires "uuid4"
 requires "questionable"
 requires "prettyvec"
+# requires "urlon"
 
 
 # Tasks
