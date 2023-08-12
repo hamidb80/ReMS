@@ -392,9 +392,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     w.scrollTop = t.offsetTop - 160
 
-  # TODO folding shortcuts 
-
-  ## TODO ---- editor's shortcuts ----
+  ## TODO shortcuts ----
+  # folding shortcuts 
   ## Toggle input/textarea
   ## Toggle input/textarea
   ## Toggle rtl/ltr
@@ -404,6 +403,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # TODO Pinterest layout
 # TODO use kraut for routing
+# TODO save document title, link, tags, decription, ... in root config
 proc homePage: VNode =
   buildHtml tdiv(class = ""):
     discard
