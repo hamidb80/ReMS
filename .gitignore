@@ -1,10 +1,7 @@
 .vscode
-
 dist/*
-
-src/*.js
-
 play.*
+
 *.exe
 *.db
 sqlite3.*

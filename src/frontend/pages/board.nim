@@ -881,8 +881,8 @@ proc createDom*(data: RouterData): VNode =
                 invisibleText()
 
                 icon(
-                    if isMaximized(): "window-minimize"
-                    else: "window-maximize")
+                    if isMaximized(): "fa-window-minimize"
+                    else: "fa-window-maximize")
 
           main(class = "p-4 content-wrapper"):
             case app.sidebarState

@@ -1,31 +1,48 @@
 import std/[mimetypes, tables, os, strutils]
 import mummy
-import ../frontend/pages/html
-import ../common/path
+import ../common/path, ./utils/view
+
 
 const mft = toTable mimes
 
 func fileExtension(s: string): string =
   s[s.rfind('.')+1 .. ^1]
 
-proc staticFileHandler*(req: Request) =
-  let qi = req.uri.find '='
-  if qi != -1:
+proc staticFileHandler*(req: Request) {.addQueryParams.} =
+  if "file" in q:
     let
-      fname = req.uri[qi+1 .. ^1]
+      fname = q["file"]
       ext = fileExtension fname
       mime = mft[ext]
       fpath = projectHome / "dist" / fname
 
-    echo fpath, ' ', fileExists fpath
     if fileExists fpath:
       req.respond(200, @{"Content-Type": mime}, readFile fpath)
-      
+
     else: req.respond(404)
   else: req.respond(404)
 
-proc indexHandler*(req: Request) =
-  req.respond(200, @{"Content-Type": "text/html"}, indexPageStr)
+  echo q
+
 
 proc notFoundHandler*(req: Request) =
   req.respond(404, @{"Content-Type": "text/html"}, "what? " & req.uri)
+
+proc errorHandler*(req: Request, e: ref Exception) =
+  echo e.msg
+  req.respond(500, @[], e.msg)
+
+
+proc toHtmlHandler*(page: string): RequestHandler =
+  proc(req: Request) =
+    req.respond(200, @{"Content-Type": "text/html"}, page)
+
+when defined backend:
+  import ../frontend/pages/html
+
+  let
+    indexPage* = toHtmlHandler "Hey!"
+    boardPage* = toHtmlHandler boardPageStr
+    assetsPage* = toHtmlHandler assetsPageStr
+    tagsPage* = toHtmlHandler tagsPageStr
+    editorPage* = toHtmlHandler editorPageStr

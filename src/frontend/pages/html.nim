@@ -1,6 +1,7 @@
 import std/[strutils, os, httpclient, sequtils]
 import karax/[vdom, karaxdsl]
 import ../../common/path
+import ../../backend/routes
 
 # ----- aliases -----
 
@@ -20,7 +21,6 @@ proc download(url, path: string) =
 
 const
   saveDir = "./dist/"
-  loadDir = "/dist/?file="
   cannot = ["font-awesome", "katex.min.css", "bootstrap-icons"]
 
 
@@ -35,7 +35,7 @@ proc localize(url: string): string =
   let
     fileName = normalizeOsName url.splitPath.tail
     filePath = saveDir & filename
-    loadPath = loadDir & fileName
+    loadPath = getDistUrl fileName
     isFromInternet = url.startsWith "http"
 
   if isFromInternet:
@@ -50,8 +50,11 @@ proc localize(url: string): string =
     else: url
   else: loadPath
 
+proc extLink(rel, url: string): VNode =
+  buildHtml link(rel = rel, href = localize url)
+
 proc extCss(url: string): VNode =
-  buildHtml link(rel = "stylesheet", href = localize url)
+  buildHtml extLink("stylesheet", url)
 
 proc extJs(url: string, defered: bool = false): VNode =
   result = buildHtml script(src = localize url)
@@ -64,6 +67,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
     title: text pageTitle
+    extLink "icon", "./icon.png"
 
     # JS libraries
     extJs "https://unpkg.com/konva@9/konva.min.js"
@@ -89,7 +93,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 
 # ----- pages -----
 
-proc index: VNode =
+proc board: VNode =
   buildHtml html:
     commonHead "ReMS - Remembering Manangement System", [
       extJs "https://unpkg.com/konva@9/konva.min.js",
@@ -129,13 +133,14 @@ proc editor: VNode =
 # -----
 
 when isMainModule:
-  writeFile "./dist/index.html", $index()
+  copyFileToDir "./src/frontend/custom.css", "./dist"
+  writeFile "./dist/board.html", $board()
   writeFile "./dist/assets.html", $assets()
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/editor.html", $editor()
-else:
-  const
-    indexPageStr* = staticRead projectHome / "./dist/index.html"
-    assetsPageStr* = staticRead projectHome / "./dist/assets.html"
-    tagsPageStr* = staticRead projectHome / "./dist/tags.html"
-    editorPageStr* = staticRead projectHome / "./dist/editor.html"
+
+const
+  boardPageStr* = staticRead projectHome / "./dist/board.html"
+  assetsPageStr* = staticRead projectHome / "./dist/assets.html"
+  tagsPageStr* = staticRead projectHome / "./dist/tags.html"
+  editorPageStr* = staticRead projectHome / "./dist/editor.html"
