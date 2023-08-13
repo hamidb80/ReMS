@@ -22,7 +22,7 @@ type
 
 proc axios*(
   `method`, url: cstring,
-  config: AxiosConfig = nil
+  config: AxiosConfig = nil,
 ): Future[AxiosResponse] {.importjs: """
   axios({
     method: #,
@@ -32,6 +32,17 @@ proc axios*(
 proc axios*(
   `method`: HttpMethod,
   url: cstring,
-  config: AxiosConfig
+  config: AxiosConfig,
 ): Future[AxiosResponse] =
   axios $`method`, url, config
+
+proc postForm*(
+  url: cstring,
+  form: FormData,
+  cfg: AxiosConfig): Future[AxiosResponse] {.importjs: """
+  axios.post(#, #, {...#,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+  })
+""".}

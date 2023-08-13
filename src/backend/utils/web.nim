@@ -1,4 +1,4 @@
-import std/[macros, strutils, sequtils, uri]
+import std/[macros, strtabs, uri, strutils, sequtils]
 import macroplus
 
 
@@ -50,7 +50,8 @@ macro dispatch*(router, body): untyped =
     if m.strVal == "config":
       let config = ident u.strval.strip(chars = {']', '['}).replace(" ", "") & "Handler"
       result.add quote do:
-        router.`config` = `h`
+        when not defined js:
+          router.`config` = `h`
 
     else:
       let
@@ -84,7 +85,30 @@ macro dispatch*(router, body): untyped =
           procbody)
 
       result.add quote do:
-        when defined backend:
+        when not defined js:
           `router`.`m`(`u`, `h`)
 
   debugEcho repr result
+
+
+func extractQueryParams*(url: string): StringTableRef =
+  result = newStringTable(modeStyleInsensitive)
+
+  let
+    qi = url.rfind('?')
+    p =
+      if qi == -1: ""
+      else: url[qi+1 .. ^1]
+
+  for (k, v) in decodeQuery p:
+    result[k] = v
+
+macro addQueryParams*(procdef): untyped =
+  let
+    req = procdef.params[1][IdentDefName]
+    q = ident "q"
+    def = quote:
+      let `q` = extractQueryParams(`req`.uri)
+
+  procdef.body.insert 0, def
+  procdef

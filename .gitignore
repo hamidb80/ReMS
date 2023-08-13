@@ -1,7 +1,8 @@
-.vscode
-dist/*
-play.*
+.vscode/
+dist/
+resources/
 
+play.*
 *.exe
 *.db
 sqlite3.*

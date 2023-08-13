@@ -32,22 +32,22 @@ requires "prettyvec"
 import std/[os, strutils, strformat]
 
 task genb, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/frontend/pages/board"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/frontend/pages/board"
 
 task genas, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/frontend/pages/assets"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/frontend/pages/assets"
 
 task gentg, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
 
 task gened, "generate script.js file in ./dist":
-  exec "nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
 
 task html, "generate index.html ./dist":
-  exec fmt"nim -d:ssl --mm:arc --threads:on r src/frontend/pages/html.nim"
+  exec fmt"nim r src/frontend/pages/html.nim"
 
 task localhtml, "generate index.html ./dist":
-  exec fmt"nim -d:ssl --mm:arc --threads:on -d:localdev r src/frontend/pages/html.nim"
+  exec fmt"nim -d:ssl -d:localdev r src/frontend/pages/html.nim"
 
 task serv, "run server":
-  exec fmt"nim --threads:on --mm:arc r ./src/backend/server.nim"
+  exec fmt"nim --mm:arc --threads:on -d:ssl r ./src/backend/server.nim"

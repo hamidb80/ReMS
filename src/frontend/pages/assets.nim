@@ -6,6 +6,7 @@ import caster
 import ../jslib/[hotkeys, axios]
 import ../utils/[browser, ui]
 import ../../common/[conventions]
+import ../../backend/routes
 
 type
   Percent = range[0.0 .. 100.0]
@@ -58,12 +59,12 @@ proc startUpload(u: Upload) =
     form = newFormData()
     cfg = AxiosConfig[FormData]()
 
-  form.add "file".cstring, u.file
+  form.add u.name, u.file
   cfg.onUploadProgress = proc(pe: ProgressEvent) =
     u.progress = pe.loaded / pe.total * 100
     redraw()
 
-  u.promise = axios(HttpPost, "https://google.com/", cfg)
+  u.promise = postForm(post_assets_upload_url(), form, cfg)
 
   discard u.promise.catch proc(e: Error) =
     u.status = usFailed
