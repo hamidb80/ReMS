@@ -46,36 +46,45 @@ macro dispatch*(router, body): untyped =
       m = a.httpmethod
       h = a.handler
       u = a.url
-      procname = ident:
-        a.httpMethod.strVal &
-        a.url.strVal.split("/").join("_") &
-        "url"
-      procbody = block:
-        if a.args.len == 0: newlit u.strVal
-        else:
-          var patt = u.strVal & "?"
 
-          for i, r in a.args:
-            if i != 0:
-              patt.add '&'
+    if m.strVal == "config":
+      let config = ident u.strval.strip(chars = {']', '['}).replace(" ", "") & "Handler"
+      result.add quote do:
+        router.`config` = `h`
 
-            let n = r[IdentDefName].strVal
-            patt.add n
-            patt.add '='
-            patt.add '{'
-            patt.add "safeUrl "
-            patt.add n
-            patt.add '}'
+    else:
+      let
+        procname = ident:
+          a.httpMethod.strVal &
+          a.url.strVal.split("/").join("_") &
+          "url"
 
-          newTree(nnkCommand, ident"fmt", newLit patt)
+        procbody = block:
+          if a.args.len == 0: newlit u.strVal
+          else:
+            var patt = u.strVal & "?"
 
-    result.add newproc(
-        exported(procname),
-        @[ident"string"] & a.args.map(toIdentDef),
-        procbody)
-    
-    result.add quote do:
-      when defined backend:
-        `router`.`m`(`u`, `h`)
+            for i, r in a.args:
+              if i != 0:
+                patt.add '&'
 
-  # debugEcho repr result
+              let n = r[IdentDefName].strVal
+              patt.add n
+              patt.add '='
+              patt.add '{'
+              patt.add "safeUrl "
+              patt.add n
+              patt.add '}'
+
+            newTree(nnkCommand, ident"fmt", newLit patt)
+
+      result.add newproc(
+          exported(procname),
+          @[ident"string"] & a.args.map(toIdentDef),
+          procbody)
+
+      result.add quote do:
+        when defined backend:
+          `router`.`m`(`u`, `h`)
+
+  debugEcho repr result

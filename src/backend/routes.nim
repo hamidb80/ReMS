@@ -4,13 +4,14 @@ import ./views, ./utils/router as r
 
 
 var router*: Router
-router.notFoundHandler = notFoundHandler
-router.methodNotAllowedHandler = notFoundHandler
-router.errorHandler = errorHandler
 
 dispatch router:
+  config "[not found]", notFoundHandler {.depends.}
+  config "[method not allowed]", notFoundHandler {.depends.}
+  config "[error]", errorHandler {.depends.}
+
   get "/dist/"?(file: string), staticFileHandler {.file.}
-  
+
   get "/", indexPage {.html.}
   get "/assets/", assetsPage {.html.}
   get "/boards/", boardPage {.html.}

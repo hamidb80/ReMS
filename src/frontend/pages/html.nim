@@ -35,7 +35,7 @@ proc localize(url: string): string =
   let
     fileName = normalizeOsName url.splitPath.tail
     filePath = saveDir & filename
-    loadPath = getDistUrl fileName
+    loadPath =  "" #getDistUrl fileName
     isFromInternet = url.startsWith "http"
 
   if isFromInternet:
@@ -139,8 +139,9 @@ when isMainModule:
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/editor.html", $editor()
 
-const
-  boardPageStr* = staticRead projectHome / "./dist/board.html"
-  assetsPageStr* = staticRead projectHome / "./dist/assets.html"
-  tagsPageStr* = staticRead projectHome / "./dist/tags.html"
-  editorPageStr* = staticRead projectHome / "./dist/editor.html"
+else:
+  const
+    boardPageStr* = staticRead projectHome / "./dist/board.html"
+    assetsPageStr* = staticRead projectHome / "./dist/assets.html"
+    tagsPageStr* = staticRead projectHome / "./dist/tags.html"
+    editorPageStr* = staticRead projectHome / "./dist/editor.html"
