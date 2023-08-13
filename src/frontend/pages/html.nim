@@ -1,5 +1,6 @@
 import std/[strutils, os, httpclient, sequtils]
 import karax/[vdom, karaxdsl]
+import ../../common/path
 
 # ----- aliases -----
 
@@ -19,8 +20,9 @@ proc download(url, path: string) =
 
 const
   saveDir = "./dist/"
-  loadDir = "./"
+  loadDir = "/dist/?file="
   cannot = ["font-awesome", "katex.min.css", "bootstrap-icons"]
+
 
 func normalizeOsName(url: string): string =
   for ch in url:
@@ -34,17 +36,19 @@ proc localize(url: string): string =
     fileName = normalizeOsName url.splitPath.tail
     filePath = saveDir & filename
     loadPath = loadDir & fileName
+    isFromInternet = url.startsWith "http"
 
-  when not defined localDev: url
-  else:
-    discard existsOrCreateDir saveDir
+  if isFromInternet:
+    when defined localdev:
+      discard existsOrCreateDir saveDir
 
-    if cannot.anyIt(it in url): url
-    else:
-      if (url.startsWith "http") and (not fileExists filePath):
-        download url, filePath
-
-      loadPath
+      if cannot.anyIt(it in url): url
+      else:
+        if not fileExists filePath:
+          download url, filePath
+        loadPath
+    else: url
+  else: loadPath
 
 proc extCss(url: string): VNode =
   buildHtml link(rel = "stylesheet", href = localize url)
@@ -85,9 +89,9 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 
 # ----- pages -----
 
-proc index*(pageTitle: string): VNode =
+proc index: VNode =
   buildHtml html:
-    commonHead pageTitle, [
+    commonHead "ReMS - Remembering Manangement System", [
       extJs "https://unpkg.com/konva@9/konva.min.js",
       extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js",
       extJs("./script.js", true)]
@@ -95,25 +99,26 @@ proc index*(pageTitle: string): VNode =
     body(class = "overflow-hidden"):
       tdiv(id = "app")
 
-proc assets*(pageTitle: string): VNode =
+proc assets: VNode =
   buildHtml html:
-    commonHead pageTitle, [
+    commonHead "asset manager", [
       extJs("./script-assets.js", true),
       extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"]
 
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
-proc tags*(pageTitle: string): VNode =
+proc tags: VNode =
   buildHtml html:
-    commonHead pageTitle, [extJs("./script-tags.js", true)]
+    commonHead "tag manager", [
+      extJs("./script-tags.js", true)]
 
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
-proc editor*(pageTitle: string): VNode =
+proc editor: VNode =
   buildHtml html:
-    commonHead pageTitle, [
+    commonHead "editor", [
       extJs("./script-editor.js", true),
       extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"]
 
@@ -121,17 +126,16 @@ proc editor*(pageTitle: string): VNode =
       tdiv(id = "ROOT")
 
 
+# -----
+
 when isMainModule:
-  writeFile "./dist/index.html":
-    $ index "ReMS - Remembering Manangement System"
-
-  writeFile "./dist/assets.html":
-    $ assets "asset manager"
-
-  writeFile "./dist/tags.html":
-    $ tags "tag manager"
-
-  writeFile "./dist/editor.html":
-    $ editor "editor"
-
-  echo "👋 asset files are ready!"
+  writeFile "./dist/index.html", $index()
+  writeFile "./dist/assets.html", $assets()
+  writeFile "./dist/tags.html", $tags()
+  writeFile "./dist/editor.html", $editor()
+else:
+  const
+    indexPageStr* = staticRead projectHome / "./dist/index.html"
+    assetsPageStr* = staticRead projectHome / "./dist/assets.html"
+    tagsPageStr* = staticRead projectHome / "./dist/tags.html"
+    editorPageStr* = staticRead projectHome / "./dist/editor.html"

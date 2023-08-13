@@ -825,14 +825,14 @@ proc createDom*(data: RouterData): VNode =
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "plus fa-lg"
+          icon "fa-plus fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           # TODO show shortcut and name via a tooltip
-          icon "expand fa-lg"
+          icon "fa-expand fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "download fa-lg"
+          icon "fa-download fa-lg"
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
@@ -867,14 +867,14 @@ proc createDom*(data: RouterData): VNode =
                     iff(app.sidebarState == ssMessagesView, " active")):
                   span(class = "caption"):
                     text "Messages "
-                  icon "message"
+                  icon "fa-message"
 
               tdiv(class = "nav-item", onclick = sidebarStateMutator ssPropertiesView):
                 span(class = "nav-link px-3 pointer" &
                   iff(app.sidebarState == ssPropertiesView, " active")):
                   span(class = "caption"):
                     text "Properties "
-                  icon "circle-info"
+                  icon "fa-circle-info"
 
             tdiv(class = "nav-item d-flex flex-row px-2"):
               span(class = "nav-link px-1 pointer", onclick = maximize):

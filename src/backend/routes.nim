@@ -1,6 +1,8 @@
 import mummy/routers
-import views
+import ./views
 
-var router: Router
+var router*: Router
 
+router.notFoundHandler = notFoundHandler
 router.get("/", indexHandler)
+router.get("/dist/", staticFileHandler)
