@@ -127,6 +127,8 @@ template genMounted(body): untyped {.dirty.} =
 
 # XXX custom classes for all elements
 
+# TODO mark nodes for preview/.. using key [m]
+
 proc initRoot: Hooks =
   defHooks:
     dom = errProc(Element, "this hooks should be set by app manually")
@@ -140,14 +142,7 @@ proc initRoot: Hooks =
         s = hooks.self()
         c = s.children[i]
       case c.data.component.name
-      of "h1": "title"
-      of "image": "poster"
       of "config": iff(i == 0, "global config", "")
-      of "paragraph":
-        for n in 0..<i:
-          if s.children[n].data.component.name == "paragraph":
-            return ""
-        "preview"
       else: ""
 
 proc initRawText: Hooks =
@@ -411,7 +406,7 @@ proc initImage: Hooks =
         field: "height",
         icon: "bi bi-arrow-down",
         editorData: () => EditorInitData(
-          name: "  alinear-text-editor",
+          name: "linear-text-editor",
           input: toJs height(),
           updateCallback: mutState(setHeight, cstring)))]
 

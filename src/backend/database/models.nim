@@ -35,6 +35,7 @@ type
     owner* {.references: User.id.}: int64
     name*: string
     # sha256*: string
+    size*: Bytes
     path*: Path
     timestamp*: DateTime
 

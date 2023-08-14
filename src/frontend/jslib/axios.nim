@@ -46,3 +46,6 @@ proc postForm*(
       }
   })
 """.}
+
+proc getApi*(url: cstring): Future[AxiosResponse] 
+  {.importjs: "axios.get(#)".}

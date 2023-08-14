@@ -48,14 +48,13 @@ proc toHtmlHandler*(page: string): RequestHandler =
     req.respond(200, @{"Content-Type": "text/html"}, page)
 
 let
-  indexPage* = toHtmlHandler "Hey!"
+  indexPage* = toHtmlHandler indexPageStr
   boardPage* = toHtmlHandler boardPageStr
   assetsPage* = toHtmlHandler assetsPageStr
   tagsPage* = toHtmlHandler tagsPageStr
   editorPage* = toHtmlHandler editorPageStr
 
 # ------- Dynamic ones
-
 
 proc assetsUpload*(req: Request) =
   let multipartEntries = req.decodeMultipart()
@@ -98,7 +97,6 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
     req.respond(200, @{"Content-Type": mime}, content)
     return
 
-proc listAssets*(req: Request)  {.addQueryParams.}=
+proc listAssets*(req: Request) {.addQueryParams.} =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, $(%db.listAssets()))
-  

@@ -7,6 +7,7 @@ import ../jslib/[hotkeys, axios]
 import ../utils/[browser, ui]
 import ../../common/[conventions, iter]
 import ../../backend/routes
+import ../../backend/database/[queries]
 
 type
   Percent = range[0.0 .. 100.0]
@@ -26,14 +27,6 @@ type
     reason: cstring
 
 
-  Tag = object # import from tags.nim
-
-  Asset = object
-    filename: string
-    description: string
-    mimeType: string
-    # owner: ID
-    tags: seq[Tag]
 
   # TODO make tag searcher common in all modules [graph, assets, notes]
   CmpOperator = enum
@@ -50,9 +43,14 @@ const
 
 var
   uploads: seq[Upload]
-  assets: seq[Asset]
+  assets: seq[AssetUser]
   selectedAssetIndex: int = 3 # noIndex
 
+proc fetchAssets =
+  let res = get_api_assets_list_url().getApi
+  discard res.then proc(r: AxiosResponse) =
+    assets = cast[typeof assets](r.data)
+    redraw()
 
 proc startUpload(u: Upload) =
   var
@@ -101,6 +99,10 @@ proc dropHandler(ev: Event as DragEvent) {.caster.} =
 
 proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
   pushUploads e.clipboardData.filesArray
+
+proc genCopyBtn(url: cstring): proc =
+  proc =
+    copyToClipboard url
 
 # ----- UI
 
@@ -260,23 +262,43 @@ proc createDom: Vnode =
           text "search"
           icon("fa-magnifying-glass ms-2")
 
+          proc onclick =
+            fetchAssets()
+
 
       # uploaded files
       tdiv(class = "list-group my-4"):
-        for i in 0..10:
+        for i, a in assets:
           if i == selectedAssetIndex:
             tdiv(class = "p-4 bg-white"):
               h2:
-                text "hello!"
+                text a.name
 
           else:
-            tdiv(class = "list-group-item list-group-item-action"):
-              # + file type logo like image or video or ...
-              bold:
-                text " file name"
+            tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between"):
+              let u = get_asset_short_hand_url a.id
 
-              # + size
-              # + dropdown button
+              tdiv(class="left"):
+                span:
+                  text "#"
+                  text $a.id
+
+                button(class = "mx-2 btn btn-outline-dark", onclick = genCopyBtn(u)):
+                  icon "fa-copy"
+
+                bold:
+                  a(target = "_blank", href = u):
+                    text a.name
+
+              tdiv(class="right"):
+                button(class = "mx-2 btn btn-outline-dark", onclick = genCopyBtn(u)):
+                  icon "fa-chevron-down"
+
+                # TODO
+                # file type logo like image or video or ...
+                # timestamp
+                # size
+                # dropdown button
 
 
       tdiv(class = "form-group"):

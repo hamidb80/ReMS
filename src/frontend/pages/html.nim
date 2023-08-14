@@ -129,11 +129,29 @@ proc editor: VNode =
     body(class = "bg-light"):
       tdiv(id = "ROOT")
 
+proc index: VNode =
+  buildHtml html:
+    commonHead "editor", []
+
+    body(class = "bg-light"):
+      tdiv(class = "d-flex justify-content-around my-4"):
+        a(class="p-4 border rounded bg-white", href = get_notes_url()):
+          text "Notes ✒"
+
+        a(class="p-4 border rounded bg-white", href = get_assets_url()):
+          text "Assets 📦"
+
+        a(class="p-4 border rounded bg-white", href = get_boards_url()):
+          text "Board 👨‍🏫"
+
+        a(class="p-4 border rounded bg-white", href = get_tags_url()):
+          text "tags 🏷"
 
 # -----
 
 when isMainModule:
   copyFileToDir "./src/frontend/custom.css", "./dist"
+  writeFile "./dist/index.html", $index()
   writeFile "./dist/board.html", $board()
   writeFile "./dist/assets.html", $assets()
   writeFile "./dist/tags.html", $tags()
@@ -141,6 +159,7 @@ when isMainModule:
 
 else:
   const
+    indexPageStr* = staticRead projectHome / "./dist/index.html"
     boardPageStr* = staticRead projectHome / "./dist/board.html"
     assetsPageStr* = staticRead projectHome / "./dist/assets.html"
     tagsPageStr* = staticRead projectHome / "./dist/tags.html"

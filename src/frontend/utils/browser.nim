@@ -234,3 +234,8 @@ proc selectFile*(action: proc(s: cstring)) =
       readAsText file
 
   appendTemp fileInput, () => fileInput.click
+
+
+proc copyToClipboard*(t: cstring) {.importjs: """
+    navigator.clipboard.writeText(@);
+  """.}

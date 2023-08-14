@@ -20,9 +20,28 @@ dispatch router, ../views:
 
   post "/assets/upload/", assetsUpload {.json: {id: int}.}
   get "/assets/download/"?(id: int), assetsDownload {.file.}
-  get "/@", assetShorthand {.redirect.}
-  get "/api/assets/list/", listAssets {.json: AssetUser.}
+  get "/a", assetShorthand {.redirect.}
+  get "/api/assets/list/", listAssets {.json.}
+  # delete "/api/assets/", listAssets {.json.}
+
+  # post "/api/notes/new/", listAssets {.json.}
+  # put "/api/notes/update/", listAssets {.json.}
+  # get "/api/notes/list/", listAssets {.json.}
+  # get "/api/note/", listAssets {.json.}
+  # delete "/api/note/", listAssets {.json.}
+
+  # post "/api/tag/new/", listAssets {.json.}
+  # put "/api/tag/update/", listAssets {.json.}
+  # get "/api/tags/list/", listAssets {.json.}
+  # get "/api/tag/", listAssets {.json.}
+  # delete "/api/tag/", listAssets {.json.}
+  
+  # post "/api/board/new/", listAssets {.json.}
+  # put "/api/board/update/", listAssets {.json.}
+  # get "/api/boards/list/", listAssets {.json.}
+  # get "/api/board/", listAssets {.json.}
+  # delete "/api/board/", listAssets {.json.}
 
 
-func get_asset_short_hand_url*(asset_id: int): string =
-  "/@?" & $asset_id
+func get_asset_short_hand_url*(asset_id: int64): string =
+  "/a?" & $asset_id
