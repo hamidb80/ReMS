@@ -1,4 +1,4 @@
-import std/[strformat, strtabs, tables, strutils, os, oids]
+import std/[strformat, strtabs, strutils, os, oids, json, times]
 
 import mummy, mummy/multipart
 import waterpark/sqlite
@@ -22,6 +22,13 @@ block db_init:
 
 # ------- Static pages
 
+proc notFoundHandler*(req: Request) =
+  req.respond(404, @{"Content-Type": "text/html"}, "what? " & req.uri)
+
+proc errorHandler*(req: Request, e: ref Exception) =
+  echo e.msg
+  req.respond(500, @[], e.msg)
+
 proc staticFileHandler*(req: Request) {.addQueryParams.} =
   if "file" in q:
     let
@@ -36,19 +43,9 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
     else: req.respond(404)
   else: req.respond(404)
 
-
-proc notFoundHandler*(req: Request) =
-  req.respond(404, @{"Content-Type": "text/html"}, "what? " & req.uri)
-
-proc errorHandler*(req: Request, e: ref Exception) =
-  echo e.msg
-  req.respond(500, @[], e.msg)
-
-
 proc toHtmlHandler*(page: string): RequestHandler =
   proc(req: Request) =
     req.respond(200, @{"Content-Type": "text/html"}, page)
-
 
 let
   indexPage* = toHtmlHandler "Hey!"
@@ -56,7 +53,6 @@ let
   assetsPage* = toHtmlHandler assetsPageStr
   tagsPage* = toHtmlHandler tagsPageStr
   editorPage* = toHtmlHandler editorPageStr
-
 
 # ------- Dynamic ones
 
@@ -75,7 +71,7 @@ proc assetsUpload*(req: Request) =
 
       writeFile storePath, req.body[start..last]
       withConn db:
-        let id = db.addAsset(storePath.Path)
+        let id = db.addAsset(fname, storePath.Path)
         req.respond(200, @{"Content-Type": "application/json"}, $id)
         return
 
@@ -102,6 +98,7 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
     req.respond(200, @{"Content-Type": mime}, content)
     return
 
-proc listAssets*(req: Request) =
-  discard
-
+proc listAssets*(req: Request)  {.addQueryParams.}=
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, $(%db.listAssets()))
+  

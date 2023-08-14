@@ -92,7 +92,7 @@ macro dispatch*(router, viewModule, body): untyped =
 
   result = quote:
     `urls`
-    when not defined js: 
+    when not (defined(js) or defined(frontend)):
       import `viewModule`
       `rout`
 

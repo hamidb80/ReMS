@@ -35,7 +35,7 @@ proc localize(url: string): string =
   let
     fileName = normalizeOsName url.splitPath.tail
     filePath = saveDir & filename
-    loadPath =  "" #getDistUrl fileName
+    loadPath = getDistUrl fileName
     isFromInternet = url.startsWith "http"
 
   if isFromInternet:

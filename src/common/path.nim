@@ -1,21 +1,11 @@
-import std/[mimetypes, strutils, macros, os]
+import std/[mimetypes, strutils, macros, os, json]
 
 
-when not defined js:
-  proc getProjectHome*: string = 
-    result = getProjectPath()
-
-    while not dirExists result / "src":
-      result = result / ".."
-
-  const projectHome* = getProjectHome()
-
-
-type 
+type
   Path* = distinct string
 
 
-func getMimeType*(ext: string): string = 
+func getMimeType*(ext: string): string =
   {.cast(noSideEffect).}:
     let m {.global.} = newMimetypes()
     m.getMimetype ext
@@ -28,3 +18,13 @@ func ext*(p: Path): string =
 
 func mimetype*(p: Path): string =
   p.ext.getMimeType
+
+
+when not defined js:
+  proc getProjectHome*: string =
+    result = getProjectPath()
+
+    while not dirExists result / "src":
+      result = result / ".."
+
+  const projectHome* = getProjectHome()

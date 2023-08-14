@@ -33,6 +33,8 @@ type
   Asset* = object
     id* {.primary, autoIncrement.}: int64
     owner* {.references: User.id.}: int64
+    name*: string
+    # sha256*: string
     path*: Path
     timestamp*: DateTime
 
@@ -94,6 +96,9 @@ proc sqlType*(t: typedesc[Path]): string = "TEXT"
 proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
 proc to*(src: DbValue, dest: var Path) =
   dest = src.s.Path
+
+func `%`*(p: Path): JsonNode = %p.string
+func `%`*(d: DateTime): JsonNode = %d.toTime.toUnix
 
 # ----- basic operations
 
