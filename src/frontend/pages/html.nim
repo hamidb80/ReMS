@@ -39,7 +39,7 @@ proc localize(url: string): string =
     isFromInternet = url.startsWith "http"
 
   if isFromInternet:
-    when defined localdev:
+    if defined localdev:
       discard existsOrCreateDir saveDir
 
       if cannot.anyIt(it in url): url

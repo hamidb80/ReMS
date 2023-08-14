@@ -1,11 +1,13 @@
 import std/[options, times, json, xmltree, xmlparser]
 import ponairi # sqlite
 
+import ../../common/path
+
 # TODO add following fields to Assets, Notes, Graph
 # uuid
 # revision :: for handeling updates
 # forked_from :: from uuid
-
+  # nim 2 added Path in std/paths
 
 type
   UserRole* = enum
@@ -31,7 +33,7 @@ type
   Asset* = object
     id* {.primary, autoIncrement.}: int64
     owner* {.references: User.id.}: int64
-    path*: string # nim 2 added Path in std/paths
+    path*: Path
     timestamp*: DateTime
 
   Note* = object
@@ -67,6 +69,13 @@ type
     value*: Option[string]
     timestamp*: DateTime
 
+  RelationsCache* = object
+    id* {.primary, autoIncrement.}: int64
+    asset* {.references: Asset.id.}: Option[int64]
+    board* {.references: Board.id.}: Option[int64]
+    note* {.references: Note.id.}: Option[int64]
+    tags*: JsonNode
+
   # TODO Remember
 
 # ----- custom types
@@ -81,8 +90,12 @@ proc dbValue*(j: XmlNode): DbValue = DbValue(kind: dvkString, s: $j)
 proc to*(src: DbValue, dest: var XmlNode) =
   dest = parseXml src.s
 
+proc sqlType*(t: typedesc[Path]): string = "TEXT"
+proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
+proc to*(src: DbValue, dest: var Path) =
+  dest = src.s.Path
+
 # ----- basic operations
 
 proc createTables*(db: DbConn) =
-  db.create(User, Auth, Asset, Note, Board, Tag, Relation)
-
+  db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache)

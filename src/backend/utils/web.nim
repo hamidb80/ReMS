@@ -1,4 +1,4 @@
-import std/[macros, strtabs, uri, strutils, sequtils]
+import std/[macros, uri, strutils, sequtils, strtabs]
 import macroplus
 
 
@@ -36,9 +36,11 @@ func toIdentDef(e: NimNode): NimNode =
   expectKind e, nnkExprColonExpr
   newIdentDefs(e[0], e[1])
 
-macro dispatch*(router, body): untyped =
+macro dispatch*(router, viewModule, body): untyped =
   expectKind body, nnkStmtList
-  result = newStmtList()
+  var 
+    urls = newStmtList()
+    rout = newStmtList()
 
   for s in body:
     let
@@ -49,9 +51,8 @@ macro dispatch*(router, body): untyped =
 
     if m.strVal == "config":
       let config = ident u.strval.strip(chars = {']', '['}).replace(" ", "") & "Handler"
-      result.add quote do:
-        when not defined js:
-          router.`config` = `h`
+      rout.add quote do:
+        router.`config` = `h`
 
     else:
       let
@@ -79,14 +80,21 @@ macro dispatch*(router, body): untyped =
 
             newTree(nnkCommand, ident"fmt", newLit patt)
 
-      result.add newproc(
+      urls.add newproc(
           exported(procname),
           @[ident"string"] & a.args.map(toIdentDef),
           procbody)
 
-      result.add quote do:
-        when not defined js:
-          `router`.`m`(`u`, `h`)
+      rout.add quote do:
+        `router`.`m`(`u`, `h`)
+
+  debugEcho treeRepr viewModule
+
+  result = quote:
+    `urls`
+    when not defined js: 
+      import `viewModule`
+      `rout`
 
   debugEcho repr result
 
@@ -112,3 +120,4 @@ macro addQueryParams*(procdef): untyped =
 
   procdef.body.insert 0, def
   procdef
+

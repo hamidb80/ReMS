@@ -5,7 +5,7 @@ import caster
 
 import ../jslib/[hotkeys, axios]
 import ../utils/[browser, ui]
-import ../../common/[conventions]
+import ../../common/[conventions, iter]
 import ../../backend/routes
 
 type
@@ -84,8 +84,6 @@ proc cancelUpload(u: Upload) =
   discard
 
 proc pushUploads(files: seq[DFile]) =
-  console.log files
-
   for f in files:
     let u = Upload(
       name: f.name,
@@ -214,7 +212,7 @@ proc createDom: Vnode =
             icon "fa-trash-can ms-2"
 
       tdiv(class = "list-group mb-4"):
-        for u in uploads:
+        for u in uploads.ritems:
           tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
             text u.name
             tdiv(class = "d-flex flex-row align-items-center justify-content-between"):
