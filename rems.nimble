@@ -18,6 +18,7 @@ requires "uuid4"
 requires "questionable"
 
 requires "mummy" # 0.3.2
+requires "jsony" # 1.1.5
 requires "ponairi" # 0.3.2
 requires "waterpark" # 0.1.3
 requires "quickjwt" # 0.2.1
