@@ -1,9 +1,10 @@
-import std/[strformat, strtabs, strutils, os, oids, json, times]
+import std/[strformat, strtabs, strutils, os, oids]
 
 import mummy, mummy/multipart
+import jsony
 import waterpark/sqlite
 
-import ../common/path, ./utils/web, ./routes
+import ../common/[types, path], ./utils/web, ./routes
 import ../frontend/pages/html
 import ./database/[models, queries]
 
@@ -70,7 +71,7 @@ proc assetsUpload*(req: Request) =
 
       writeFile storePath, req.body[start..last]
       withConn db:
-        let id = db.addAsset(fname, storePath.Path)
+        let id = db.addAsset(fname, storePath.Path, Bytes last-start+1)
         req.respond(200, @{"Content-Type": "application/json"}, $id)
         return
 
@@ -99,4 +100,4 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
 
 proc listAssets*(req: Request) {.addQueryParams.} =
   withConn db:
-    req.respond(200, @{"Content-Type": "application/json"}, $(%db.listAssets()))
+    req.respond(200, @{"Content-Type": "application/json"}, toJson db.listAssets())

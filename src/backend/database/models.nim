@@ -1,7 +1,6 @@
-import std/[options, times, json, xmltree, xmlparser]
-import ponairi # sqlite
-
-import ../../common/path
+import std/[options, json, xmltree, xmlparser]
+import ponairi
+import ../../common/[types]
 
 # TODO add following fields to Assets, Notes, Graph
 # uuid
@@ -15,7 +14,7 @@ type
     urAdmin
 
   User* = object
-    id* {.primary, autoIncrement.}: int64
+    id* {.primary, autoIncrement.}: Id
     username* {.index.}: string
     nickname*: string
     role*: UserRole
@@ -24,62 +23,62 @@ type
     apBaleBot
 
   Auth* = object
-    id* {.primary, autoIncrement.}: int64
-    user* {.references: User.id.}: int64
+    id* {.primary, autoIncrement.}: Id
+    user* {.references: User.id.}: Id
     platform*: AuthPlatform
     device*: string
-    timestamp*: DateTime
+    timestamp*: UnixTime
 
   Asset* = object
-    id* {.primary, autoIncrement.}: int64
-    owner* {.references: User.id.}: int64
+    id* {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}: Id
     name*: string
-    # sha256*: string
     size*: Bytes
     path*: Path
-    timestamp*: DateTime
+    timestamp*: UnixTime
+    # sha256*: string
 
   Note* = object
-    id* {.primary, autoIncrement.}: int64
-    owner* {.references: User.id.}: int64
+    id* {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}: Id
     data*: JsonNode
     compiled*: XmlNode
-    timestamp*: DateTime
+    timestamp*: UnixTime
 
   Board* = object
-    id* {.primary, autoIncrement.}: int64
-    owner* {.references: User.id.}: int64
+    id* {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}: Id
     title*: string
     description*: string
     data*: JsonNode
-    timestamp*: DateTime
+    timestamp*: UnixTime
 
   Tag* = object
-    id* {.primary, autoIncrement.}: int64
-    creator* {.references: User.id.}: int64
+    id* {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}: Id
     name*: string
     has_value*: bool
     is_universal*: bool
-    timestamp*: DateTime
+    timestamp*: UnixTime
 
   Relation* = object
-    id* {.primary, autoIncrement.}: int64
-    by* {.references: User.id.}: int64
-    tag* {.references: Tag.id.}: int64
-    asset* {.references: Asset.id.}: Option[int64]
-    board* {.references: Board.id.}: Option[int64]
-    note* {.references: Note.id.}: Option[int64]
+    id* {.primary, autoIncrement.}: Id
+    by* {.references: User.id.}: Id
+    tag* {.references: Tag.id.}: Id
+    asset* {.references: Asset.id.}: Option[Id]
+    board* {.references: Board.id.}: Option[Id]
+    note* {.references: Note.id.}: Option[Id]
     value*: Option[string]
-    timestamp*: DateTime
+    timestamp*: UnixTime
 
   RelationsCache* = object
-    id* {.primary, autoIncrement.}: int64
-    asset* {.references: Asset.id.}: Option[int64]
-    board* {.references: Board.id.}: Option[int64]
-    note* {.references: Note.id.}: Option[int64]
-    tags*: JsonNode
+    id* {.primary, autoIncrement.}: Id
+    asset* {.references: Asset.id.}: Option[Id]
+    board* {.references: Board.id.}: Option[Id]
+    note* {.references: Note.id.}: Option[Id]
+    tags*: JsonNode # seq of tag
 
-  # TODO Remember
+  # TODO Remember, Annonation
 
 # ----- custom types
 
@@ -98,8 +97,19 @@ proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
 proc to*(src: DbValue, dest: var Path) =
   dest = src.s.Path
 
+proc sqlType*(t: typedesc[UnixTime]): string = "INT"
+proc dbValue*(p: UnixTime): DbValue = DbValue(kind: dvkInt, i: p.Id)
+proc to*(src: DbValue, dest: var UnixTime) =
+  dest = src.i.UnixTime
+
+proc sqlType*(t: typedesc[Bytes]): string = "INT"
+proc dbValue*(p: Bytes): DbValue = DbValue(kind: dvkInt, i: p.int64)
+proc to*(src: DbValue, dest: var Bytes) =
+  dest = src.i.Bytes
+
 func `%`*(p: Path): JsonNode = %p.string
-func `%`*(d: DateTime): JsonNode = %d.toTime.toUnix
+func `%`*(d: UnixTime): JsonNode = %d.int64
+func `%`*(b: Bytes): JsonNode = %b.int64
 
 # ----- basic operations
 

@@ -28,7 +28,7 @@ type
     fsBorderWidth
     fsBorderShape
 
-  ID = cstring
+  Id = cstring
 
   Region = range[1..4]
 
@@ -72,9 +72,9 @@ type
     isSpaceDown: bool
 
     # board data
-    objects: Table[ID, VisualNode]
-    edges: Graph[ID]
-    edgeInfo: Table[Slice[ID], Edge]
+    objects: Table[Id, VisualNode]
+    edges: Graph[Id]
+    edgeInfo: Table[Slice[Id], Edge]
 
   FontConfig = object
     family: string

@@ -1,8 +1,5 @@
 import std/[mimetypes, strutils, macros, os, json]
-
-
-type
-  Path* = distinct string
+import ./types
 
 
 func getMimeType*(ext: string): string =
