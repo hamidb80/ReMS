@@ -1,4 +1,4 @@
-import std/[options, json, xmltree, xmlparser]
+import std/[options, json]
 import ponairi
 import ../../common/[types]
 
@@ -43,7 +43,7 @@ type
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
     data*: JsonNode
-    compiled*: XmlNode
+    # compiled*: XmlNode XXX use cached KaraxNode [Custom Component]
     timestamp*: UnixTime
 
   Board* = object
@@ -66,8 +66,13 @@ type
     tcSystem ## created by system
 
   TagLabel* = enum
-    tlOrdinary ## can be removed :: if it's not ordinary then its special
-    tlTimestamp
+    tlOrdinary  ## can be removed :: if it's not ordinary then its special
+
+    # -- Redundant Tags
+    tlTimestamp ## creation time
+    tlSize      ## byte size
+
+    # -- Remembering System
     tlRememberIn
     tlRemembered
 
@@ -126,11 +131,6 @@ proc sqlType*(t: typedesc[JsonNode]): string = "TEXT"
 proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: $j)
 proc to*(src: DbValue, dest: var JsonNode) =
   dest = parseJson src.s
-
-proc sqlType*(t: typedesc[XmlNode]): string = "TEXT"
-proc dbValue*(j: XmlNode): DbValue = DbValue(kind: dvkString, s: $j)
-proc to*(src: DbValue, dest: var XmlNode) =
-  dest = parseXml src.s
 
 proc sqlType*(t: typedesc[Path]): string = "TEXT"
 proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
