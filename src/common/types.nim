@@ -22,3 +22,6 @@ converter toBytes*(s: Mb): int = s.int * 1024 * 1024
 
 func toUnixtime*(d: DateTime): UnixTime =
   d.toTime.toUnix.UnixTime
+
+proc toDateTime*(u: UnixTime): DateTime =
+  u.int64.fromUnix.utc

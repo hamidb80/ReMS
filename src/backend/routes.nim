@@ -20,6 +20,8 @@ dispatch router, ../views:
 
   post "/assets/upload/", assetsUpload {.json: {id: int}.}
   get "/assets/download/"?(id: int), assetsDownload {.file.}
+  # get "/assets/preview/"?(id: int), assetsDownload {.html.}
+  # get "/api/assets/preview/"?(id: int), assetsDownload {.json.}
   get "/a", assetShorthand {.redirect.}
   get "/api/assets/list/", listAssets {.json.}
   # delete "/api/assets/", listAssets {.json.}

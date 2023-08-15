@@ -1,11 +1,11 @@
-import std/[options, lenientops, strformat, httpcore, sequtils]
+import std/[options, lenientops, strformat, httpcore, sequtils, times]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
 import ../jslib/[hotkeys, axios]
 import ../utils/[browser, ui]
-import ../../common/[conventions, iter]
+import ../../common/[conventions, iter, types]
 import ../../backend/routes
 import ../../backend/database/[queries]
 
@@ -38,13 +38,15 @@ type
     gt   #  >
     like #  %
 
+
 const
   noIndex = -1
 
 var
   uploads: seq[Upload]
   assets: seq[AssetUser]
-  selectedAssetIndex: int = 3 # noIndex
+  selectedAssetIndex: int = -1 # noIndex
+
 
 proc fetchAssets =
   let res = get_api_assets_list_url().getApi
@@ -104,6 +106,12 @@ proc genCopyBtn(url: cstring): proc =
   proc =
     copyToClipboard url
 
+
+proc genSelectAsset(i: int): proc =
+  proc =
+    selectedAssetIndex = i
+
+
 # ----- UI
 
 func statusColor(status: UploadStatus): cstring =
@@ -157,6 +165,7 @@ func tagSearch(name, color: string,
           icon("fa-xmark")
 
 # TODO add "order by"
+# TODO toast for alerts & notifications
 proc createDom: Vnode =
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
@@ -269,36 +278,59 @@ proc createDom: Vnode =
       # uploaded files
       tdiv(class = "list-group my-4"):
         for i, a in assets:
+          let u = get_asset_short_hand_url a.id
+
           if i == selectedAssetIndex:
-            tdiv(class = "p-4 bg-white"):
-              h2:
-                text a.name
+            tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
+              tdiv(class="d-flex flex-column"):
+                input(`type` = "text", class = "form-control", value = a.name)
+
+              tdiv(class = "d-flex flex-column justify-content-start"):
+                button(class = "mx-2 my-1 btn btn-outline-dark"):
+                  icon "fa-chevron-up"
+                  proc onclick =
+                    selectedAssetIndex = -1
+
+                button(class = "mx-2 my-1 btn btn-outline-dark",
+                    onclick = genCopyBtn(u)):
+                  span: text "copy link"
+                  icon "fa-copy ms-2"
+
+                button(class = "mx-2 my-1 btn btn-outline-primary",
+                    onclick = genCopyBtn(u)):
+                  span: text "apply"
+                  icon "fa-check ms-2"
 
           else:
-            tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between"):
-              let u = get_asset_short_hand_url a.id
-
-              tdiv(class="left"):
+            tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
+              tdiv:
                 span:
                   text "#"
                   text $a.id
 
-                button(class = "mx-2 btn btn-outline-dark", onclick = genCopyBtn(u)):
-                  icon "fa-copy"
-
-                bold:
+                bold(class="mx-2"):
                   a(target = "_blank", href = u):
                     text a.name
 
-              tdiv(class="right"):
-                button(class = "mx-2 btn btn-outline-dark", onclick = genCopyBtn(u)):
+                span(class="text-muted fst-italic"):
+                  text "("
+                  text $a.size.int 
+                  text " B)"
+
+              tdiv(class="d-flex flex-row align-items-center"):
+                span(class="text-muted"):
+                  text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
+                
+                  iconr "fa-clock mx-1"
+                
+                button(class = "mx-2 btn btn-outline-dark",
+                    onclick = genSelectAsset(i)):
                   icon "fa-chevron-down"
 
                 # TODO
                 # file type logo like image or video or ...
                 # timestamp
                 # size
-                # dropdown button
 
 
       tdiv(class = "form-group"):
