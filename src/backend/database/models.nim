@@ -90,9 +90,9 @@ type
     rsFresh
     rsStale ## to mark as `processed` by system
 
-  RelationCreation* = enum
-    rcUserInteraction
-    rcAutomatic
+  RelationCreationReason* = enum
+    rcrUserInteraction
+    rcrSystamAutomation
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
@@ -104,7 +104,7 @@ type
     int_value*: Option[int64]
     str_value*: Option[string]
     state*: RelationState
-    creation*: RelationCreation
+    created_due_to*: RelationCreationReason
     timestamp*: UnixTime
 
   RelationsCache* = object
