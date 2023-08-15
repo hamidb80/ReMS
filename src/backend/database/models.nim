@@ -6,7 +6,6 @@ import ../../common/[types]
 # uuid
 # revision :: for handeling updates
 # forked_from :: from uuid
-  # nim 2 added Path in std/paths
 
 type
   UserRole* = enum
@@ -53,32 +52,46 @@ type
     data*: JsonNode
     timestamp*: UnixTime
 
+  TagValueType = enum
+    tvtNone
+    tvtInt
+    tvtStr
+    tvtDate
+    tvtJson
+
   Tag* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
     name*: string
-    has_value*: bool
+    value_type*: TagValueType
     is_universal*: bool
+    is_special*: bool
     timestamp*: UnixTime
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    by* {.references: User.id.}: Id
+    user* {.references: User.id.}: Id
     tag* {.references: Tag.id.}: Id
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    value*: Option[string]
+    int_value*: Option[int64]
+    str_value*: Option[string]
     timestamp*: UnixTime
 
   RelationsCache* = object
     id* {.primary, autoIncrement.}: Id
+    user* {.references: User.id.}: Id
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
     tags*: JsonNode # seq of tag
 
   # TODO Remember, Annonation
+
+  ## I'm trying to implment Remember entries as `Tag`s
+  ## that's what `int_value`, `str_value`, `value_type`
+  ## is for
 
 # ----- custom types
 

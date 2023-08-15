@@ -30,13 +30,14 @@ type
 
   # TODO make tag searcher common in all modules [graph, assets, notes]
   CmpOperator = enum
-    lt   #  <
-    lte  #  <=
-    eq   #  ==
-    neq  # !=
-    gte  # >=
-    gt   #  >
-    like #  %
+    lt    #  <
+    lte   #  <=
+    eq    #  ==
+    neq   # !=
+    gte   # >=
+    gt    #  >
+    like  #  %
+    # oneOf # ⊆
 
 
 const
@@ -282,7 +283,7 @@ proc createDom: Vnode =
 
           if i == selectedAssetIndex:
             tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
-              tdiv(class="d-flex flex-column"):
+              tdiv(class = "d-flex flex-column"):
                 input(`type` = "text", class = "form-control", value = a.name)
 
               tdiv(class = "d-flex flex-column justify-content-start"):
@@ -308,21 +309,21 @@ proc createDom: Vnode =
                   text "#"
                   text $a.id
 
-                bold(class="mx-2"):
+                bold(class = "mx-2"):
                   a(target = "_blank", href = u):
                     text a.name
 
-                span(class="text-muted fst-italic"):
+                span(class = "text-muted fst-italic"):
                   text "("
-                  text $a.size.int 
+                  text $a.size.int
                   text " B)"
 
-              tdiv(class="d-flex flex-row align-items-center"):
-                span(class="text-muted"):
+              tdiv(class = "d-flex flex-row align-items-center"):
+                span(class = "text-muted"):
                   text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
-                
+
                   iconr "fa-clock mx-1"
-                
+
                 button(class = "mx-2 btn btn-outline-dark",
                     onclick = genSelectAsset(i)):
                   icon "fa-chevron-down"
