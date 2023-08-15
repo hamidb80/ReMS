@@ -19,15 +19,23 @@ type
     role*: UserRole
 
   AuthPlatform* = enum
-    apSecret # a secret is a code created by admin for other users or by the user itself to login
+    apNone
     apBaleBot
-    # apEmail
+    apEmail
 
   Auth* = object
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
     platform*: AuthPlatform
-    device*: string
+    data*: string ## additional data like chat_id or username in that platform
+    timestamp*: UnixTime
+
+  InvitationSecret* = object
+    ## must be deleted after usage
+    id* {.primary, autoIncrement.}: Id
+    user* {.references: User.id.}: Option[Id] # wanna create new user? or use existing one?
+    secret* {.uniqueIndex.}: string
+    expires*: UnixTime
     timestamp*: UnixTime
 
   Asset* = object
