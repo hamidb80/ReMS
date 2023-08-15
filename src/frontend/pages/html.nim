@@ -154,6 +154,7 @@ proc index: VNode =
 
 when isMainModule:
   copyFileToDir "./src/frontend/custom.css", "./dist"
+  copyFileToDir "./assets/icon.png", "./dist"
   writeFile "./dist/index.html", $index()
   writeFile "./dist/board.html", $board()
   writeFile "./dist/assets.html", $assets()
