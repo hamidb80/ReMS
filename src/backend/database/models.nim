@@ -19,7 +19,9 @@ type
     role*: UserRole
 
   AuthPlatform* = enum
+    apSecret
     apBaleBot
+    # apEmail
 
   Auth* = object
     id* {.primary, autoIncrement.}: Id
@@ -60,19 +62,18 @@ type
     tvtJson
 
   TagCreator* = enum
-    tcUser ## created by user
+    tcUser   ## created by user
     tcSystem ## created by system
 
   TagLabel* = enum
-    tlOrdinary ## can be removed
-    tlUniversal ## can be used by all of users
+    tlOrdinary ## can be removed :: if it's not ordinary then its special
     tlRemember ## used by remembering system
 
   Tag* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
-    creator*: TagCreator 
-    label*: TagLabel 
+    creator*: TagCreator
+    label*: TagLabel
     can_repeated*: bool
     name*: string
     value_type*: TagValueType
@@ -84,6 +85,10 @@ type
     # rsHidden
     # rsForgotten
 
+  RelationCreation* = enum
+    rcUserInteraction
+    rcAutomatic
+
   Relation* = object
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
@@ -94,6 +99,7 @@ type
     int_value*: Option[int64]
     str_value*: Option[string]
     state*: RelationState
+    creation*: RelationCreation
     timestamp*: UnixTime
 
   RelationsCache* = object
