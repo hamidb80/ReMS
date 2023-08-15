@@ -134,17 +134,20 @@ proc index: VNode =
     commonHead "editor", []
 
     body(class = "bg-light"):
-      tdiv(class = "d-flex justify-content-around my-4"):
-        a(class="p-4 border rounded bg-white", href = get_notes_url()):
+      h1(class="my-4 text-center w-100"):
+        text "Bringing Tools🛠 Together🤝!"
+
+      tdiv(class = "d-flex flex-wrap justify-content-around my-4"):
+        a(class="p-4 border rounded m-4 bg-white", href = get_notes_url()):
           text "Notes ✒"
 
-        a(class="p-4 border rounded bg-white", href = get_assets_url()):
+        a(class="p-4 border rounded m-4 bg-white", href = get_assets_url()):
           text "Assets 📦"
 
-        a(class="p-4 border rounded bg-white", href = get_boards_url()):
+        a(class="p-4 border rounded m-4 bg-white", href = get_boards_url()):
           text "Board 👨‍🏫"
 
-        a(class="p-4 border rounded bg-white", href = get_tags_url()):
+        a(class="p-4 border rounded m-4 bg-white", href = get_tags_url()):
           text "tags 🏷"
 
 # -----

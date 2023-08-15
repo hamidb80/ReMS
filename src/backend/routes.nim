@@ -13,6 +13,14 @@ dispatch router, ../views:
   get "/", indexPage {.html.}
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
+  # get "/users/", assetsPage {.html.}
+  # get "/api/user/search/"?(name: string), assetsPage {.html.}
+  # get "/user/id/"?(id: int), assetsPage {.html.}
+  # get "/me/", assetsPage {.html.}
+  # get "/api/me/", assetsPage {.json.}
+  # post "/api/me/update/", assetsPage {.json.}
+  # get "/api/gen-invite-code/"?(user_id: int), assetsPage {.string.}
+
   get "/assets/", assetsPage {.html.}
   # get "/asset/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.json.}

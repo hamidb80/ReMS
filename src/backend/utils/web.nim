@@ -38,7 +38,7 @@ func toIdentDef(e: NimNode): NimNode =
 
 macro dispatch*(router, viewModule, body): untyped =
   expectKind body, nnkStmtList
-  var 
+  var
     urls = newStmtList()
     rout = newStmtList()
 
@@ -58,7 +58,7 @@ macro dispatch*(router, viewModule, body): untyped =
       let
         procname = ident:
           a.httpMethod.strVal &
-          a.url.strVal.split("/").join("_") &
+          a.url.strVal.replace("-", "/").split("/").join("_") &
           "url"
 
         procbody = block:
