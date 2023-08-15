@@ -19,7 +19,7 @@ type
     role*: UserRole
 
   AuthPlatform* = enum
-    apSecret
+    apSecret # a secret is a code created by admin for other users or by the user itself to login
     apBaleBot
     # apEmail
 
@@ -67,7 +67,9 @@ type
 
   TagLabel* = enum
     tlOrdinary ## can be removed :: if it's not ordinary then its special
-    tlRemember ## used by remembering system
+    tlTimestamp
+    tlRememberIn
+    tlRemembered
 
   Tag* = object
     id* {.primary, autoIncrement.}: Id
@@ -82,8 +84,6 @@ type
   RelationState* = enum
     rsFresh
     rsStale ## to mark as `processed` by system
-    # rsHidden
-    # rsForgotten
 
   RelationCreation* = enum
     rcUserInteraction
@@ -110,7 +110,11 @@ type
     note* {.references: Note.id.}: Option[Id]
     tags*: JsonNode # seq of tag
 
-  # TODO Remember, Annonation
+  Notification* = object
+    id* {.primary, autoIncrement.}: Id
+    user* {.references: User.id.}: Id
+    content*: string
+    timestamp*: UnixTime # set after sending
 
   ## I'm trying to implment Remember entries as `Tag`s
   ## that's what `int_value`, `str_value`, `value_type`
