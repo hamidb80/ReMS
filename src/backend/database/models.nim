@@ -59,14 +59,30 @@ type
     tvtDate
     tvtJson
 
+  TagCreator* = enum
+    tcUser ## created by user
+    tcSystem ## created by system
+
+  TagLabel* = enum
+    tlOrdinary ## can be removed
+    tlUniversal ## can be used by all of users
+    tlRemember ## used by remembering system
+
   Tag* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
+    creator*: TagCreator 
+    label*: TagLabel 
+    can_repeated*: bool
     name*: string
     value_type*: TagValueType
-    is_universal*: bool
-    is_special*: bool
     timestamp*: UnixTime
+
+  RelationState* = enum
+    rsFresh
+    rsStale ## to mark as `processed` by system
+    # rsHidden
+    # rsForgotten
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
@@ -77,6 +93,7 @@ type
     note* {.references: Note.id.}: Option[Id]
     int_value*: Option[int64]
     str_value*: Option[string]
+    state*: RelationState
     timestamp*: UnixTime
 
   RelationsCache* = object
