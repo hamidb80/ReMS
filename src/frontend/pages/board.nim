@@ -5,7 +5,7 @@ import caster, uuid4, questionable, prettyvec
 
 import ../jslib/[konva, hotkeys]
 import ../utils/[ui, browser]
-import ../../common/[conventions, graph]
+import ../../common/[conventions, datastructures]
 
 
 type

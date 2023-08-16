@@ -30,15 +30,16 @@ dispatch router, ../views:
   # delete "/api/assets/", listAssets {.json.}
   
   get "/notes/", editorPage {.html.}
-  get "/note/"?(id: int), editorPage {.html.}
-  # post "/api/notes/new/", listAssets {.json.}
-  # put "/api/notes/update/", listAssets {.json.}
-  # get "/api/notes/list/", listAssets {.json.}
-  # get "/api/note/", listAssets {.json.}
-  # delete "/api/note/", listAssets {.json.}
+  # get "/notes/", notesListPage {.html.}
+  # get "/note/editor/"?(id: int), editorPage {.html.}
+  # get "/api/notes/list/", notesList {.json: seq[NotePreview].}
+  # post "/api/notes/new/", newNote {.json: note_id.}
+  # put "/api/notes/update/", updateNote {.ok.}
+  # get "/api/note/", getNote {.json: NoteFull.}
+  # delete "/api/note/", deleteNote {.ok.}
 
   get "/boards/", boardPage {.html.}
-  get "/board/", boardPage {.html.}
+  # get "/board/", boardPage {.html.}
   # post "/api/board/new/", listAssets {.json.}
   # put "/api/board/update/", listAssets {.json.}
   # get "/api/boards/list/", listAssets {.json.}

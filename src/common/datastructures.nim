@@ -1,7 +1,28 @@
 import std/[tables, sets]
 
 type
+  SeqTable[K, V] = Table[K, seq[V]]
   Graph*[T] = Table[T, HashSet[T]]
+  TreeNode*[D] = ref object of RootObj
+    father*: TreeNode[D]
+    children*: seq[TreeNode[D]]
+    data*: D ## additional data
+
+  TreePath* = seq[int]
+
+
+func isLeaf*(tn: TreeNode): bool =
+  tn.children.len == 0
+
+func isRoot*(tn: TreeNode): bool =
+  tn.father == nil
+
+
+func add*[K, V](st: var SeqTable[K, V], key: K, val: V) =
+  if key in st:
+    st[key].add val
+  else:
+    st[key] = @[val]
 
 
 func add[T](g: var Graph[T], key, val: T) = 
@@ -13,7 +34,6 @@ func add[T](g: var Graph[T], key, val: T) =
 func remove[T](g: var Graph[T], key, val: T) = 
   if key in g:
     g[key].decl val
-
 
 func addConn*[T](g: var Graph[T], conn: Slice[T]) = 
   g.add conn.a, conn.b

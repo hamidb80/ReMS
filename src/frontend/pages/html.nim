@@ -91,43 +91,33 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 
     for e in extra: e
 
+proc commonPage(title: string, deps: openarray[Vnode]): VNode =
+  buildHtml html:
+    commonHead title, deps
+    body(class = "overflow-hidden"):
+      tdiv(id = "app")
+
 # ----- pages -----
 
 proc board: VNode =
-  buildHtml html:
-    commonHead "ReMS - Remembering Manangement System", [
+  commonPage "ReMS - Remembering Manangement System", [
       extJs "https://unpkg.com/konva@9/konva.min.js",
       extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js",
       extJs("./script.js", true)]
 
-    body(class = "overflow-hidden"):
-      tdiv(id = "app")
-
 proc assets: VNode =
-  buildHtml html:
-    commonHead "asset manager", [
+  commonPage "asset manager", [
       extJs("./script-assets.js", true),
       extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"]
 
-    body(class = "bg-light"):
-      tdiv(id = "ROOT")
-
 proc tags: VNode =
-  buildHtml html:
-    commonHead "tag manager", [
+  commonPage "tag manager", [
       extJs("./script-tags.js", true)]
 
-    body(class = "bg-light"):
-      tdiv(id = "ROOT")
-
 proc editor: VNode =
-  buildHtml html:
-    commonHead "editor", [
+  commonPage "editor", [
       extJs("./script-editor.js", true),
       extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"]
-
-    body(class = "bg-light"):
-      tdiv(id = "ROOT")
 
 proc index: VNode =
   buildHtml html:

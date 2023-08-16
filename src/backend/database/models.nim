@@ -51,7 +51,7 @@ type
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
     data*: JsonNode
-    # compiled*: XmlNode XXX use cached KaraxNode [Custom Component]
+    preview*: JsonNode ## subset of `data`
     timestamp*: UnixTime
 
   Board* = object

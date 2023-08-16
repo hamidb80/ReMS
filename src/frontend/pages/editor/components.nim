@@ -26,6 +26,7 @@ template defHooks(body): untyped {.dirty.} =
     dom = errProc(Element, "hooks.dom() is not set yet")
     status = () => (tsNothing, "")
     role = (i: Index) => ""
+    mark = proc(i: Index) = discard
     die = noop
     focus = addFocusClass hooks
     blur = removeFocusClass hooks
@@ -73,16 +74,20 @@ func nothingToDo(config: TwNode, by: MountedBy, mode: TwNodeMode) = discard
 func nothingToRestore(input: JsObject) = discard
 
 proc addFocusClass(hooks: Hooks): proc() =
-  proc = hooks.dom().classList.add twFocusClass
+  proc =
+    hooks.dom().classList.add twFocusClass
 
 proc removeFocusClass(hooks: Hooks): proc() =
-  proc = hooks.dom().classList.remove twFocusClass
+  proc =
+    hooks.dom().classList.remove twFocusClass
 
 proc addHoverClass(hooks: Hooks): proc() =
-  proc = hooks.dom().classList.add twHoverClass
+  proc =
+    hooks.dom().classList.add twHoverClass
 
 proc removeHoverClass(hooks: Hooks): proc() =
-  proc = hooks.dom().classList.remove twHoverClass
+  proc =
+    hooks.dom().classList.remove twHoverClass
 
 proc attachNodeDefault(father, child: TwNode, wrapper, what: Element, at: Index) =
   if father.children.len == at:
@@ -130,6 +135,8 @@ template genMounted(body): untyped {.dirty.} =
 # TODO mark nodes for preview/.. using key [m]
 
 proc initRoot: Hooks =
+  let (markedTil, setMarkedTil) = genState 0
+
   defHooks:
     dom = errProc(Element, "this hooks should be set by app manually")
     hover = noop
@@ -137,12 +144,15 @@ proc initRoot: Hooks =
     focus = noop
     blur = noop
     acceptsAsChild = genAllowedTags @["block", "config"]
+    mark = proc(i: Index) =
+      setMarkedTil i
+
     role = proc(i: Index): string =
       let
         s = hooks.self()
         c = s.children[i]
-      case c.data.component.name
-      of "config": iff(i == 0, "global config", "")
+      if i==0 and c.data.component.name == "config": "global config"
+      elif i <= markedTil(): "Preview"
       else: ""
 
 proc initRawText: Hooks =
@@ -224,7 +234,7 @@ let
 proc initParagraph: Hooks =
   let
     el = createElement "p"
-    (dir, setDir) = genState c""
+    (dir, setDir) = genState c"auto"
 
   defHooks:
     dom = () => el
@@ -236,7 +246,7 @@ proc initParagraph: Hooks =
       of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
       of "rtl": el.setAttr "dir", "rtl"
-      else: el.removeAttribute "dir"
+      else: discard
 
     mounted = genMounted:
       if mode == tmInteractive and by == mbUser:
@@ -251,7 +261,6 @@ proc initParagraph: Hooks =
           input: <* {
             "default": dir(),
             "data": [
-              ["", "unset"],
               ["auto", "auto"],
               ["ltr", "ltr"],
               ["rtl", "rtl"]]},

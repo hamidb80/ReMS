@@ -1,11 +1,12 @@
 import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables]
 import std/[dom, jsconsole]
 
+import questionable
 import karax/[karax, karaxdsl, vdom]
 import caster
 
-import ./[core, components, editors]
-import ../../../common/conventions
+import ./[core, components, inputs]
+import ../../../common/[conventions, datastructures]
 import ../../utils/[js, browser]
 
 
@@ -296,6 +297,11 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     
     of "y":
       ## go to the last pathTree state
+    
+    of "m": # mark
+      if (n =? app.focusedNode):
+        if not isRoot n:
+          n.father.mark n.father.children.find(n)
 
     of "a":
       ## show actions of focused element

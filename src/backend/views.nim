@@ -101,3 +101,5 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
 proc listAssets*(req: Request) {.addQueryParams.} =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, toJson db.listAssets())
+
+# proc notesList*(req: Request) {.addQueryParams.} =
