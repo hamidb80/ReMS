@@ -8,10 +8,11 @@ import ../utils/[browser, js, ui]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
 import ../../backend/database/[queries]
+import ./editor/[core, components]
 
 
-var 
-  notes: seq[NotePreview]
+let compTable = defaultComponents()
+var notes: seq[NotePreview]
 
 proc fetchNotes =
   get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
@@ -26,13 +27,20 @@ proc reqNewNote =
 
 # ----- UI
 
-func notePreviewC(np: NotePreview): VNode =
+proc notePreviewC(np: NotePreview): VNode =
   buildHtml:
-    a(class = "p-4 border rounded m-4 bg-white", href = get_note_editor_url(np.id)):
-      # verbatim deserialize(app, np.previewp).innerHtml
-      verbatim np.preview.stringify
+    tdiv(class="p-4 border rounded m-4 bg-white"):
+      a(href = get_note_editor_url(np.id)):
+        span:
+          text "#"
+          text $np.id
+
+      verbatim deserizalize(compTable, np.preview).innerHtml
+
 
 proc createDom: Vnode =
+  echo "just redrawn"
+
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):

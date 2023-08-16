@@ -14,36 +14,13 @@ import ../../../common/[conventions, datastructures]
 
 
 var app = App(state: asTreeView)
-
-app.register rootComponent, false
-app.register configComponent, false
-app.register tableRowComponent, false
-app.register [
-  rawTextComponent,
-  paragraphComponent,
-  linkComponent,
-  boldComponent,
-  italicComponent,
-  strikethroughComponent,
-  h1Component,
-  h2Component,
-  h3Component,
-  h4Component,
-  h5Component,
-  h6Component,
-  latexComponent,
-  mdComponent,
-  verticalSpaceComponent,
-  imageComponent,
-  videoComponent,
-  listComponent,
-  tableComponent,
-  customHtmlComponent]
-
 app.register "raw-text-editor", rawTextEditor
 app.register "linear-text-editor", textInput
 app.register "checkbox-editor", checkBoxEditor
 app.register "option-selector", selectEditor
+
+app.components = defaultComponents()
+app.regiterComponents
 
 # ----- UI ------------------------------
 
@@ -314,8 +291,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         discard
 
     of "h": 
-      let el = createElement("div", {"class": "tw-content"})
-      downloadFile "data.html", "text/html", deserizalize(app, el, serialize app).dom.innerHTML
+      downloadFile "data.html", "text/html", deserizalize(app.components, serialize app).innerHTML
       
     of "c":
       ## cut
@@ -329,7 +305,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "o":
       selectFile proc(c: cstring) = 
         purge app.tree.dom
-        resetApp deserizalize(app, app.tree.dom, cast[TreeNodeRaw[JsObject]](c.parseJs))
+        let d = cast[TreeNodeRaw[JsObject]](c.parseJs)
+        resetApp deserizalize(app.components, app.tree.dom, d)
         redraw()
 
 
@@ -415,7 +392,7 @@ proc fetchNote =
   let id = parseInt getWindowQueryParam("id")
   get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
     let doc = cast[NoteFull](r.data)
-    resetApp deserizalize(app, app.tree.dom, doc.data)
+    resetApp deserizalize(app.components, app.tree.dom, doc.data)
     redraw()
 
 proc init* = 

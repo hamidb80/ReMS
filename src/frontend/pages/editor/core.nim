@@ -1,4 +1,4 @@
-import std/[sets, tables, strutils, options, sugar, enumerate]
+import std/[sets, tables, strutils, sequtils, options, sugar, enumerate]
 import std/[jsffi, dom]
 
 import karax/[vdom]
@@ -41,7 +41,7 @@ type
     dom*: proc(): Element                ## corresponding DOM element
     self*: proc(): TwNode                ## the node cotaining this
     role*: proc(child: Index): string    ## name of the node made by himself
-    mark*: proc(child: Index)           
+    mark*: proc(child: Index)
 
     status*: proc(): TwNodeStatus        ## internal status of the node e.g. error
 
@@ -110,16 +110,10 @@ proc firstChild*(t: TwNode, cname: string): TwNode =
   nil
 
 proc serialize*(t: TwNode): TreeNodeRaw[JsObject] =
-  result.new  
-  result.name = t.data.component.name.cstring
-  result.data = t.capture
-  for ch in t.children:
-    result.children.add serialize ch
-
-  # <* {
-  #   "name": 
-  #   "data": t.capture,
-  #   "children": children}
+  TreeNodeRaw[JsObject](
+    name: t.data.component.name.cstring,
+    data: t.capture,
+    children: t.children.map(serialize))
 
 proc instantiate*(c: Component): TwNode =
   var node = TwNode(data: TwNodeData(
@@ -147,66 +141,65 @@ type
     imAfter
     imAppend
 
+  ComponentsTable* = TableRef[string, Component] ## components by name
+
   App* = object
     version*: string
     state*: AppState
 
     editors*: Table[string, EditorInit]
-
-    components*: Table[string, Component] ## components by name
+    components*: ComponentsTable
     componentsByTags*: Table[string, seq[string]]
 
-    tree*: TwNode                         ## tree of nodes from root
-    selected*: HashSet[TreePath]          ## selected nodes
+    tree*: TwNode                ## tree of nodes from root
+    selected*: HashSet[TreePath] ## selected nodes
     focusedPath*: TreePath
     focusedNode*: TwNode
 
     availableComponents*, filteredComponents*: seq[Component]
     filterString*: cstring
-    listIndex*: int                       ## used for keep tracking of selected component
+    listIndex*: int              ## used for keep tracking of selected component
     insertionMode*: InsertionMode
 
 
 func register*(a: var App, name: string, e: EditorInit) =
   a.editors[name] = e
 
-func register*(a: var App, c: Component, addToAll = true) =
+func register*(a: var App, c: Component) =
   let cname = c.name.toLowerAscii
-
-  a.components[cname] = c
   a.componentsByTags.add cname, cname
-
-  if addToAll:
-    a.componentsByTags.add "*", cname
-
   for t in c.tags:
     a.componentsByTags.add t, cname
 
-func register*(a: var App, cs: openArray[Component]) =
-  for c in cs:
+func regiterComponents*(a: var App) =
+  for c in a.components.values:
     a.register c
+
+func add*(ct: var ComponentsTable, cs: openArray[Component]) =
+  for n in cs:
+    ct[n.name] = n
 
 
 proc serialize*(app: App): TreeNodeRaw[JsObject] =
   app.tree.serialize
 
 proc deserizalize*(
-  app: App, root: Element, j: TreeNodeRaw[JsObject]
+  ct: ComponentsTable, root: Element, j: TreeNodeRaw[JsObject]
 ): TwNode =
   let cname = $j.name
-  result = instantiate app.components[cname]
+  result = instantiate ct[cname]
 
   if cname == "root":
     result.data.hooks.dom = () => root
 
   for i, ch in enumerate j.children:
-    result.attach deserizalize(app, root, ch), i
+    result.attach deserizalize(ct, root, ch), i
 
   result.restore j.data
   result.mounted(mbDeserializer, tmInteractive)
   result.render()
 
 
-proc deserizalize*(app: App, j: TreeNodeRaw[JsObject]): Element =
-  result = createElement("div")
-  discard deserizalize(app, result, j)
+proc deserizalize*(ct: ComponentsTable, j: TreeNodeRaw[JsObject]): Element =
+  result = createElement("div", {"class": "tw-content"})
+  discard deserizalize(ct, result, j)

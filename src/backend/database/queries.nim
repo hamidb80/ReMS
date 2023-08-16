@@ -46,7 +46,8 @@ when not(defined(js) or defined(frontend)):
 
 
   proc listNotes*(db: DbConn): seq[NotePreview] =
-    db.find R, sql"SELECT id, owner, preview, timestamp FROM Note ORDER BY id DESC"
+    #XXX replace `data` with `preview`
+    db.find R, sql"SELECT id, owner, data, timestamp FROM Note ORDER BY id DESC"
 
   proc getNote*(db: DbConn, id: Id): NoteFull =
     db.find R, sql"SELECT id, owner, data, timestamp FROM Note WHERE id = ?", id

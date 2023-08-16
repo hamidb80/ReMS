@@ -135,11 +135,11 @@ proc initRoot: Hooks =
     focus = noop
     blur = noop
     acceptsAsChild = genAllowedTags @["block", "config"]
-    
+
     capture = () => <*{"mark_until_index": markedTil()}
     restore = proc(input: JsObject) =
       setMarkedTil input["mark_until_index"].to int
-    
+
     mark = proc(i: Index) =
       setMarkedTil i
 
@@ -147,7 +147,7 @@ proc initRoot: Hooks =
       let
         s = hooks.self()
         c = s.children[i]
-      if i==0 and c.data.component.name == "config": "global config"
+      if i == 0 and c.data.component.name == "config": "global config"
       elif i <= markedTil(): "Preview"
       else: ""
 
@@ -752,3 +752,31 @@ defComponent configComponent,
   "bi bi-gear-fill",
   @[],
   initConfig
+
+
+proc defaultComponents*: ComponentsTable =
+  new result
+  result.add [
+    rootComponent,
+    configComponent,
+    tableRowComponent,
+    rawTextComponent,
+    paragraphComponent,
+    linkComponent,
+    boldComponent,
+    italicComponent,
+    strikethroughComponent,
+    h1Component,
+    h2Component,
+    h3Component,
+    h4Component,
+    h5Component,
+    h6Component,
+    latexComponent,
+    mdComponent,
+    verticalSpaceComponent,
+    imageComponent,
+    videoComponent,
+    listComponent,
+    tableComponent,
+    customHtmlComponent]
