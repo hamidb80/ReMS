@@ -301,13 +301,15 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "m": # mark
       if (n =? app.focusedNode):
         if not isRoot n:
-          n.father.mark n.father.children.find(n)
+          let i = n.father.children.find(n)
+          n.father.mark i
 
     of "a":
       ## show actions of focused element
     
     of "s":
       downloadFile "data.json", "application/json", stringify serialize app
+      # TODO upload
 
     of "h": 
       let el = createElement("div", {"class": "tw-content"})
@@ -379,7 +381,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       of imBefore:
         app.focusedNode.father.attach newNode, i
 
-      newNode.mounted(nil, mbUser, tmInteractive)
+      newNode.mounted(mbUser, tmInteractive)
       app.focusedNode = newNode
       app.state = asTreeView
 
@@ -406,16 +408,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # ----- Init ------------------------------
 
-
-# TODO Pinterest layout
-# TODO use kraut for routing
-# TODO save document title, link, tags, decription, ... in root config
-proc homePage: VNode =
-  buildHtml tdiv(class = ""):
-    discard
-
-
-when isMainModule:
+proc init* = 
   let root = instantiate rootComponent
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
@@ -425,3 +418,5 @@ when isMainModule:
 
   with document.documentElement:
     addEventListener "keydown", keyboardListener
+
+when isMainModule: init()

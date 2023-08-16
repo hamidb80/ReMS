@@ -2,9 +2,16 @@ import std/times
 
 
 when defined js:
-  type Str* = cstring
+  import std/jsffi
+
+  type 
+    Str* = cstring
+    JsO* = JsObject
 else:
-  type Str* = string
+  import std/json
+  type 
+    Str* = string
+    JsO* = JsonNode
 
 type
   Id* = int64

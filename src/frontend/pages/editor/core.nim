@@ -45,8 +45,7 @@ type
 
     status*: proc(): TwNodeStatus        ## internal status of the node e.g. error
 
-    mounted*: proc(globalConfig: TwNode,
-        by: MountedBy, mode: TwNodeMode) ## after creating and attaching to the parent
+    mounted*: proc(by: MountedBy, mode: TwNodeMode) ## after creating and attaching to the parent
     die*: proc()                         ## before unmounts from DOM
 
     focus*: proc()                       ## when selected
@@ -85,8 +84,8 @@ type
 
 ## ---- syntax sugar
 proc dom*(t: TwNode): auto = t.data.hooks.dom()
-proc mounted*(t, globalConfig: TwNode, by: MountedBy,
-    mode: TwNodeMode): auto = t.data.hooks.mounted(globalConfig, by, mode)
+proc mounted*(t: TwNode, by: MountedBy,
+    mode: TwNodeMode): auto = t.data.hooks.mounted(by, mode)
 proc die*(t: TwNode) = t.data.hooks.die()
 proc status*(t: TwNode): auto = t.data.hooks.status()
 proc role*(t: TwNode, child: Index): auto = t.data.hooks.role(child)
@@ -187,14 +186,10 @@ func register*(a: var App, cs: openArray[Component]) =
 
 
 proc serialize*(app: App): JsObject =
-  <*{
-    "version": app.version,
-    "meta": {},
-    "document": app.tree.serialize}
+  app.tree.serialize
 
-proc deserizalizeImpl*(
-  app: App, root: Element,
-  config: TwNode, j: JsObject
+proc deserizalize*(
+  app: App, root: Element, j: JsObject
 ): TwNode =
 
   let cname = $j["name"].to(cstring)
@@ -204,11 +199,13 @@ proc deserizalizeImpl*(
     result.data.hooks.dom = () => root
 
   for i, ch in enumerate j["children"]:
-    result.attach deserizalizeImpl(app, root, config, ch), i
+    result.attach deserizalize(app, root, ch), i
 
   result.restore j["data"]
-  result.mounted(config, mbDeserializer, tmInteractive)
+  result.mounted(mbDeserializer, tmInteractive)
   result.render()
 
-proc deserizalize*(app: App, root: Element, j: JsObject): TwNode =
-  deserizalizeImpl app, root, app.tree.firstChild "config", j["document"]
+
+proc deserizalize*(app: App, j: JsObject): Element =
+  result = createElement("div")
+  discard deserizalize(app, result, j)

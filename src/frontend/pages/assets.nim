@@ -30,14 +30,14 @@ type
 
   # TODO make tag searcher common in all modules [graph, assets, notes]
   CmpOperator = enum
-    lt    #  <
-    lte   #  <=
-    eq    #  ==
-    neq   # !=
-    gte   # >=
-    gt    #  >
-    like  #  %
-    # oneOf # ⊆
+    lt   #  <
+    lte  #  <=
+    eq   #  ==
+    neq  # !=
+    gte  # >=
+    gt   #  >
+    like #  %
+         # oneOf # ⊆
 
 
 const
@@ -339,11 +339,12 @@ proc createDom: Vnode =
           text "load more"
           icon("fa-angles-right ms-2")
 
-
-when isMainModule:
+proc init* =
   document.body.addEventListener "paste":
     proc(e: Event as ClipboardEvent) {.caster.} =
       pushUploads e.clipboardData.filesArray
       redraw()
 
   setRenderer createDom
+
+when isMainModule: init()

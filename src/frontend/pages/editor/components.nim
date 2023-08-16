@@ -125,7 +125,7 @@ template mutState(setter, datatype): untyped {.dirty.} =
 template c(str): untyped = cstring str
 
 template genMounted(body): untyped {.dirty.} =
-  proc(config: TwNode, by: MountedBy, mode: TwNodeMode) =
+  proc(by: MountedBy, mode: TwNodeMode) =
     body
 
 # ----- Definition -----------
@@ -201,10 +201,10 @@ defComponent rawTextComponent,
   @["inline", "text", "raw"],
   initRawText
 
-proc attachInstance(config: TwNode, comp: Component, hooks: Hooks) =
+proc attachInstance(comp: Component, hooks: Hooks) =
   let n = instantiate comp
   hooks.self().attach n, 0
-  n.mounted config, mbUser, tmInteractive
+  n.mounted mbUser, tmInteractive
 
 # --------------------------------
 
@@ -216,7 +216,7 @@ proc wrapperTextElement(tag: string): () -> Hooks =
       acceptsAsChild = onlyInlines
       mounted = genMounted:
         if mode == tmInteractive and by == mbUser:
-          attachInstance config, rawTextComponent, hooks
+          attachInstance rawTextComponent, hooks
 
 let
   initBold = wrapperTextElement "b"
@@ -250,7 +250,7 @@ proc initParagraph: Hooks =
 
     mounted = genMounted:
       if mode == tmInteractive and by == mbUser:
-        attachInstance config, rawTextComponent, hooks
+        attachInstance rawTextComponent, hooks
 
     settings = () => @[
       SettingsPart(
@@ -295,7 +295,7 @@ proc initLink: Hooks =
       el.setAttr "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
-        attachInstance config, rawTextComponent, hooks
+        attachInstance rawTextComponent, hooks
 
     settings = () => @[
       SettingsPart(
@@ -389,7 +389,7 @@ proc initImage: Hooks =
     mounted = genMounted:
       wrapper.appendChildren img, caption
       if mode == tmInteractive and by == mbUser:
-        attachInstance config, paragraphComponent, hooks
+        attachInstance paragraphComponent, hooks
 
     attachNode = proc(child: TwNode, at: Index) =
       attachNodeDefault hooks.self(), child, caption, child.dom, at

@@ -911,9 +911,10 @@ proc createDom*(data: RouterData): VNode =
             discard
 
 
-when isMainModule:
+proc init* =
   echo "compiled at: ", CompileDate, ' ', CompileTime
-  setRenderer createDom, "app"
+  document.body.classList.add "overflow-hidden"
+  setRenderer createDom
   setTimeout 500, proc =
     let
       layer = newLayer()
@@ -1023,7 +1024,8 @@ when isMainModule:
         # else:
         #   console.log("WTF")
 
-    block init:
+
+    block prepare:
       app.sidebarWidth = defaultWidth
       app.font.family = fontFamilies[1]
       app.font.size = 20
@@ -1061,3 +1063,5 @@ when isMainModule:
 
       # TODO show/hide side bar
       addHotkey "b", proc = discard
+
+when isMainModule: init()

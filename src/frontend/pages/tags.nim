@@ -239,6 +239,7 @@ proc createDom: Vnode =
             text "update"
             icon "mx-2 fa-sync"
 
-
-when isMainModule:
+proc init* =
   setRenderer createDom
+
+when isMainModule: init()

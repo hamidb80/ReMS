@@ -13,13 +13,13 @@ type
   NotePreview* = object
     id*: Id
     owner*: Id
-    preview*: JsonNode
+    preview*: JsO
     timestamp*: UnixTime
 
   NoteFull* = object
     id*: Id
     owner*: Id
-    data*: JsonNode
+    data*: JsO
     timestamp*: UnixTime
 
 
@@ -47,3 +47,9 @@ when not(defined(js) or defined(frontend)):
 
   proc getNote*(db: DbConn, id: Id): NoteFull =
     db.find(R, sql"SELECT id, owner, data, timestamp FROM Note WHERE id = ?", id)
+
+  proc newNote*(db: DbConn): Id =
+    db.insertID(Note(
+        data: newJNull(),
+        preview: newJNull(),
+        timestamp: toUnixtime now()))

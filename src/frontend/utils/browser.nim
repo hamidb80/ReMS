@@ -138,6 +138,9 @@ proc newPromise*[T, E](action: proc(
   reject: proc(e: E)
 )): Future[T] {.importjs: "new Promise(@)".}
 
+proc dthen*[T](f: Future[T], resolve: proc(t: T)) = 
+  discard f.then resolve
+
 proc downloadUrl*(name, dataurl: cstring) =
   let link = document.createElement("a")
   link.setAttr "href", dataurl
@@ -239,3 +242,5 @@ proc selectFile*(action: proc(s: cstring)) =
 proc copyToClipboard*(t: cstring) {.importjs: """
     navigator.clipboard.writeText(@);
   """.}
+
+proc redirect*(url: cstring) {.importjs: "location.href = #;".}

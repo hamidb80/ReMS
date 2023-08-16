@@ -73,6 +73,8 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extJs "https://unpkg.com/konva@9/konva.min.js"
     extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
     extJs "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
+    extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+    extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
 
     # UI libraries
     extCss "https://bootswatch.com/5/litera/bootstrap.min.css"
@@ -94,21 +96,18 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 proc commonPage(title: string, deps: openarray[Vnode]): VNode =
   buildHtml html:
     commonHead title, deps
-    body(class = "overflow-hidden"):
-      tdiv(id = "app")
+    body(class = "bg-light"):
+      tdiv(id = "ROOT")
 
 # ----- pages -----
 
 proc board: VNode =
   commonPage "ReMS - Remembering Manangement System", [
-      extJs "https://unpkg.com/konva@9/konva.min.js",
-      extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js",
-      extJs("./script.js", true)]
+      extJs("./script-board.js", true)]
 
 proc assets: VNode =
   commonPage "asset manager", [
-      extJs("./script-assets.js", true),
-      extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"]
+      extJs("./script-assets.js", true)]
 
 proc tags: VNode =
   commonPage "tag manager", [
@@ -116,28 +115,31 @@ proc tags: VNode =
 
 proc editor: VNode =
   commonPage "editor", [
-      extJs("./script-editor.js", true),
-      extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"]
+      extJs("./script-editor.js", true)]
+
+proc notes_list*: VNode =
+  commonPage "note list", [
+      extJs("./script-note-list.js", true)]
 
 proc index: VNode =
   buildHtml html:
     commonHead "editor", []
 
     body(class = "bg-light"):
-      h1(class="my-4 text-center w-100"):
+      h1(class = "my-4 text-center w-100"):
         text "Bringing Tools🛠 Together🤝!"
 
       tdiv(class = "d-flex flex-wrap justify-content-around my-4"):
-        a(class="p-4 border rounded m-4 bg-white", href = get_notes_url()):
+        a(class = "p-4 border rounded m-4 bg-white", href = get_notes_url()):
           text "Notes ✒"
 
-        a(class="p-4 border rounded m-4 bg-white", href = get_assets_url()):
+        a(class = "p-4 border rounded m-4 bg-white", href = get_assets_url()):
           text "Assets 📦"
 
-        a(class="p-4 border rounded m-4 bg-white", href = get_boards_url()):
+        a(class = "p-4 border rounded m-4 bg-white", href = get_boards_url()):
           text "Board 👨‍🏫"
 
-        a(class="p-4 border rounded m-4 bg-white", href = get_tags_url()):
+        a(class = "p-4 border rounded m-4 bg-white", href = get_tags_url()):
           text "tags 🏷"
 
 # -----
@@ -150,6 +152,7 @@ when isMainModule:
   writeFile "./dist/assets.html", $assets()
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/editor.html", $editor()
+  writeFile "./dist/notes_list.html", $notes_list()
 
 else:
   const
@@ -158,3 +161,4 @@ else:
     assetsPageStr* = staticRead projectHome / "./dist/assets.html"
     tagsPageStr* = staticRead projectHome / "./dist/tags.html"
     editorPageStr* = staticRead projectHome / "./dist/editor.html"
+    notesListPageStr* = staticRead projectHome / "./dist/notes_list.html"

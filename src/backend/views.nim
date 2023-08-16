@@ -54,6 +54,7 @@ let
   assetsPage* = toHtmlHandler assetsPageStr
   tagsPage* = toHtmlHandler tagsPageStr
   editorPage* = toHtmlHandler editorPageStr
+  notesListPage* = toHtmlHandler notesListPageStr
 
 # ------- Dynamic ones
 
@@ -102,4 +103,10 @@ proc listAssets*(req: Request) {.addQueryParams.} =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, toJson db.listAssets())
 
-# proc notesList*(req: Request) {.addQueryParams.} =
+proc notesList*(req: Request) =
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, toJson db.listNotes())
+
+proc newNote*(req: Request) =
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, $db.newNote())

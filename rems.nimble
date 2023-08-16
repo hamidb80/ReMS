@@ -44,17 +44,20 @@ task make, "make all":
   exec "nimble gened"
   exec "nimble gentg"
 
-task genb, "generate script.js file in ./dist":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/frontend/pages/board"
+task genb, "":
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board.js src/frontend/pages/board"
 
-task genas, "generate script.js file in ./dist":
+task genas, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/frontend/pages/assets"
 
-task gentg, "generate script.js file in ./dist":
+task gentg, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
 
-task gened, "generate script.js file in ./dist":
+task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
+
+task gennl, "":
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-note-list.js src/frontend/pages/notes_list.nim"
 
 task html, "generate index.html ./dist":
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"

@@ -1,8 +1,9 @@
 import std/[macros, uri, strutils, sequtils, strtabs]
 import macroplus
+import ../../common/str
 
 
-func safeUrl*(i: int or float or bool): string {.inline.} = $i
+func safeUrl*(i: SomeNumber or bool): string {.inline.} = $i
 func safeUrl*(s: string): string {.inline.} = encodeUrl s
 
 
@@ -56,15 +57,15 @@ macro dispatch*(router, viewModule, body): untyped =
 
     else:
       let
-        procname = ident:
-          a.httpMethod.strVal &
-          a.url.strVal.replace("-", "/").split("/").join("_") &
-          "url"
+        normalizedName = a.url.strVal.replace("-", "/").split("/").join("_")
+        absPage = ident normalizedName.strip('_') & "_page_url"
+        url = u.strVal
+        procname = ident a.httpMethod.strVal & normalizedName & "url"
 
         procbody = block:
-          if a.args.len == 0: newlit u.strVal
+          if a.args.len == 0: newlit url
           else:
-            var patt = u.strVal & "?"
+            var patt = url & "?"
 
             for i, r in a.args:
               if i != 0:
@@ -85,6 +86,7 @@ macro dispatch*(router, viewModule, body): untyped =
           @[ident"string"] & a.args.map(toIdentDef),
           procbody)
 
+      urls.add newConstStmt(exported absPage, u)
       rout.add quote do:
         `router`.`m`(`u`, `h`)
 
@@ -120,4 +122,5 @@ macro addQueryParams*(procdef): untyped =
 
   procdef.body.insert 0, def
   procdef
+
 
