@@ -32,6 +32,18 @@ requires "prettyvec"
 # Tasks
 import std/[os, strutils, strformat]
 
+
+task prepare, "creates the directory ./dist used for final output":
+  mkdir "./resources"
+  mkdir "./dist"
+
+task make, "make all":
+  exec "nimble html"
+  exec "nimble genb"
+  exec "nimble genas"
+  exec "nimble gened"
+  exec "nimble gentg"
+
 task genb, "generate script.js file in ./dist":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script.js src/frontend/pages/board"
 
