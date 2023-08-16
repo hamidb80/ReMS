@@ -107,7 +107,7 @@ figure {
 }
 
 .tw-content p {
-  display: inline-block;
+  display: block;
 }
 
 .tw-content .content-list p {
