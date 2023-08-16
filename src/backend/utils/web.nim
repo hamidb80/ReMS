@@ -58,7 +58,7 @@ macro dispatch*(router, viewModule, body): untyped =
     else:
       let
         normalizedName = a.url.strVal.replace("-", "/").split("/").join("_")
-        absPage = ident normalizedName.strip('_') & "_page_url"
+        # absPage = ident normalizedName.strip('_') & "_page_url"
         url = u.strVal
         procname = ident a.httpMethod.strVal & normalizedName & "url"
 
@@ -86,7 +86,7 @@ macro dispatch*(router, viewModule, body): untyped =
           @[ident"string"] & a.args.map(toIdentDef),
           procbody)
 
-      urls.add newConstStmt(exported absPage, u)
+      # urls.add newConstStmt(exported absPage, u)
       rout.add quote do:
         `router`.`m`(`u`, `h`)
 

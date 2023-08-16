@@ -51,7 +51,7 @@ var
 
 proc fetchAssets =
   let res = get_api_assets_list_url().getApi
-  discard res.then proc(r: AxiosResponse) =
+  res.dthen proc(r: AxiosResponse) =
     assets = cast[typeof assets](r.data)
     redraw()
 
@@ -67,12 +67,12 @@ proc startUpload(u: Upload) =
 
   u.promise = postForm(post_assets_upload_url(), form, cfg)
 
-  discard u.promise.catch proc(e: Error) =
+  u.promise.dcatch proc(e: Error) =
     u.status = usFailed
     u.reason = e.message
     redraw()
 
-  discard u.promise.then proc(r: AxiosResponse) =
+  u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
     redraw()
 

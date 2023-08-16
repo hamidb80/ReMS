@@ -52,3 +52,6 @@ proc getApi*(url: cstring): Future[AxiosResponse]
 
 proc postApi*(url: cstring): Future[AxiosResponse] 
   {.importjs: "axios.post(#)".}
+
+proc putApi*(url: cstring): Future[AxiosResponse] 
+  {.importjs: "axios.put(#)".}

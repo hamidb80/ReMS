@@ -1,5 +1,6 @@
 import std/[strformat]
 import ./utils/web
+import ../common/types
 
 when not (defined(js) or defined(frontend)):
   import mummy/routers
@@ -23,35 +24,34 @@ dispatch router, ../views:
 
   get "/assets/", assetsPage {.html.}
   # get "/asset/"?(id: int), assetPreview {.html.}
-  post "/assets/upload/", assetsUpload {.json.}
-  get "/assets/download/"?(id: int), assetsDownload {.file.}
+  post "/assets/upload/", assetsUpload {.form: File, Id.}
+  get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
   get "/api/assets/list/", listAssets {.json.}
-  # delete "/api/assets/", listAssets {.json.}
+  delete "/api/asset/"?(id: Id), deleteAsset {.json.}
   
   get "/notes/", notesListPage {.html.}
-  get "/note/editor/"?(id: int64), editorPage {.html.}
+  get "/note/editor/"?(id: Id), editorPage {.html.}
   get "/api/notes/list/", notesList {.json: seq[NotePreview].}
-  post "/api/notes/new/", newNote {.json: note_id.}
-  # put "/api/notes/update/", updateNote {.ok.}
-  # get "/api/note/", getNote {.json: NoteFull.}
-  # delete "/api/note/", deleteNote {.ok.}
+  get "/api/note/", getNote {.json: NoteFull.}
+  post "/api/notes/new/", newNote {.Id.}
+  put "/api/notes/update/"?(id: Id), updateNote {.form: JsonNode, ok.}
+  delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
   get "/boards/", boardPage {.html.}
-  # get "/board/", boardPage {.html.}
-  # post "/api/board/new/", listAssets {.json.}
-  # put "/api/board/update/", listAssets {.json.}
-  # get "/api/boards/list/", listAssets {.json.}
-  # get "/api/board/", listAssets {.json.}
-  # delete "/api/board/", listAssets {.json.}
+  # get "/board/"?(id: Id), boardPage {.html.}
+  # post "/api/board/new/", newBoard {.Id.}
+  # put "/api/board/update/"?(id: Id), updateBoard {.ok.}
+  # get "/api/boards/list/", listBoards {.json: seq[].}
+  # get "/api/board/"?(id: Id), getBoard {.json.}
+  # delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", tagsPage {.html.}
-  # post "/api/tag/new/", listAssets {.json.}
-  # put "/api/tag/update/", listAssets {.json.}
-  # get "/api/tags/list/", listAssets {.json.}
-  # get "/api/tag/", listAssets {.json.}
-  # delete "/api/tag/", listAssets {.json.}
+  # post "/api/tag/new/", newTag {.Id.}
+  # put "/api/tag/update/"?(id: Id), updateTag {.ok.}
+  # get "/api/tags/list/", listTags {.json: seq[].}
+  # delete "/api/tag/"?(id: Id), deleteTag {.ok.}
   
 
-func get_asset_short_hand_url*(asset_id: int64): string =
+func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id

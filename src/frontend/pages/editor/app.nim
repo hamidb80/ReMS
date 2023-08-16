@@ -309,7 +309,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     
     of "s":
       downloadFile "data.json", "application/json", stringify serialize app
-      # TODO upload
+      let id = parseInt getWindowQueryParam("id")
+      # put_api_notes_update(id).putApi.dthen (a: JsonNode) => discard
 
     of "h": 
       let el = createElement("div", {"class": "tw-content"})

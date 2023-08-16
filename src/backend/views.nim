@@ -1,4 +1,4 @@
-import std/[strformat, strtabs, strutils, os, oids]
+import std/[strformat, strtabs, strutils, os, oids, json]
 
 import mummy, mummy/multipart
 import jsony
@@ -101,12 +101,38 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
 
 proc listAssets*(req: Request) {.addQueryParams.} =
   withConn db:
-    req.respond(200, @{"Content-Type": "application/json"}, toJson db.listAssets())
+    req.respond(200, @{"Content-Type": "application/json"},
+        toJson db.listAssets())
+
+proc deleteAsset*(req: Request) {.addQueryParams.} =
+  let id = q["id"].parseint
+  withConn db:
+    db.deleteAsset id
+  req.respond 200
+
+
+proc newNote*(req: Request) =
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, $db.newNote())
 
 proc notesList*(req: Request) =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, toJson db.listNotes())
 
-proc newNote*(req: Request) =
+## TODO addQueryParams: {id: int, ?name:string, ...}
+proc getNote*(req: Request) {.addQueryParams.} =
+  let id = q["id"].parseint
   withConn db:
-    req.respond(200, @{"Content-Type": "application/json"}, $db.newNote())
+    req.respond(200, @{"Content-Type": "application/json"}, toJson db.getNote(id))
+
+proc updateNote*(req: Request) {.addQueryParams.} =
+  let id = q["id"].parseint
+  withConn db:
+    db.updateNote id, parseJson req.body
+  req.respond 200
+
+proc deleteNote*(req: Request) {.addQueryParams.} =
+  let id = q["id"].parseint
+  withConn db:
+    db.deleteNote id
+  req.respond 200

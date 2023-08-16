@@ -138,8 +138,11 @@ proc newPromise*[T, E](action: proc(
   reject: proc(e: E)
 )): Future[T] {.importjs: "new Promise(@)".}
 
-proc dthen*[T](f: Future[T], resolve: proc(t: T)) = 
+proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
   discard f.then resolve
+
+proc dcatch*[T, E](f: Future[T]; catcher: proc(e: E)) =
+  discard f.catch catcher
 
 proc downloadUrl*(name, dataurl: cstring) =
   let link = document.createElement("a")
@@ -156,6 +159,11 @@ proc imageDataUrl(file: DFile): Future[cstring] =
     reader.onabort = reject
     reader.readAsDataURL(file)
 
+proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
+    (new URLSearchParams(window.location.search)).get(@)
+  """.}
+
+func parseInt*(cs: cstring): cint {.importjs: "Number(@)".}
 
 proc prepend*(container, child: Node) {.importjs: "#.prepend(#)".}
 proc after*(adjacent, newNode: Node) {.importjs: "#.after(#)".}
