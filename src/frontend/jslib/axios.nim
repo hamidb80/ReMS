@@ -48,10 +48,10 @@ proc postForm*(
 """.}
 
 proc getApi*(url: cstring): Future[AxiosResponse] 
-  {.importjs: "axios.get(#)".}
+  {.importjs: "axios.get(@)".}
 
-proc postApi*(url: cstring): Future[AxiosResponse] 
-  {.importjs: "axios.post(#)".}
+proc postApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 
+  {.importjs: "axios.post(@)".}
 
-proc putApi*(url: cstring): Future[AxiosResponse] 
-  {.importjs: "axios.put(#)".}
+proc putApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 
+  {.importjs: "axios.put(@)".}

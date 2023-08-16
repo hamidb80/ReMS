@@ -33,7 +33,7 @@ dispatch router, ../views:
   get "/notes/", notesListPage {.html.}
   get "/note/editor/"?(id: Id), editorPage {.html.}
   get "/api/notes/list/", notesList {.json: seq[NotePreview].}
-  get "/api/note/", getNote {.json: NoteFull.}
+  get "/api/note/"?(id: Id), getNote {.json: NoteFull.}
   post "/api/notes/new/", newNote {.Id.}
   put "/api/notes/update/"?(id: Id), updateNote {.form: JsonNode, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}

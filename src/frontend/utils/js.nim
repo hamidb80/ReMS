@@ -1,5 +1,5 @@
 import std/[macros]
-import std/[jsffi]
+import std/[jsffi, asyncjs]
 
 func parseInt*(s: cstring): int {.importjs: "parseInt(@)".}
 func toLower*(s: cstring): cstring {.importjs: "#.toLowerCase()".}
@@ -7,6 +7,20 @@ proc parseJs*(s: cstring): JsObject {.importjs: "JSON.parse(@)".}
 proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
 func newJsArray*(): JsObject {.importjs: "[@]".}
 func add*(a, b: JsObject) {.importjs: "#.push(#)".}
+
+proc setTimeout*(delay: Natural; action: proc) =
+  discard setTimeout(action, delay)
+
+proc newPromise*[T, E](action: proc(
+  resovle: proc(t: T);
+  reject: proc(e: E)
+)): Future[T] {.importjs: "new Promise(@)".}
+
+proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
+  discard f.then resolve
+
+proc dcatch*[T, E](f: Future[T]; catcher: proc(e: E)) =
+  discard f.catch catcher
 
 proc toJsRecursiveImpl(t: NimNode): NimNode =
   result = newStmtList()

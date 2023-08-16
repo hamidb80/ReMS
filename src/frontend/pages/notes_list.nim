@@ -14,7 +14,7 @@ var
   notes: seq[NotePreview]
 
 proc fetchNotes =
-  get_api_notes_list_url().postApi.dthen proc(r: AxiosResponse) =
+  get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
     notes = cast[typeof notes](r.data)
     redraw()
 
@@ -50,3 +50,4 @@ proc createDom: Vnode =
 
 when isMainModule:
   setRenderer createDom
+  fetchNotes()

@@ -1,13 +1,16 @@
 import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables]
-import std/[dom, jsconsole]
+import std/[dom, jsconsole, jsffi]
 
 import questionable
 import karax/[karax, karaxdsl, vdom]
 import caster
 
+import ../../../backend/routes
+import ../../../backend/database/[queries]
 import ./[core, components, inputs]
-import ../../../common/[conventions, datastructures]
 import ../../utils/[js, browser]
+import ../../jslib/[axios]
+import ../../../common/[conventions, datastructures]
 
 
 var app = App(state: asTreeView)
@@ -308,9 +311,11 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## show actions of focused element
     
     of "s":
-      downloadFile "data.json", "application/json", stringify serialize app
+      let s = serialize app
+      # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
-      # put_api_notes_update(id).putApi.dthen (a: JsonNode) => discard
+      put_api_notes_update_url(id).putApi(s).dthen proc(_: auto) = 
+        discard
 
     of "h": 
       let el = createElement("div", {"class": "tw-content"})
@@ -330,6 +335,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         purge app.tree.dom
         resetApp deserizalize(app, app.tree.dom, c.parseJs)
         redraw()
+
 
     of "r":
       ## redo
@@ -409,13 +415,22 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # ----- Init ------------------------------
 
+proc fetchNote = 
+  let id = parseInt getWindowQueryParam("id")
+  get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
+    let doc = cast[NoteFull](r.data)
+    console.log app, app.tree.dom
+    console.log doc.data
+    resetApp deserizalize(app, app.tree.dom, doc.data)
+    redraw()
+
 proc init* = 
   let root = instantiate rootComponent
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
-  
+
   setRenderer editPage
-  # setRenderer homePage
+  settimeout 500, fetchNote
 
   with document.documentElement:
     addEventListener "keydown", keyboardListener

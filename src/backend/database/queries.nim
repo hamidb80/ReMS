@@ -58,7 +58,7 @@ when not(defined(js) or defined(frontend)):
         timestamp: toUnixtime now())
 
   proc updateNote*(db: DbConn, id: Id, data: JsonNode) =
-    db.exec sql"UDPATE Note SET data = ? WHERE id = ?", data, id
+    db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
 
   proc deleteNote*(db: DbConn, id: Id) =
     db.exec sql"DELETE FROM Note WHERE id = ?", id

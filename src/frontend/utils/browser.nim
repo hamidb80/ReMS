@@ -1,5 +1,6 @@
 import std/[dom, jsffi, asyncjs, jsconsole, jsformdata]
 import std/[sugar, with]
+import ./js
 import ../../common/conventions
 
 type
@@ -130,20 +131,6 @@ proc valueAsNumber*[T](el: Element): T {.importjs: "#.valueAsNumber".}
 proc filesArray*(d: DataTransfer or Element or Node or Event): seq[
     DFile] {.importjs: "Array.from(#.files)".}
 
-proc setTimeout*(delay: Natural; action: proc) =
-  discard setTimeout(action, delay)
-
-proc newPromise*[T, E](action: proc(
-  resovle: proc(t: T);
-  reject: proc(e: E)
-)): Future[T] {.importjs: "new Promise(@)".}
-
-proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
-  discard f.then resolve
-
-proc dcatch*[T, E](f: Future[T]; catcher: proc(e: E)) =
-  discard f.catch catcher
-
 proc downloadUrl*(name, dataurl: cstring) =
   let link = document.createElement("a")
   link.setAttr "href", dataurl
@@ -152,7 +139,7 @@ proc downloadUrl*(name, dataurl: cstring) =
   link.click
 
 proc imageDataUrl(file: DFile): Future[cstring] =
-  newPromise proc (resolve: proc(t: cstring); reject: proc(e: Event)) =
+  newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
     var reader = newFileReader()
     reader.onload = (ev: Event) => resolve("ev.target.result") # resolve(ev.target.result)
     reader.onerror = reject
@@ -162,8 +149,6 @@ proc imageDataUrl(file: DFile): Future[cstring] =
 proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
     (new URLSearchParams(window.location.search)).get(@)
   """.}
-
-func parseInt*(cs: cstring): cint {.importjs: "Number(@)".}
 
 proc prepend*(container, child: Node) {.importjs: "#.prepend(#)".}
 proc after*(adjacent, newNode: Node) {.importjs: "#.after(#)".}
