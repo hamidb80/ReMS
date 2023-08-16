@@ -155,6 +155,7 @@ when isMainModule:
   writeFile "./dist/notes_list.html", $notes_list()
 
 else:
+  ## TODO dont store, read at runtime
   const
     indexPageStr* = staticRead projectHome / "./dist/index.html"
     boardPageStr* = staticRead projectHome / "./dist/board.html"
