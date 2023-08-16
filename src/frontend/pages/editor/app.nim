@@ -139,10 +139,6 @@ proc recursiveList(data: TwNode): VNode =
   var treepath = newSeq[int]()
   recursiveListImpl data, treepath, app.focusedPath, app.selected
 
-template iff(cond, value): untyped =
-  if cond: value
-  else: default typeof value
-
 const
   treeViewId = "tw-tree-view"
   porpertySettingId = "tw-property-setting"
@@ -314,7 +310,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       let s = serialize app
       # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
-      put_api_notes_update_url(id).putApi(s).dthen proc(_: auto) = 
+      put_api_notes_update_url(id).putApi(cast[JsObject](s)).dthen proc(_: auto) = 
         discard
 
     of "h": 
@@ -333,7 +329,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "o":
       selectFile proc(c: cstring) = 
         purge app.tree.dom
-        resetApp deserizalize(app, app.tree.dom, c.parseJs)
+        resetApp deserizalize(app, app.tree.dom, cast[TreeNodeRaw[JsObject]](c.parseJs))
         redraw()
 
 
@@ -419,8 +415,6 @@ proc fetchNote =
   let id = parseInt getWindowQueryParam("id")
   get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
     let doc = cast[NoteFull](r.data)
-    console.log app, app.tree.dom
-    console.log doc.data
     resetApp deserizalize(app, app.tree.dom, doc.data)
     redraw()
 

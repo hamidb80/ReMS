@@ -8,7 +8,7 @@ import ../../utils/[browser, js]
 
 
 type
-  TwNode* = TreeNode[TwNodeData]
+  TwNode* = TreeNodeRec[TwNodeData]
   Index* = int
 
   TwNodeData* = object
@@ -109,15 +109,17 @@ proc firstChild*(t: TwNode, cname: string): TwNode =
       return ch
   nil
 
-proc serialize*(t: TwNode): JsObject =
-  var children = newJsArray()
+proc serialize*(t: TwNode): TreeNodeRaw[JsObject] =
+  result.new  
+  result.name = t.data.component.name.cstring
+  result.data = t.capture
   for ch in t.children:
-    children.add serialize ch
+    result.children.add serialize ch
 
-  <* {
-    "name": t.data.component.name.cstring,
-    "data": t.capture,
-    "children": children}
+  # <* {
+  #   "name": 
+  #   "data": t.capture,
+  #   "children": children}
 
 proc instantiate*(c: Component): TwNode =
   var node = TwNode(data: TwNodeData(
@@ -185,27 +187,26 @@ func register*(a: var App, cs: openArray[Component]) =
     a.register c
 
 
-proc serialize*(app: App): JsObject =
+proc serialize*(app: App): TreeNodeRaw[JsObject] =
   app.tree.serialize
 
 proc deserizalize*(
-  app: App, root: Element, j: JsObject
+  app: App, root: Element, j: TreeNodeRaw[JsObject]
 ): TwNode =
-
-  let cname = $j["name"].to(cstring)
+  let cname = $j.name
   result = instantiate app.components[cname]
 
   if cname == "root":
     result.data.hooks.dom = () => root
 
-  for i, ch in enumerate j["children"]:
+  for i, ch in enumerate j.children:
     result.attach deserizalize(app, root, ch), i
 
-  result.restore j["data"]
+  result.restore j.data
   result.mounted(mbDeserializer, tmInteractive)
   result.render()
 
 
-proc deserizalize*(app: App, j: JsObject): Element =
+proc deserizalize*(app: App, j: TreeNodeRaw[JsObject]): Element =
   result = createElement("div")
   discard deserizalize(app, result, j)

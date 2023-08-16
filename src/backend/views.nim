@@ -126,11 +126,10 @@ proc getNote*(req: Request) {.addQueryParams.} =
     req.respond(200, @{"Content-Type": "application/json"}, toJson db.getNote(id))
 
 proc updateNote*(req: Request) {.addQueryParams.} =
-  let 
+  let
     id = q["id"].parseint
     d = parseJson req.body
 
-  echo d
   withConn db:
     db.updateNote id, d
   req.respond 200

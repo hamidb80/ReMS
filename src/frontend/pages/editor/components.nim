@@ -1,6 +1,6 @@
 import std/[jsffi, dom, jsconsole]
 import std/[with, sequtils, tables, sugar, jsre]
-import core
+import ./core
 import ../../utils/[browser, js]
 import ../../jslib/[katex, marked]
 import ../../../common/conventions
@@ -107,9 +107,6 @@ proc dettachNodeDefault(self: TwNode, at: Index, basedOnDom: bool) =
 
   self.children.delete at
 
-template set(container, value): untyped =
-  container = value
-
 proc genState[T](init: T): tuple[getter: () -> T, setter: T -> void] =
   let value = new T
   value[] = init
@@ -122,17 +119,11 @@ template mutState(setter, datatype): untyped {.dirty.} =
     setter data.to datatype
     hooks.render()
 
-template c(str): untyped = cstring str
-
 template genMounted(body): untyped {.dirty.} =
   proc(by: MountedBy, mode: TwNodeMode) =
     body
 
 # ----- Definition -----------
-
-# XXX custom classes for all elements
-
-# TODO mark nodes for preview/.. using key [m]
 
 proc initRoot: Hooks =
   let (markedTil, setMarkedTil) = genState 0
@@ -144,6 +135,11 @@ proc initRoot: Hooks =
     focus = noop
     blur = noop
     acceptsAsChild = genAllowedTags @["block", "config"]
+    
+    capture = () => <*{"mark_until_index": markedTil()}
+    restore = proc(input: JsObject) =
+      setMarkedTil input["mark_until_index"].to int
+    
     mark = proc(i: Index) =
       setMarkedTil i
 
@@ -661,7 +657,6 @@ defComponent strikethroughComponent,
   @["inline"],
   initStrikethrough
 
-
 defComponent h1Component,
   "h1",
   "bi bi-type-h1",
@@ -719,7 +714,7 @@ defComponent verticalSpaceComponent,
 defComponent imageComponent,
   "image",
   "bi bi-image-fill",
-  @["media", "block"],
+  @["media", "block", "picture"],
   initImage
 
 defComponent videoComponent,
@@ -745,7 +740,6 @@ defComponent tableComponent,
   "bi bi-table",
   @["block"],
   initTable
-
 
 defComponent customHtmlComponent,
   "HTML",

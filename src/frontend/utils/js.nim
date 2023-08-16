@@ -8,6 +8,11 @@ proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
 func newJsArray*(): JsObject {.importjs: "[@]".}
 func add*(a, b: JsObject) {.importjs: "#.push(#)".}
 
+template c*(str): untyped = cstring str
+
+template set*(container, value): untyped =
+  container = value
+
 proc setTimeout*(delay: Natural; action: proc) =
   discard setTimeout(action, delay)
 

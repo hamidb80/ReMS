@@ -1,5 +1,5 @@
 import std/[times, json]
-import ../../common/types
+import ../../common/[types, datastructures]
 
 
 type
@@ -13,13 +13,13 @@ type
   NotePreview* = object
     id*: Id
     owner*: Id
-    preview*: JsO
+    preview*: TreeNodeRaw[JsO]
     timestamp*: UnixTime
 
   NoteFull* = object
     id*: Id
     owner*: Id
-    data*: JsO
+    data*: TreeNodeRaw[JsO]
     timestamp*: UnixTime
 
 
@@ -53,8 +53,8 @@ when not(defined(js) or defined(frontend)):
 
   proc newNote*(db: DbConn): Id =
     db.insertID Note(
-        data: newJNull(),
-        preview: newJNull(),
+        data: newNoteData(),
+        preview: newNoteData(),
         timestamp: toUnixtime now())
 
   proc updateNote*(db: DbConn, id: Id, data: JsonNode) =

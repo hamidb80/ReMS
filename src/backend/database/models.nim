@@ -1,6 +1,6 @@
 import std/[options, json]
-import ponairi
-import ../../common/[types]
+import ponairi, jsony
+import ../../common/[types, datastructures]
 
 # TODO add following fields to Assets, Notes, Graph
 # uuid
@@ -50,8 +50,8 @@ type
   Note* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
-    data*: JsonNode
-    preview*: JsonNode ## subset of `data`
+    data*: TreeNodeRaw[JsO]
+    preview*: TreeNodeRaw[JsO] ## subset of `data`
     timestamp*: UnixTime
 
   Board* = object
@@ -136,9 +136,14 @@ type
 # ----- custom types
 
 proc sqlType*(t: typedesc[JsonNode]): string = "TEXT"
-proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: $j)
+proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: toJson j)
 proc to*(src: DbValue, dest: var JsonNode) =
-  dest = parseJson src.s
+  dest = fromJson(src.s, JsonNode)
+
+proc sqlType*(t: typedesc[TreeNodeRaw[JsonNode]]): string = "TEXT"
+proc dbValue*(j: TreeNodeRaw[JsonNode]): DbValue = DbValue(kind: dvkString, s: toJson j)
+proc to*(src: DbValue, dest: var TreeNodeRaw[JsonNode]) =
+  dest = fromJson(src.s, TreeNodeRaw[JsonNode])
 
 proc sqlType*(t: typedesc[Path]): string = "TEXT"
 proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
@@ -158,6 +163,14 @@ proc to*(src: DbValue, dest: var Bytes) =
 func `%`*(p: Path): JsonNode = %p.string
 func `%`*(d: UnixTime): JsonNode = %d.int64
 func `%`*(b: Bytes): JsonNode = %b.int64
+
+# ----- basic operations
+
+func newNoteData*: TreeNodeRaw[JsonNode] =
+  TreeNodeRaw[JsonNode](
+    name: "root",
+    children: @[],
+    data: newJNull())
 
 # ----- basic operations
 
