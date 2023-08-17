@@ -56,6 +56,10 @@
   display: none;
 }
 
+.btn-compact {
+  padding: 6px 10px;
+}
+
 .tw-content img {
   max-width: 100%;
 }

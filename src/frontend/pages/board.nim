@@ -6,7 +6,7 @@ import caster, uuid4, questionable, prettyvec
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
 import ../utils/[ui, browser, js]
-import ../../common/[conventions, datastructures]
+import ../../common/[conventions, datastructures, types]
 import ../../backend/[routes]
 
 
@@ -30,7 +30,7 @@ type
     fsBorderWidth
     fsBorderShape
 
-  Id = cstring
+  Oid = cstring
 
   Region = range[1..4]
 
@@ -74,9 +74,9 @@ type
     isSpaceDown: bool
 
     # board data
-    objects: Table[Id, VisualNode]
-    edges: Graph[Id]
-    edgeInfo: Table[Slice[Id], Edge]
+    objects: Table[Oid, VisualNode]
+    edges: Graph[Oid]
+    edgeInfo: Table[Slice[Oid], Edge]
 
   FontConfig = object
     family: string
@@ -456,7 +456,7 @@ proc cloneEdge(e: Edge): Edge =
       app.selectedEdge = some result
       redraw()
 
-proc redrawConnectionsTo(uid: Id) =
+proc redrawConnectionsTo(uid: Oid) =
   for id in app.edges.getOrDefault(uid):
     let
       ei = app.edgeInfo[sorted id..uid]
@@ -669,13 +669,23 @@ proc newPoint(pos: Vector): Circle =
 
 # ----- UI
 let compTable = defaultComponents()
-var msg: cstring = c"Loading ..."
-proc getMsg =
-  let q = get_api_note_url(1).getApi
+var
+  msgIdList: seq[Id]
+  msgCache: Table[Id, cstring]
+
+proc getMsg(id: Id) =
+  let q = get_api_note_url(id).getApi
   q.dthen proc(r: AxiosResponse) =
-    let d = cast[TreeNodeRaw[JsObject]](r.data.data)
-    msg = deserizalize(compTable, d).innerHtml
+    let
+      d = cast[TreeNodeRaw[JsObject]](r.data.data)
+      msg = deserizalize(compTable, d).innerHtml
+
+    msgCache[id] = msg
     redraw()
+
+proc addToMessages(id: Id) =
+  msgIdList.add id
+  getmsg id
 
 proc isMaximized*: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
@@ -727,6 +737,7 @@ proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
           if selectable:
             setFocusedFontFamily name
             app.footerState = fsOverview
+
 
 proc createDom*(data: RouterData): VNode =
   let freeze = winel.onmousemove != nil
@@ -886,12 +897,27 @@ proc createDom*(data: RouterData): VNode =
           main(class = "p-4 content-wrapper"):
             case app.sidebarState
             of ssMessagesView:
-              for i in 1..3:
+              for mid in msgIdList:
                 tdiv(class = "card mb-4"):
                   tdiv(class = "card-body"):
                     tdiv(class = "tw-content"):
+                      if mid in msgCache:
+                        verbatim msgCache[mid]
+                      else:
+                        text "Loading ..."
 
-                      verbatim msg
+                  tdiv(class = "card-footer d-flex justify-content-center"):
+                    button(class = "btn mx-1 btn-compact btn-outline-info"):
+                      icon "fa-link"
+                    button(class = "btn mx-1 btn-compact btn-outline-primary"):
+                      icon "fa-sync"
+                    button(class = "btn mx-1 btn-compact btn-outline-dark"):
+                      icon "fa-chevron-up"
+                    button(class = "btn mx-1 btn-compact btn-outline-dark"):
+                      icon "fa-chevron-down"
+                    button(class = "btn mx-1 btn-compact btn-outline-danger"):
+                      icon "fa-close"
+
 
             of ssPropertiesView:
               let vn = app.selectedVisualNode
@@ -908,8 +934,17 @@ proc createDom*(data: RouterData): VNode =
                       setText obj, s
 
           footer(class = "mt-2"):
-            discard
-
+            tdiv(class = "input-group"):
+              input(`type` = "text", id = "new-message-input",
+                  class = "form-control form-control-sm")
+              button(class = "input-group-text btn btn-primary"):
+                icon "fa-add"
+                proc onClick =
+                  let
+                    inp = qi "new-message-input"
+                    id = parseInt inp.value
+                  addToMessages id
+                  inp.value = c""
 
 proc init* =
   echo "compiled at: ", CompileDate, ' ', CompileTime
@@ -1064,6 +1099,5 @@ proc init* =
       # TODO show/hide side bar
       addHotkey "b", proc = discard
 
-    getMsg()
 
 when isMainModule: init()
