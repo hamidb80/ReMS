@@ -1,11 +1,13 @@
 import std/[with, math, options, lenientops, strformat, random, sets, tables]
-import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
+import std/[dom, jsconsole, jsffi, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
-import ../jslib/[konva, hotkeys]
-import ../utils/[ui, browser]
+import ../jslib/[konva, hotkeys, axios]
+import ./editor/[components, core]
+import ../utils/[ui, browser, js]
 import ../../common/[conventions, datastructures]
+import ../../backend/[routes]
 
 
 type
@@ -666,17 +668,14 @@ proc newPoint(pos: Vector): Circle =
     position = pos
 
 # ----- UI
-
-# discard getMsg()
-var msg = cstring"loading ..."
-proc getMsg() {.async.} =
-  await:
-    fetch(cstring"/pages/2.html")
-    .then((response: Response) => response.text)
-    .then((s: cstring) => set(msg, s))
-    .catch((err: Error) => console.log("Request Failed", err))
-
-  redraw()
+let compTable = defaultComponents()
+var msg: cstring = c"Loading ..."
+proc getMsg =
+  let q = get_api_note_url(1).getApi
+  q.dthen proc(r: AxiosResponse) =
+    let d = cast[TreeNodeRaw[JsObject]](r.data.data)
+    msg = deserizalize(compTable, d).innerHtml
+    redraw()
 
 proc isMaximized*: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
@@ -891,6 +890,7 @@ proc createDom*(data: RouterData): VNode =
                 tdiv(class = "card mb-4"):
                   tdiv(class = "card-body"):
                     tdiv(class = "tw-content"):
+
                       verbatim msg
 
             of ssPropertiesView:
@@ -1063,5 +1063,7 @@ proc init* =
 
       # TODO show/hide side bar
       addHotkey "b", proc = discard
+
+    getMsg()
 
 when isMainModule: init()
