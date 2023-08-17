@@ -6,7 +6,7 @@ import caster, uuid4, questionable, prettyvec
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
 import ../utils/[ui, browser, js]
-import ../../common/[conventions, datastructures, types]
+import ../../common/[conventions, datastructures, types, seq]
 import ../../backend/[routes]
 
 
@@ -662,9 +662,57 @@ proc getMsg(id: Id) =
     msgCache[id] = msg
     redraw()
 
+proc msgComp(v: VisualNode, i: int, mid: Id): VNode =
+  buildHTML:
+    tdiv(class = "card mb-4"):
+      tdiv(class = "card-body"):
+        tdiv(class = "tw-content"):
+          if mid in msgCache:
+            verbatim msgCache[mid]
+          else:
+            text "Loading ..."
+
+      tdiv(class = "card-footer d-flex justify-content-center"):
+        button(class = "btn mx-1 btn-compact btn-outline-info"):
+          icon "fa-link"
+          proc onclick =
+            discard
+
+        button(class = "btn mx-1 btn-compact btn-outline-primary"):
+          icon "fa-sync"
+          proc onclick =
+            getMsg mid
+
+        button(class = "btn mx-1 btn-compact btn-outline-dark"):
+          icon "fa-chevron-up"
+          proc onclick =
+            if i >= 1:
+              let prev = v.messageIdList[i-1]
+              v.messageIdList[i-1] = mid
+              v.messageIdList[i] = prev
+              redraw()
+
+        button(class = "btn mx-1 btn-compact btn-outline-dark"):
+          icon "fa-chevron-down"
+          proc onclick =
+            if i < v.messageIdList.high:
+              let next = v.messageIdList[i+1]
+              v.messageIdList[i+1] = mid
+              v.messageIdList[i] = next
+              redraw()
+
+        button(class = "btn mx-1 btn-compact btn-outline-danger"):
+          icon "fa-close"
+          proc onclick =
+            v.messageIdList.delete i
+            redraw()
+
+
 proc addToMessages(id: Id) =
-  app.selectedVisualNode.get.messageIdList.add id
-  getmsg id
+  let v = app.selectedVisualNode.get
+  if id notin v.messageIdList:
+    v.messageIdList.add id
+    getmsg id
 
 proc isMaximized*: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
@@ -726,8 +774,6 @@ proc createDom*(data: RouterData): VNode =
     tdiv(class = "karax"):
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
-
-      # TODO add zoom in/out buttons
 
       footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
@@ -816,8 +862,8 @@ proc createDom*(data: RouterData): VNode =
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
           icon "fa-plus fa-lg"
 
+        # TODO show shortcut and name via a tooltip
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          # TODO show shortcut and name via a tooltip
           icon "fa-expand fa-lg"
 
         button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -877,27 +923,8 @@ proc createDom*(data: RouterData): VNode =
             case app.sidebarState
             of ssMessagesView:
               if sv =? app.selectedVisualNode:
-                for mid in sv.messageIdList:
-                  tdiv(class = "card mb-4"):
-                    tdiv(class = "card-body"):
-                      tdiv(class = "tw-content"):
-                        if mid in msgCache:
-                          verbatim msgCache[mid]
-                        else:
-                          text "Loading ..."
-
-                    tdiv(class = "card-footer d-flex justify-content-center"):
-                      button(class = "btn mx-1 btn-compact btn-outline-info"):
-                        icon "fa-link"
-                      button(class = "btn mx-1 btn-compact btn-outline-primary"):
-                        icon "fa-sync"
-                      button(class = "btn mx-1 btn-compact btn-outline-dark"):
-                        icon "fa-chevron-up"
-                      button(class = "btn mx-1 btn-compact btn-outline-dark"):
-                        icon "fa-chevron-down"
-                      button(class = "btn mx-1 btn-compact btn-outline-danger"):
-                        icon "fa-close"
-
+                for i, mid in sv.messageIdList:
+                  msgComp sv, i, mid
 
             of ssPropertiesView:
               let vn = app.selectedVisualNode
@@ -1092,11 +1119,16 @@ proc init* =
         changeScale c, 1, false
         app.stage.center = c
 
-      # TODO move
-      addHotkey "m", proc = discard
+      addHotkey "f", proc = # focus
+        if v =? app.selectedVisualNode:
+          app.stage.center = v.center
+          app.stage.x = app.stage.x - app.sidebarWidth/2
 
-      # TODO show/hide side bar
-      addHotkey "b", proc = discard
+      addHotkey "t", proc = # show/hide side bar
+        app.sidebarWidth =
+          if app.sidebarWidth < defaultWidth: defaultWidth
+          else: 0
+        redraw()
 
 
 when isMainModule: init()
