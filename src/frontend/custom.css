@@ -125,6 +125,14 @@ figure {
   margin: 0;
 }
 
+figure.tw-focus-hover img{
+  opacity: 0.5;
+}
+
+figure figcaption p{
+  margin: 0;
+}
+
 p p {
   margin: 0;
 }
@@ -140,7 +148,7 @@ p p {
 }
 
 .tw-content p {
-  display: inline-block;
+  display: block;
 }
 
 .tw-content .content-list p {

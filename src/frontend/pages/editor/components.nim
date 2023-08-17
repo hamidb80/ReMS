@@ -246,6 +246,7 @@ proc initParagraph: Hooks =
       else: discard
 
     mounted = genMounted:
+      hooks.render()
       if mode == tmInteractive and by == mbUser:
         attachInstance rawTextComponent, hooks
 
