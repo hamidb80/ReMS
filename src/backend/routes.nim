@@ -32,13 +32,13 @@ dispatch router, ../views:
   
   get "/notes/", loadDist"notes_list.html" {.html.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
-  get "/api/notes/list/", notesList {.json: seq[NotePreview].}
-  get "/api/note/"?(id: Id), getNote {.json: NoteFull.}
+  get "/api/notes/list/", notesList {.json: seq[Note].}
+  get "/api/note/"?(id: Id), getNote {.json: Note.}
   post "/api/notes/new/", newNote {.Id.}
-  put "/api/notes/update/"?(id: Id), updateNote {.form: JsonNode, ok.}
+  put "/api/notes/update/"?(id: Id), updateNote {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
-  get "/boards/", loadDist"board.html" {.html.}
+  get "/boards/", loadDist"board.html" {.html.} ## TODO send screenshot of board with key `p` forexample and show it in list
   # get "/board/"?(id: Id), boardPage {.html.}
   # post "/api/board/new/", newBoard {.Id.}
   # put "/api/board/update/"?(id: Id), updateBoard {.ok.}

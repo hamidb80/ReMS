@@ -64,10 +64,11 @@ type
     theme: ColorTheme
     sidebarWidth: Natural
 
-    lastMousePos: Vector
+    lastAbsoluteMousePos: Vector
+    lastClientMousePos: Vector
     leftClicked: bool
 
-    isCtrlDown: bool
+    isShiftDown: bool
     isSpaceDown: bool
 
     # board data
@@ -123,6 +124,7 @@ type
   CssCursor = enum
     ccNone = ""
     ccMove = "move"
+    ccZoom = "zoom-in"
     ccPointer = "pointer"
     ccResizex = "e-resize"
     # ccAdd
@@ -168,7 +170,7 @@ const
 # TODO add hover view when selecting a node
 # TODO remove implicit global argument `app` and make it explicit
 # TODO add beizier curve
-# TODO custom color palletes 
+# TODO custom color palletes
 var app = AppData()
 
 
@@ -502,16 +504,18 @@ proc center(stage: Stage): Vector =
     app.stage.x, app.stage.y,
     app.stage.width, app.stage.height)
 
+proc `center=`(stage: Stage, c: Vector) =
+  let s = ||stage.scale
+  stage.position = -c * s + stage.size.v/2
 
 proc moveStage(v: Vector) =
   app.stage.x = app.stage.x + v.x
   app.stage.y = app.stage.y + v.y
 
-proc changeScale(mouse🖱️: Vector, Δscale: Float) =
+proc changeScale(mouse🖱️: Vector, newScale: Float, changePosition: bool) =
   ## zoom in/out with `real` position pinned
   let
-    s = ||app.stage.scale
-    s′ = clamp(s + Δscale, minScale .. maxScale)
+    s′ = clamp(newScale, minScale .. maxScale)
 
     w = app.stage.width
     h = app.stage.height
@@ -520,14 +524,16 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
     realϟ = real * s′
 
   app.stage.scale = s′
-  app.stage.x = -realϟ.x + w/2
-  app.stage.y = -realϟ.y + h/2
 
-  let
-    real′ = coordinate(mouse🖱️, app.stage)
-    d = real′ - real
+  if changePosition:
+    app.stage.x = -realϟ.x + w/2
+    app.stage.y = -realϟ.y + h/2
 
-  moveStage d * s′
+    let
+      real′ = coordinate(mouse🖱️, app.stage)
+      d = real′ - real
+
+    moveStage d * s′
 
 proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
   # t.nodes = objs
@@ -610,8 +616,8 @@ proc createNode =
       redraw()
 
   with wrapper:
-    x = app.lastMousePos.x
-    y = app.lastMousePos.y
+    x = app.lastAbsoluteMousePos.x
+    y = app.lastAbsoluteMousePos.y
     id = uid
     add box
     add txt
@@ -867,7 +873,7 @@ proc createDom*(data: RouterData): VNode =
                     if isMaximized(): "fa-window-minimize"
                     else: "fa-window-maximize")
 
-          main(class = "p-4 content-wrapper"):
+          main(class = "p-4 content-wrapper h-100"):
             case app.sidebarState
             of ssMessagesView:
               if sv =? app.selectedVisualNode:
@@ -961,9 +967,20 @@ proc init* =
 
       on "mousemove pointermove":
         proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-          app.lastMousePos = coordinate(v(ke.evt.x, ke.evt.y), app.stage)
+          let
+            m = v(ke.evt.x, ke.evt.y)
+            s = ||app.stage.scale
+            currentMousePos = coordinate(m, app.stage)
+            Δy = m.y - app.lastClientMousePos.y
 
-          if app.boardState == bsMakeConnection:
+          if app.isShiftDown:
+            let
+              ⋊s = exp(-Δy / 400)
+              mm = app.stage.center
+            changeScale mm, s * ⋊s, false
+            app.stage.center = mm
+
+          elif app.boardState == bsMakeConnection:
             let
               v = app.hoverVisualNode
               n1 = !app.selectedVisualNode
@@ -972,15 +989,20 @@ proc init* =
               let n2 = !v
               updateEdge app.tempEdge, n1.area, n1.center, n2.area, n2.center
             else:
-              let t = newPoint app.lastMousePos
+              let t = newPoint currentMousePos
               updateEdge app.tempEdge, n1.area, n1.center, t.area, t.position
+
+
+          app.lastAbsoluteMousePos = currentMousePos
+          app.lastClientMousePos = m
+
 
     with layer:
       add centerCircle
       add app.bottomGroup
       add app.tempEdge.konva.wrapper
       add app.mainGroup
-      add app.hoverGroup
+      add app.hoverGroup # FIXME move it to another layer
 
     with app.stage:
       add layer
@@ -1000,14 +1022,14 @@ proc init* =
         preventDefault e
 
         let mp = v(e.x, e.y)
-        app.lastMousePos = coordinate(mp, app.stage)
+        app.lastAbsoluteMousePos = coordinate(mp, app.stage)
 
         if e.ctrlKey: # pinch-zoom
           let
             s = ||app.stage.scale
             ⋊s = exp(-e.Δy / 100)
 
-          changeScale mp, s*(⋊s - 1)
+          changeScale mp, s * ⋊s, true
 
         else: # panning
           moveStage v(e.Δx, e.Δy) * -1
@@ -1021,25 +1043,19 @@ proc init* =
         if e.key == cstring" ":
           app.isSpaceDown = true
           setCursor ccMove
+        elif e.keyCode == kcj:
+          app.isShiftDown = true
+          setCursor ccZoom
 
       window.document.body.addEventListener "keyup", proc(
           e: Event as KeyboardEvent) {.caster.} =
-        if app.isSpaceDown:
+        if app.isSpaceDown or app.isShiftDown:
           app.isSpaceDown = false
+          app.isShiftDown = false
           setCursor ccNone
 
-      document.addEventListener "paste", proc(pasteEvent: Event) =
-        discard
-        # let file = pasteEvent.clipboardData.files[0]
-
-        # if file && file.type.startsWith("image"):
-        #   imageDataUrl(file).then(onPasteOnScreen)
-        # else:
-        #   console.log("WTF")
-
-
     block prepare:
-      app.sidebarWidth = defaultWidth
+      app.sidebarWidth = 0
       app.font.family = fontFamilies[1]
       app.font.size = 20
       app.theme = white
@@ -1066,13 +1082,18 @@ proc init* =
         unselect()
         redraw()
 
-      addHotkey "n", createNode
+      addHotkey "n", createNode # TODO make a t
+
+      addHotkey "c", proc = # go to 0,0
+        app.stage.center = v(0, 0)
+
+      addHotkey "z", proc = # reset zoom
+        let c = app.stage.center
+        changeScale c, 1, false
+        app.stage.center = c
 
       # TODO move
       addHotkey "m", proc = discard
-
-      # TODO make connection
-      addHotkey "c", proc = discard
 
       # TODO show/hide side bar
       addHotkey "b", proc = discard

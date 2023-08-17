@@ -12,7 +12,7 @@ import ./editor/[core, components]
 
 
 let compTable = defaultComponents()
-var notes: seq[NotePreview]
+var notes: seq[NoteObj]
 
 proc fetchNotes =
   get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
@@ -21,19 +21,22 @@ proc fetchNotes =
 
 proc reqNewNote =
   post_api_notes_new_url().postApi.dthen proc(r: AxiosResponse) =
-    let id = cast[int64](r.data)
+    let id = cast[Id](r.data)
     redirect get_note_editor_url id
 
 
 # ----- UI
-proc notePreviewC(np: NotePreview): VNode =
+proc notePreviewC(np: NoteObj): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
-        verbatim deserizalize(compTable, np.preview).innerHtml
+        verbatim deserizalize(compTable, np.data).innerHtml
       tdiv(class = "card-footer d-flex justify-content-center"):
         tdiv(class = "btn mx-1 btn-compact btn-outline-primary"): 
           icon "fa-copy"
+          proc onclick = 
+            copyToClipboard $np.id
+
         a(class = "btn mx-1 btn-compact btn-outline-dark",
             href = get_note_editor_url(np.id)):
           icon "fa-link"

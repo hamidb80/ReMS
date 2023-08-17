@@ -51,7 +51,6 @@ type
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
     data*: TreeNodeRaw[JsO]
-    preview*: TreeNodeRaw[JsO] ## subset of `data`
     timestamp*: UnixTime
 
   Board* = object

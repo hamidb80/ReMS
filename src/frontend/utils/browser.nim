@@ -114,6 +114,7 @@ type
     kcCloseBraket = 221
     kcSingleQuote = 222
 
+converter toInt*(k: KeyCode): int = k.int
 
 let nonPassive* = AddEventListenerOptions(passive: false)
 

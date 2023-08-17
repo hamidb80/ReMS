@@ -141,7 +141,7 @@ func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
   Vector(x: x.toFloat, y: y.toFloat)
 
 func asScalar*(v: Vector): Float =
-  assert v.x == v.y
+  assert v.x == v.y, $v
   v.x
 
 func v*(s: Size): Vector =
