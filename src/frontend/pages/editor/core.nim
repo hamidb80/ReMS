@@ -61,7 +61,7 @@ type
     refresh*: proc()                     ## refreshes, can be used before render called
     render*: proc()                      ## renders forcefully, used after restore
 
-    acceptsAsChild*: proc(): seq[string] ## accepts what tags as child? use '*' for any
+    acceptsAsChild*: proc(): seq[cstring] ## accepts what tags as child? use '*' for any
     settings*: proc(): seq[SettingsPart] ## settings page
     # options: proc(): seq[string] ## can add additional nodes?
     # actions: proc(): seq[string] ## can add additional nodes?
@@ -141,15 +141,15 @@ type
     imAfter
     imAppend
 
-  ComponentsTable* = TableRef[string, Component] ## components by name
+  ComponentsTable* = TableRef[cstring, Component] ## components by name
 
   App* = object
     version*: string
     state*: AppState
 
-    editors*: Table[string, EditorInit]
+    editors*: Table[cstring, EditorInit]
     components*: ComponentsTable
-    componentsByTags*: Table[string, seq[string]]
+    componentsByTags*: Table[cstring, seq[cstring]]
 
     tree*: TwNode                ## tree of nodes from root
     selected*: HashSet[TreePath] ## selected nodes

@@ -59,13 +59,13 @@ template defComponent(ident, identstr, icone, tagss, initproc): untyped =
 
 # ----- Defaults -----------
 
-func genAllowedTags(tags: seq[string]): () -> seq[string] =
+func genAllowedTags(tags: seq[cstring]): () -> seq[cstring] =
   () => tags
 
 let
   noTags = genAllowedTags @[]
-  anyTag = genAllowedTags @["*"]
-  onlyInlines = genAllowedTags @["inline"]
+  anyTag = genAllowedTags @[c"*"]
+  onlyInlines = genAllowedTags @[c"inline"]
 
 func noOp = discard # no Operation
 func noSettings: seq[SettingsPart] = @[]
@@ -134,11 +134,12 @@ proc initRoot: Hooks =
     unhover = noop
     focus = noop
     blur = noop
-    acceptsAsChild = genAllowedTags @["block", "config"]
+    acceptsAsChild = genAllowedTags @[c"block", c"config"]
 
     capture = () => <*{"mark_until_index": markedTil()}
     restore = proc(input: JsObject) =
-      setMarkedTil input["mark_until_index"].to int
+      if input != nil:
+        setMarkedTil input["mark_until_index"].to int
 
     mark = proc(i: Index) =
       setMarkedTil i
@@ -361,8 +362,8 @@ proc initImage: Hooks =
 
   defHooks:
     dom = () => wrapper
-    acceptsAsChild = proc: seq[string] =
-      if hooks.self().children.len == 0: @["paragraph"]
+    acceptsAsChild = proc: seq[cstring] =
+      if hooks.self().children.len == 0: @[c"paragraph"]
       else: @[]
 
     capture = () => <* {
@@ -380,7 +381,8 @@ proc initImage: Hooks =
 
     render = proc =
       img.setAttr "src", url()
-      img.setAttr "style", toInlineCss {"width": width(), "height": height()}
+      img.setAttr "style", toInlineCss {"max-width": width(),
+          "max-height": height()}
 
     mounted = genMounted:
       wrapper.appendChildren img, caption
@@ -514,7 +516,7 @@ proc initTable: Hooks =
 
   defHooks:
     dom = () => el
-    acceptsAsChild = genAllowedTags @["row"]
+    acceptsAsChild = genAllowedTags @[c"row"]
 
 
 proc initConfig: Hooks =
@@ -572,25 +574,19 @@ proc initCustomHtml: Hooks =
 
 proc initMd: Hooks =
   let
-    el = createElement("div", {"class": "tw-md"})
+    el = createElement("div", {"class": "tw-md " & displayInlineClass})
     (content, cset) = genState c""
-    (inline, iset) = genState false
     # TODO add dire="auto"
 
   defHooks:
     dom = () => el
     acceptsAsChild = noTags
-    capture = () => <*{
-      "content": content(),
-      "inline": inline()}
-
+    capture = () => <*{"content": content()}
     restore = proc(input: JsObject) =
       cset input["content"].to cstring
-      iset input["inline"].to bool
 
     render = proc =
-      el.ctrlClass displayInlineClass, inline()
-      el.innerHTML = mdparse(content())
+      el.innerHTML = mdparse content()
 
     settings = () => @[
       SettingsPart(
@@ -599,16 +595,7 @@ proc initMd: Hooks =
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
-          updateCallback: mutState(cset, cstring))),
-
-      SettingsPart(
-        field: "inline",
-        icon: "bi bi-displayport",
-        editorData: () => EditorInitData(
-          name: "checkbox-editor",
-          input: toJs inline(),
-          updateCallback: mutState(iset, bool)))]
-
+          updateCallback: mutState(cset, cstring)))]
 
 
 # ----- MarkDownNode

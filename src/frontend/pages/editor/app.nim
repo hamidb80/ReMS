@@ -173,13 +173,14 @@ proc prepareComponentSelection(parentNode: TwNode) =
   reset app.availableComponents
   reset app.listIndex
 
-  var acc = initHashSet[string]()
+  var acc = newJsSet()
   for t in parentNode.acceptsAsChild:
     for cname in app.componentsByTags[t]:
       acc.incl cname
 
   for cname in acc:
-    app.availableComponents.add app.components[cname]
+    if cname in app.components:
+      app.availableComponents.add app.components[cname]
 
 proc setState(newState: AppState) = 
   if newState == asSelectComponent:

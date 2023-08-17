@@ -5,7 +5,6 @@ import jsony
 import waterpark/sqlite
 
 import ../common/[types, path], ./utils/web, ./routes
-import ../frontend/pages/html
 import ./database/[models, queries]
 
 

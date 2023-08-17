@@ -121,7 +121,12 @@
 }
 
 figure {
-  padding: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+p p {
+  margin: 0;
 }
 
 .katex {

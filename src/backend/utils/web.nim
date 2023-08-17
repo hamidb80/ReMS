@@ -89,15 +89,12 @@ macro dispatch*(router, viewModule, body): untyped =
       rout.add quote do:
         `router`.`m`(`u`, `h`)
 
-  debugEcho treeRepr viewModule
-
   result = quote:
     `urls`
     when not (defined(js) or defined(frontend)):
       import `viewModule`
       `rout`
-
-  debugEcho repr result
+  # debugEcho repr result
 
 
 func extractQueryParams*(url: string): StringTableRef =

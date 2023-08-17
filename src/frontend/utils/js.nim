@@ -1,12 +1,23 @@
 import std/[macros]
 import std/[jsffi, asyncjs]
 
+type
+  JsSet = ref object of JsObject
+
 func parseInt*(s: cstring): int {.importjs: "parseInt(@)".}
 func toLower*(s: cstring): cstring {.importjs: "#.toLowerCase()".}
 proc parseJs*(s: cstring): JsObject {.importjs: "JSON.parse(@)".}
 proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
 func newJsArray*(): JsObject {.importjs: "[@]".}
 func add*(a, b: JsObject) {.importjs: "#.push(#)".}
+
+func newJsSet*(): JsSet {.importjs: "new Set(@)".}
+func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}
+iterator items*(obj: JsSet): cstring =
+  var v: cstring
+  {.emit: "for (`v` of `obj`) {".}
+  yield v
+  {.emit: "}".}
 
 template c*(str): untyped = cstring str
 
