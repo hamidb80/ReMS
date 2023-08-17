@@ -1114,7 +1114,8 @@ proc init* =
       addHotkey "n", createNode # TODO make a t
 
       addHotkey "c", proc = # go to 0,0
-        app.stage.center = v(0, 0)
+        let s = ||app.stage.scale
+        app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
       addHotkey "z", proc = # reset zoom
         let c = app.stage.center
