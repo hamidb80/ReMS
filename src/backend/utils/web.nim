@@ -1,6 +1,5 @@
 import std/[macros, uri, strutils, sequtils, strtabs]
 import macroplus
-import ../../common/str
 
 
 func safeUrl*(i: SomeNumber or bool): string {.inline.} = $i
@@ -122,5 +121,3 @@ macro addQueryParams*(procdef): untyped =
 
   procdef.body.insert 0, def
   procdef
-
-

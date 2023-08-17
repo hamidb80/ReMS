@@ -1,6 +1,5 @@
 import std/[strutils, os, httpclient, sequtils]
 import karax/[vdom, karaxdsl]
-import ../../common/path
 import ../../backend/routes
 
 # ----- aliases -----
@@ -153,13 +152,3 @@ when isMainModule:
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/editor.html", $editor()
   writeFile "./dist/notes_list.html", $notes_list()
-
-else:
-  ## TODO dont store, read at runtime
-  const
-    indexPageStr* = staticRead projectHome / "./dist/index.html"
-    boardPageStr* = staticRead projectHome / "./dist/board.html"
-    assetsPageStr* = staticRead projectHome / "./dist/assets.html"
-    tagsPageStr* = staticRead projectHome / "./dist/tags.html"
-    editorPageStr* = staticRead projectHome / "./dist/editor.html"
-    notesListPageStr* = staticRead projectHome / "./dist/notes_list.html"

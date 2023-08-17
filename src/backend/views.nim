@@ -44,17 +44,14 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
     else: req.respond(404)
   else: req.respond(404)
 
-proc toHtmlHandler*(page: string): RequestHandler =
-  proc(req: Request) =
-    req.respond(200, @{"Content-Type": "text/html"}, page)
+proc loadDist*(path: string): RequestHandler =
+  let 
+    p = projectHome / "dist" / path
+    mime = getMimeType getExt p
 
-let
-  indexPage* = toHtmlHandler indexPageStr
-  boardPage* = toHtmlHandler boardPageStr
-  assetsPage* = toHtmlHandler assetsPageStr
-  tagsPage* = toHtmlHandler tagsPageStr
-  editorPage* = toHtmlHandler editorPageStr
-  notesListPage* = toHtmlHandler notesListPageStr
+  proc(req: Request) =
+    req.respond(200, @{"Content-Type": mime}, readfile p)
+
 
 # ------- Dynamic ones
 
