@@ -1003,9 +1003,11 @@ proc init* =
           if app.isShiftDown:
             let
               ⋊s = exp(-Δy / 400)
+              s′ = s * ⋊s
               mm = app.stage.center
-            changeScale mm, s * ⋊s, false
-            app.stage.center = mm
+
+            changeScale mm, s′, false
+            app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s-1/s′)
 
           elif app.boardState == bsMakeConnection:
             let
@@ -1129,6 +1131,9 @@ proc init* =
           if app.sidebarWidth < defaultWidth: defaultWidth
           else: 0
         redraw()
+
+      addHotkey "h", proc = # bug
+        app.stage.x = app.stage.x - app.sidebarWidth/2
 
 
 when isMainModule: init()
