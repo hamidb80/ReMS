@@ -38,9 +38,6 @@ type
     aVertical
     aHorizontal
 
-  Degree = distinct float
-  Radian = distinct float
-
   AppData = object
     # konva states
     stage: Stage
@@ -180,9 +177,6 @@ template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
 template `||`*(v): untyped = v.asScalar
 
-func limit[T](value: T, rng: Slice[T]): T =
-  min(max(value, rng.a), rng.b)
-
 func sorted[T](s: Slice[T]): Slice[T] =
   if s.a < s.b: s
   else: s.b .. s.a
@@ -199,27 +193,6 @@ template `.!`(a, b): untyped =
 
 template set(vari, data): untyped =
   vari = data
-
-# ----- Degree
-
-func `<`(a, b: Degree): bool {.borrow.}
-func `==`(a, b: Degree): bool {.borrow.}
-func `<=`(a, b: Degree): bool {.borrow.}
-func `-`(a, b: Degree): Degree {.borrow.}
-func `+`(a, b: Degree): Degree {.borrow.}
-func `$`(a: Degree): string {.borrow.}
-
-func degToRad(d: Degree): Radian =
-  Radian degToRad d.float
-
-func tan(d: Degree): float =
-  tan float degToRad d
-
-func cot(d: Degree): float =
-  cot float degToRad d
-
-func `-`(d: Degree): Degree =
-  Degree 360 - d.float
 
 # ----- Tenth
 
@@ -538,7 +511,7 @@ proc changeScale(mouse🖱️: Vector, Δscale: Float) =
   ## zoom in/out with `real` position pinned
   let
     s = ||app.stage.scale
-    s′ = limit(s + Δscale, minScale .. maxScale)
+    s′ = clamp(s + Δscale, minScale .. maxScale)
 
     w = app.stage.width
     h = app.stage.height

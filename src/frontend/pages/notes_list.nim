@@ -28,7 +28,7 @@ proc reqNewNote =
 # ----- UI
 proc notePreviewC(np: NotePreview): VNode =
   buildHtml:
-    tdiv(class = "masonry-item card m-4 border rounded bg-white"):
+    tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
         verbatim deserizalize(compTable, np.preview).innerHtml
       tdiv(class = "card-footer d-flex justify-content-center"):
@@ -55,18 +55,10 @@ proc createDom: Vnode =
           icon("fa-note-sticky fa-xl me-3 ms-1")
           text "Notes"
 
-    # selecet columns
-    tdiv(class="d-flex my-2 justify-content-center align-items-center"):
-      ul(class="pagination"):
-        for n in 2..4:
-          li(class="page-item"):
-            a(class="page-link"):
-              text $n
-
     tdiv(class = "px-4 py-2 my-2"):
       tdiv(class = "masonry-container justify-content-around my-4"):
         button(
-          class = "masonry-item p-4 m-4 btn btn-outline-primary rounded",
+          class = "masonry-item my-3 btn btn-outline-primary rounded",
           onclick = reqNewNote):
           icon "fa-plus fa-xl my-4"
 
