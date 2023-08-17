@@ -89,6 +89,7 @@ type
     theme: ColorTheme
     text: cstring
     font: FontConfig
+    messageIdList: seq[Id]
     konva: VisualNodeParts
 
   VisualNodeParts = object
@@ -170,6 +171,7 @@ const
 # TODO add hover view when selecting a node
 # TODO remove implicit global argument `app` and make it explicit
 # TODO add beizier curve
+# TODO custom color palletes 
 var app = AppData()
 
 
@@ -669,9 +671,7 @@ proc newPoint(pos: Vector): Circle =
 
 # ----- UI
 let compTable = defaultComponents()
-var
-  msgIdList: seq[Id]
-  msgCache: Table[Id, cstring]
+var msgCache: Table[Id, cstring]
 
 proc getMsg(id: Id) =
   let q = get_api_note_url(id).getApi
@@ -684,7 +684,7 @@ proc getMsg(id: Id) =
     redraw()
 
 proc addToMessages(id: Id) =
-  msgIdList.add id
+  app.selectedVisualNode.get.messageIdList.add id
   getmsg id
 
 proc isMaximized*: bool =
@@ -897,26 +897,27 @@ proc createDom*(data: RouterData): VNode =
           main(class = "p-4 content-wrapper"):
             case app.sidebarState
             of ssMessagesView:
-              for mid in msgIdList:
-                tdiv(class = "card mb-4"):
-                  tdiv(class = "card-body"):
-                    tdiv(class = "tw-content"):
-                      if mid in msgCache:
-                        verbatim msgCache[mid]
-                      else:
-                        text "Loading ..."
+              if sv =? app.selectedVisualNode:
+                for mid in sv.messageIdList:
+                  tdiv(class = "card mb-4"):
+                    tdiv(class = "card-body"):
+                      tdiv(class = "tw-content"):
+                        if mid in msgCache:
+                          verbatim msgCache[mid]
+                        else:
+                          text "Loading ..."
 
-                  tdiv(class = "card-footer d-flex justify-content-center"):
-                    button(class = "btn mx-1 btn-compact btn-outline-info"):
-                      icon "fa-link"
-                    button(class = "btn mx-1 btn-compact btn-outline-primary"):
-                      icon "fa-sync"
-                    button(class = "btn mx-1 btn-compact btn-outline-dark"):
-                      icon "fa-chevron-up"
-                    button(class = "btn mx-1 btn-compact btn-outline-dark"):
-                      icon "fa-chevron-down"
-                    button(class = "btn mx-1 btn-compact btn-outline-danger"):
-                      icon "fa-close"
+                    tdiv(class = "card-footer d-flex justify-content-center"):
+                      button(class = "btn mx-1 btn-compact btn-outline-info"):
+                        icon "fa-link"
+                      button(class = "btn mx-1 btn-compact btn-outline-primary"):
+                        icon "fa-sync"
+                      button(class = "btn mx-1 btn-compact btn-outline-dark"):
+                        icon "fa-chevron-up"
+                      button(class = "btn mx-1 btn-compact btn-outline-dark"):
+                        icon "fa-chevron-down"
+                      button(class = "btn mx-1 btn-compact btn-outline-danger"):
+                        icon "fa-close"
 
 
             of ssPropertiesView:
@@ -934,17 +935,21 @@ proc createDom*(data: RouterData): VNode =
                       setText obj, s
 
           footer(class = "mt-2"):
-            tdiv(class = "input-group"):
-              input(`type` = "text", id = "new-message-input",
-                  class = "form-control form-control-sm")
-              button(class = "input-group-text btn btn-primary"):
-                icon "fa-add"
-                proc onClick =
-                  let
-                    inp = qi "new-message-input"
-                    id = parseInt inp.value
-                  addToMessages id
-                  inp.value = c""
+            case app.sidebarState
+            of ssPropertiesView: discard
+            of ssMessagesView:
+              if issome app.selectedVisualNode:
+                tdiv(class = "input-group"):
+                  input(`type` = "text", id = "new-message-input",
+                      class = "form-control form-control-sm")
+                  button(class = "input-group-text btn btn-primary"):
+                    icon "fa-add"
+                    proc onClick =
+                      let
+                        inp = qi "new-message-input"
+                        id = parseInt inp.value
+                      addToMessages id
+                      inp.value = c""
 
 proc init* =
   echo "compiled at: ", CompileDate, ' ', CompileTime
