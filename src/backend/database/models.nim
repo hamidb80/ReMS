@@ -1,13 +1,10 @@
-import std/[options, json]
+import std/[tables, options, json]
 import jsony
 import ../../common/[types, datastructures]
 
-when defined js:
-  import ponairi/pragmas
-else:
-  import ponairi
+when defined js: import ponairi/pragmas
+else: import ponairi
 
-# TODO add revision number to Graph, Note, Asset
 
 type
   UserRole* = enum
@@ -61,7 +58,7 @@ type
     title*: string
     description*: string
     screenshot* {.references: Asset.id.}: Id
-    data*: JsonNode
+    data*: BoardData
     timestamp*: UnixTime
 
   TagValueType = enum
@@ -123,7 +120,7 @@ type
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    tags*: JsonNode # seq of tag
+    tags*: JsonNode # Table[Id, seq[Relation]]
 
   Notification* = object
     id* {.primary, autoIncrement.}: Id
@@ -138,15 +135,15 @@ type
 when not defined js:
   # ----- custom types
 
-  proc sqlType*(t: typedesc[JsonNode]): string = "TEXT"
-  proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: toJson j)
-  proc to*(src: DbValue, dest: var JsonNode) =
-    dest = fromJson(src.s, JsonNode)
+  template defSqlJsonType(typename): untyped =
+    proc sqlType*(t: typedesc[typename]): string = "TEXT"
+    proc dbValue*(j: typename): DbValue = DbValue(kind: dvkString, s: toJson j)
+    proc to*(src: DbValue, dest: var typename) =
+      dest = fromJson(src.s, typename)
 
-  proc sqlType*(t: typedesc[TreeNodeRaw[JsonNode]]): string = "TEXT"
-  proc dbValue*(j: TreeNodeRaw[JsonNode]): DbValue = DbValue(kind: dvkString, s: toJson j)
-  proc to*(src: DbValue, dest: var TreeNodeRaw[JsonNode]) =
-    dest = fromJson(src.s, TreeNodeRaw[JsonNode])
+  defSqlJsonType JsonNode
+  defSqlJsonType TreeNodeRaw[JsonNode]
+  defSqlJsonType BoardData
 
   proc sqlType*(t: typedesc[Path]): string = "TEXT"
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)

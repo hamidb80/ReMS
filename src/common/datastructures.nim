@@ -53,7 +53,6 @@ func isRoot*(tn: TreeNodeRec): bool =
 
 
 type
-
   FontConfig* = object
     family*: string
     size*: int
@@ -72,6 +71,12 @@ type
     position*: Vec2Obj # top left
     messageIdList*: seq[Id]
 
+  EdgeConfig* = object
+    theme*: ColorTheme
+    width*: Tenth
+    centerShape*: ConnectionCenterShapeKind # TODO
+
+
   EdgeData* = object
     head*: string
     tail*: string
@@ -80,11 +85,6 @@ type
   BoardData* = object
     objects*: Table[string, VisualNodeData]
     edges*: seq[EdgeData]
-
-  EdgeConfig* = object
-    theme*: ColorTheme
-    width*: Tenth
-    centerShape*: ConnectionCenterShapeKind # TODO
 
 
 
