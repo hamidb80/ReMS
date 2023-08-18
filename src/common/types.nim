@@ -1,4 +1,4 @@
-import std/[times, tables, math]
+import std/[times, tables, math, strutils]
 
 
 when defined js:
@@ -24,6 +24,63 @@ type
   Degree* = distinct float
   Radian* = distinct float
 
+  Tenth* = distinct int
+  HexColor* = distinct int
+
+  ConnectionCenterShapeKind* = enum
+    # undirected connection
+    ccsNothing
+    ccsCircle
+    ccsDiomand
+    ccsSquare
+    # directed connection
+    ccsTriangle
+    ccsDoubleTriangle
+
+  FontVariant* = enum
+    fvVormal = "normal"
+    fvSmallCaps = "small-caps"
+
+  LineCap* = enum
+    lcButt = "butt"
+    lcRound = "round"
+    lcSquare = "square"
+
+  LineJoin* = enum
+    ljMiter = "miter"
+    ljRound = "round"
+    ljBevel = "bevel"
+
+  TransformsOption* = enum
+    toAll = "all"
+    toNone = "none"
+    toPosition = "position"
+
+  VerticalAlign* = enum
+    vaTop = "top"
+    vaMiddle = "middle"
+    vaBottom = "bottom"
+
+  HorizontalAlign* = enum
+    hzLeft = "left"
+    hzCenter = "center"
+    hzRight = "right"
+
+  WrapOption* = enum
+    woWord = "word"
+    woChar = "char"
+    woNone = "none"
+
+  FontStyle* = enum
+    fsNormal = "normal"
+    fsBold = "bold"
+    fsItalic = "italic"
+    fsItalicBold = "italic bold"
+
+  TextDecoration* = enum
+    tdNothing = ""
+    tdLineThrough = "line-through"
+    tdUnderline = "underline"
 
 
 func getFields*[T](t: typedesc[T]): seq[string] =
@@ -59,3 +116,26 @@ func `<=`*(a, b: Degree): bool {.borrow.}
 func `-`*(a, b: Degree): Degree {.borrow.}
 func `+`*(a, b: Degree): Degree {.borrow.}
 func `$`*(a: Degree): string {.borrow.}
+
+# ----- Tenth
+
+func `==`*(a, b: Tenth): bool {.borrow.}
+
+func `$`*(t: Tenth): string =
+  let
+    n = t.int
+    a = n div 10
+    b = n mod 10
+
+  $a & '.' & $b
+
+func toFloat*(t: Tenth): float =
+  t.int / 10
+
+func toTenth*(f: float): Tenth =
+  let n = toint f * 10
+  Tenth n
+
+
+converter toHex*(c: HexColor): string =
+  '#' & toHex(c.int, 6)

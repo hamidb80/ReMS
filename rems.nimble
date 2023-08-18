@@ -16,6 +16,7 @@ requires "macroplus >= 0.2.5"
 requires "caster"
 requires "uuid4"
 requires "questionable"
+requires "prettyvec"
 
 requires "mummy" # 0.3.2
 requires "jsony" # 1.1.5
@@ -25,7 +26,6 @@ requires "quickjwt" # 0.2.1
 requires "bale"
 
 requires "karax" # 1.3.0
-requires "prettyvec"
 # requires "urlon"
 
 

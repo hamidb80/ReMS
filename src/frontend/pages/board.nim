@@ -12,9 +12,6 @@ import ../../backend/database/[models]
 
 
 type
-  ColorTheme = tuple
-    bg, fg, st: string
-
   SideBarState = enum
     ssMessagesView
     ssPropertiesView
@@ -79,12 +76,6 @@ type
     edges: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
 
-  FontConfig = object
-    family: string
-    size: int
-    style: FontStyle
-    # lineHeight: Float
-
   VisualNode = ref object # TODO add variant image[with or without background]/text
     id: cstring
     theme: ColorTheme # TODO use pallete index not color iteself
@@ -98,7 +89,6 @@ type
     box: Rect
     txt: Text
 
-  Tenth = distinct int
 
   Edge = ref object
     config: EdgeConfig
@@ -108,21 +98,6 @@ type
     wrapper: Group
     shape: KonvaShape
     line: Line
-
-  EdgeConfig = object
-    theme: ColorTheme
-    width: Tenth
-    centerShape: ConnectionCenterShapeKind # TODO
-
-  ConnectionCenterShapeKind = enum
-    # undirected connection
-    ccsNothing
-    ccsCircle
-    ccsDiomand
-    ccsSquare
-    # directed connection
-    ccsTriangle
-    ccsDoubleTriangle
 
   CssCursor = enum
     ccNone = ""
@@ -142,22 +117,22 @@ const
   ciriticalWidth = 400
   minimizeWidth = 360
 
-  invalidTheme: ColorTheme = ("", "", "")
-  white: ColorTheme = ("#ffffff", "#889bad", "#a5b7cf")
-  smoke: ColorTheme = ("#ecedef", "#778696", "#9eaabb")
-  road: ColorTheme = ("#dfe2e4", "#617288", "#808fa6")
-  yellow: ColorTheme = ("#fef5a6", "#958505", "#dec908")
-  orange: ColorTheme = ("#ffdda9", "#a7690e", "#e99619")
-  red: ColorTheme = ("#ffcfc9", "#b26156", "#ff634e")
-  peach: ColorTheme = ("#fbc4e2", "#af467e", "#e43e97")
-  pink: ColorTheme = ("#f3d2ff", "#7a5a86", "#c86fe9")
-  purple: ColorTheme = ("#dac4fd", "#7453ab", "#a46bff")
-  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3", "#7886f4")
-  blue: ColorTheme = ("#b6e5ff", "#2d7aa5", "#399bd3")
-  diomand: ColorTheme = ("#adefe3", "#027b64", "#00d2ad")
-  mint: ColorTheme = ("#c4fad6", "#298849", "#25ba58")
-  green: ColorTheme = ("#cbfbad", "#479417", "#52d500")
-  lemon: ColorTheme = ("#e6f8a0", "#617900", "#a5cc08")
+  invalidTheme = c(0, 0, 0)
+  white = c(0xffffff, 0x889bad, 0xa5b7cf)
+  smoke = c(0xecedef, 0x778696, 0x9eaabb)
+  road = c(0xdfe2e4, 0x617288, 0x808fa6)
+  yellow = c(0xfef5a6, 0x958505, 0xdec908)
+  orange = c(0xffdda9, 0xa7690e, 0xe99619)
+  red = c(0xffcfc9, 0xb26156, 0xff634e)
+  peach = c(0xfbc4e2, 0xaf467e, 0xe43e97)
+  pink = c(0xf3d2ff, 0x7a5a86, 0xc86fe9)
+  purple = c(0xdac4fd, 0x7453ab, 0xa46bff)
+  purpleLow = c(0xd0d5fe, 0x4e57a3, 0x7886f4)
+  blue = c(0xb6e5ff, 0x2d7aa5, 0x399bd3)
+  diomand = c(0xadefe3, 0x027b64, 0x00d2ad)
+  mint = c(0xc4fad6, 0x298849, 0x25ba58)
+  green = c(0xcbfbad, 0x479417, 0x52d500)
+  lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
 
   colorThemes = [
     white, smoke, road,
@@ -199,36 +174,17 @@ template `.!`(a, b): untyped =
 template set(vari, data): untyped =
   vari = data
 
-# ----- Tenth
-
-func `==`(a, b: Tenth): bool {.borrow.}
-
-func `$`(t: Tenth): string =
-  let
-    n = t.int
-    a = n div 10
-    b = n mod 10
-
-  $a & '.' & $b
-
-func toFloat(t: Tenth): Float =
-  t.int / 10
-
-func toTenth(f: Float): Tenth =
-  let n = toint f * 10
-  Tenth n
-
 
 proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with box:
-    fill = theme.bg
-    shadowColor = theme.st
+    fill = $theme.bg
+    shadowColor = $theme.st
     shadowOffsetY = 6
     shadowBlur = 8
     shadowOpacity = 0.2
 
   with txt:
-    fill = theme.fg
+    fill = $theme.fg
 
 proc applyFont(txt: KonvaObject, font: FontConfig) =
   with txt:
@@ -387,10 +343,10 @@ proc updateEdgeWidth(e: Edge, w: Tenth) =
 
 proc updateEdgeTheme(e: Edge, t: ColorTheme) =
   e.config.theme = t
-  e.konva.line.stroke = t.st
+  e.konva.line.stroke = $t.st
   with e.konva.shape:
-    stroke = t.st
-    fill = t.bg
+    stroke = $t.st
+    fill = $t.bg
 
 proc newEdge(c: EdgeConfig): Edge =
   let k = EdgeKonvaNodes(
@@ -735,8 +691,8 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
       tdiv(class = "color-square mx-1 pointer", style = style(
-        (StyleAttr.background, cstring theme.bg),
-        (StyleAttr.borderColor, cstring theme.fg),
+        (StyleAttr.backgroundColor, cstring $theme.bg),
+        (StyleAttr.borderColor, cstring $theme.fg),
       )):
         proc onclick =
           if selectable:

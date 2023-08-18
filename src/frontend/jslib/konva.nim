@@ -2,7 +2,6 @@ import std/[macros, strformat]
 import std/[jsffi, dom]
 import prettyvec
 
-## TODO publish it as an independent library
 
 type
   Vector* = Vec2Obj
@@ -67,52 +66,6 @@ type
   KonvakeyboardEvent* = ref object of KonvaEvent[KeyboardEvent]
 
   KonvaCallback* = proc(ke: JsObject)
-
-type
-  FontVariant* = enum
-    fvVormal = "normal"
-    fvSmallCaps = "small-caps"
-
-  LineCap* = enum
-    lcButt = "butt"
-    lcRound = "round"
-    lcSquare = "square"
-
-  LineJoin* = enum
-    ljMiter = "miter"
-    ljRound = "round"
-    ljBevel = "bevel"
-
-  TransformsOption* = enum
-    toAll = "all"
-    toNone = "none"
-    toPosition = "position"
-
-  VerticalAlign* = enum
-    vaTop = "top"
-    vaMiddle = "middle"
-    vaBottom = "bottom"
-
-  HorizontalAlign* = enum
-    hzLeft = "left"
-    hzCenter = "center"
-    hzRight = "right"
-
-  WrapOption* = enum
-    woWord = "word"
-    woChar = "char"
-    woNone = "none"
-
-  FontStyle* = enum
-    fsNormal = "normal"
-    fsBold = "bold"
-    fsItalic = "italic"
-    fsItalicBold = "italic bold"
-
-  TextDecoration* = enum
-    tdNothing = ""
-    tdLineThrough = "line-through"
-    tdUnderline = "underline"
 
   KonvaEventKind* = enum
     mouseover, mouseout, mouseenter, mouseleave,
