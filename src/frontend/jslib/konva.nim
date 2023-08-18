@@ -468,7 +468,7 @@ proc clone*(k: KonvaObject, options: JsObject = jsUndefined): KonvaObject {.konv
 
 proc toJSON*(k: KonvaObject) {.konva.}
 proc toObject*(k: KonvaObject) {.konva.}
-proc toDataURL*(wrapper: KonvaContainer, ratio: int): Str
+proc toDataURL*(wrapper: KonvaObject, ratio: int): Str
   {.importjs: "#.toDataURL({ pixelRatio: # })".}
 # TODO toImage
 

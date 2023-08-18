@@ -83,7 +83,7 @@ type
     style: FontStyle
     # lineHeight: Float
 
-  VisualNode = ref object
+  VisualNode = ref object # TODO add variant image/text
     id: cstring
     theme: ColorTheme
     text: cstring
@@ -1004,11 +1004,13 @@ proc init* =
           if app.isShiftDown:
             let
               ⋊s = exp(-Δy / 400)
-              s′ = s * ⋊s
+              s′ = clamp(s * ⋊s, minScale .. maxScale)
+              Δs = s′ - s
               mm = app.stage.center
 
-            changeScale mm, s′, false
-            app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s-1/s′)
+            if Δs.abs > 0.001:
+              changeScale mm, s′, false
+              app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s-1/s′)
 
           elif app.boardState == bsMakeConnection:
             let
@@ -1135,8 +1137,8 @@ proc init* =
           else: 0
         redraw()
 
-      addHotkey "h", proc = # bug
-        app.stage.x = app.stage.x - app.sidebarWidth/2
+      addHotkey "p", proc = # scrennshot
+        downloadUrl "screenshot.png", app.stage.toDataUrl(1)
 
 
 when isMainModule: init()
