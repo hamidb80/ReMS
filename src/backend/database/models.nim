@@ -7,6 +7,8 @@ when defined js:
 else:
   import ponairi
 
+# TODO add revision number to Graph, Note, Asset
+
 type
   UserRole* = enum
     urUser
@@ -58,6 +60,7 @@ type
     owner* {.references: User.id.}: Id
     title*: string
     description*: string
+    screenshot* {.references: Asset.id.}: Id
     data*: JsonNode
     timestamp*: UnixTime
 

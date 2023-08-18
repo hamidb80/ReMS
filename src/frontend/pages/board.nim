@@ -69,10 +69,12 @@ type
     lastClientMousePos: Vector
     leftClicked: bool
 
+    ## TODO store set of keys that are pressed
     isShiftDown: bool
     isSpaceDown: bool
 
     # board data
+    # TODO use native table for performance improvement
     objects: Table[Oid, VisualNode]
     edges: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
@@ -881,12 +883,7 @@ proc createDom*(data: RouterData): VNode =
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
               let w = window.innerWidth - e.x
-              let w′ =
-                if w > minimizeWidth: max(w, minimizeWidth)
-                elif w in (minimizeWidth div 2)..minimizeWidth: minimizeWidth
-                else: 10
-
-              app.sidebarWidth = w′
+              app.sidebarWidth = max(w, minimizeWidth)
               redraw()
 
             winel.onmouseup = proc(e: Event) =
@@ -1133,7 +1130,7 @@ proc init* =
 
       addHotkey "t", proc = # show/hide side bar
         app.sidebarWidth =
-          if app.sidebarWidth < defaultWidth: defaultWidth
+          if app.sidebarWidth <= 10: defaultWidth
           else: 0
         redraw()
 

@@ -1,4 +1,4 @@
-import std/[times, math]
+import std/[times, tables, math]
 
 
 when defined js:
