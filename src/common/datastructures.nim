@@ -65,11 +65,12 @@ type
 
   VisualNodeData* = object
     id*: string
-    palletei*: Natural
+    theme*: ColorTheme
     text*: string
     imagePath*: string
     font*: FontConfig
     position*: Vec2Obj # top left
+    messageIdList*: seq[Id]
 
   EdgeData* = object
     head*: string

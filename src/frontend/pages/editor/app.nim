@@ -6,7 +6,7 @@ import karax/[karax, karaxdsl, vdom]
 import caster
 
 import ../../../backend/routes
-import ../../../backend/database/[queries]
+import ../../../backend/database/[models, queries]
 import ./[core, components, inputs]
 import ../../utils/[js, browser]
 import ../../jslib/[axios]
@@ -392,7 +392,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 proc fetchNote = 
   let id = parseInt getWindowQueryParam("id")
   get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
-    let doc = cast[NoteFull](r.data)
+    let doc = cast[Note](r.data)
     resetApp deserizalize(app.components, app.tree.dom, doc.data)
     redraw()
 

@@ -77,18 +77,13 @@ type
     edgeInfo: Table[Slice[Oid], Edge]
 
   VisualNode = ref object # TODO add variant image[with or without background]/text
-    id: cstring
-    theme: ColorTheme # TODO use pallete index not color iteself
-    text: cstring
-    font: FontConfig
-    messageIdList: seq[Id]
+    config*: VisualNodeData
     konva: VisualNodeParts
 
   VisualNodeParts = object
     wrapper: Group
     box: Rect
     txt: Text
-
 
   Edge = ref object
     config: EdgeConfig
@@ -221,7 +216,7 @@ proc redrawSizeNode(v: VisualNode, font: FontConfig) =
 
 proc getFocusedFont: FontConfig =
   if v =? app.selectedVisualNode:
-    v.font
+    v.config.font
   else:
     app.font
 
@@ -231,8 +226,8 @@ proc setCursor(c: CssCursor) =
 proc setFocusedFontFamily(fn: string) =
   if issome app.selectedVisualNode:
     let v = app.selectedVisualNode.get
-    v.font.family = fn
-    redrawSizeNode v, v.font
+    v.config.font.family = fn
+    redrawSizeNode v, v.config.font
   else:
     app.font.family = fn
 
@@ -403,16 +398,16 @@ proc redrawConnectionsTo(uid: Oid) =
     updateEdge ei, n1.area, n1.center, n2.area, n2.center
 
 proc setText(v: VisualNode, t: cstring) =
-  v.text = t
+  v.config.text = $t
   v.konva.txt.text = t or "  ...  "
-  redrawSizeNode v, v.font
-  redrawConnectionsTo v.id
+  redrawSizeNode v, v.config.font
+  redrawConnectionsTo v.config.id
 
 proc setFocusedFontSize(s: int) =
   if v =? app.selectedVisualNode:
-    v.font.size = s
-    redrawSizeNode v, v.font
-    redrawConnectionsTo v.id
+    v.config.font.size = s
+    redrawSizeNode v, v.config.font
+    redrawConnectionsTo v.config.id
   else:
     app.font.size = s
 
@@ -429,13 +424,13 @@ proc getFocusedEdgeWidth: Tenth =
     app.edge.width
 
 proc getFocusedTheme: ColorTheme =
-  if v =? app.selectedVisualNode: v.theme
+  if v =? app.selectedVisualNode: v.config.theme
   elif e =? app.selectedEdge: e.config.theme
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
   if v =? app.selectedVisualNode:
-    v.theme = theme
+    v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
   elif e =? app.selectedEdge:
     updateEdgeTheme e, theme
@@ -507,8 +502,8 @@ proc createNode =
     vn = VisualNode()
     uid = cstring $uuid4()
 
-  with vn:
-    id = uid
+  with vn.config:
+    id = $uid
     font = app.font
     theme = app.theme
 
@@ -522,7 +517,7 @@ proc createNode =
     y = 0
     align = $hzCenter
     listening = false
-    text = vn.text
+    text = vn.config.text
 
   with box:
     on "mouseover", proc =
@@ -558,7 +553,7 @@ proc createNode =
         else:
           let
             id1 = uid
-            id2 = sv.id
+            id2 = cstring sv.config.id
             conn = sorted id1..id2
 
           var ei = cloneEdge app.tempEdge
@@ -595,9 +590,9 @@ proc createNode =
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
   select vn
-  applyTheme txt, box, vn.theme
+  applyTheme txt, box, vn.config.theme
   setText vn, ""
-  redrawSizeNode vn, vn.font
+  redrawSizeNode vn, vn.config.font
   app.sidebarState = ssPropertiesView
   redraw()
 
@@ -646,31 +641,31 @@ proc msgComp(v: VisualNode, i: int, mid: Id): VNode =
           icon "fa-chevron-up"
           proc onclick =
             if i >= 1:
-              let prev = v.messageIdList[i-1]
-              v.messageIdList[i-1] = mid
-              v.messageIdList[i] = prev
+              let prev = v.config.messageIdList[i-1]
+              v.config.messageIdList[i-1] = mid
+              v.config.messageIdList[i] = prev
               redraw()
 
         button(class = "btn mx-1 btn-compact btn-outline-dark"):
           icon "fa-chevron-down"
           proc onclick =
-            if i < v.messageIdList.high:
-              let next = v.messageIdList[i+1]
-              v.messageIdList[i+1] = mid
-              v.messageIdList[i] = next
+            if i < v.config.messageIdList.high:
+              let next = v.config.messageIdList[i+1]
+              v.config.messageIdList[i+1] = mid
+              v.config.messageIdList[i] = next
               redraw()
 
         button(class = "btn mx-1 btn-compact btn-outline-danger"):
           icon "fa-close"
           proc onclick =
-            v.messageIdList.delete i
+            v.config.messageIdList.delete i
             redraw()
 
 
 proc addToMessages(id: Id) =
   let v = app.selectedVisualNode.get
-  if id notin v.messageIdList:
-    v.messageIdList.add id
+  if id notin v.config.messageIdList:
+    v.config.messageIdList.add id
     getmsg id
 
 proc isMaximized*: bool =
@@ -877,7 +872,7 @@ proc createDom*(data: RouterData): VNode =
             case app.sidebarState
             of ssMessagesView:
               if sv =? app.selectedVisualNode:
-                for i, mid in sv.messageIdList:
+                for i, mid in sv.config.messageIdList:
                   msgComp sv, i, mid
 
             of ssPropertiesView:
@@ -888,7 +883,7 @@ proc createDom*(data: RouterData): VNode =
 
                 tdiv(class = "form-group"):
                   input(`type` = "string", class = "form-control",
-                      placeholder = "text ...", value = obj.text):
+                      placeholder = "text ...", value = obj.config.text):
 
                     proc oninput(e: Event, v: Vnode) =
                       let s = e.target.value
