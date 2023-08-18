@@ -3,6 +3,7 @@ import ./types
 
 type
   SeqTable[K, V] = Table[K, seq[V]]
+  
   Graph*[T] = Table[T, HashSet[T]]
 
   TreeNodeRec*[D] = ref object ## used in frontend

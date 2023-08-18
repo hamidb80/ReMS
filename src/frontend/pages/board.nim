@@ -62,7 +62,7 @@ type
     boardState: BoardState
     footerState: FooterState
 
-    theme: ColorTheme
+    theme: ColorTheme # TODO use pallete index
     sidebarWidth: Natural
 
     lastAbsoluteMousePos: Vector
@@ -74,7 +74,7 @@ type
     isSpaceDown: bool
 
     # board data
-    # TODO use native table for performance improvement
+    # TODO pallete: seq[ColorTheme]
     objects: Table[Oid, VisualNode]
     edges: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
@@ -85,9 +85,9 @@ type
     style: FontStyle
     # lineHeight: Float
 
-  VisualNode = ref object # TODO add variant image/text
+  VisualNode = ref object # TODO add variant image[with or without background]/text
     id: cstring
-    theme: ColorTheme
+    theme: ColorTheme # TODO use pallete index not color iteself
     text: cstring
     font: FontConfig
     messageIdList: seq[Id]
