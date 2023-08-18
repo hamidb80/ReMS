@@ -1,4 +1,5 @@
 import std/[times, json]
+import ./models
 import ../../common/[types, datastructures]
 
 type
@@ -9,17 +10,9 @@ type
     size*: Bytes
     timestamp*: UnixTime
 
-  NoteObj* = object
-    id*: Id
-    owner*: Id
-    data*: TreeNodeRaw[JsO]
-    timestamp*: UnixTime
 
-
-when not(defined(js) or defined(frontend)):
-  import ./models
+when not defined js:
   import ponairi
-
 
   template R: untyped {.dirty.} =
     typeof result
@@ -38,10 +31,10 @@ when not(defined(js) or defined(frontend)):
     db.exec sql"DELETE FROM Asset WHERE id = ?", id
 
 
-  proc listNotes*(db: DbConn): seq[NoteObj] =
+  proc listNotes*(db: DbConn): seq[Note] =
     db.find R, sql"SELECT id, owner, data, timestamp FROM Note ORDER BY id DESC"
 
-  proc getNote*(db: DbConn, id: Id): NoteObj =
+  proc getNote*(db: DbConn, id: Id): Note =
     db.find R, sql"SELECT id, owner, data, timestamp FROM Note WHERE id = ?", id
 
   proc newNote*(db: DbConn): Id =
@@ -49,7 +42,7 @@ when not(defined(js) or defined(frontend)):
         data: newNoteData(),
         timestamp: toUnixtime now())
 
-  proc updateNote*(db: DbConn, id: Id, data: JsonNode) =
+  proc updateNote*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
     db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
 
   proc deleteNote*(db: DbConn, id: Id) =

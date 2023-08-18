@@ -6,8 +6,9 @@ import caster, uuid4, questionable, prettyvec
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
 import ../utils/[ui, browser, js]
-import ../../common/[conventions, datastructures, types, seq]
+import ../../common/[conventions, datastructures, types]
 import ../../backend/[routes]
+import ../../backend/database/[models]
 
 
 type
@@ -656,8 +657,8 @@ proc getMsg(id: Id) =
   let q = get_api_note_url(id).getApi
   q.dthen proc(r: AxiosResponse) =
     let
-      d = cast[TreeNodeRaw[JsObject]](r.data.data)
-      msg = deserizalize(compTable, d).innerHtml
+      d = cast[Note](r.data)
+      msg = deserizalize(compTable, d.data).innerHtml
 
     msgCache[id] = msg
     redraw()
@@ -1116,6 +1117,7 @@ proc init* =
       addHotkey "c", proc = # go to 0,0
         let s = ||app.stage.scale
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
+
 
       addHotkey "z", proc = # reset zoom
         let c = app.stage.center

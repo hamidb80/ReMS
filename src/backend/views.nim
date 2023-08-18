@@ -4,7 +4,8 @@ import mummy, mummy/multipart
 import jsony
 import waterpark/sqlite
 
-import ../common/[types, path], ./utils/web, ./routes
+import ../common/[types, path, datastructures]
+import ./utils/web, ./routes
 import ./database/[models, queries]
 
 
@@ -44,7 +45,7 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
   else: req.respond(404)
 
 proc loadDist*(path: string): RequestHandler =
-  let 
+  let
     p = projectHome / "dist" / path
     mime = getMimeType getExt p
 
@@ -95,7 +96,7 @@ proc assetsDownload*(req: Request) {.addQueryParams.} =
     req.respond(200, @{"Content-Type": mime}, content)
     return
 
-proc listAssets*(req: Request) {.addQueryParams.} =
+proc listAssets*(req: Request) =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"},
         toJson db.listAssets())
@@ -124,7 +125,7 @@ proc getNote*(req: Request) {.addQueryParams.} =
 proc updateNote*(req: Request) {.addQueryParams.} =
   let
     id = q["id"].parseint
-    d = parseJson req.body
+    d = fromJson(req.body, TreeNodeRaw[JsonNode])
 
   withConn db:
     db.updateNote id, d

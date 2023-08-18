@@ -7,12 +7,12 @@ import ../jslib/[hotkeys, axios]
 import ../utils/[browser, js, ui]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
-import ../../backend/database/[queries]
+import ../../backend/database/[models, queries]
 import ./editor/[core, components]
 
 
 let compTable = defaultComponents()
-var notes: seq[NoteObj]
+var notes: seq[Note]
 
 proc fetchNotes =
   get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
@@ -26,7 +26,7 @@ proc reqNewNote =
 
 
 # ----- UI
-proc notePreviewC(np: NoteObj): VNode =
+proc notePreviewC(np: Note): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):

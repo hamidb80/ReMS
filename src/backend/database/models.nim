@@ -1,11 +1,11 @@
 import std/[options, json]
-import ponairi, jsony
+import jsony
 import ../../common/[types, datastructures]
 
-# TODO add following fields to Assets, Notes, Graph
-# uuid
-# revision :: for handeling updates
-# forked_from :: from uuid
+when defined js:
+  import ponairi/pragmas
+else:
+  import ponairi
 
 type
   UserRole* = enum
@@ -132,46 +132,47 @@ type
   ## that's what `int_value`, `str_value`, `value_type`
   ## is for
 
-# ----- custom types
+when not defined js:
+  # ----- custom types
 
-proc sqlType*(t: typedesc[JsonNode]): string = "TEXT"
-proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: toJson j)
-proc to*(src: DbValue, dest: var JsonNode) =
-  dest = fromJson(src.s, JsonNode)
+  proc sqlType*(t: typedesc[JsonNode]): string = "TEXT"
+  proc dbValue*(j: JsonNode): DbValue = DbValue(kind: dvkString, s: toJson j)
+  proc to*(src: DbValue, dest: var JsonNode) =
+    dest = fromJson(src.s, JsonNode)
 
-proc sqlType*(t: typedesc[TreeNodeRaw[JsonNode]]): string = "TEXT"
-proc dbValue*(j: TreeNodeRaw[JsonNode]): DbValue = DbValue(kind: dvkString, s: toJson j)
-proc to*(src: DbValue, dest: var TreeNodeRaw[JsonNode]) =
-  dest = fromJson(src.s, TreeNodeRaw[JsonNode])
+  proc sqlType*(t: typedesc[TreeNodeRaw[JsonNode]]): string = "TEXT"
+  proc dbValue*(j: TreeNodeRaw[JsonNode]): DbValue = DbValue(kind: dvkString, s: toJson j)
+  proc to*(src: DbValue, dest: var TreeNodeRaw[JsonNode]) =
+    dest = fromJson(src.s, TreeNodeRaw[JsonNode])
 
-proc sqlType*(t: typedesc[Path]): string = "TEXT"
-proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
-proc to*(src: DbValue, dest: var Path) =
-  dest = src.s.Path
+  proc sqlType*(t: typedesc[Path]): string = "TEXT"
+  proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
+  proc to*(src: DbValue, dest: var Path) =
+    dest = src.s.Path
 
-proc sqlType*(t: typedesc[UnixTime]): string = "INT"
-proc dbValue*(p: UnixTime): DbValue = DbValue(kind: dvkInt, i: p.Id)
-proc to*(src: DbValue, dest: var UnixTime) =
-  dest = src.i.UnixTime
+  proc sqlType*(t: typedesc[UnixTime]): string = "INT"
+  proc dbValue*(p: UnixTime): DbValue = DbValue(kind: dvkInt, i: p.Id)
+  proc to*(src: DbValue, dest: var UnixTime) =
+    dest = src.i.UnixTime
 
-proc sqlType*(t: typedesc[Bytes]): string = "INT"
-proc dbValue*(p: Bytes): DbValue = DbValue(kind: dvkInt, i: p.int64)
-proc to*(src: DbValue, dest: var Bytes) =
-  dest = src.i.Bytes
+  proc sqlType*(t: typedesc[Bytes]): string = "INT"
+  proc dbValue*(p: Bytes): DbValue = DbValue(kind: dvkInt, i: p.int64)
+  proc to*(src: DbValue, dest: var Bytes) =
+    dest = src.i.Bytes
 
-func `%`*(p: Path): JsonNode = %p.string
-func `%`*(d: UnixTime): JsonNode = %d.int64
-func `%`*(b: Bytes): JsonNode = %b.int64
+  func `%`*(p: Path): JsonNode = %p.string
+  func `%`*(d: UnixTime): JsonNode = %d.int64
+  func `%`*(b: Bytes): JsonNode = %b.int64
 
-# ----- basic operations
+  # ----- basic operations
+
+  proc createTables*(db: DbConn) =
+    db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache)
+
+# ----- ...
 
 func newNoteData*: TreeNodeRaw[JsonNode] =
   TreeNodeRaw[JsonNode](
     name: "root",
     children: @[],
     data: newJNull())
-
-# ----- basic operations
-
-proc createTables*(db: DbConn) =
-  db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache)
