@@ -19,21 +19,15 @@ proc rawTextEditor*(input: JsObject, cb: CallBack): VNode =
 proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml input(
     class = "form-check-input bw-checkbox",
-    `type` = "checkbox"):
+    `type` = "checkbox",
+    cheched = input.to bool):
     proc onchange(e: Event, n: VNode) =
       cb e.target.checked.toJs
 
-  if input.to bool:
-    result.setAttr "checked"
-
-
 proc optionItem(val, txt: cstring, selected: bool): VNode =
   result = buildHtml:
-    option(value = val):
+    option(value = val, selected = selected):
       text txt
-
-  if selected:
-    result.setAttr "selected"
 
 proc selectEditor*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml select(class = "form-select"):

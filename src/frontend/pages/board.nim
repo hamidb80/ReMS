@@ -640,19 +640,15 @@ proc msgComp(v: VisualNode, i: int, mid: Id): VNode =
         button(class = "btn mx-1 btn-compact btn-outline-dark"):
           icon "fa-chevron-up"
           proc onclick =
-            if i >= 1:
-              let prev = v.config.messageIdList[i-1]
-              v.config.messageIdList[i-1] = mid
-              v.config.messageIdList[i] = prev
+            if 0 < i:
+              swap v.config.messageIdList[i], v.config.messageIdList[i-1]
               redraw()
 
         button(class = "btn mx-1 btn-compact btn-outline-dark"):
           icon "fa-chevron-down"
           proc onclick =
             if i < v.config.messageIdList.high:
-              let next = v.config.messageIdList[i+1]
-              v.config.messageIdList[i+1] = mid
-              v.config.messageIdList[i] = next
+              swap v.config.messageIdList[i+1], v.config.messageIdList[i]
               redraw()
 
         button(class = "btn mx-1 btn-compact btn-outline-danger"):
