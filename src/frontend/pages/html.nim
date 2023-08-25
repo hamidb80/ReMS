@@ -100,8 +100,12 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 # ----- pages -----
 
-proc board: VNode =
+proc boards: VNode =
   commonPage "ReMS - Remembering Manangement System", [
+      extJs("./script-boards-list.js", true)]
+
+proc board: VNode =
+  commonPage "Board", [
       extJs("./script-board.js", true)]
 
 proc assets: VNode =
@@ -147,6 +151,7 @@ when isMainModule:
   copyFileToDir "./src/frontend/custom.css", "./dist"
   copyFileToDir "./assets/icon.png", "./dist"
   writeFile "./dist/index.html", $index()
+  writeFile "./dist/boards.html", $boards()
   writeFile "./dist/board.html", $board()
   writeFile "./dist/assets.html", $assets()
   writeFile "./dist/tags.html", $tags()

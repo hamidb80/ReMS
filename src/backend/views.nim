@@ -136,3 +136,36 @@ proc deleteNote*(req: Request) {.addQueryParams.} =
   withConn db:
     db.deleteNote id
   req.respond 200
+
+
+
+proc newBoard*(req: Request) =
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, $db.newBoard())
+
+proc updateBoard*(req: Request)  {.addQueryParams.} =
+  let 
+    id = q["id"].parseint
+    d = fromJson(req.body, BoardData)
+
+  withConn db:
+    db.updateBoard id, d
+
+  req.respond(200)
+
+proc getBoard*(req: Request)  {.addQueryParams.} =
+  let
+    id = q["id"].parseint
+
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, toJson db.getBoard(id))
+
+proc listBoards*(req: Request)  {.addQueryParams.} =
+  withConn db:
+    req.respond(200, @{"Content-Type": "application/json"}, toJson db.listBoards)
+
+proc deleteBoard*(req: Request) {.addQueryParams.} =
+  let id = q["id"].parseint
+  withConn db:
+    db.deleteBoard id
+  req.respond 200

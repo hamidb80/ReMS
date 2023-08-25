@@ -10,6 +10,12 @@ type
     size*: Bytes
     timestamp*: UnixTime
 
+  BoardPreview* = object
+    id*: Id
+    title*: Str
+    description*: Str
+    timestamp*: UnixTime
+
 
 when not defined js:
   import ponairi
@@ -47,3 +53,25 @@ when not defined js:
 
   proc deleteNote*(db: DbConn, id: Id) =
     db.exec sql"DELETE FROM Note WHERE id = ?", id
+
+
+  proc newBoard*(db: DbConn): Id =
+    db.insertID Board(
+      owner: 0,
+      title: "no title",
+      description: "beta",
+      # screenshot: 0,
+      data: BoardData(),
+      timestamp: toUnixtime now())
+
+  proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
+    db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
+
+  proc getBoard*(db: DbConn, id: Id): Board =
+    db.find R, sql"SELECT * FROM Board WHERE id = ?", id
+
+  proc listBoards*(db: DbConn): seq[BoardPreview] =
+    db.find R, sql"SELECT id, title, description, timestamp FROM Board ORDER by id DESC"
+
+  proc deleteBoard*(db: DbConn, id: Id) =
+    db.exec sql"DELETE FROM Board WHERE id = ?", id

@@ -38,13 +38,14 @@ dispatch router, ../views:
   put "/api/notes/update/"?(id: Id), updateNote {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
-  get "/boards/", loadDist"board.html" {.html.} ## TODO send screenshot of board with key `p` forexample and show it in list
-  # get "/board/"?(id: Id), boardPage {.html.}
-  # post "/api/board/new/", newBoard {.Id.}
-  # put "/api/board/update/"?(id: Id), updateBoard {.ok.}
-  # get "/api/boards/list/", listBoards {.json: seq[].}
-  # get "/api/board/"?(id: Id), getBoard {.json.}
-  # delete "/api/board/"?(id: Id), deleteBoard {.ok.}
+  get "/boards/", loadDist"boards.html" {.html.} ## TODO send screenshot of board with key `p` forexample and show it in list
+  get "/api/boards/list", listBoards {.json: seq[BoardPreview].}
+  get "/board/"?(id: Id), loadDist"board.html" {.html.}
+  get "/api/board/"?(id: Id), getBoard {.json: Board.}
+  post "/api/boards/new/", newBoard {.Id.}
+  put "/api/board/update/"?(id: Id), updateBoard {.ok.}
+  # send scrennshot
+  delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
   # post "/api/tag/new/", newTag {.Id.}

@@ -1,7 +1,7 @@
 import std/[with, math, options, lenientops, strformat, random, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster, uuid4, questionable, prettyvec
+import caster, uuid4, questionable, prettyvec, jsony
 
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
@@ -41,6 +41,8 @@ type
     asPan
 
   AppData = object
+    id: Id
+
     # konva states
     stage: Stage
     hoverGroup: Group
@@ -136,7 +138,7 @@ const
   mint = c(0xc4fad6, 0x298849, 0x25ba58)
   green = c(0xcbfbad, 0x479417, 0x52d500)
   lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
-  dark = c(0x424242, 0x212121, 0x919191)
+  dark = c(0x424242, 0xececec, 0x919191)
 
   colorThemes = [
     white, smoke, road, dark,
@@ -154,9 +156,9 @@ const
 # TODO add beizier curve
 # TODO custom color palletes
 var app = AppData()
+  # app.objects = initCTable[cstring, VisualNode]()
 
-
-# ----- Util
+  # ----- Util
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
 template `||`*(v): untyped = v.asScalar
@@ -179,7 +181,35 @@ template set(vari, data): untyped =
   vari = data
 
 
-proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
+proc toJson(app: AppData): BoardData =
+  result.objects = initCTable[Str, VisualNodeConfig]()
+  for oid, node in app.objects:
+    result.objects[oid] = node.config
+
+  for conn, info in app.edgeInfo:
+    result.edges.add EdgeData(
+      points: [conn.a, conn.b],
+      config: info.config)
+
+# TODO
+proc restore(app: var AppData, data: BoardData) =
+  for oid, node in app.objects:
+    app.objects[oid] = VisualNode(
+      config: node.config)
+      # konva: VisualNodeParts())
+
+  for info in data.edges:
+    let conn = info.points[cpkHead]..info.points[cpkTail]
+    app.edges.addConn conn
+    app.edgeInfo[conn] = Edge(config: info.config)
+
+
+proc fetchBoard(id: Id) =
+  get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
+    let board = cast[Board](r.data)
+    app.restore board.data
+
+proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
     fill = $theme.bg
     shadowColor = $theme.st
@@ -190,7 +220,7 @@ proc applyTheme(txt, box: KonvaObject, theme: ColorTheme) =
   with txt:
     fill = $theme.fg
 
-proc applyFont(txt: KonvaObject, font: FontConfig) =
+proc applyFont(txt: KonvaObject; font: FontConfig) =
   with txt:
     fontFamily = font.family
     fontSize = font.size
@@ -209,7 +239,7 @@ func area(vn: VisualNode): Area =
 
   b.area + w.position
 
-proc redrawSizeNode(v: VisualNode, font: FontConfig) =
+proc redrawSizeNode(v: VisualNode; font: FontConfig) =
   # TODO keep center
   let pad = font.size / 2
 
@@ -269,7 +299,7 @@ proc select(e: Edge) =
   app.selectedEdge = some e
 
 
-func onBorder(axis: Axis, limit: float, θ: Degree): Vector =
+func onBorder(axis: Axis; limit: float; θ: Degree): Vector =
   case axis
   of aVertical:
     let
@@ -285,10 +315,10 @@ func onBorder(axis: Axis, limit: float, θ: Degree): Vector =
 
     v(-x, limit)
 
-func onBorder(dd: (Axis, float), θ: Degree): Vector =
+func onBorder(dd: (Axis, float); θ: Degree): Vector =
   onBorder dd[0], dd[1], θ
 
-func rectSide(a: Area, r: Region): tuple[axis: Axis, limit: float] =
+func rectSide(a: Area; r: Region): tuple[axis: Axis; limit: float] =
   case r
   of 1: (aVertical, a.x2)
   of 3: (aVertical, a.x1)
@@ -307,7 +337,7 @@ func normalize(θ: Degree): Degree =
 func arctan(v: Vector): Degree =
   normalize arctan2(-v.y, v.x).radToDeg.Degree
 
-func whichRegion(θ: Degree, a: Area): Region =
+func whichRegion(θ: Degree; a: Area): Region =
   ## devides the rectangle into 4 regions according to its diameters
   let
     d = a.topRight - a.center
@@ -321,7 +351,7 @@ func whichRegion(θ: Degree, a: Area): Region =
   elif θ <= Degree(360.0) - λ: 4
   else: 1
 
-proc updateEdge(e: Edge, a1: Area, c1: Vector, a2: Area, c2: Vector) =
+proc updateEdge(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   let
     d = c2 - c1
     θ = arctan d
@@ -337,7 +367,7 @@ proc updateEdge(e: Edge, a1: Area, c1: Vector, a2: Area, c2: Vector) =
   e.konva.line.points = [c1, c2]
   e.konva.shape.position = (h + t) / 2
 
-proc updateEdgeWidth(e: Edge, w: Tenth) =
+proc updateEdgeWidth(e: Edge; w: Tenth) =
   let v = tofloat w
   e.config.width = w
   e.konva.line.strokeWidth = v
@@ -345,7 +375,7 @@ proc updateEdgeWidth(e: Edge, w: Tenth) =
     strokeWidth = v
     radius = max(6, v * 3)
 
-proc updateEdgeTheme(e: Edge, t: ColorTheme) =
+proc updateEdgeTheme(e: Edge; t: ColorTheme) =
   e.config.theme = t
   e.konva.line.stroke = $t.st
   with e.konva.shape:
@@ -406,7 +436,7 @@ proc redrawConnectionsTo(uid: Oid) =
 
     updateEdge ei, n1.area, n1.center, n2.area, n2.center
 
-proc setText(v: VisualNode, t: cstring) =
+proc setText(v: VisualNode; t: cstring) =
   assert v.config.data.kind == vndkText
   v.config.data.text = $t
   v.konva.txt.text = t or "  ...  "
@@ -427,7 +457,7 @@ proc setDataImage =
       vn.config.data = VisualNodeData(kind: vndkImage, url: "")
       vn.konva.txt.hide
 
-proc scaleImage(v: VisualNode, scale: float) =
+proc scaleImage(v: VisualNode; scale: float) =
   assert v.config.data.kind == vndkImage
   let
     w = v.konva.img.width
@@ -456,7 +486,7 @@ proc scaleImage(v: VisualNode, scale: float) =
 
   redrawConnectionsTo v.config.id
 
-proc loadImageGen(url: cstring, vn: VisualNode) =
+proc loadImageGen(url: cstring; vn: VisualNode) =
   newImageFromUrl url:
     proc(imgNode: konva.Image) =
       let
@@ -482,7 +512,7 @@ proc loadImageGen(url: cstring, vn: VisualNode) =
       scaleImage vn, fr
       wrapper.add imgNode
 
-proc setImageUrl(v: VisualNode, u: cstring) =
+proc setImageUrl(v: VisualNode; u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
   loadImageGen u, v
@@ -522,12 +552,12 @@ proc setFocusedTheme(theme: ColorTheme) =
     app.theme = theme
 
 
-func coordinate(mouse: Vector, scale, offsetx, offsety: float): Vector =
+func coordinate(mouse: Vector; scale, offsetx, offsety: float): Vector =
   v(
     (-offsetx + mouse.x) / scale,
     (-offsety + mouse.y) / scale)
 
-proc coordinate(pos: Vector, stage: Stage): Vector =
+proc coordinate(pos: Vector; stage: Stage): Vector =
   coordinate pos, ||stage.scale, stage.x, stage.y
 
 func center(scale, offsetx, offsety, width, height: float): Vector =
@@ -542,7 +572,7 @@ proc center(stage: Stage): Vector =
     app.stage.x, app.stage.y,
     app.stage.width, app.stage.height)
 
-proc `center=`(stage: Stage, c: Vector) =
+proc `center=`(stage: Stage; c: Vector) =
   let s = ||stage.scale
   stage.position = -c * s + stage.size.v/2
 
@@ -550,7 +580,7 @@ proc moveStage(v: Vector) =
   app.stage.x = app.stage.x + v.x
   app.stage.y = app.stage.y + v.y
 
-proc changeScale(mouse🖱️: Vector, newScale: float, changePosition: bool) =
+proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
   ## zoom in/out with `real` position pinned
   let
     s′ = clamp(newScale, minScale .. maxScale)
@@ -573,7 +603,7 @@ proc changeScale(mouse🖱️: Vector, newScale: float, changePosition: bool) =
 
     moveStage d * s′
 
-proc incl(t: var Transformer, objs: openArray[KonvaShape], layer: Layer) =
+proc incl(t: var Transformer; objs: openArray[KonvaShape]; layer: Layer) =
   # t.nodes = objs
   layer.add t
   layer.batchDraw
@@ -670,12 +700,13 @@ proc createNode =
         setCursor ccMove
 
     on "dragend", proc =
+      vn.config.position = wrapper.position
       setCursor ccPointer
 
     on "dragmove", proc =
       redrawConnectionsTo uid
 
-
+  vn.config.position = wrapper.position
   app.objects[uid] = vn
   app.mainGroup.getLayer.add wrapper
   select vn
@@ -705,7 +736,7 @@ proc getMsg(id: Id) =
     msgCache[id] = msg
     redraw()
 
-proc msgComp(v: VisualNode, i: int, mid: Id): VNode =
+proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
   buildHTML:
     tdiv(class = "card mb-4"):
       tdiv(class = "card-body"):
@@ -766,7 +797,7 @@ proc sidebarStateMutator*(to: SidebarState): proc =
   proc =
     app.sidebarState = to
 
-proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
+proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
@@ -779,7 +810,7 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme, selectable: bool): Vnode =
             setFocusedTheme theme
             app.footerState = fsOverview
 
-proc fontSizeSelectBtn[T](size, selected: T, selectable: bool, fn: proc()): Vnode =
+proc fontSizeSelectBtn[T](size, selected: T; selectable: bool; fn: proc()): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(size == selected, "bg-light")):
@@ -791,7 +822,7 @@ proc fontSizeSelectBtn[T](size, selected: T, selectable: bool, fn: proc()): Vnod
           if selectable:
             fn()
 
-proc fontFamilySelectBtn(name: string, selectable: bool): Vnode =
+proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(name == app.font.family, "bg-light")):
@@ -994,7 +1025,7 @@ proc createDom*(data: RouterData): VNode =
                   input(`type` = "text", class = "form-control",
                       placeholder = "text ...", value = vn.config.data.text):
 
-                    proc oninput(e: Event, v: Vnode) =
+                    proc oninput(e: Event; v: Vnode) =
                       let s = e.target.value
                       setText vn, s
 
@@ -1002,15 +1033,16 @@ proc createDom*(data: RouterData): VNode =
                   input(`type` = "text", class = "form-control",
                       placeholder = "URL", value = vn.config.data.url, name = "url"):
 
-                    proc oninput(e: Event, v: Vnode) =
+                    proc oninput(e: Event; v: Vnode) =
                       let s = e.target.value
                       setImageUrl vn, s
 
                   label(class = "form-label"):
                     text "scale"
-                  input(`type` = "range", id = "scale-range", class = "form-range",
-                      value = "1.0", min = "0.01", max = "3.0", step = "0.01"):
-                    proc onchange(e: Event, v: Vnode) =
+                  input(`type` = "range", id = "scale-range",
+                      class = "form-range", value = "1.0", min = "0.01",
+                          max = "3.0", step = "0.01"):
+                    proc onchange(e: Event; v: Vnode) =
                       let s = e.target.value
                       scaleImage vn, parseFloat s
 
@@ -1200,6 +1232,11 @@ proc init* =
         let s = ||app.stage.scale
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
+      addHotkey "s", proc =
+        let data = forceJsObject toJson app
+        put_api_board_update_url(app.id).putApi(data).dthen proc(_: auto) =
+          discard
+
 
       addHotkey "z", proc = # reset zoom
         let c = app.stage.center
@@ -1220,5 +1257,8 @@ proc init* =
       addHotkey "p", proc = # scrennshot
         downloadUrl "screenshot.png", app.stage.toDataUrl(1)
 
+
+    app.id = parseInt getWindowQueryParam("id")
+    fetchBoard app.id
 
 when isMainModule: init()

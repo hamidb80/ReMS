@@ -13,11 +13,11 @@ type
 
   # AxiosRequest* = ref object of JsObject
   AxiosResponse* = ref object of JsObject
-    data: JsObject
-    status: HttpCode
-    statusText: cstring
-    headers: JsObject
-    config: AxiosConfig[JsObject]
+    data*: JsObject
+    status*: HttpCode
+    statusText*: cstring
+    headers*: JsObject
+    config*: AxiosConfig[JsObject]
 
 
 proc axios*(

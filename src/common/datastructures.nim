@@ -13,15 +13,15 @@ func add*[K, V](st: var SeqTable[K, V], key: K, val: V) =
   else:
     st[key] = @[val]
 
-func add[T](g: var Graph[T], key, val: T) =
-  if key notin g:
-    g[key] = initHashSet[T]()
+func add[T](g: var Graph[T], a, b: T) =
+  if a notin g:
+    g[a] = initHashSet[T]()
 
-  g[key].incl val
+  g[a].incl b
 
-func remove[T](g: var Graph[T], key, val: T) =
-  if key in g:
-    g[key].decl val
+func remove[T](g: var Graph[T], a, b: T) =
+  if a in g:
+    g[a].decl b
 
 func addConn*[T](g: var Graph[T], conn: Slice[T]) =
   g.add conn.a, conn.b
@@ -54,7 +54,7 @@ func isRoot*(tn: TreeNodeRec): bool =
 
 type
   FontConfig* = object
-    family*: string
+    family*: Str
     size*: int
     style*: FontStyle
     # lineHeight: Float
@@ -67,7 +67,7 @@ type
     vndkImage
 
   VisualNodeConfig* = object
-    id*: string
+    id*: Str
     theme*: ColorTheme
     data*: VisualNodeData
     font*: FontConfig # TODO move this to `VisualNodeData`
@@ -87,13 +87,15 @@ type
     width*: Tenth
     centerShape*: ConnectionCenterShapeKind
 
+  ConnectionPointKind* = enum
+    cpkHead, cpkTail
+
   EdgeData* = object
-    head*: string
-    tail*: string
+    points*: array[ConnectionPointKind, Str]
     config*: EdgeConfig
 
   BoardData* = object
-    objects*: Table[string, VisualNodeConfig]
+    objects*: CTable[Str, VisualNodeConfig]
     edges*: seq[EdgeData]
 
 

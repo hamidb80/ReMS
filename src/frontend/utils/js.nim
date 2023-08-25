@@ -20,6 +20,8 @@ iterator items*(obj: JsSet): cstring =
   yield v
   {.emit: "}".}
 
+func forceJsObject*(t: auto): JsObject {.importjs: "(@)".}
+
 template c*(str): untyped = cstring str
 
 template set*(container, value): untyped =

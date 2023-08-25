@@ -4,7 +4,7 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
 import ../jslib/[hotkeys, axios]
-import ../utils/[browser, ui]
+import ../utils/[browser, ui, js]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
 import ../../backend/database/[queries]
@@ -74,6 +74,7 @@ proc startUpload(u: Upload) =
 
   u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
+    fetchAssets()
     redraw()
 
   u.status = usInProgress
@@ -346,5 +347,6 @@ proc init* =
       redraw()
 
   setRenderer createDom
+  fetchAssets()
 
 when isMainModule: init()
