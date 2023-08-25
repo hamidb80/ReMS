@@ -89,6 +89,7 @@ type
     wrapper: Group
     box: Rect
     txt: Text
+    img: Image
 
   Edge = ref object
     config: EdgeConfig
@@ -118,6 +119,7 @@ const
   ciriticalWidth = 400
   minimizeWidth = 360
 
+  # TODO add tranparent background
   invalidTheme = c(0, 0, 0)
   white = c(0xffffff, 0x889bad, 0xa5b7cf)
   smoke = c(0xecedef, 0x778696, 0x9eaabb)
@@ -265,47 +267,6 @@ proc select(e: Edge) =
   unselect()
   app.selectedEdge = some e
 
-proc loadImageGen(url: cstring, vn: VisualNode) =
-  newImageFromUrl url:
-    proc(imgNode: konva.Image) =
-      let
-        wrapper = vn.konva.wrapper
-
-        wi = imgNode.width       # width of image
-        hi = imgNode.height      # height of image
-
-        sc = ||app.stage.scale   # scale
-        ws = app.stage.width/sc  # width of screnn
-        hs = app.stage.height/sc # height of screen
-
-        wr = min(wi, ws) / wi    # width ratio
-        hr = min(hi, hs) / hi    # height ratio
-        fr = min(wr, hr)         # final ratio
-
-        niw = wi * fr            # new image width
-        nih = hi * fr            # new image height
-
-      with imgNode: # make image not bigger than screen size
-        width = niw
-        height = nih
-
-      with wrapper: # place it center
-        x = wrapper.x - niw/2
-        y = wrapper.y - nih/2
-
-      wrapper.removeChildren
-      wrapper.add imgNode
-
-proc setDataText =
-  if vn =? app.selectedVisualNode:
-    if vn.config.data.kind != vndkText:
-      vn.config.data = VisualNodeData(kind: vndkText, text: "")
-
-proc setDataImage =
-  if vn =? app.selectedVisualNode:
-    if vn.config.data.kind != vndkImage:
-      vn.config.data = VisualNodeData(kind: vndkImage, url: "")
-
 
 func onBorder(axis: Axis, limit: float, θ: Degree): Vector =
   case axis
@@ -451,11 +412,79 @@ proc setText(v: VisualNode, t: cstring) =
   redrawSizeNode v, v.config.font
   redrawConnectionsTo v.config.id
 
+proc setDataText =
+  if vn =? app.selectedVisualNode:
+    if vn.config.data.kind != vndkText:
+      vn.config.data = VisualNodeData(kind: vndkText, text: "")
+      vn.konva.txt.show
+      vn.konva.img.hide
+      setText vn, vn.config.data.text
+
+proc setDataImage =
+  if vn =? app.selectedVisualNode:
+    if vn.config.data.kind != vndkImage:
+      vn.config.data = VisualNodeData(kind: vndkImage, url: "")
+      vn.konva.txt.hide
+
+proc scaleImage(v: VisualNode, scale: float) =
+  assert v.config.data.kind == vndkImage
+  let
+    w = v.konva.img.width
+    h = v.konva.img.height
+    w′ = w * scale
+    h′ = h * scale
+    pad = min(w′, h′) * 0.05
+
+    wrapper = v.konva.wrapper
+
+  qi"scale-range".value = "1"
+
+  with v.konva.img:
+    width = w′
+    height = h′
+
+  # with wrapper: # place it center
+  #   x = wrapper.x - w′/2
+  #   y = wrapper.y - h′/2
+
+  with v.konva.box:
+    x = -pad
+    y = -pad
+    width = w′ + pad*2
+    height = h′ + pad*2
+
+  redrawConnectionsTo v.config.id
+
+proc loadImageGen(url: cstring, vn: VisualNode) =
+  newImageFromUrl url:
+    proc(imgNode: konva.Image) =
+      let
+        wrapper = vn.konva.wrapper
+
+        wi = imgNode.width       # width of image
+        hi = imgNode.height      # height of image
+
+        sc = ||app.stage.scale   # scale
+        ws = app.stage.width/sc  # width of screnn
+        hs = app.stage.height/sc # height of screen
+
+        wr = min(wi, ws) / wi    # width ratio
+        hr = min(hi, hs) / hi    # height ratio
+        fr = min(wr, hr)         # final ratio
+
+      with imgNode: # make image not bigger than screen size
+        listening = false
+
+      vn.config.data.kind = vndkImage
+      vn.konva.img.remove
+      vn.konva.img = imgNode
+      scaleImage vn, fr
+      wrapper.add imgNode
+
 proc setImageUrl(v: VisualNode, u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
   loadImageGen u, v
-  # redrawConnectionsTo v.config.id
 
 proc setFocusedFontSize(s: int) =
   if v =? app.selectedVisualNode:
@@ -553,6 +582,7 @@ proc createNode =
     wrapper = newGroup()
     box = newRect()
     txt = newText()
+    img = newImage()
     vn = VisualNode()
     uid = cstring $uuid4()
 
@@ -565,6 +595,7 @@ proc createNode =
     wrapper = wrapper
     box = box
     txt = txt
+    img = img
 
   with txt:
     x = 0
@@ -968,11 +999,21 @@ proc createDom*(data: RouterData): VNode =
 
                 of vndkImage:
                   input(`type` = "text", class = "form-control",
-                      placeholder = "URL", value = vn.config.data.url):
+                      placeholder = "URL", value = vn.config.data.url, name = "url"):
 
                     proc oninput(e: Event, v: Vnode) =
                       let s = e.target.value
                       setImageUrl vn, s
+
+                  label(class = "form-label"):
+                    text "scale"
+                  input(`type` = "range", id = "scale-range", class = "form-range",
+                      value = "1.0", min = "0.01", max = "3.0", step = "0.01"):
+                    proc onchange(e: Event, v: Vnode) =
+                      let s = e.target.value
+                      scaleImage vn, parseFloat s
+
+
 
           footer(class = "mt-2"):
             case app.sidebarState

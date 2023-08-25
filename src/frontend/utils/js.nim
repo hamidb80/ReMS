@@ -5,6 +5,7 @@ type
   JsSet = ref object of JsObject
 
 func parseInt*(s: cstring): int {.importjs: "parseInt(@)".}
+func parseFloat*(s: cstring): float {.importjs: "parseFloat(@)".}
 func toLower*(s: cstring): cstring {.importjs: "#.toLowerCase()".}
 proc parseJs*(s: cstring): JsObject {.importjs: "JSON.parse(@)".}
 proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}

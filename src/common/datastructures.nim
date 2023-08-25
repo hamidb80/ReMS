@@ -70,7 +70,7 @@ type
     id*: string
     theme*: ColorTheme
     data*: VisualNodeData
-    font*: FontConfig
+    font*: FontConfig # TODO move this to `VisualNodeData`
     position*: Vec2Obj # top left
     messageIdList*: seq[Id]
 
