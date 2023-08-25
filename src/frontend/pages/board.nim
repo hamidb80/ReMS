@@ -136,9 +136,10 @@ const
   mint = c(0xc4fad6, 0x298849, 0x25ba58)
   green = c(0xcbfbad, 0x479417, 0x52d500)
   lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
+  dark = c(0x424242, 0x212121, 0x919191)
 
   colorThemes = [
-    white, smoke, road,
+    white, smoke, road, dark,
     yellow, orange, red,
     peach, pink, purple,
     purpleLow, blue, diomand,
