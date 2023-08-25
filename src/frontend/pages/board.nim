@@ -36,6 +36,10 @@ type
     aVertical
     aHorizontal
 
+  AppState = enum
+    asNormal
+    asPan
+
   AppData = object
     # konva states
     stage: Stage
@@ -67,6 +71,7 @@ type
     leftClicked: bool
 
     ## TODO store set of keys that are pressed
+    state: AppState
     isShiftDown: bool
     isSpaceDown: bool
 
@@ -76,8 +81,8 @@ type
     edges: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
 
-  VisualNode = ref object # TODO add variant image[with or without background]/text
-    config*: VisualNodeData
+  VisualNode = ref object
+    config*: VisualNodeConfig
     konva: VisualNodeParts
 
   VisualNodeParts = object
@@ -100,6 +105,7 @@ type
     ccZoom = "zoom-in"
     ccPointer = "pointer"
     ccResizex = "e-resize"
+    ccGrabbing = "grabbing"
     # ccAdd
 
 
@@ -259,8 +265,42 @@ proc select(e: Edge) =
   unselect()
   app.selectedEdge = some e
 
+proc loadImageGen(url: cstring, wrapper: KonvaObject) =
+  newImageFromUrl url:
+    proc(imgNode: konva.Image) =
+      let
+        wi = imgNode.width
+        hi = imgNode.height
+        sc = ||app.stage.scale
+        ws = app.stage.width/sc
+        hs = app.stage.height/sc
+        wr = min(wi, ws) / wi
+        hr = min(hi, hs) / hi
+        q = min(wr, hr)
 
-func onBorder(axis: Axis, limit: Float, θ: Degree): Vector =
+      with imgNode: # make not bigger than screen size
+        width = wi * q
+        height = hi * q
+
+      with wrapper: # make it center
+        x = wrapper.x - imgNode.width / 2
+        y = wrapper.y - imgNode.height / 2
+
+      wrapper.removeChildren
+      wrapper.add imgNode
+
+proc setDataText =
+  if vn =? app.selectedVisualNode:
+    if vn.config.data.kind != vndkText:
+      vn.config.data = VisualNodeData(kind: vndkText, text: "")
+
+proc setDataImage =
+  if vn =? app.selectedVisualNode:
+    if vn.config.data.kind != vndkImage:
+      vn.config.data = VisualNodeData(kind: vndkImage, url: "")
+
+
+func onBorder(axis: Axis, limit: float, θ: Degree): Vector =
   case axis
   of aVertical:
     let
@@ -276,10 +316,10 @@ func onBorder(axis: Axis, limit: Float, θ: Degree): Vector =
 
     v(-x, limit)
 
-func onBorder(dd: (Axis, Float), θ: Degree): Vector =
+func onBorder(dd: (Axis, float), θ: Degree): Vector =
   onBorder dd[0], dd[1], θ
 
-func rectSide(a: Area, r: Region): tuple[axis: Axis, limit: Float] =
+func rectSide(a: Area, r: Region): tuple[axis: Axis, limit: float] =
   case r
   of 1: (aVertical, a.x2)
   of 3: (aVertical, a.x1)
@@ -329,7 +369,7 @@ proc updateEdge(e: Edge, a1: Area, c1: Vector, a2: Area, c2: Vector) =
   e.konva.shape.position = (h + t) / 2
 
 proc updateEdgeWidth(e: Edge, w: Tenth) =
-  let v = toFloat w
+  let v = tofloat w
   e.config.width = w
   e.konva.line.strokeWidth = v
   with e.konva.shape:
@@ -398,10 +438,17 @@ proc redrawConnectionsTo(uid: Oid) =
     updateEdge ei, n1.area, n1.center, n2.area, n2.center
 
 proc setText(v: VisualNode, t: cstring) =
-  v.config.text = $t
+  assert v.config.data.kind == vndkText
+  v.config.data.text = $t
   v.konva.txt.text = t or "  ...  "
   redrawSizeNode v, v.config.font
   redrawConnectionsTo v.config.id
+
+proc setImageUrl(v: VisualNode, u: cstring) =
+  assert v.config.data.kind == vndkImage
+  v.config.data.url = $u
+  loadImageGen u, v.konva.wrapper
+  # redrawConnectionsTo v.config.id
 
 proc setFocusedFontSize(s: int) =
   if v =? app.selectedVisualNode:
@@ -438,7 +485,7 @@ proc setFocusedTheme(theme: ColorTheme) =
     app.theme = theme
 
 
-func coordinate(mouse: Vector, scale, offsetx, offsety: Float): Vector =
+func coordinate(mouse: Vector, scale, offsetx, offsety: float): Vector =
   v(
     (-offsetx + mouse.x) / scale,
     (-offsety + mouse.y) / scale)
@@ -446,7 +493,7 @@ func coordinate(mouse: Vector, scale, offsetx, offsety: Float): Vector =
 proc coordinate(pos: Vector, stage: Stage): Vector =
   coordinate pos, ||stage.scale, stage.x, stage.y
 
-func center(scale, offsetx, offsety, width, height: Float): Vector =
+func center(scale, offsetx, offsety, width, height: float): Vector =
   ## real coordinate of center of the canvas
   v((width/2 - offsetx) / scale,
     (height/2 - offsety) / scale)
@@ -466,7 +513,7 @@ proc moveStage(v: Vector) =
   app.stage.x = app.stage.x + v.x
   app.stage.y = app.stage.y + v.y
 
-proc changeScale(mouse🖱️: Vector, newScale: Float, changePosition: bool) =
+proc changeScale(mouse🖱️: Vector, newScale: float, changePosition: bool) =
   ## zoom in/out with `real` position pinned
   let
     s′ = clamp(newScale, minScale .. maxScale)
@@ -517,7 +564,7 @@ proc createNode =
     y = 0
     align = $hzCenter
     listening = false
-    text = vn.config.text
+    text = vn.config.data.text
 
   with box:
     on "mouseover", proc =
@@ -578,7 +625,10 @@ proc createNode =
     draggable = true
 
     on "dragstart", proc =
-      setCursor ccMove
+      if app.state != asNormal:
+        stopDrag wrapper
+      else:
+        setCursor ccMove
 
     on "dragend", proc =
       setCursor ccPointer
@@ -872,18 +922,50 @@ proc createDom*(data: RouterData): VNode =
                   msgComp sv, i, mid
 
             of ssPropertiesView:
-              let vn = app.selectedVisualNode
-
-              if issome vn:
-                let obj = vn.get
-
+              if vn =? app.selectedVisualNode:
                 tdiv(class = "form-group"):
-                  input(`type` = "string", class = "form-control",
-                      placeholder = "text ...", value = obj.config.text):
+                  fieldset(class = "form-group"):
+                    legend(class = "mt-4"):
+                      text "Type Of Node"
+
+                    tdiv(class = "form-check"):
+                      input(`type` = "radio",
+                          class = "form-check-input",
+                          value = "option1",
+                          onclick = setDataText,
+                          checked = vn.config.data.kind == vndkText,
+                          name = "kindOfData")
+
+                      label(class = "form-check-label"):
+                        text "Text Node"
+
+                    tdiv(class = "form-check"):
+                      input(`type` = "radio",
+                          class = "form-check-input",
+                          value = "option2",
+                          onclick = setDataImage,
+                          checked = vn.config.data.kind == vndkImage,
+                          name = "kindOfData")
+
+                      label(class = "form-check-label"):
+                        text "Image Node"
+
+                case vn.config.data.kind
+                of vndkText:
+                  input(`type` = "text", class = "form-control",
+                      placeholder = "text ...", value = vn.config.data.text):
 
                     proc oninput(e: Event, v: Vnode) =
                       let s = e.target.value
-                      setText obj, s
+                      setText vn, s
+
+                of vndkImage:
+                  input(`type` = "text", class = "form-control",
+                      placeholder = "URL", value = vn.config.data.url):
+
+                    proc oninput(e: Event, v: Vnode) =
+                      let s = e.target.value
+                      setImageUrl vn, s
 
           footer(class = "mt-2"):
             case app.sidebarState
@@ -1018,7 +1100,9 @@ proc init* =
           e: Event as KeyboardEvent) {.caster.} =
         if e.key == cstring" ":
           app.isSpaceDown = true
-          setCursor ccMove
+          setCursor ccGrabbing
+          app.state = asPan
+
         elif e.keyCode == kcj:
           app.isShiftDown = true
           setCursor ccZoom
@@ -1029,6 +1113,9 @@ proc init* =
           app.isSpaceDown = false
           app.isShiftDown = false
           setCursor ccNone
+          app.state = asNormal
+
+
 
     block prepare:
       app.sidebarWidth = 0

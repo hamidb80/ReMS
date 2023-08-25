@@ -62,20 +62,30 @@ type
   ColorTheme* = object
     bg*, fg*, st*: HexColor
 
-  VisualNodeData* = object
+  VirtualNodeDataKind* = enum
+    vndkText
+    vndkImage
+
+  VisualNodeConfig* = object
     id*: string
     theme*: ColorTheme
-    text*: string
-    imagePath*: string
+    data*: VisualNodeData
     font*: FontConfig
     position*: Vec2Obj # top left
     messageIdList*: seq[Id]
 
+  VisualNodeData* = object
+    case kind*: VirtualNodeDataKind
+    of vndkText:
+      text*: Str
+    of vndkImage:
+      url*: Str
+      width*, height*: float
+
   EdgeConfig* = object
     theme*: ColorTheme
     width*: Tenth
-    centerShape*: ConnectionCenterShapeKind # TODO
-
+    centerShape*: ConnectionCenterShapeKind
 
   EdgeData* = object
     head*: string
@@ -83,7 +93,7 @@ type
     config*: EdgeConfig
 
   BoardData* = object
-    objects*: Table[string, VisualNodeData]
+    objects*: Table[string, VisualNodeConfig]
     edges*: seq[EdgeData]
 
 
