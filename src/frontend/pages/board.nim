@@ -265,26 +265,33 @@ proc select(e: Edge) =
   unselect()
   app.selectedEdge = some e
 
-proc loadImageGen(url: cstring, wrapper: KonvaObject) =
+proc loadImageGen(url: cstring, vn: VisualNode) =
   newImageFromUrl url:
     proc(imgNode: konva.Image) =
       let
-        wi = imgNode.width
-        hi = imgNode.height
-        sc = ||app.stage.scale
-        ws = app.stage.width/sc
-        hs = app.stage.height/sc
-        wr = min(wi, ws) / wi
-        hr = min(hi, hs) / hi
-        q = min(wr, hr)
+        wrapper = vn.konva.wrapper
 
-      with imgNode: # make not bigger than screen size
-        width = wi * q
-        height = hi * q
+        wi = imgNode.width       # width of image
+        hi = imgNode.height      # height of image
 
-      with wrapper: # make it center
-        x = wrapper.x - imgNode.width / 2
-        y = wrapper.y - imgNode.height / 2
+        sc = ||app.stage.scale   # scale
+        ws = app.stage.width/sc  # width of screnn
+        hs = app.stage.height/sc # height of screen
+
+        wr = min(wi, ws) / wi    # width ratio
+        hr = min(hi, hs) / hi    # height ratio
+        fr = min(wr, hr)         # final ratio
+
+        niw = wi * fr            # new image width
+        nih = hi * fr            # new image height
+
+      with imgNode: # make image not bigger than screen size
+        width = niw
+        height = nih
+
+      with wrapper: # place it center
+        x = wrapper.x - niw/2
+        y = wrapper.y - nih/2
 
       wrapper.removeChildren
       wrapper.add imgNode
@@ -447,7 +454,7 @@ proc setText(v: VisualNode, t: cstring) =
 proc setImageUrl(v: VisualNode, u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
-  loadImageGen u, v.konva.wrapper
+  loadImageGen u, v
   # redrawConnectionsTo v.config.id
 
 proc setFocusedFontSize(s: int) =
