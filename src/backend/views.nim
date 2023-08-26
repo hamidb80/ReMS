@@ -152,6 +152,9 @@ proc updateBoard*(req: Request) {.addQueryParams.} =
 
   req.respond(200)
 
+proc updateBoardScreenShot*(req: Request) {.addQueryParams.} =
+  discard
+
 proc getBoard*(req: Request) {.addQueryParams.} =
   let
     id = q["id"].parseint
