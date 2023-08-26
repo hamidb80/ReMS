@@ -8,7 +8,6 @@ import ../common/[types, path, datastructures]
 import ./utils/web, ./routes
 import ./database/[models, queries]
 
-
 # ------- Database stuff
 
 let pool = newSqlitePool(10, "./play.db")
@@ -143,8 +142,8 @@ proc newBoard*(req: Request) =
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, $db.newBoard())
 
-proc updateBoard*(req: Request)  {.addQueryParams.} =
-  let 
+proc updateBoard*(req: Request) {.addQueryParams.} =
+  let
     id = q["id"].parseint
     d = fromJson(req.body, BoardData)
 
@@ -153,16 +152,17 @@ proc updateBoard*(req: Request)  {.addQueryParams.} =
 
   req.respond(200)
 
-proc getBoard*(req: Request)  {.addQueryParams.} =
+proc getBoard*(req: Request) {.addQueryParams.} =
   let
     id = q["id"].parseint
 
   withConn db:
     req.respond(200, @{"Content-Type": "application/json"}, toJson db.getBoard(id))
 
-proc listBoards*(req: Request)  {.addQueryParams.} =
+proc listBoards*(req: Request) {.addQueryParams.} =
   withConn db:
-    req.respond(200, @{"Content-Type": "application/json"}, toJson db.listBoards)
+    req.respond(200, @{"Content-Type": "application/json"},
+        toJson db.listBoards)
 
 proc deleteBoard*(req: Request) {.addQueryParams.} =
   let id = q["id"].parseint

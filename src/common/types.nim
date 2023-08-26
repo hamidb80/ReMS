@@ -7,8 +7,8 @@ when defined js:
   type
     Str* = cstring
     JsO* = JsObject
-    JsTable* = distinct JsObject
-    CTable*[S: Str, T] = JsTable
+    # JsTable* = distinct JsObject
+    CTable*[S: Str, T] = JsAssoc[S, T]
     # CSet*[S: Str] = distinct JsObject
 else:
   import std/json
@@ -147,24 +147,8 @@ converter toHex*(c: HexColor): string =
 
 
 # TODO move it to js module
-## js table made for saveing data as raw JSON and efficiency
-
 when defined js:
   import std/jsffi
 
-  func checkKey(key: cstring, t: JsTable): bool {.importjs: "# in #".}
-  func contains*(t: JsTable, key: cstring): bool = checkKey(key, t)
-
-  func initCTable*[K: cstring, V](): CTable[K, V] {.importjs: "{@}".}
-  iterator pairs*[K: cstring, V](t: CTable[K, V]): tuple[key: cstring, value: V] =
-    for k, v in cast[JsObject](t):
-      yield (k, cast[V](v))
-
-  func `[]`*[S: cstring, T](t: CTable[S, T], key: cstring): T =
-    if key in t:
-      return cast[T]((JsObject t)[key])
-    else:
-      raise newException(KeyError, "key not found")
-
-  func `[]=`*[T](t: var JsTable, key: cstring, val: T) =
-    (JsObject t)[key] = val
+  func initCTable*[K: cstring, V](): CTable[K, V] =
+    newJsAssoc[K, V]()

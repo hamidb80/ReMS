@@ -1,4 +1,4 @@
-import std/[tables, options, json]
+import std/[tables, options, json, parseutils]
 import jsony
 import ../../common/[types, datastructures]
 
@@ -134,6 +134,14 @@ type
 
 when not defined js:
   # ----- custom types
+
+  proc parseHook*[T: enum](s: string, i: var int, v: var T) =
+    var temp: int
+    inc i, parseInt(s, temp, i)
+    v = T temp
+
+  proc dumpHook*(s: var string, v: enum) =
+    s.add $v.int
 
   template defSqlJsonType(typename): untyped =
     proc sqlType*(t: typedesc[typename]): string = "TEXT"

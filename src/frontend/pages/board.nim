@@ -1,7 +1,7 @@
-import std/[with, math, options, lenientops, strformat, random, sets, tables]
+import std/[with, math, options, lenientops, strformat, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster, uuid4, questionable, prettyvec, jsony
+import caster, uuid4, questionable, prettyvec
 
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
@@ -180,34 +180,6 @@ template `.!`(a, b): untyped =
 template set(vari, data): untyped =
   vari = data
 
-
-proc toJson(app: AppData): BoardData =
-  result.objects = initCTable[Str, VisualNodeConfig]()
-  for oid, node in app.objects:
-    result.objects[oid] = node.config
-
-  for conn, info in app.edgeInfo:
-    result.edges.add EdgeData(
-      points: [conn.a, conn.b],
-      config: info.config)
-
-# TODO
-proc restore(app: var AppData, data: BoardData) =
-  for oid, node in app.objects:
-    app.objects[oid] = VisualNode(
-      config: node.config)
-      # konva: VisualNodeParts())
-
-  for info in data.edges:
-    let conn = info.points[cpkHead]..info.points[cpkTail]
-    app.edges.addConn conn
-    app.edgeInfo[conn] = Edge(config: info.config)
-
-
-proc fetchBoard(id: Id) =
-  get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
-    let board = cast[Board](r.data)
-    app.restore board.data
 
 proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
@@ -608,19 +580,13 @@ proc incl(t: var Transformer; objs: openArray[KonvaShape]; layer: Layer) =
   layer.add t
   layer.batchDraw
 
-proc createNode =
+proc createNode(cfg: VisualNodeConfig): VisualNode =
   var
     wrapper = newGroup()
     box = newRect()
     txt = newText()
     img = newImage()
-    vn = VisualNode()
-    uid = cstring $uuid4()
-
-  with vn.config:
-    id = $uid
-    font = app.font
-    theme = app.theme
+    vn = VisualNode(config: cfg)
 
   with vn.konva:
     wrapper = wrapper
@@ -633,7 +599,6 @@ proc createNode =
     y = 0
     align = $hzCenter
     listening = false
-    text = vn.config.data.text
 
   with box:
     on "mouseover", proc =
@@ -668,7 +633,7 @@ proc createNode =
           discard
         else:
           let
-            id1 = uid
+            id1 = cfg.id
             id2 = cstring sv.config.id
             conn = sorted id1..id2
 
@@ -686,9 +651,8 @@ proc createNode =
       redraw()
 
   with wrapper:
-    x = app.lastAbsoluteMousePos.x
-    y = app.lastAbsoluteMousePos.y
-    id = uid
+    position = cfg.position
+    # id = uid
     add box
     add txt
     draggable = true
@@ -704,19 +668,73 @@ proc createNode =
       setCursor ccPointer
 
     on "dragmove", proc =
-      redrawConnectionsTo uid
+      redrawConnectionsTo cfg.id
 
-  vn.config.position = wrapper.position
-  app.objects[uid] = vn
-  app.mainGroup.getLayer.add wrapper
-  select vn
   applyTheme txt, box, vn.config.theme
-  setText vn, ""
-  redrawSizeNode vn, vn.config.font
+  # TODO what about image?
+  setText vn, vn.config.data.text
+  vn
+
+proc createNode =
+  let
+    uid = cstring $uuid4()
+    cfg = VisualNodeConfig(
+      id: $uid,
+      position: app.lastAbsoluteMousePos,
+      font: app.font,
+      theme: app.theme,
+      data: VisualNodeData(
+        kind: vndkText,
+        text: ""))
+    vn = createnode cfg
+
+  app.objects[uid] = vn
+  app.mainGroup.getLayer.add vn.konva.wrapper
   app.sidebarState = ssPropertiesView
+
+  select vn
+  redrawSizeNode vn, vn.config.font
   redraw()
 
-proc newPoint(pos: Vector, r = 1.0): Circle =
+
+proc toJson(app: AppData): BoardData =
+  result.objects = initCTable[Str, VisualNodeConfig]()
+  for oid, node in app.objects:
+    result.objects[oid] = node.config
+
+  for conn, info in app.edgeInfo:
+    result.edges.add EdgeData(
+      points: [conn.a, conn.b],
+      config: info.config)
+
+  console.log "result: ", result
+
+import std/sequtils
+
+proc restore(app: var AppData; data: BoardData) =
+  console.log data
+
+  for oid, node in data.objects:
+    let vn = createNode node
+    app.objects[oid] = vn
+    app.mainGroup.getLayer.add vn.konva.wrapper
+
+  for info in data.edges:
+    let conn = info.points[cpkHead]..info.points[cpkTail]
+    app.edges.addConn conn
+    app.edgeInfo[conn] = newEdge info.config
+
+  echo toseq keys app.objects
+  echo app.edges 
+  echo toseq keys app.edgeInfo
+
+proc fetchBoard(id: Id) =
+  get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
+    let board = cast[Board](r.data)
+    app.restore board.data
+
+
+proc newPoint(pos: Vector; r = 1.0): Circle =
   result = newCircle()
   with result:
     radius = r
