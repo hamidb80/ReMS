@@ -379,7 +379,7 @@ proc newEdge(c: EdgeConfig): Edge =
 
   Edge(config: c, konva: k)
 
-proc addEdgeClick(e: Edge) = 
+proc addEdgeClick(e: Edge) =
   with e.konva.shape:
     off "click"
     on "click", proc =
@@ -751,16 +751,17 @@ proc newPoint(pos: Vector; r = 1.0): Circle =
 
 # ----- UI
 let compTable = defaultComponents()
-var msgCache: Table[Id, cstring]
+var msgCache: Table[Id, Option[cstring]]
 
 proc getMsg(id: Id) =
+  msgCache[id] = none cstring
+
   let q = get_api_note_url(id).getApi
   q.dthen proc(r: AxiosResponse) =
     let
       d = cast[Note](r.data)
       msg = deserizalize(compTable, d.data).innerHtml
-
-    msgCache[id] = msg
+    msgCache[id] = some msg
     redraw()
 
 proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
@@ -769,8 +770,12 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
           if mid in msgCache:
-            verbatim msgCache[mid]
+            if msg =? msgCache[mid]:
+              verbatim msg
+            else:
+              text "Loading ..."
           else:
+            (getMsg mid)
             text "Loading ..."
 
       tdiv(class = "card-footer d-flex justify-content-center"):

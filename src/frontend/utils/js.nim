@@ -11,6 +11,8 @@ proc parseJs*(s: cstring): JsObject {.importjs: "JSON.parse(@)".}
 proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
 func newJsArray*(): JsObject {.importjs: "[@]".}
 func add*(a, b: JsObject) {.importjs: "#.push(#)".}
+func toCstring*(a: SomeNumber): cstring {.importjs: "#.toString(@)".}
+
 
 func newJsSet*(): JsSet {.importjs: "new Set(@)".}
 func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}

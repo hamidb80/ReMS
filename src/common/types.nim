@@ -7,16 +7,14 @@ when defined js:
   type
     Str* = cstring
     JsO* = JsObject
-    # JsTable* = distinct JsObject
     CTable*[S: Str, T] = JsAssoc[S, T]
-    # CSet*[S: Str] = distinct JsObject
 else:
   import std/json
   type
     Str* = string
     JsO* = JsonNode
     CTable*[A, B] = Table[A, B]
-    # CSet*[T] = HashSet[T]
+
 
 type
   Id* = int64
