@@ -323,7 +323,7 @@ func whichRegion(θ: Degree; a: Area): Region =
   elif θ <= Degree(360.0) - λ: 4
   else: 1
 
-proc updateEdge(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
+proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   let
     d = c2 - c1
     θ = arctan d
@@ -355,7 +355,7 @@ proc updateEdgeTheme(e: Edge; t: ColorTheme) =
     fill = $t.bg
 
 proc newEdge(c: EdgeConfig): Edge =
-  let k = EdgeKonvaNodes(
+  var k = EdgeKonvaNodes(
     wrapper: newGroup(),
     shape: newCircle(),
     line: newLine())
@@ -379,6 +379,14 @@ proc newEdge(c: EdgeConfig): Edge =
 
   Edge(config: c, konva: k)
 
+proc addEdgeClick(e: Edge) = 
+  with e.konva.shape:
+    off "click"
+    on "click", proc =
+      unselect()
+      app.selectedEdge = some e
+      redraw()
+
 proc cloneEdge(e: Edge): Edge =
   result = Edge(
     config: e.config,
@@ -391,12 +399,7 @@ proc cloneEdge(e: Edge): Edge =
     add result.konva.line
     add result.konva.shape
 
-  with result.konva.shape:
-    off "click"
-    on "click", proc =
-      unselect()
-      app.selectedEdge = some result
-      redraw()
+  addEdgeClick result
 
 proc redrawConnectionsTo(uid: Oid) =
   for id in app.edges.getOrDefault(uid):
@@ -406,7 +409,7 @@ proc redrawConnectionsTo(uid: Oid) =
       n1 = app.objects[id]
       n2 = app.objects[uid]
 
-    updateEdge ei, n1.area, n1.center, n2.area, n2.center
+    updateEdgePos ei, n1.area, n1.center, n2.area, n2.center
 
 proc setText(v: VisualNode; t: cstring) =
   assert v.config.data.kind == vndkText
@@ -618,7 +621,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
             # TODO make a function
             highlight sv
             show app.tempEdge.konva.wrapper
-            updateEdge app.tempEdge, w.area, w.center, w.area, w.center
+            updateEdgePos app.tempEdge, w.area, w.center, w.area, w.center
             updateEdgeTheme app.tempEdge, getFocusedTheme()
             updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
             app.boardState = bsMakeConnection
@@ -720,13 +723,19 @@ proc restore(app: var AppData; data: BoardData) =
     app.mainGroup.getLayer.add vn.konva.wrapper
 
   for info in data.edges:
-    let conn = info.points[cpkHead]..info.points[cpkTail]
-    app.edges.addConn conn
-    app.edgeInfo[conn] = newEdge info.config
+    let
+      conn = info.points[cpkHead]..info.points[cpkTail]
+      n1 = app.objects[conn.a]
+      n2 = app.objects[conn.b]
+      e = newEdge info.config
 
-  echo toseq keys app.objects
-  echo app.edges 
-  echo toseq keys app.edgeInfo
+    app.edges.addConn conn
+    app.edgeInfo[conn] = e
+    app.bottomGroup.add e.konva.wrapper
+    updateEdgeWidth e, info.config.width
+    updateEdgeTheme e, info.config.theme
+    updateEdgePos e, n1.area, n1.center, n2.area, n2.center
+    addEdgeClick e
 
 proc fetchBoard(id: Id) =
   get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
@@ -1144,10 +1153,10 @@ proc init* =
 
             if ?v:
               let n2 = !v
-              updateEdge app.tempEdge, n1.area, n1.center, n2.area, n2.center
+              updateEdgePos app.tempEdge, n1.area, n1.center, n2.area, n2.center
             else:
               let t = newPoint currentMousePos
-              updateEdge app.tempEdge, n1.area, n1.center, t.area, t.position
+              updateEdgePos app.tempEdge, n1.area, n1.center, t.area, t.position
 
 
           app.lastAbsoluteMousePos = currentMousePos
