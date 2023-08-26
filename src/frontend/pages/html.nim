@@ -56,9 +56,7 @@ proc extCss(url: string): VNode =
   buildHtml extLink("stylesheet", url)
 
 proc extJs(url: string, defered: bool = false): VNode =
-  result = buildHtml script(src = localize url)
-  if defered:
-    result.setAttr "defer"
+  result = buildHtml script(src = localize url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
   buildHtml head:

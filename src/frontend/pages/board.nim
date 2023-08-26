@@ -716,10 +716,10 @@ proc createNode =
   app.sidebarState = ssPropertiesView
   redraw()
 
-proc newPoint(pos: Vector): Circle =
+proc newPoint(pos: Vector, r = 1.0): Circle =
   result = newCircle()
   with result:
-    radius = 1
+    radius = r
     position = pos
 
 # ----- UI
@@ -1226,7 +1226,7 @@ proc init* =
         unselect()
         redraw()
 
-      addHotkey "n", createNode # TODO make a t
+      addHotkey "n", createNode
 
       addHotkey "c", proc = # go to 0,0
         let s = ||app.stage.scale
@@ -1258,7 +1258,7 @@ proc init* =
         downloadUrl "screenshot.png", app.stage.toDataUrl(1)
 
 
-    app.id = parseInt getWindowQueryParam("id")
+    app.id = parseInt getWindowQueryParam "id"
     fetchBoard app.id
 
 when isMainModule: init()
