@@ -16,3 +16,9 @@ proc npop*(s: var seq) =
 
 proc negate*(b: var bool) =
   b = not b
+
+template str*(smth): untyped =
+  $smth
+
+template first*(smth): untyped =
+  smth[0]

@@ -109,12 +109,44 @@ func extractQueryParams*(url: string): StringTableRef =
   for (k, v) in decodeQuery p:
     result[k] = v
 
-macro addQueryParams*(procdef): untyped =
-  let
-    req = procdef.params[1][IdentDefName]
-    q = ident "q"
-    def = quote:
-      let `q` = extractQueryParams(`req`.uri)
+func defQueryVar(procdef, q: NimNode): NimNode =
+  let req = procdef.params[1][IdentDefName]
+  quote:
+    let `q` = extractQueryParams(`req`.uri)
 
-  procdef.body.insert 0, def
+proc addQueryParamsImpl(procDef, mandatoryArgs: NimNode): NimNode =
+  let q = ident "q"
+  var acc = newStmtList()
+  acc.add defQueryVar(procdef, q)
+
+  for a in mandatoryArgs:
+    let
+      varIdent = a[0]
+      varKey = newLit a[0].strVal
+      varType = a[1]
+    acc.add quote do:
+      let `varIdent` = parse(`varType`, `q`[`varKey`])
+
+  procdef.body.insert 0, acc
   procdef
+
+macro addQueryParams*(mandatoryArgs, procdef): untyped =
+  debugEcho treeRepr mandatoryArgs
+  addQueryParamsImpl procdef, mandatoryArgs
+
+macro addQueryParams*(procdef): untyped =
+  addQueryParamsImpl procdef, newStmtList()
+
+
+template respJson*(body): untyped {.dirty.} =
+  req.respond 200, @{"Content-Type": "application/json"}, body
+
+template respOk*: untyped {.dirty.} =
+  req.respond 200
+
+
+template parse*(t: typedesc[int], s: string): int =
+  parseInt s
+  
+template parse*(t: typedesc[string], s: string): string =
+  s
