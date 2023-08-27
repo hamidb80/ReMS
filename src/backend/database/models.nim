@@ -57,7 +57,7 @@ type
     owner* {.references: User.id.}: Id
     title*: string
     description*: string
-    screenshot* {.references: Asset.id.}: Option[Id]
+    screenshot* {.references: Asset.id.}: COption[Id]
     data*: BoardData
     timestamp*: UnixTime
 

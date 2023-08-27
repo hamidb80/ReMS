@@ -153,7 +153,7 @@ when defined js:
   func initCTable*[K: cstring, V](): CTable[K, V] =
     newJsAssoc[K, V]()
 
-  func some*[T](j: T): COption[T] =
+  func somec*[T](j: T): COption[T] =
     cast[JsObject](j)
 
   func issome*[T](j: COption[T]): bool =
@@ -163,5 +163,5 @@ when defined js:
     assert issome j
     cast[T](j)
 
-  func none*[T](j: typedesc[T]): COption[T] =
+  func nonec*[T](j: typedesc[T]): COption[T] =
     COption[T](nil)

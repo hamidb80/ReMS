@@ -7,6 +7,7 @@ import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
 import ../utils/[ui, browser, js]
 import ../../common/[conventions, datastructures, types]
+import ../../common/types
 import ../../backend/[routes]
 import ../../backend/database/[models]
 
