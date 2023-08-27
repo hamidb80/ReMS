@@ -337,6 +337,9 @@ proc `wrap`*(t: KonvaObject): Str {.konva.}
 proc `padding=`*[N: Number](t: KonvaObject, v: N) {.konva.}
 proc `padding`*(t: KonvaObject): float {.konva.}
 
+proc `src=`*(t: KonvaObject, v: Str) {.importjs: "#.src = #".}
+proc `src`*(t: KonvaObject): Str {.importjs: "#.src".}
+
 proc `rotation=`*[N: Number](t: KonvaObject, v: N) {.konva.}
 proc `rotation`*(t: KonvaObject): float {.konva.}
 proc `levels=`*(t: KonvaObject, v: float) {.konva.}

@@ -443,8 +443,6 @@ proc scaleImage(v: VisualNode; scale: float) =
 
     wrapper = v.konva.wrapper
 
-  qi"scale-range".value = "1"
-
   with v.konva.img:
     width = w′
     height = h′
@@ -460,37 +458,40 @@ proc scaleImage(v: VisualNode; scale: float) =
     height = h′ + pad*2
 
   redrawConnectionsTo v.config.id
+  v.config.data.width = v.konva.img.width
+  v.config.data.height = v.konva.img.height
+  qi"scale-range".value = "1"
 
-proc loadImageGen(url: cstring; vn: VisualNode) =
+proc loadImageGen(url: cstring; vn: VisualNode; newSize: bool) =
   newImageFromUrl url:
     proc(imgNode: konva.Image) =
       let
-        wrapper = vn.konva.wrapper
+        wi = imgNode.width             # width of image
+        hi = imgNode.height            # height of image
 
-        wi = imgNode.width       # width of image
-        hi = imgNode.height      # height of image
+        fr =
+          if newSize:                  # final ratio
+            let
+              sc = ||app.stage.scale   # scale
+              ws = app.stage.width/sc  # width of screnn
+              hs = app.stage.height/sc # height of screen
 
-        sc = ||app.stage.scale   # scale
-        ws = app.stage.width/sc  # width of screnn
-        hs = app.stage.height/sc # height of screen
+              wr = min(wi, ws) / wi    # width ratio
+              hr = min(hi, hs) / hi    # height ratio
+            min(wr, hr)
+          else:
+            vn.config.data.width / wi
 
-        wr = min(wi, ws) / wi    # width ratio
-        hr = min(hi, hs) / hi    # height ratio
-        fr = min(wr, hr)         # final ratio
-
-      with imgNode: # make image not bigger than screen size
-        listening = false
-
-      vn.config.data.kind = vndkImage
       vn.konva.img.remove
       vn.konva.img = imgNode
+      imgNode.listening = false
+      vn.konva.wrapper.add imgNode
       scaleImage vn, fr
-      wrapper.add imgNode
 
 proc setImageUrl(v: VisualNode; u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
-  loadImageGen u, v
+  loadImageGen u, v, true
 
 proc setFocusedFontSize(s: int) =
   if v =? app.selectedVisualNode:
@@ -655,10 +656,9 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
   with wrapper:
     position = cfg.position
-    # id = uid
+    draggable = true
     add box
     add txt
-    draggable = true
 
     on "dragstart", proc =
       if app.state != asNormal:
@@ -674,8 +674,13 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       redrawConnectionsTo cfg.id
 
   applyTheme txt, box, vn.config.theme
-  # TODO what about image?
-  setText vn, vn.config.data.text
+
+  case vn.config.data.kind
+  of vndkText:
+    setText vn, vn.config.data.text
+  of vndkImage:
+    let u = vn.config.data.url
+    loadImageGen u, vn, false
   vn
 
 proc createNode =
@@ -702,6 +707,7 @@ proc createNode =
 
 proc toJson(app: AppData): BoardData =
   result.objects = initCTable[Str, VisualNodeConfig]()
+
   for oid, node in app.objects:
     result.objects[oid] = node.config
 
@@ -710,15 +716,9 @@ proc toJson(app: AppData): BoardData =
       points: [conn.a, conn.b],
       config: info.config)
 
-  console.log "result: ", result
-
-import std/sequtils
-
 proc restore(app: var AppData; data: BoardData) =
-  console.log data
-
-  for oid, node in data.objects:
-    let vn = createNode node
+  for oid, data in data.objects:
+    let vn = createNode data
     app.objects[oid] = vn
     app.mainGroup.getLayer.add vn.konva.wrapper
 
@@ -736,6 +736,7 @@ proc restore(app: var AppData; data: BoardData) =
     updateEdgeTheme e, info.config.theme
     updateEdgePos e, n1.area, n1.center, n2.area, n2.center
     addEdgeClick e
+  console.log app
 
 proc fetchBoard(id: Id) =
   get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
@@ -769,7 +770,7 @@ type MsgState = enum
   msQueue
   msOut
 
-proc msgState(id: Id): MsgState = 
+proc msgState(id: Id): MsgState =
   if id in msgCache:
     let m = msgCache[id]
     if issome m: msReady
@@ -784,7 +785,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
           case msgState mid
           of msReady: verbatim get msgCache[mid]
           of msQueue:
-              text "Loading ..."
+            text "Loading ..."
           of msOut:
             (getMsg mid)
             text "Loading ..."
@@ -1304,7 +1305,7 @@ proc init* =
             cfg = AxiosConfig[FormData]()
 
           discard putform(
-            put_api_board_screen_shot_url(app.id), 
+            put_api_board_screen_shot_url(app.id),
             form, cfg)
 
     app.id = parseInt getWindowQueryParam "id"
