@@ -57,7 +57,7 @@ type
     owner* {.references: User.id.}: Id
     title*: string
     description*: string
-    screenshot* {.references: Asset.id.}: Id
+    screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
     timestamp*: UnixTime
 
@@ -132,17 +132,22 @@ type
   ## that's what `int_value`, `str_value`, `value_type`
   ## is for
 
-when not defined js:
   # ----- custom types
 
-  proc parseHook*[T: enum](s: string, i: var int, v: var T) =
-    var temp: int
-    inc i, parseInt(s, temp, i)
-    v = T temp
+proc parseHook*[T: enum](s: string, i: var int, v: var T) =
+  var temp: int
+  inc i, parseInt(s, temp, i)
+  v = T temp
 
-  proc dumpHook*(s: var string, v: enum) =
-    s.add $v.int
+proc dumpHook*(s: var string, v: enum) =
+  s.add $v.int
 
+proc parseHook*(s: string, i: var int, v: var cstring) =
+  var temp: string
+  parseHook(s, i, temp)
+  v = cstring temp
+
+when not defined js:
   template defSqlJsonType(typename): untyped =
     proc sqlType*(t: typedesc[typename]): string = "TEXT"
     proc dbValue*(j: typename): DbValue = DbValue(kind: dvkString, s: toJson j)

@@ -1,4 +1,4 @@
-import std/[times, json]
+import std/[times, json, options]
 import ./models
 import ../../common/[types, datastructures]
 
@@ -14,7 +14,7 @@ type
     id*: Id
     title*: Str
     description*: Str
-    screenshot*: Id
+    screenshot*: Option[Id]
     timestamp*: UnixTime
 
 
@@ -61,7 +61,6 @@ when not defined js:
       owner: 0,
       title: "no title",
       description: "beta",
-      # screenshot: 0,
       data: BoardData(),
       timestamp: toUnixtime now())
 

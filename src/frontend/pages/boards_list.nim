@@ -1,7 +1,7 @@
 import std/[options, lenientops, strformat, httpcore, sequtils, times]
 import std/[dom, jsconsole, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom]
-import caster
+import caster, questionable, jsony
 
 import ../jslib/[axios]
 import ../utils/[browser, js, ui]
@@ -14,8 +14,7 @@ var boards: seq[BoardPreview]
 
 proc fetchBoards =
   get_api_boards_list_url().getApi.dthen proc(r: AxiosResponse) =
-    boards = cast[typeof boards](r.data)
-    console.log boards
+    boards = fromJson(str stringify r.data, typeof boards)
     redraw()
 
 proc reqNewBoard =
@@ -23,12 +22,16 @@ proc reqNewBoard =
     let id = cast[Id](r.data)
     redirect get_board_url id
 
+proc deleteBoard(id: Id) =
+  discard deleteApi delete_api_board_url id
+
 # ----- UI
 proc boardPreviewC(b: BoardPreview): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
-      tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
-        img(src = get_asset_short_hand_url(b.screenshot))
+      if asset_id =? b.screenshot:
+        tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
+          img(src = get_asset_short_hand_url asset_id)
 
       tdiv(class = "card-body"):
         h3:
@@ -43,10 +46,12 @@ proc boardPreviewC(b: BoardPreview): VNode =
             href = get_board_url(b.id)):
           icon "fa-pen"
 
-        button(class = "btn mx-1 btn-compact btn-outline-danger"):
+        a(class = "btn mx-1 btn-compact btn-outline-danger"):
           icon "fa-close"
 
-
+          proc onclick(e: Event, v: Vnode) =
+            deleteBoard b.id
+            redirect ""
 
 proc createDom: Vnode =
   echo "just redrawn"

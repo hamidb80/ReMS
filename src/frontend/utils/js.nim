@@ -1,4 +1,4 @@
-import std/[macros]
+import std/[macros, options]
 import std/[jsffi, asyncjs]
 
 type

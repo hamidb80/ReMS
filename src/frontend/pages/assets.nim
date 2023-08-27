@@ -166,7 +166,7 @@ func tagSearch(name, color: string,
           icon("fa-xmark")
 
 # TODO add "order by"
-# TODO toast & snackbar for alerts & notifications
+# TODO toast & snackbar for alerts & notifications & over shadow box (the box that his behind is dark)
 proc createDom: Vnode =
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
