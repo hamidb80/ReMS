@@ -40,7 +40,9 @@ task prepare, "creates the directory ./dist used for final output":
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
+  exec "nimble genbs"
   exec "nimble genas"
+  exec "nimble gennl"
   exec "nimble gened"
   exec "nimble gentg"
 
