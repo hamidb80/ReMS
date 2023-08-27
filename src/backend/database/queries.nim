@@ -14,7 +14,7 @@ type
     id*: Id
     title*: Str
     description*: Str
-    screenshot*: Option[Id]
+    screenshot*: COption[Id]
     timestamp*: UnixTime
 
 

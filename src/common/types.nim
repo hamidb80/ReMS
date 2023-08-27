@@ -1,19 +1,21 @@
-import std/[times, tables, math, strutils]
+import std/[times, tables, math, strutils, options]
 
 
 when defined js:
   import std/jsffi
-
   type
     Str* = cstring
     JsO* = JsObject
     CTable*[S: Str, T] = JsAssoc[S, T]
+    COption*[T] = distinct JsObject
+
 else:
   import std/json
   type
     Str* = string
     JsO* = JsonNode
     CTable*[A, B] = Table[A, B]
+    COption*[T] = Option[T]
 
 
 type
@@ -150,3 +152,16 @@ when defined js:
 
   func initCTable*[K: cstring, V](): CTable[K, V] =
     newJsAssoc[K, V]()
+
+  func some*[T](j: T): COption[T] =
+    cast[JsObject](j)
+
+  func issome*[T](j: COption[T]): bool =
+    cast[JsObject](j) != nil
+
+  func get*[T](j: COption[T]): T = 
+    assert issome j
+    cast[T](j)
+
+  func none*[T](j: typedesc[T]): COption[T] =
+    COption[T](nil)

@@ -1,7 +1,7 @@
 import std/[options, lenientops, strformat, httpcore, sequtils, times]
 import std/[dom, jsconsole, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom]
-import caster, questionable, jsony
+import caster, questionable
 
 import ../jslib/[axios]
 import ../utils/[browser, js, ui]
@@ -14,7 +14,7 @@ var boards: seq[BoardPreview]
 
 proc fetchBoards =
   get_api_boards_list_url().getApi.dthen proc(r: AxiosResponse) =
-    boards = fromJson(str stringify r.data, typeof boards)
+    boards = cast[seq[BoardPreview]](r.data)
     redraw()
 
 proc reqNewBoard =
@@ -29,9 +29,9 @@ proc deleteBoard(id: Id) =
 proc boardPreviewC(b: BoardPreview): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
-      if asset_id =? b.screenshot:
+      if issome b.screenshot:
         tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
-          img(src = get_asset_short_hand_url asset_id)
+          img(src = get_asset_short_hand_url b.screenshot.get)
 
       tdiv(class = "card-body"):
         h3:
