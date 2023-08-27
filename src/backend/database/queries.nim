@@ -14,6 +14,7 @@ type
     id*: Id
     title*: Str
     description*: Str
+    screenshot*: Id
     timestamp*: UnixTime
 
 
@@ -67,11 +68,14 @@ when not defined js:
   proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
     db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
 
+  proc setScreenShot*(db: DbConn, boardId, assetId: Id) =
+    db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
+
   proc getBoard*(db: DbConn, id: Id): Board =
     db.find R, sql"SELECT * FROM Board WHERE id = ?", id
 
   proc listBoards*(db: DbConn): seq[BoardPreview] =
-    db.find R, sql"SELECT id, title, description, timestamp FROM Board ORDER by id DESC"
+    db.find R, sql"SELECT id, title, description, screenshot, timestamp FROM Board ORDER by id DESC"
 
   proc deleteBoard*(db: DbConn, id: Id) =
     db.exec sql"DELETE FROM Board WHERE id = ?", id

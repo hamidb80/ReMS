@@ -1,5 +1,5 @@
 import std/[with, math, options, lenientops, strformat, sets, tables]
-import std/[dom, jsconsole, jsffi, asyncjs, sugar]
+import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
@@ -764,17 +764,28 @@ proc getMsg(id: Id) =
     msgCache[id] = some msg
     redraw()
 
+type MsgState = enum
+  msReady
+  msQueue
+  msOut
+
+proc msgState(id: Id): MsgState = 
+  if id in msgCache:
+    let m = msgCache[id]
+    if issome m: msReady
+    else: msQueue
+  else: msOut
+
 proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
   buildHTML:
     tdiv(class = "card mb-4"):
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
-          if mid in msgCache:
-            if msg =? msgCache[mid]:
-              verbatim msg
-            else:
+          case msgState mid
+          of msReady: verbatim get msgCache[mid]
+          of msQueue:
               text "Loading ..."
-          else:
+          of msOut:
             (getMsg mid)
             text "Loading ..."
 
@@ -1287,8 +1298,14 @@ proc init* =
         redraw()
 
       addHotkey "p", proc = # scrennshot
-        downloadUrl "screenshot.png", app.stage.toDataUrl(1)
+        app.stage.toBlob(1/2).dthen proc(b: Blob) =
+          var
+            form = toForm("ss.png", b)
+            cfg = AxiosConfig[FormData]()
 
+          discard putform(
+            put_api_board_screen_shot_url(app.id), 
+            form, cfg)
 
     app.id = parseInt getWindowQueryParam "id"
     fetchBoard app.id

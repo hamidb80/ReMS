@@ -29,7 +29,7 @@ dispatch router, ../views:
   get "/a", assetShorthand {.redirect.}
   get "/api/assets/list/", listAssets {.json.}
   delete "/api/asset/"?(id: Id), deleteAsset {.json.}
-  
+
   get "/notes/", loadDist"notes_list.html" {.html.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
   get "/api/notes/list/", notesList {.json: seq[Note].}
@@ -44,7 +44,7 @@ dispatch router, ../views:
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
   post "/api/boards/new/", newBoard {.Id.}
   put "/api/board/update/"?(id: Id), updateBoard {.ok.}
-  put "/api/board/screen-shot/"?(id: Id), updateBoardScreenShot {.ok.} # TODO
+  put "/api/board/screen-shot/"?(id: Id), updateBoardScreenShot {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
@@ -52,7 +52,7 @@ dispatch router, ../views:
   # put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   # get "/api/tags/list/", listTags {.json: seq[].}
   # delete "/api/tag/"?(id: Id), deleteTag {.ok.}
-  
+
 
 func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id

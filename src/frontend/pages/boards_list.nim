@@ -27,7 +27,10 @@ proc reqNewBoard =
 proc boardPreviewC(b: BoardPreview): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
-      tdiv(class = "card-body"): 
+      tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
+        img(src = get_asset_short_hand_url(b.screenshot))
+
+      tdiv(class = "card-body"):
         h3:
           text b.title
 

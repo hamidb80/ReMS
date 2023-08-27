@@ -1,4 +1,4 @@
-import std/[macros, uri, strutils, sequtils, strtabs]
+import std/[macros, uri, strutils, sequtils, tables]
 import macroplus
 
 
@@ -96,9 +96,7 @@ macro dispatch*(router, viewModule, body): untyped =
       `rout`
 
 
-func extractQueryParams*(url: string): StringTableRef =
-  result = newStringTable(modeStyleInsensitive)
-
+func extractQueryParams*(url: string): Table[string, string] =
   let
     qi = url.rfind('?')
     p =
@@ -141,6 +139,9 @@ template respJson*(body): untyped {.dirty.} =
 
 template respOk*: untyped {.dirty.} =
   req.respond 200
+
+template respFile*(mime, content): untyped {.dirty.} =
+  req.respond 200, @{"Content-Type": mime}, content
 
 template redirect*(loc): untyped {.dirty.} =
   req.respond(302, @{"Location": loc})

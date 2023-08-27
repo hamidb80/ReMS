@@ -1,4 +1,4 @@
-import std/[strformat, strtabs, strutils, os, oids, json]
+import std/[strformat, tables, strutils, os, oids, json]
 
 import mummy, mummy/multipart
 import jsony
@@ -45,13 +45,13 @@ proc errorHandler*(req: Request, e: ref Exception) =
 proc staticFileHandler*(req: Request) {.addQueryParams.} =
   if "file" in q:
     let
-      fname = q["fil2e"]
+      fname = q["file"]
       ext = getExt fname
       mime = getMimeType ext
       fpath = projectHome / "dist" / fname
 
     if fileExists fpath:
-      req.respond(200, @{"Content-Type": mime}, readFile fpath)
+      respFile mime, readFile fpath
 
     else: resp 404
   else: resp 404
@@ -62,29 +62,29 @@ proc loadDist*(path: string): RequestHandler =
     mime = getMimeType getExt p
 
   proc(req: Request) =
-    req.respond(200, @{"Content-Type": mime}, readfile p)
-
+    respFile mime, readfile p
 
 # ------- Dynamic ones
 
-proc assetsUpload*(req: Request) =
-  let multipartEntries = req.decodeMultipart()
+proc saveAsset(req: Request): Id = 
+  let multip = req.decodeMultipart()
 
-  for entry in multipartEntries:
+  for entry in multip:
     if entry.data.isSome:
       let
         (start, last) = entry.data.get
-        oid = genOid()
         fname = entry.filename.get
         ext = getExt fname
+        oid = genOid()
         storePath = fmt"./resources/{oid}.{ext}"
 
       writeFile storePath, req.body[start..last]
-      let id = !!<db.addAsset(fname, storePath.Path, Bytes last-start+1)
-      respJson str id
-      return
+      return !!<db.addAsset(fname, storePath.Path, Bytes last-start+1)
+    
+  raise newException(ValueError, "no files found")
 
-  respErr "no"
+proc assetsUpload*(req: Request) =
+  respJson str saveAsset req
 
 proc assetShorthand*(req: Request) =
   let qi = req.uri.find('?')
@@ -101,7 +101,7 @@ proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
     mime = p.mimetype
     content = readfile p.string
 
-  req.respond(200, @{"Content-Type": mime}, content)
+  respFile mime, content
 
 proc listAssets*(req: Request) =
   !!respJson toJson db.listAssets()
@@ -139,7 +139,8 @@ proc updateBoard*(req: Request) {.addQueryParams: {id: int}.} =
   resp OK
 
 proc updateBoardScreenShot*(req: Request) {.addQueryParams: {id: int}.} =
-  discard
+  !!db.setScreenShot(id, saveAsset req)
+  resp OK
 
 proc getBoard*(req: Request) {.addQueryParams: {id: int}.} =
   !!respJson toJson db.getBoard(id)

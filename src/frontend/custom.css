@@ -116,6 +116,10 @@
   width: 8rem !important;
 }
 
+.card-img img{
+  height: 20vh;
+}
+
 .solid-border {
   border-style: solid;
   border-width: 1px;

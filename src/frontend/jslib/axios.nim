@@ -36,16 +36,28 @@ proc axios*(
 ): Future[AxiosResponse] =
   axios $`method`, url, config
 
+proc requestFrom(
+  methodd, url: cstring,
+  form: FormData,
+  cfg: AxiosConfig): Future[AxiosResponse] {.importjs: """
+  axios[#](#, #, {
+    ...#,
+    method: "post",
+    headers: {'Content-Type': 'multipart/form-data'}
+  })
+""".}
+
 proc postForm*(
   url: cstring,
   form: FormData,
-  cfg: AxiosConfig): Future[AxiosResponse] {.importjs: """
-  axios.post(#, #, {...#,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-  })
-""".}
+  cfg: AxiosConfig): Future[AxiosResponse] = 
+  requestFrom "post", url, form, cfg
+
+proc putForm*(
+  url: cstring,
+  form: FormData,
+  cfg: AxiosConfig): Future[AxiosResponse] = 
+  requestFrom "put", url, form, cfg
 
 proc getApi*(url: cstring): Future[AxiosResponse] 
   {.importjs: "axios.get(@)".}

@@ -19,6 +19,3 @@ proc negate*(b: var bool) =
 
 template str*(smth): untyped =
   $smth
-
-template first*(smth): untyped =
-  smth[0]

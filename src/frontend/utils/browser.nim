@@ -121,6 +121,10 @@ let nonPassive* = AddEventListenerOptions(passive: false)
 func add*(self: FormData; name: cstring;
     value: Blob) {.importjs: "#.append(#, #)".}
 
+func toForm*(name: cstring; file: Blob): FormData =
+  result = newFormData()
+  result.add name, file
+
 
 proc qi*(id: string): Element =
   document.getElementById id

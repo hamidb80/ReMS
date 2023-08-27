@@ -1,5 +1,5 @@
 import std/[macros, strformat]
-import std/[jsffi, dom]
+import std/[jsffi, dom, asyncjs]
 import prettyvec
 
 
@@ -420,13 +420,14 @@ proc clone*(k: KonvaObject, options: JsObject = jsUndefined): KonvaObject {.konv
 
 proc toJSON*(k: KonvaObject) {.konva.}
 proc toObject*(k: KonvaObject) {.konva.}
-proc toDataURL*(wrapper: KonvaObject, ratio: int): Str
+proc toDataURL*(wrapper: KonvaObject, ratio: SomeNumber): Str
   {.importjs: "#.toDataURL({ pixelRatio: # })".}
-# TODO toImage
+proc toBlob*(wrapper: KonvaContainer, ratio: SomeNumber): Future[Blob]
+  {.importjs: "#.toBlob({ pixelRatio: #})".}
 
 # --------- Helper
 
-func `-`*(a: Vector): Vector = v(-a.x, -a.y) 
+func `-`*(a: Vector): Vector = v(-a.x, -a.y)
 func area*(k: KonvaObject): Area =
   let
     p = k.position
@@ -443,12 +444,12 @@ func topRight*(a: Area): Vector = v(a.x2, a.y1)
 func bottomLeft*(a: Area): Vector = v(a.x1, a.y2)
 func bottomRight*(a: Area): Vector = v(a.x2, a.y2)
 func center*(a: Area): Vector = v(a.x1+a.x2, a.y1+a.y2) / 2
-func `+`*(a: Area, v: Vector): Area = 
+func `+`*(a: Area, v: Vector): Area =
   Area(
-    x1:a.x1+v.x,
-    x2:a.x2+v.x,
-    y1:a.y1+v.y,
-    y2:a.y2+v.y)
+    x1: a.x1+v.x,
+    x2: a.x2+v.x,
+    y1: a.y1+v.y,
+    y2: a.y2+v.y)
 
 func center*(k: KonvaObject): Vector =
   k.position + v(k.size) / 2

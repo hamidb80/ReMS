@@ -56,11 +56,10 @@ proc fetchAssets =
     redraw()
 
 proc startUpload(u: Upload) =
-  var
-    form = newFormData()
+  var 
+    form = toForm(u.name, u.file)
     cfg = AxiosConfig[FormData]()
 
-  form.add u.name, u.file
   cfg.onUploadProgress = proc(pe: ProgressEvent) =
     u.progress = pe.loaded / pe.total * 100
     redraw()
