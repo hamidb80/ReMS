@@ -94,7 +94,6 @@ macro dispatch*(router, viewModule, body): untyped =
     when not (defined(js) or defined(frontend)):
       import `viewModule`
       `rout`
-  # debugEcho repr result
 
 
 func extractQueryParams*(url: string): StringTableRef =
@@ -131,7 +130,6 @@ proc addQueryParamsImpl(procDef, mandatoryArgs: NimNode): NimNode =
   procdef
 
 macro addQueryParams*(mandatoryArgs, procdef): untyped =
-  debugEcho treeRepr mandatoryArgs
   addQueryParamsImpl procdef, mandatoryArgs
 
 macro addQueryParams*(procdef): untyped =
@@ -144,6 +142,23 @@ template respJson*(body): untyped {.dirty.} =
 template respOk*: untyped {.dirty.} =
   req.respond 200
 
+template redirect*(loc): untyped {.dirty.} =
+  req.respond(302, @{"Location": loc})
+
+template respErr*(code, msg): untyped {.dirty.} =
+  let ct = 
+    if "api" in req.uri: "application/json"
+    else: "text/html"
+  
+  req.respond(code, @{"Content-Type": ct}, msg)
+
+template respErr*(msg): untyped {.dirty.} =
+  respErr 400, msg
+
+const OK* = 200
+
+template resp*(code): untyped {.dirty.} =
+  req.respond code
 
 template parse*(t: typedesc[int], s: string): int =
   parseInt s

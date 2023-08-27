@@ -35,13 +35,12 @@ block db_init:
 
 # ------- Static pages
 
-
 proc notFoundHandler*(req: Request) =
-  req.respond(404, @{"Content-Type": "text/html"}, "what? " & req.uri)
+  respErr 404, "what? " & req.uri
 
 proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg
-  req.respond(500, @[], e.msg)
+  respErr 500, e.msg
 
 proc staticFileHandler*(req: Request) {.addQueryParams.} =
   if "file" in q:
@@ -54,8 +53,8 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
     if fileExists fpath:
       req.respond(200, @{"Content-Type": mime}, readFile fpath)
 
-    else: req.respond(404)
-  else: req.respond(404)
+    else: resp 404
+  else: resp 404
 
 proc loadDist*(path: string): RequestHandler =
   let
@@ -82,10 +81,10 @@ proc assetsUpload*(req: Request) =
 
       writeFile storePath, req.body[start..last]
       let id = !!<db.addAsset(fname, storePath.Path, Bytes last-start+1)
-      respJson $id
+      respJson str id
       return
 
-  req.respond(400, @{"Content-Type": "text/plain"}, "no")
+  respErr "no"
 
 proc assetShorthand*(req: Request) =
   let qi = req.uri.find('?')
@@ -93,7 +92,7 @@ proc assetShorthand*(req: Request) =
     notFoundHandler req
   else:
     let assetid = req.uri[qi+1..^1]
-    req.respond(302, @{"Location": get_assets_download_url parseInt assetid})
+    redirect get_assets_download_url parseInt assetid
 
 proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
   let
@@ -105,15 +104,15 @@ proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
   req.respond(200, @{"Content-Type": mime}, content)
 
 proc listAssets*(req: Request) =
-  respJson toJson !!<db.listAssets()
+  !!respJson toJson db.listAssets()
 
 proc deleteAsset*(req: Request) {.addQueryParams: {id: int}.} =
   !!db.deleteAsset id
-  respOk
+  resp OK
 
 
 proc newNote*(req: Request) =
-  !!respJson $db.newNote()
+  !!respJson str db.newNote()
 
 proc notesList*(req: Request) =
   !!respJson toJson db.listNotes()
@@ -124,30 +123,30 @@ proc getNote*(req: Request) {.addQueryParams: {id: int}.} =
 proc updateNote*(req: Request) {.addQueryParams: {id: int}.} =
   let d = fromJson(req.body, TreeNodeRaw[JsonNode])
   !!db.updateNote(id, d)
-  respOk
+  resp OK
 
 proc deleteNote*(req: Request) {.addQueryParams: {id: int}.} =
   !!db.deleteNote id
-  respOk
+  resp OK
 
 
 proc newBoard*(req: Request) =
-  respJson str !!<db.newBoard()
+  !!respJson str db.newBoard()
 
 proc updateBoard*(req: Request) {.addQueryParams: {id: int}.} =
   let data = fromJson(req.body, BoardData)
   !!db.updateBoard(id, data)
-  respOk
+  resp OK
 
 proc updateBoardScreenShot*(req: Request) {.addQueryParams: {id: int}.} =
   discard
 
 proc getBoard*(req: Request) {.addQueryParams: {id: int}.} =
-  respJson toJson !!<db.getBoard(id)
+  !!respJson toJson db.getBoard(id)
 
 proc listBoards*(req: Request) =
-  respJson toJson !!<db.listBoards()
+  !!respJson toJson db.listBoards()
 
 proc deleteBoard*(req: Request) {.addQueryParams: {id: int}.} =
   !!db.deleteBoard id
-  respOk
+  resp OK
