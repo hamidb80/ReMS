@@ -151,3 +151,16 @@ proc listBoards*(req: Request) =
 proc deleteBoard*(req: Request) {.addQueryParams: {id: int}.} =
   !!db.deleteBoard id
   resp OK
+
+proc listTags*(req: Request) = 
+  discard
+
+proc newTag*(req: Request) = 
+  discard
+
+proc updateTag*(req: Request) = 
+  discard
+
+proc deleteTag*(req: Request) = 
+  discard
+

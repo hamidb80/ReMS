@@ -48,11 +48,13 @@ dispatch router, ../views:
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
-  # post "/api/tag/new/", newTag {.Id.}
-  # put "/api/tag/update/"?(id: Id), updateTag {.ok.}
-  # get "/api/tags/list/", listTags {.json: seq[].}
-  # delete "/api/tag/"?(id: Id), deleteTag {.ok.}
+  get "/api/tags/list/", listTags {.json: seq[].}
+  post "/api/tag/new/", newTag {.Id.}
+  put "/api/tag/update/"?(id: Id), updateTag {.ok.}
+  delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
+  # Pages are just views for notes with predefined criteria
+  # get "/page/"?(user: Id, page: string), loadDist"editor.html" {.html.}
 
 func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id

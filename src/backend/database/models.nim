@@ -39,27 +39,27 @@ type
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
+    # owner* {.references: User.id.}: Id
     name*: string
     size*: Bytes
     path*: Path
-    timestamp*: UnixTime
+    # timestamp*: UnixTime
     # sha256*: string
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
+    # owner* {.references: User.id.}: Id
     data*: TreeNodeRaw[JsO]
-    timestamp*: UnixTime
+    # timestamp*: UnixTime
 
   Board* = object
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
+    # owner* {.references: User.id.}: Id
     title*: string
     description*: string
     screenshot* {.references: Asset.id.}: COption[Id]
     data*: BoardData
-    timestamp*: UnixTime
+    # timestamp*: UnixTime
 
   TagValueType = enum
     tvtNone
@@ -73,11 +73,13 @@ type
     tcSystem ## created by system
 
   TagLabel* = enum
-    tlOrdinary  ## can be removed :: if it's not ordinary then its special
+    tlOrdinary        ## can be removed :: if it's not ordinary then its special
 
     # -- Redundant Tags
-    tlTimestamp ## creation time
-    tlSize      ## byte size
+    tlOwner           ## owner
+    tlTimestamp       ## creation time
+    tlSize            ## size in bytes
+    tlBoardScreenShot ## Screenshots that are taken from boards
 
     # -- Remembering System
     tlRememberIn

@@ -117,13 +117,9 @@ proc tag(
 
 proc checkbox(checked: bool, changeHandler: proc(b: bool)): VNode =
   result = buildHtml:
-    input(class = "form-check-input", `type` = "checkbox"):
+    input(class = "form-check-input", `type` = "checkbox", checked = checked):
       proc oninput(e: Event, v: Vnode) =
         changeHandler e.target.checked
-
-  if checked:
-    result.setAttr "checked"
-
 
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:

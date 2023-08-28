@@ -78,3 +78,16 @@ when not defined js:
 
   proc deleteBoard*(db: DbConn, id: Id) =
     db.exec sql"DELETE FROM Board WHERE id = ?", id
+
+
+  proc newTag*(db: DbConn): Id = 
+    discard
+
+  proc updateTag*(db: DbConn) =
+    discard
+  
+  proc deleteTag*(db: DbConn) = 
+    discard
+  
+  proc listTags*(db: DbConn): seq[Tag] =
+    discard
