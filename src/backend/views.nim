@@ -66,7 +66,7 @@ proc loadDist*(path: string): RequestHandler =
 
 # ------- Dynamic ones
 
-proc saveAsset(req: Request): Id = 
+proc saveAsset(req: Request): Id =
   let multip = req.decodeMultipart()
 
   for entry in multip:
@@ -80,7 +80,7 @@ proc saveAsset(req: Request): Id =
 
       writeFile storePath, req.body[start..last]
       return !!<db.addAsset(fname, storePath.Path, Bytes last-start+1)
-    
+
   raise newException(ValueError, "no files found")
 
 proc assetsUpload*(req: Request) =
@@ -152,15 +152,19 @@ proc deleteBoard*(req: Request) {.addQueryParams: {id: int}.} =
   !!db.deleteBoard id
   resp OK
 
-proc listTags*(req: Request) = 
-  discard
 
-proc newTag*(req: Request) = 
-  discard
+proc newTag*(req: Request) =
+  let t = fromJson(req.body, TagUserCreate)
+  !!respJson toJson db.newTag(t)
 
-proc updateTag*(req: Request) = 
-  discard
+proc updateTag*(req: Request)  {.addQueryParams: {id: int}.} = =
+  let t = fromJson(req.body, TagUserCreate)
+  !!db.updateTag(id, t)
+  resp OK
 
-proc deleteTag*(req: Request) = 
-  discard
+proc deleteTag*(req: Request) {.addQueryParams: {id: int}.} =
+  !!db.deleteTag id
+  resp OK
 
+proc listTags*(req: Request) =
+  !!respJson toJson db.listTags

@@ -7,7 +7,7 @@ import ../jslib/[axios]
 import ../utils/[browser, js, ui]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
-import ../../backend/database/[models, queries]
+import ../../backend/database/[models]
 
 
 var boards: seq[BoardPreview]

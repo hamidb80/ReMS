@@ -7,7 +7,7 @@ import ../jslib/[hotkeys, axios]
 import ../utils/[browser, ui, js]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
-import ../../backend/database/[queries]
+import ../../backend/database/[models]
 
 type
   Percent = range[0.0 .. 100.0]

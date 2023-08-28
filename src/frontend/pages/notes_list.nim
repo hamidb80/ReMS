@@ -7,7 +7,7 @@ import ../jslib/[hotkeys, axios]
 import ../utils/[browser, js, ui]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
-import ../../backend/database/[models, queries]
+import ../../backend/database/[models]
 import ./editor/[core, components]
 
 
@@ -32,9 +32,9 @@ proc notePreviewC(np: Note): VNode =
       tdiv(class = "card-body"):
         verbatim deserizalize(compTable, np.data).innerHtml
       tdiv(class = "card-footer d-flex justify-content-center"):
-        tdiv(class = "btn mx-1 btn-compact btn-outline-primary"): 
+        tdiv(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-copy"
-          proc onclick = 
+          proc onclick =
             copyToClipboard $np.id
 
         a(class = "btn mx-1 btn-compact btn-outline-dark",

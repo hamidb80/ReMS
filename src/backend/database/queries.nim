@@ -1,93 +1,83 @@
 import std/[times, json, options]
 import ./models
 import ../../common/[types, datastructures]
-
-type
-  AssetUser* = object
-    id*: Id
-    owner*: Id
-    name*: Str
-    size*: Bytes
-    timestamp*: UnixTime
-
-  BoardPreview* = object
-    id*: Id
-    title*: Str
-    description*: Str
-    screenshot*: COption[Id]
-    timestamp*: UnixTime
+import ponairi
 
 
-when not defined js:
-  import ponairi
-
-  template R: untyped {.dirty.} =
-    typeof result
+template R: untyped {.dirty.} =
+  typeof result
 
 
-  proc listAssets*(db: DbConn): seq[AssetUser] =
-    db.find R, sql"SELECT id, owner, name, size, timestamp FROM Asset ORDER BY id DESC"
+proc listAssets*(db: DbConn): seq[AssetUser] =
+  db.find R, sql"SELECT id, owner, name, size FROM Asset ORDER BY id DESC"
 
-  proc addAsset*(db: DbConn, n: string, p: Path, s: Bytes): int64 =
-    db.insertID Asset(name: n, path: p, size: s, timestamp: toUnixtime now())
+proc addAsset*(db: DbConn, n: string, p: Path, s: Bytes): int64 =
+  db.insertID Asset(
+      name: n,
+      path: p,
+      size: s)
 
-  proc findAsset*(db: DbConn, id: Id): Asset =
-    db.find R, sql"SELECT * FROM Asset WHERE id=?", id
+proc findAsset*(db: DbConn, id: Id): Asset =
+  db.find R, sql"SELECT * FROM Asset WHERE id=?", id
 
-  proc deleteAsset*(db: DbConn, id: Id) =
-    db.exec sql"DELETE FROM Asset WHERE id = ?", id
-
-
-  proc listNotes*(db: DbConn): seq[Note] =
-    db.find R, sql"SELECT id, owner, data, timestamp FROM Note ORDER BY id DESC"
-
-  proc getNote*(db: DbConn, id: Id): Note =
-    db.find R, sql"SELECT id, owner, data, timestamp FROM Note WHERE id = ?", id
-
-  proc newNote*(db: DbConn): Id =
-    db.insertID Note(
-        data: newNoteData(),
-        timestamp: toUnixtime now())
-
-  proc updateNote*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
-    db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
-
-  proc deleteNote*(db: DbConn, id: Id) =
-    db.exec sql"DELETE FROM Note WHERE id = ?", id
+proc deleteAsset*(db: DbConn, id: Id) =
+  db.exec sql"DELETE FROM Asset WHERE id = ?", id
 
 
-  proc newBoard*(db: DbConn): Id =
-    db.insertID Board(
-      owner: 0,
-      title: "no title",
-      description: "beta",
-      data: BoardData(),
-      timestamp: toUnixtime now())
+proc listNotes*(db: DbConn): seq[Note] =
+  db.find R, sql"SELECT id, owner, data FROM Note ORDER BY id DESC"
 
-  proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
-    db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
+proc getNote*(db: DbConn, id: Id): Note =
+  db.find R, sql"SELECT id, owner, data FROM Note WHERE id = ?", id
 
-  proc setScreenShot*(db: DbConn, boardId, assetId: Id) =
-    db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
+proc newNote*(db: DbConn): Id =
+  db.insertID Note(
+      data: newNoteData())
 
-  proc getBoard*(db: DbConn, id: Id): Board =
-    db.find R, sql"SELECT * FROM Board WHERE id = ?", id
+proc updateNote*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
+  db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
 
-  proc listBoards*(db: DbConn): seq[BoardPreview] =
-    db.find R, sql"SELECT id, title, description, screenshot, timestamp FROM Board ORDER by id DESC"
-
-  proc deleteBoard*(db: DbConn, id: Id) =
-    db.exec sql"DELETE FROM Board WHERE id = ?", id
+proc deleteNote*(db: DbConn, id: Id) =
+  db.exec sql"DELETE FROM Note WHERE id = ?", id
 
 
-  proc newTag*(db: DbConn): Id = 
-    discard
+proc newBoard*(db: DbConn): Id =
+  db.insertID Board(
+    title: "no title",
+    description: "beta",
+    data: BoardData())
 
-  proc updateTag*(db: DbConn) =
-    discard
-  
-  proc deleteTag*(db: DbConn) = 
-    discard
-  
-  proc listTags*(db: DbConn): seq[Tag] =
-    discard
+proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
+  db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
+
+proc setScreenShot*(db: DbConn, boardId, assetId: Id) =
+  db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
+
+proc getBoard*(db: DbConn, id: Id): Board =
+  db.find R, sql"SELECT * FROM Board WHERE id = ?", id
+
+proc listBoards*(db: DbConn): seq[BoardPreview] =
+  db.find R, sql"SELECT id, title, description, screenshot FROM Board ORDER by id DESC"
+
+proc deleteBoard*(db: DbConn, id: Id) =
+  db.exec sql"DELETE FROM Board WHERE id = ?", id
+
+
+proc newTag*(db: DbConn): Id =
+  db.insertID Tag(
+    owner: 0,
+    creator: tcUser,
+    label: tlOrdinary,
+    can_repeated: false,
+    name: "name",
+    value_type: tvtNone)
+
+proc updateTag*(db: DbConn) =
+  discard
+
+proc deleteTag*(db: DbConn, id: Id) =
+  db.exec sql"DELETE FROM Tag WHERE id = ?", id
+
+proc listTags*(db: DbConn): seq[Tag] =
+  db.find R, sql"SELECT * FROM Tag ORDER by id DESC"
+

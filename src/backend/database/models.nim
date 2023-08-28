@@ -6,7 +6,7 @@ when defined js: import ponairi/pragmas
 else: import ponairi
 
 
-type
+type # database models
   UserRole* = enum
     urUser
     urAdmin
@@ -61,7 +61,7 @@ type
     data*: BoardData
     # timestamp*: UnixTime
 
-  TagValueType = enum
+  TagValueType* = enum
     tvtNone
     tvtInt
     tvtStr
@@ -92,8 +92,8 @@ type
     label*: TagLabel
     can_repeated*: bool
     name*: string
+    icon*: string
     value_type*: TagValueType
-    timestamp*: UnixTime
 
   RelationState* = enum
     rsFresh
@@ -134,7 +134,30 @@ type
   ## that's what `int_value`, `str_value`, `value_type`
   ## is for
 
+type # view models
+  AssetUser* = object
+    id*: Id
+    owner*: Id
+    name*: Str
+    size*: Bytes
+    timestamp*: UnixTime
+
+  BoardPreview* = object
+    id*: Id
+    title*: Str
+    description*: Str
+    screenshot*: COption[Id]
+    timestamp*: UnixTime
+
+  TagUserCreate* = object
+    can_repeated*: bool
+    name*: Str
+    icon*: Str
+    value_type*: TagValueType
+
+
   # ----- custom types
+
 
 proc parseHook*[T: enum](s: string, i: var int, v: var T) =
   var temp: int
