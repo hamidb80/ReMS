@@ -1252,7 +1252,7 @@ proc init* =
       app.edge.theme = white
       app.edge.width = 10.Tenth
 
-    block prepare:
+    block init:
       hide app.tempEdge.konva.wrapper
       moveStage app.stage.center
       redraw()
@@ -1262,7 +1262,7 @@ proc init* =
         if vn =? app.selectedVisualNode:
           let oid = vn.config.id
 
-          for n in app.edgeGraph[oid]:
+          for n in app.edgeGraph.getOrDefault(oid):
             let key = sorted oid..n
             destroy app.edgeInfo[key].konva.wrapper
             del app.edgeInfo, key

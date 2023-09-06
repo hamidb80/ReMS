@@ -33,10 +33,11 @@ func removeConn*[T](g: var Graph[T], conn: Slice[T]) =
   g.remove1 conn.b, conn.a
 
 func removeNode*[T](g: var Graph[T], node: T) =
-  let neighbours = g[node]
-  g.del node
-  for n in neighbours:
-    g[n].excl node
+  if node in g:
+    let neighbours = g[node]
+    g.del node
+    for n in neighbours:
+      g[n].excl node
 
 
 type
