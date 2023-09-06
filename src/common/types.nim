@@ -29,7 +29,10 @@ type
   Radian* = distinct float
 
   Tenth* = distinct int
-  HexColor* = distinct int
+
+  ColorChannel* = range[0..255]
+  HexColorPack* = range[0..0xffffff_a] ## last part is for opacity
+  HexColor* = range[0..0xffffff] ## last part is for opacity
 
   ConnectionCenterShapeKind* = enum
     # undirected connection
@@ -141,9 +144,39 @@ func toTenth*(f: float): Tenth =
   Tenth n
 
 
-converter toHex*(c: HexColor): string =
+func color*(hc: HexColorPack): HexColor =
+  hc shr 4
+
+func opacity*(hc: HexColorPack): range[0.0 .. 1.0] =
+  (hc mod 16) / 10
+
+func opaque*(hc: HexColor): HexColorPack =
+  (hc shl 4) + 10
+
+func red*(hc: HexColor): ColorChannel =
+  hc div 256 div 256
+
+func green*(hc: HexColor): ColorChannel =
+  hc div 256 mod 256
+
+func blue*(hc: HexColor): ColorChannel =
+  hc mod 256
+
+
+func toHex*(c: HexColor): Str =
   '#' & toHex(c.int, 6)
 
+func toRgba*(hc: HexColorPack): Str =
+  let
+    c = hc.color
+    o = hc.opacity
+  "rgba(" & $c.red & ", " & $c.green & ", " & $c.blue & ", " & $o & ")"
+
+func toColorString*(c: HexColorPack): Str =
+  if c.opacity == 1.0:
+    toHex c.color
+  else:
+    toRgba c
 
 # TODO move it to js module
 when defined js:

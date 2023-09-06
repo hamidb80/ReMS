@@ -1,6 +1,6 @@
 import std/dom
 import karax/[karax, karaxdsl, vdom]
-import ../utils/[browser, js, ui]
+import ../utils/[js]
 
 
 var
@@ -8,7 +8,7 @@ var
     timeout: TimeOut
     hidden = true
 
-proc notify*(text: cstring, delay = 3000) {.exportc.} =
+proc notify*(text: cstring, delay = 2000) {.exportc.} =
     notif = text
     hidden = false
     redraw()
@@ -21,10 +21,10 @@ proc notify*(text: cstring, delay = 3000) {.exportc.} =
 proc snackbar*: Vnode =
     let displayClass =
         if hidden: "opacity-0"
-        else: "opacity-100 animate__animated animate__headShake"
+        else: "opacity-75"
 
     buildHtml:
-        tdiv(class = "d-flex justify-content-center fixed-bottom mb-3"):
+        tdiv(class = "d-flex justify-content-center fixed-bottom mb-3 pe-none"):
             tdiv(class = "transition bg-black text-white px-2 py-1 rounded small " & displayClass):
                 text notif
 

@@ -42,7 +42,7 @@ proc notFoundHandler*(req: Request) =
   respErr 404, "what? " & req.uri
 
 proc errorHandler*(req: Request, e: ref Exception) =
-  echo e.msg
+  echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
 proc staticFileHandler*(req: Request) {.addQueryParams.} =
@@ -160,7 +160,7 @@ proc newTag*(req: Request) =
   let t = fromJson(req.body, TagUserCreate)
   !!respJson toJson db.newTag(t)
 
-proc updateTag*(req: Request)  {.addQueryParams: {id: int}.} =
+proc updateTag*(req: Request) {.addQueryParams: {id: int}.} =
   let t = fromJson(req.body, TagUserCreate)
   !!db.updateTag(id, t)
   resp OK

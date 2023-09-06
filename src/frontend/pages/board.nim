@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strformat, sets, tables]
+import std/[with, math, options, lenientops, strutils, strformat, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
@@ -8,7 +8,6 @@ import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js]
 import ../../common/[conventions, datastructures, types]
-import ../../common/types
 import ../../backend/[routes]
 import ../../backend/database/[models]
 
@@ -84,7 +83,7 @@ type
     # board data
     # TODO pallete: seq[ColorTheme]
     objects: Table[Oid, VisualNode]
-    edges: Graph[Oid]
+    edgeGraph: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
 
   VisualNode = ref object
@@ -98,7 +97,7 @@ type
     img: Image
 
   Edge = ref object
-    config: EdgeConfig
+    data: EdgeData
     konva: EdgeKonvaNodes
 
   EdgeKonvaNodes = object
@@ -125,8 +124,7 @@ const
   ciriticalWidth = 400
   minimizeWidth = 360
 
-  # TODO add tranparent background
-  invalidTheme = c(0, 0, 0)
+  trans = ColorTheme(bg: 0xffffff_0, fg: 0x889bad_a, st: 0xa5b7cf_a)
   white = c(0xffffff, 0x889bad, 0xa5b7cf)
   smoke = c(0xecedef, 0x778696, 0x9eaabb)
   road = c(0xdfe2e4, 0x617288, 0x808fa6)
@@ -149,7 +147,8 @@ const
     yellow, orange, red,
     peach, pink, purple,
     purpleLow, blue, diomand,
-    mint, green, lemon]
+    mint, green, lemon,
+    trans]
 
   fontFamilies = [
     "Vazirmatn", "cursive", "monospace"]
@@ -160,7 +159,7 @@ const
 # TODO add beizier curve
 # TODO custom color palletes
 var app = AppData()
-  # app.objects = initCTable[cstring, VisualNode]()
+debugecho toColorString trans.bg
 
   # ----- Util
 template `Δy`*(e): untyped = e.deltaY
@@ -178,23 +177,17 @@ func `or`[S: string or cstring](a, b: S): S =
 template `?`(a): untyped =
   issome a
 
-template `.!`(a, b): untyped =
-  a.get.b
-
-template set(vari, data): untyped =
-  vari = data
-
 
 proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
-    fill = $theme.bg
-    shadowColor = $theme.st
+    fill = toColorString theme.bg
+    shadowColor = toColorString theme.st
     shadowOffsetY = 6
     shadowBlur = 8
     shadowOpacity = 0.2
 
   with txt:
-    fill = $theme.fg
+    fill = toColorString theme.fg
 
 proc applyFont(txt: KonvaObject; font: FontConfig) =
   with txt:
@@ -345,20 +338,20 @@ proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
 
 proc updateEdgeWidth(e: Edge; w: Tenth) =
   let v = tofloat w
-  e.config.width = w
+  e.data.config.width = w
   e.konva.line.strokeWidth = v
   with e.konva.shape:
     strokeWidth = v
     radius = max(6, v * 3)
 
 proc updateEdgeTheme(e: Edge; t: ColorTheme) =
-  e.config.theme = t
-  e.konva.line.stroke = $t.st
+  e.data.config.theme = t
+  e.konva.line.stroke = toColorString t.st
   with e.konva.shape:
-    stroke = $t.st
-    fill = $t.bg
+    stroke = toColorString t.st
+    fill = toColorString t.bg
 
-proc newEdge(c: EdgeConfig): Edge =
+proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
   var k = EdgeKonvaNodes(
     wrapper: newGroup(),
     shape: newCircle(),
@@ -381,7 +374,11 @@ proc newEdge(c: EdgeConfig): Edge =
     add k.line
     add k.shape
 
-  Edge(config: c, konva: k)
+  Edge(
+    konva: k,
+    data: EdgeData(
+      points: [head, tail], 
+      config: c))
 
 proc addEdgeClick(e: Edge) =
   with e.konva.shape:
@@ -391,9 +388,11 @@ proc addEdgeClick(e: Edge) =
       app.selectedEdge = some e
       redraw()
 
-proc cloneEdge(e: Edge): Edge =
+proc cloneEdge(id1, id2: Oid, e: Edge): Edge =
   result = Edge(
-    config: e.config,
+    data: EdgeData(
+      points: [id1, id2],
+      config: e.data.config),
     konva: EdgeKonvaNodes(
       line: Line clone e.konva.line,
       shape: KonvaShape clone e.konva.shape,
@@ -406,10 +405,10 @@ proc cloneEdge(e: Edge): Edge =
   addEdgeClick result
 
 proc redrawConnectionsTo(uid: Oid) =
-  for id in app.edges.getOrDefault(uid):
+  for id in app.edgeGraph.getOrDefault(uid):
     let
       ei = app.edgeInfo[sorted id..uid]
-      ps = ei.konva.line.points.foldPoints
+      # ps = ei.konva.line.points.foldPoints
       n1 = app.objects[id]
       n2 = app.objects[uid]
 
@@ -444,8 +443,7 @@ proc scaleImage(v: VisualNode; scale: float) =
     w′ = w * scale
     h′ = h * scale
     pad = min(w′, h′) * 0.05
-
-    wrapper = v.konva.wrapper
+    # wrapper = v.konva.wrapper
 
   with v.konva.img:
     width = w′
@@ -513,13 +511,14 @@ proc setFocusedEdgeWidth(w: Tenth) =
 
 proc getFocusedEdgeWidth: Tenth =
   if e =? app.selectedEdge:
-    e.config.width
+    e.data.config.width
   else:
     app.edge.width
 
 proc getFocusedTheme: ColorTheme =
   if v =? app.selectedVisualNode: v.config.theme
-  elif e =? app.selectedEdge: e.config.theme
+  elif e =? app.selectedEdge: e.data.config.theme
+  
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
@@ -583,10 +582,6 @@ proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
 
     moveStage d * s′
 
-proc incl(t: var Transformer; objs: openArray[KonvaShape]; layer: Layer) =
-  # t.nodes = objs
-  layer.add t
-  layer.batchDraw
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
   var
@@ -645,11 +640,11 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
             id2 = cstring sv.config.id
             conn = sorted id1..id2
 
-          var ei = cloneEdge app.tempEdge
+          var ei = cloneEdge(id1, id2, app.tempEdge)
 
           if conn notin app.edgeInfo:
             app.bottomGroup.add ei.konva.wrapper
-            app.edges.addConn conn
+            app.edgeGraph.addConn conn
             app.edgeInfo[conn] = ei
             app.boardState = bsFree
             select ei
@@ -718,7 +713,7 @@ proc toJson(app: AppData): BoardData =
   for conn, info in app.edgeInfo:
     result.edges.add EdgeData(
       points: [conn.a, conn.b],
-      config: info.config)
+      config: info.data.config)
 
 proc restore(app: var AppData; data: BoardData) =
   for oid, data in data.objects:
@@ -728,19 +723,20 @@ proc restore(app: var AppData; data: BoardData) =
 
   for info in data.edges:
     let
-      conn = info.points[cpkHead]..info.points[cpkTail]
+      id1 = info.points[cpkHead]
+      id2 = info.points[cpkTail]
+      conn = id1..id2
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
-      e = newEdge info.config
+      e = newEdge(id1, id2, info.config)
 
-    app.edges.addConn conn
+    app.edgeGraph.addConn conn
     app.edgeInfo[conn] = e
     app.bottomGroup.add e.konva.wrapper
     updateEdgeWidth e, info.config.width
     updateEdgeTheme e, info.config.theme
     updateEdgePos e, n1.area, n1.center, n2.area, n2.center
     addEdgeClick e
-  console.log app
 
 proc fetchBoard(id: Id) =
   get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
@@ -850,8 +846,8 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
       tdiv(class = "color-square mx-1 pointer", style = style(
-        (StyleAttr.backgroundColor, cstring $theme.bg),
-        (StyleAttr.borderColor, cstring $theme.fg),
+        (StyleAttr.backgroundColor, toColorString theme.bg),
+        (StyleAttr.borderColor, toColorString theme.fg),
       )):
         proc onclick =
           if selectable:
@@ -913,7 +909,7 @@ proc createDom*(data: RouterData): VNode =
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Color: "
-              colorSelectBtn(invalidTheme, theme, false)
+              colorSelectBtn(theme, theme, false)
 
               proc onclick =
                 app.footerState = fsColor
@@ -971,7 +967,7 @@ proc createDom*(data: RouterData): VNode =
           of fsColor:
             for i, ct in colorThemes:
               span(class = "mx-1"):
-                colorSelectBtn(invalidTheme, ct, true)
+                colorSelectBtn(getFocusedTheme(), ct, true)
 
           else:
             text "not defined"
@@ -1137,7 +1133,7 @@ proc init* =
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
-      tempEdge = newEdge(EdgeConfig())
+      tempEdge = newEdge("[temp]", "[temp]", EdgeConfig())
 
     with app.stage:
       width = window.innerWidth
@@ -1185,7 +1181,6 @@ proc init* =
           app.lastAbsoluteMousePos = currentMousePos
           app.lastClientMousePos = m
 
-
     with layer:
       add centerCircle
       add app.bottomGroup
@@ -1205,6 +1200,7 @@ proc init* =
 
       on "mouseup", proc =
         app.leftClicked = false
+
 
     block global_events:
       proc onWheel(e: Event as WheelEvent) {.caster.} =
@@ -1239,14 +1235,12 @@ proc init* =
           setCursor ccZoom
 
       window.document.body.addEventListener "keyup", proc(
-          e: Event as KeyboardEvent) {.caster.} =
+          _: Event as KeyboardEvent) {.caster.} =
         if app.isSpaceDown or app.isShiftDown:
           app.isSpaceDown = false
           app.isShiftDown = false
           setCursor ccNone
           app.state = asNormal
-
-
 
     block prepare:
       app.sidebarWidth = 0
@@ -1263,10 +1257,35 @@ proc init* =
 
     block shortcuts:
       addHotkey "delete", proc =
-        # console.log app.selectedKonvaObject
-        # app.selectedKonvaObject.?destroy
-        # app.transformer.nodes = []
-        discard
+        if vn =? app.selectedVisualNode:
+          let oid = vn.config.id
+
+          for n in app.edgeGraph[oid]:
+            let key = sorted oid..n
+            destroy app.edgeInfo[key].konva.wrapper
+            del app.edgeInfo, key
+
+          destroy vn.konva.wrapper
+          del app.objects, oid
+          removeNode app.edgeGraph, oid
+
+          unselect()
+          redraw()
+
+        elif ed =? app.selectedEdge:
+          let
+            p = ed.data.points
+            conn = sorted p[cpkHead]..p[cpkTail]
+          
+          destroy app.edgeInfo[conn].konva.wrapper
+          del app.edgeInfo, conn
+          removeConn app.edgeGraph, conn
+          
+          unselect()
+          redraw()
+
+        else:
+          notify "nothing to delete"
 
       addHotkey "Escape", proc =
         app.boardState = bsFree
@@ -1278,15 +1297,14 @@ proc init* =
 
       addHotkey "n", createNode
 
-      addHotkey "c", proc = # go to 0,0
+      addHotkey "c", proc = # go to center
         let s = ||app.stage.scale
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
-      addHotkey "s", proc =
+      addHotkey "s", proc = # save
         let data = forceJsObject toJson app
         put_api_board_update_url(app.id).putApi(data).dthen proc(_: auto) =
           notify "saved!"
-
 
       addHotkey "z", proc = # reset zoom
         let c = app.stage.center
@@ -1307,13 +1325,13 @@ proc init* =
       addHotkey "p", proc = # scrennshot
         app.stage.toBlob(1/2).dthen proc(b: Blob) =
           var
-            form = toForm("ss.png", b)
+            form = toForm("screenshot.png", b)
             cfg = AxiosConfig[FormData]()
 
           put_api_board_screen_shot_url(app.id)
           .putform(form, cfg)
           .dthen proc(_: auto) =
-            notify "screenshot updated"
+            notify "screenshot updated!"
 
 
     app.id = parseInt getWindowQueryParam "id"

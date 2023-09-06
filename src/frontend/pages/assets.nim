@@ -136,7 +136,7 @@ func progressbar(percent: Percent, status: UploadStatus): Vnode =
           $iff(cond, percent, 100) & "%"))
 
 func tagSearch(name, color: string,
-  compareOperator: Option[CmpOperator]): VNode =
+  compareOperator: options.Option[CmpOperator]): VNode =
 
   buildHtml:
     tdiv(class = "form-group d-inline-block mx-2"):
@@ -166,7 +166,6 @@ func tagSearch(name, color: string,
           icon("fa-xmark")
 
 # TODO add "order by"
-# TODO toast & snackbar for alerts & notifications & over shadow box (the box that his behind is dark)
 proc createDom: Vnode =
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
@@ -320,7 +319,7 @@ proc createDom: Vnode =
 
               tdiv(class = "d-flex flex-row align-items-center"):
                 span(class = "text-muted"):
-                  text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
+                  # text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
 
                   iconr "fa-clock mx-1"
 

@@ -13,23 +13,30 @@ func add*[K, V](st: var SeqTable[K, V], key: K, val: V) =
   else:
     st[key] = @[val]
 
-func add[T](g: var Graph[T], a, b: T) =
+
+func add1[T](g: var Graph[T], a, b: T) =
   if a notin g:
     g[a] = initHashSet[T]()
 
   g[a].incl b
 
-func remove[T](g: var Graph[T], a, b: T) =
+func remove1[T](g: var Graph[T], a, b: T) =
   if a in g:
-    g[a].decl b
+    g[a].excl b
 
 func addConn*[T](g: var Graph[T], conn: Slice[T]) =
-  g.add conn.a, conn.b
-  g.add conn.b, conn.a
+  g.add1 conn.a, conn.b
+  g.add1 conn.b, conn.a
 
 func removeConn*[T](g: var Graph[T], conn: Slice[T]) =
-  g.remove conn.a, conn.b
-  g.remove conn.b, conn.a
+  g.remove1 conn.a, conn.b
+  g.remove1 conn.b, conn.a
+
+func removeNode*[T](g: var Graph[T], node: T) =
+  let neighbours = g[node]
+  g.del node
+  for n in neighbours:
+    g[n].excl node
 
 
 type
@@ -53,14 +60,14 @@ func isRoot*(tn: TreeNodeRec): bool =
 
 
 type
+  ColorTheme* = object
+    bg*, fg*, st*: HexColorPack
+
   FontConfig* = object
     family*: Str
     size*: int
     style*: FontStyle
     # lineHeight: Float
-
-  ColorTheme* = object
-    bg*, fg*, st*: HexColor
 
   VirtualNodeDataKind* = enum
     vndkText
@@ -70,7 +77,7 @@ type
     id*: Str
     theme*: ColorTheme
     data*: VisualNodeData
-    font*: FontConfig # TODO move this to `VisualNodeData`
+    font*: FontConfig  # TODO move this to `VisualNodeData`
     position*: Vec2Obj # top left
     messageIdList*: seq[Id]
 
@@ -99,9 +106,8 @@ type
     edges*: seq[EdgeData]
 
 
-
 func c*(bg, fg, st: int): ColorTheme =
   ColorTheme(
-    bg: bg.HexColor,
-    fg: fg.HexColor,
-    st: st.HexColor)
+    bg: opaque bg,
+    fg: opaque fg,
+    st: opaque st)

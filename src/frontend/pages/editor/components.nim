@@ -1,5 +1,5 @@
-import std/[jsffi, dom, jsconsole]
-import std/[with, sequtils, tables, sugar, jsre]
+import std/[jsffi, dom]
+import std/[with, sequtils, tables, sugar]
 import ./core
 import ../../utils/[browser, js]
 import ../../jslib/[katex, marked]
@@ -70,7 +70,7 @@ let
 func noOp = discard # no Operation
 func noSettings: seq[SettingsPart] = @[]
 func returnNull: JsObject = nil
-func nothingToDo(config: TwNode, by: MountedBy, mode: TwNodeMode) = discard
+# func nothingToDo(config: TwNode, by: MountedBy, mode: TwNodeMode) = discard
 func nothingToRestore(input: JsObject) = discard
 
 proc addFocusClass(hooks: Hooks): proc() =
@@ -543,9 +543,9 @@ proc initConfig: Hooks =
           input: toJs status(),
           updateCallback: mutState(setStatus, cstring)))]
 
-proc initStyle: Hooks =
-  ## we must assign a unique id to the root Element
-  discard
+# proc initStyle: Hooks =
+#   ## we must assign a unique id to the root Element
+#   discard
 
 proc initCustomHtml: Hooks =
   let

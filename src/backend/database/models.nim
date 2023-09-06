@@ -1,5 +1,4 @@
 import std/[tables, json, parseutils]
-import jsony
 import ../../common/[types, datastructures]
 
 when defined js: import ponairi/pragmas
@@ -137,17 +136,16 @@ type # database models
 type # view models
   AssetUser* = object
     id*: Id
-    owner*: Id
+    # owner*: Id
     name*: Str
     size*: Bytes
-    timestamp*: UnixTime
+    # timestamp*: UnixTime
 
   BoardPreview* = object
     id*: Id
     title*: Str
     description*: Str
     screenshot*: Option[Id]
-    timestamp*: UnixTime
 
   TagUserCreate* = object
     can_repeated*: bool

@@ -10,6 +10,7 @@ import ../../../backend/database/[models]
 import ./[core, components, inputs]
 import ../../utils/[js, browser]
 import ../../jslib/[axios]
+import ../../components/[snackbar]
 import ../../../common/[conventions, datastructures]
 
 
@@ -123,10 +124,12 @@ const
   editRootElementId = "tw-editor-root-element"
   searchComponentInputId = "tw-search-component-input"
 
-proc editPage: VNode =
+proc createDom: VNode =
   buildHtml tdiv(class = "d-flex flex-row-reverse justify-content-between h-100 w-100"):
     tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll"):
       verbatim fmt"<div id='{editRootElementId}'></div>"
+
+    snackbar()
 
     aside(id = sidebarId, class="overflow-hidden"):
       if app.state == asTreeView:
@@ -289,7 +292,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
       put_api_notes_update_url(id).putApi(cast[JsObject](s)).dthen proc(_: auto) = 
-        discard
+        notify "note updated!"
 
     of "h": 
       downloadFile "data.html", "text/html", deserizalize(app.components, serialize app).innerHTML
@@ -401,7 +404,7 @@ proc init* =
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
 
-  setRenderer editPage
+  setRenderer createDom
   settimeout 500, fetchNote
 
   with document.documentElement:
