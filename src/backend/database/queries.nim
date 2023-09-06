@@ -2,6 +2,7 @@ import std/[times, json, options]
 import ./models
 import ../../common/[types, datastructures]
 import ponairi
+include jsony_fix
 
 
 template R: untyped {.dirty.} =
@@ -9,7 +10,7 @@ template R: untyped {.dirty.} =
 
 
 proc listAssets*(db: DbConn): seq[AssetUser] =
-  db.find R, sql"SELECT id, owner, name, size FROM Asset ORDER BY id DESC"
+  db.find R, sql"SELECT id, name, size FROM Asset ORDER BY id DESC"
 
 proc addAsset*(db: DbConn, n: string, p: Path, s: Bytes): int64 =
   db.insertID Asset(
@@ -25,10 +26,10 @@ proc deleteAsset*(db: DbConn, id: Id) =
 
 
 proc listNotes*(db: DbConn): seq[Note] =
-  db.find R, sql"SELECT id, owner, data FROM Note ORDER BY id DESC"
+  db.find R, sql"SELECT id, data FROM Note ORDER BY id DESC"
 
 proc getNote*(db: DbConn, id: Id): Note =
-  db.find R, sql"SELECT id, owner, data FROM Note WHERE id = ?", id
+  db.find R, sql"SELECT id, data FROM Note WHERE id = ?", id
 
 proc newNote*(db: DbConn): Id =
   db.insertID Note(
@@ -63,16 +64,17 @@ proc deleteBoard*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Board WHERE id = ?", id
 
 
-proc newTag*(db: DbConn): Id =
+proc newTag*(db: DbConn, t: TagUserCreate): Id =
   db.insertID Tag(
     owner: 0,
     creator: tcUser,
     label: tlOrdinary,
     can_repeated: false,
-    name: "name",
-    value_type: tvtNone)
+    name: t.name,
+    icon: t.icon,
+    value_type: t.value_type)
 
-proc updateTag*(db: DbConn) =
+proc updateTag*(db: DbConn, id: Id, t: TagUserCreate) =
   discard
 
 proc deleteTag*(db: DbConn, id: Id) =
@@ -80,4 +82,3 @@ proc deleteTag*(db: DbConn, id: Id) =
 
 proc listTags*(db: DbConn): seq[Tag] =
   db.find R, sql"SELECT * FROM Tag ORDER by id DESC"
-

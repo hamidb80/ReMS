@@ -7,7 +7,7 @@ when defined js:
     Str* = cstring
     JsO* = JsObject
     CTable*[S: Str, T] = JsAssoc[S, T]
-    COption*[T] = distinct JsObject
+    Option*[T] = distinct JsObject
 
 else:
   import std/json
@@ -15,8 +15,7 @@ else:
     Str* = string
     JsO* = JsonNode
     CTable*[A, B] = Table[A, B]
-    COption*[T] = Option[T]
-
+    Option*[T] = options.Option[T]
 
 type
   Id* = int64
@@ -153,15 +152,15 @@ when defined js:
   func initCTable*[K: cstring, V](): CTable[K, V] =
     newJsAssoc[K, V]()
 
-  func somec*[T](j: T): COption[T] =
+  func somec*[T](j: T): Option[T] =
     cast[JsObject](j)
 
-  func issome*[T](j: COption[T]): bool =
+  func issome*[T](j: Option[T]): bool =
     cast[JsObject](j) != nil
 
-  func get*[T](j: COption[T]): T = 
+  func get*[T](j: Option[T]): T =
     assert issome j
     cast[T](j)
 
-  func nonec*[T](j: typedesc[T]): COption[T] =
-    COption[T](nil)
+  func nonec*[T](j: typedesc[T]): Option[T] =
+    Option[T](nil)

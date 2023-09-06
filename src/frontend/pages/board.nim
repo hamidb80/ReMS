@@ -5,6 +5,7 @@ import caster, uuid4, questionable, prettyvec
 
 import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
+import ../components/[snackbar]
 import ../utils/[ui, browser, js]
 import ../../common/[conventions, datastructures, types]
 import ../../common/types
@@ -41,6 +42,8 @@ type
     asNormal
     asPan
 
+  NOption[T] = options.Option[T]
+
   AppData = object
     id: Id
 
@@ -55,9 +58,9 @@ type
     # selectedKonvaObject: Option[KonvaObject]
 
     # app states
-    hoverVisualNode: Option[VisualNode]
-    selectedVisualNode: Option[VisualNode]
-    selectedEdge: Option[Edge]
+    hoverVisualNode: NOption[VisualNode]
+    selectedVisualNode: NOption[VisualNode]
+    selectedEdge: NOption[Edge]
 
     font: FontConfig
     edge: EdgeConfig
@@ -1110,6 +1113,8 @@ proc createDom*(data: RouterData): VNode =
                       addToMessages id
                       inp.value = c""
 
+      snackbar()
+
 proc init* =
   echo "compiled at: ", CompileDate, ' ', CompileTime
   document.body.classList.add "overflow-hidden"
@@ -1280,7 +1285,7 @@ proc init* =
       addHotkey "s", proc =
         let data = forceJsObject toJson app
         put_api_board_update_url(app.id).putApi(data).dthen proc(_: auto) =
-          discard
+          notify "saved!"
 
 
       addHotkey "z", proc = # reset zoom
@@ -1305,9 +1310,11 @@ proc init* =
             form = toForm("ss.png", b)
             cfg = AxiosConfig[FormData]()
 
-          discard putform(
-            put_api_board_screen_shot_url(app.id),
-            form, cfg)
+          put_api_board_screen_shot_url(app.id)
+          .putform(form, cfg)
+          .dthen proc(_: auto) =
+            notify "screenshot updated"
+
 
     app.id = parseInt getWindowQueryParam "id"
     fetchBoard app.id

@@ -1,5 +1,5 @@
 import std/[macros, options]
-import std/[jsffi, asyncjs]
+import std/[jsffi, asyncjs, dom]
 
 type
   JsSet = ref object of JsObject
@@ -28,8 +28,8 @@ template c*(str): untyped = cstring str
 template set*(container, value): untyped =
   container = value
 
-proc setTimeout*(delay: Natural; action: proc) =
-  discard setTimeout(action, delay)
+proc setTimeout*(delay: Natural, action: proc): TimeOut {.discardable.} =
+  setTimeout action, delay
 
 proc newPromise*[T, E](action: proc(
   resovle: proc(t: T);

@@ -1,4 +1,4 @@
-import std/[tables, options, json, parseutils]
+import std/[tables, json, parseutils]
 import jsony
 import ../../common/[types, datastructures]
 
@@ -57,7 +57,7 @@ type # database models
     # owner* {.references: User.id.}: Id
     title*: string
     description*: string
-    screenshot* {.references: Asset.id.}: COption[Id]
+    screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
     # timestamp*: UnixTime
 
@@ -146,7 +146,7 @@ type # view models
     id*: Id
     title*: Str
     description*: Str
-    screenshot*: COption[Id]
+    screenshot*: Option[Id]
     timestamp*: UnixTime
 
   TagUserCreate* = object
@@ -156,21 +156,8 @@ type # view models
     value_type*: TagValueType
 
 
-  # ----- custom types
+include jsony_fix
 
-
-proc parseHook*[T: enum](s: string, i: var int, v: var T) =
-  var temp: int
-  inc i, parseInt(s, temp, i)
-  v = T temp
-
-proc dumpHook*(s: var string, v: enum) =
-  s.add $v.int
-
-proc parseHook*(s: string, i: var int, v: var cstring) =
-  var temp: string
-  parseHook(s, i, temp)
-  v = cstring temp
 
 when not defined js:
   template defSqlJsonType(typename): untyped =
@@ -198,9 +185,10 @@ when not defined js:
   proc to*(src: DbValue, dest: var Bytes) =
     dest = src.i.Bytes
 
-  func `%`*(p: Path): JsonNode = %p.string
-  func `%`*(d: UnixTime): JsonNode = %d.int64
-  func `%`*(b: Bytes): JsonNode = %b.int64
+  proc parseHook*(s: string, i: var int, v: var cstring) =
+    var temp: string
+    parseHook(s, i, temp)
+    v = cstring temp
 
   # ----- basic operations
 

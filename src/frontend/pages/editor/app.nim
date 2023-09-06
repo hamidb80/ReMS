@@ -6,7 +6,7 @@ import karax/[karax, karaxdsl, vdom]
 import caster
 
 import ../../../backend/routes
-import ../../../backend/database/[models, queries]
+import ../../../backend/database/[models]
 import ./[core, components, inputs]
 import ../../utils/[js, browser]
 import ../../jslib/[axios]

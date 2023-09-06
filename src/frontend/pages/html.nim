@@ -78,6 +78,8 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extCss "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
     extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     extCss "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    # extCss "https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+
 
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")

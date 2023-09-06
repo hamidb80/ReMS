@@ -26,6 +26,10 @@
   display: none;
 }
 
+.transition {
+  transition: 0.5s;
+}
+
 .tool-bar {
   left: 0;
   top: 50%;
@@ -60,7 +64,7 @@
   -webkit-column-count: 3;
   -moz-column-count: 3;
   column-count: 3;
-    
+
   -webkit-column-gap: 15px;
   -moz-column-gap: 15px;
   column-gap: 15px;
@@ -116,7 +120,7 @@
   width: 8rem !important;
 }
 
-.card-img img{
+.card-img img {
   height: 20vh;
 }
 
@@ -148,11 +152,11 @@ figure {
   margin: 0;
 }
 
-figure.tw-focus-hover img{
+figure.tw-focus-hover img {
   opacity: 0.5;
 }
 
-figure figcaption p{
+figure figcaption p {
   margin: 0;
 }
 

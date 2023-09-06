@@ -184,9 +184,6 @@ proc ctrlClass*(el: Element; class: cstring; cond: bool) =
     el.classList.remove class
 
 
-proc setTimeout*(ms: int; action: proc()) =
-  discard setTimeout(action, ms)
-
 proc createElement*(tag: string): Element =
   document.createElement(tag)
 

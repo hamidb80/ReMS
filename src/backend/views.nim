@@ -8,6 +8,9 @@ import ../common/[types, path, datastructures, conventions]
 import ./utils/web, ./routes
 import ./database/[models, queries]
 
+include ./database/jsony_fix
+
+
 # ------- Database stuff
 
 let pool = newSqlitePool(10, "./play.db")
@@ -157,7 +160,7 @@ proc newTag*(req: Request) =
   let t = fromJson(req.body, TagUserCreate)
   !!respJson toJson db.newTag(t)
 
-proc updateTag*(req: Request)  {.addQueryParams: {id: int}.} = =
+proc updateTag*(req: Request)  {.addQueryParams: {id: int}.} =
   let t = fromJson(req.body, TagUserCreate)
   !!db.updateTag(id, t)
   resp OK
