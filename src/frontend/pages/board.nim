@@ -68,7 +68,7 @@ type
     boardState: BoardState
     footerState: FooterState
 
-    theme: ColorTheme # TODO use pallete index
+    theme: ColorTheme
     sidebarWidth: Natural
 
     lastAbsoluteMousePos: Vector
@@ -125,6 +125,7 @@ const
   minimizeWidth = 360
 
   trans = ColorTheme(bg: 0xffffff_0, fg: 0x889bad_a, st: 0xa5b7cf_a)
+  nonExistsTheme = ColorTheme(bg: 0, fg: 0, st: 0)
   white = c(0xffffff, 0x889bad, 0xa5b7cf)
   smoke = c(0xecedef, 0x778696, 0x9eaabb)
   road = c(0xdfe2e4, 0x617288, 0x808fa6)
@@ -377,7 +378,7 @@ proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
   Edge(
     konva: k,
     data: EdgeData(
-      points: [head, tail], 
+      points: [head, tail],
       config: c))
 
 proc addEdgeClick(e: Edge) =
@@ -388,7 +389,7 @@ proc addEdgeClick(e: Edge) =
       app.selectedEdge = some e
       redraw()
 
-proc cloneEdge(id1, id2: Oid, e: Edge): Edge =
+proc cloneEdge(id1, id2: Oid; e: Edge): Edge =
   result = Edge(
     data: EdgeData(
       points: [id1, id2],
@@ -518,7 +519,7 @@ proc getFocusedEdgeWidth: Tenth =
 proc getFocusedTheme: ColorTheme =
   if v =? app.selectedVisualNode: v.config.theme
   elif e =? app.selectedEdge: e.data.config.theme
-  
+
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
@@ -845,14 +846,15 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
-      tdiv(class = "color-square mx-1 pointer", style = style(
-        (StyleAttr.backgroundColor, toColorString theme.bg),
-        (StyleAttr.borderColor, toColorString theme.fg),
-      )):
-        proc onclick =
-          if selectable:
-            setFocusedTheme theme
-            app.footerState = fsOverview
+      tdiv(class="mx-1 transparent-pattern-bg"):
+        tdiv(class = "color-square pointer", style = style(
+          (StyleAttr.backgroundColor, toColorString theme.bg),
+          (StyleAttr.borderColor, toColorString theme.fg),
+        )):
+          proc onclick =
+            if selectable:
+              setFocusedTheme theme
+              app.footerState = fsOverview
 
 proc fontSizeSelectBtn[T](size, selected: T; selectable: bool; fn: proc()): Vnode =
   buildHTML:
@@ -909,7 +911,7 @@ proc createDom*(data: RouterData): VNode =
 
             tdiv(class = "d-inline-flex mx-2 pointer"):
               bold: text "Color: "
-              colorSelectBtn(theme, theme, false)
+              colorSelectBtn(nonExistsTheme, theme, false)
 
               proc onclick =
                 app.footerState = fsColor
@@ -1276,11 +1278,11 @@ proc init* =
           let
             p = ed.data.points
             conn = sorted p[cpkHead]..p[cpkTail]
-          
+
           destroy app.edgeInfo[conn].konva.wrapper
           del app.edgeInfo, conn
           removeConn app.edgeGraph, conn
-          
+
           unselect()
           redraw()
 
