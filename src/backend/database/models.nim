@@ -38,27 +38,20 @@ type # database models
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
-    # owner* {.references: User.id.}: Id
-    name*: string
+    name*: string # name without extention
+    mimetype*: string
     size*: Bytes
-    path*: Path
-    # timestamp*: UnixTime
-    # sha256*: string
+    path*: Path # where is it stored?
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    # owner* {.references: User.id.}: Id
     data*: TreeNodeRaw[JsO]
-    # timestamp*: UnixTime
 
   Board* = object
     id* {.primary, autoIncrement.}: Id
-    # owner* {.references: User.id.}: Id
     title*: string
-    description*: string
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
-    # timestamp*: UnixTime
 
   TagValueType* = enum
     tvtNone
@@ -109,7 +102,7 @@ type # database models
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    int_value*: Option[int64]
+    number_value*: Option[float]
     str_value*: Option[string]
     state*: RelationState
     created_due_to*: RelationCreationReason

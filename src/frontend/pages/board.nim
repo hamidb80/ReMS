@@ -163,7 +163,6 @@ const
 # TODO ability to write query instead of message id in message list of a node
 # TODO custom color palletes
 var app = AppData()
-debugecho toColorString trans.bg
 
   # ----- Util
 template `Δy`*(e): untyped = e.deltaY
@@ -1168,7 +1167,7 @@ proc init* =
 
             if Δs.abs > 0.001:
               changeScale mm, s′, false
-              app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s-1/s′)
+              app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
 
           elif app.boardState == bsMakeConnection:
             let
@@ -1208,44 +1207,51 @@ proc init* =
 
 
     block global_events:
-      proc onWheel(e: Event as WheelEvent) {.caster.} =
-        preventDefault e
+      addEventListener app.stage.container, "wheel", nonPassive:
+        proc (e: Event as WheelEvent) {.caster.} =
+          preventDefault e
 
-        let mp = v(e.x, e.y)
-        app.lastAbsoluteMousePos = coordinate(mp, app.stage)
+          let mp = v(e.x, e.y)
+          app.lastAbsoluteMousePos = coordinate(mp, app.stage)
 
-        if e.ctrlKey: # pinch-zoom
-          let
-            s = ||app.stage.scale
-            ⋊s = exp(-e.Δy / 100)
+          if e.ctrlKey: # pinch-zoom
+            let
+              s = ||app.stage.scale
+              ⋊s = exp(-e.Δy / 100)
 
-          changeScale mp, s * ⋊s, true
+            changeScale mp, s * ⋊s, true
 
-        else: # panning
-          moveStage v(e.Δx, e.Δy) * -1
+          else: # panning
+            moveStage v(e.Δx, e.Δy) * -1
 
-      addEventListener app.stage.container, "wheel", onWheel, nonPassive
-      addEventListener app.stage.container, "contextmenu", proc(e: Event) =
-        e.preventDefault
+      addEventListener app.stage.container, "contextmenu":
+        proc(e: Event) =
+          e.preventDefault
 
-      window.document.body.addEventListener "keydown", proc(
-          e: Event as KeyboardEvent) {.caster.} =
-        if e.key == cstring" ":
-          app.isSpaceDown = true
-          setCursor ccGrabbing
-          app.state = asPan
+      addEventListener document.body, "keydown":
+        proc(e: Event as KeyboardEvent) {.caster.} =
+          if e.key == cstring" ":
+            app.isSpaceDown = true
+            setCursor ccGrabbing
+            app.state = asPan
 
-        elif e.keyCode == kcj:
-          app.isShiftDown = true
-          setCursor ccZoom
+          elif e.keyCode == kcj:
+            app.isShiftDown = true
+            setCursor ccZoom
 
-      window.document.body.addEventListener "keyup", proc(
-          _: Event as KeyboardEvent) {.caster.} =
-        if app.isSpaceDown or app.isShiftDown:
-          app.isSpaceDown = false
-          app.isShiftDown = false
-          setCursor ccNone
-          app.state = asNormal
+      addEventListener document.body, "keyup":
+        proc(_: Event as KeyboardEvent) {.caster.} =
+          if app.isSpaceDown or app.isShiftDown:
+            app.isSpaceDown = false
+            app.isShiftDown = false
+            setCursor ccNone
+            app.state = asNormal
+
+      addEventListener document.body, "paste":
+        proc(e: Event as ClipboardEvent) {.caster.} =
+          # TODO create image on paste
+          console.log e
+
 
     block prepare:
       app.sidebarWidth = 0

@@ -118,6 +118,11 @@ converter toInt*(k: KeyCode): int = k.int
 
 let nonPassive* = AddEventListenerOptions(passive: false)
 
+proc addEventListener*(el: Element, event: cstring,
+    options: AddEventListenerOptions, action: proc(e: Event)
+  ) = 
+    el.addEventListener event, action, options
+
 func add*(self: FormData; name: cstring;
     value: Blob) {.importjs: "#.append(#, #)".}
 
