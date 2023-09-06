@@ -70,6 +70,7 @@ proc loadDist*(path: string): RequestHandler =
 # ------- Dynamic ones
 
 proc saveAsset(req: Request): Id =
+  # FIXME model changed -
   let multip = req.decodeMultipart()
 
   for entry in multip:

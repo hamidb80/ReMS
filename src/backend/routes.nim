@@ -38,6 +38,10 @@ dispatch router, ../views:
   put "/api/notes/update/"?(id: Id), updateNote {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
+  # 'Pages' are just views for notes with predefined criteria
+  # get "/page/"?(user: Id, page: string), loadDist"page.html" {.html.}
+  # get "/api/page/"?(user: Id, page: string), page {.json: seq[Note].}
+
   get "/boards/", loadDist"boards.html" {.html.}
   get "/api/boards/list", listBoards {.json: seq[BoardPreview].}
   get "/board/"?(id: Id), loadDist"board.html" {.html.}
@@ -53,8 +57,6 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
-  # Pages are just views for notes with predefined criteria
-  # get "/page/"?(user: Id, page: string), loadDist"editor.html" {.html.}
 
 func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id
