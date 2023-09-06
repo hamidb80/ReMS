@@ -1,11 +1,11 @@
-import std/[options, lenientops, strformat, httpcore, sequtils, times]
-import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
+import std/[options, sequtils]
+import std/[dom, jsffi, asyncjs, jsformdata]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../jslib/[hotkeys, axios]
+import ../jslib/[axios]
 import ../utils/[browser, ui, js]
-import ../../common/[conventions, iter, types]
+import ../../common/[conventions, iter]
 import ../../backend/routes
 import ../../backend/database/[models]
 
@@ -107,7 +107,6 @@ proc genCopyBtn(url: cstring): proc =
   proc =
     copyToClipboard url
 
-
 proc genSelectAsset(i: int): proc =
   proc =
     selectedAssetIndex = i
@@ -164,6 +163,31 @@ func tagSearch(name, color: string,
 
         tdiv(class = "input-group-text btn btn-outline-danger d-flex align-items-center justify-content-center p-2"):
           icon("fa-xmark")
+
+proc uploadStatusBtn(u: Upload): VNode = 
+  buildHtml:
+    case u.status
+    of usInProgress:
+      button(class = "ms-2 btn btn-outline-primary rounded"):
+        icon "fa-times"
+
+    of usFailed:
+      button(class = "ms-2 btn btn-outline-danger rounded"):
+        icon "fa-sync"
+
+        proc onclick = 
+          startUpload u
+        
+    of usCancelled:
+      button(class = "ms-2 btn btn-outline-warning rounded"):
+        icon "fa-sync"
+
+    of usCompleted:
+      button(class = "ms-2 btn btn-outline-success rounded"):
+        icon "fa-check"
+
+    # TODO show error message as a tooltip
+
 
 # TODO add "order by"
 proc createDom: Vnode =
@@ -228,25 +252,7 @@ proc createDom: Vnode =
             text u.name
             tdiv(class = "d-flex flex-row align-items-center justify-content-between"):
               progressbar u.progress, u.status
-
-              case u.status
-              of usInProgress:
-                button(class = "ms-2 btn btn-outline-primary rounded"):
-                  icon "fa-times"
-
-              of usFailed:
-                button(class = "ms-2 btn btn-outline-danger rounded"):
-                  icon "fa-sync"
-
-              of usCancelled:
-                button(class = "ms-2 btn btn-outline-warning rounded"):
-                  icon "fa-sync"
-
-              of usCompleted:
-                button(class = "ms-2 btn btn-outline-success rounded"):
-                  icon "fa-check"
-
-              # TODO show error message as a tooltip
+              uploadStatusBtn u
 
       tdiv(class = "form-group"):
         h6(class = "mb-3"):

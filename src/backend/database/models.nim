@@ -154,10 +154,12 @@ type # view models
     value_type*: TagValueType
 
 
-include jsony_fix
-
 
 when not defined js:
+  import jsony
+  include jsony_fix
+
+
   template defSqlJsonType(typename): untyped =
     proc sqlType*(t: typedesc[typename]): string = "TEXT"
     proc dbValue*(j: typename): DbValue = DbValue(kind: dvkString, s: toJson j)

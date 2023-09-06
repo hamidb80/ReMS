@@ -116,7 +116,7 @@ type
 
 
 const
-  # TODO: read these from css
+  # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
   minScale = 0.10 # minimum amount of scale
   maxScale = 20.0
@@ -157,7 +157,10 @@ const
 # TODO use FontFaceObserver
 # TODO add hover view when selecting a node
 # TODO remove implicit global argument `app` and make it explicit
+# TODO add multi select => move, change theme, ...
 # TODO add beizier curve
+# TODO shadow node when creating node, make it opaque after placing it
+# TODO ability to write query instead of message id in message list of a node
 # TODO custom color palletes
 var app = AppData()
 debugecho toColorString trans.bg
@@ -846,7 +849,7 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
-      tdiv(class="mx-1 transparent-pattern-bg"):
+      tdiv(class = "mx-1 transparent-pattern-bg"):
         tdiv(class = "color-square pointer", style = style(
           (StyleAttr.backgroundColor, toColorString theme.bg),
           (StyleAttr.borderColor, toColorString theme.fg),
@@ -1291,7 +1294,6 @@ proc init* =
 
       addHotkey "Escape", proc =
         app.boardState = bsFree
-        # TODO do not set points of line by manually, use a function
         hide app.tempEdge.konva.wrapper
         app.footerState = fsOverview
         unselect()
