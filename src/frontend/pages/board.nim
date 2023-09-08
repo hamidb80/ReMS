@@ -1,5 +1,5 @@
 import std/[with, math, options, lenientops, strutils, strformat, sets, tables]
-import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata]
+import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
@@ -685,7 +685,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     loadImageGen u, vn, false
   vn
 
-proc createNode =
+proc createNode: VisualNode =
   let
     uid = cstring $uuid4()
     cfg = VisualNodeConfig(
@@ -705,7 +705,7 @@ proc createNode =
   select vn
   redrawSizeNode vn, vn.config.font
   redraw()
-
+  vn
 
 proc toJson(app: AppData): BoardData =
   result.objects = initCTable[Str, VisualNodeConfig]()
@@ -1249,8 +1249,20 @@ proc init* =
 
       addEventListener document.body, "paste":
         proc(e: Event as ClipboardEvent) {.caster.} =
-          # TODO create image on paste
-          console.log e
+          let s = e.text
+          if s.startswith "/":
+            let n = createNode()
+            loadImageGen s, n, true
+
+          # var
+          #   form = toForm("screenshot.png", b)
+          #   cfg = AxiosConfig[FormData]()
+
+          # put_api_board_screen_shot_url(app.id)
+          # .putform(form, cfg)
+          # .dthen proc(_: auto) =
+          #   notify "screenshot updated!"
+
 
 
     block prepare:
@@ -1305,7 +1317,8 @@ proc init* =
         unselect()
         redraw()
 
-      addHotkey "n", createNode
+      addHotkey "n", proc = 
+        discard createNode()
 
       addHotkey "c", proc = # go to center
         let s = ||app.stage.scale

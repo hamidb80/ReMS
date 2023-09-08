@@ -127,10 +127,10 @@ proc addQueryParamsImpl(procDef, mandatoryArgs: NimNode): NimNode =
   procdef.body.insert 0, acc
   procdef
 
-macro addQueryParams*(mandatoryArgs, procdef): untyped =
+macro qparams*(mandatoryArgs, procdef): untyped =
   addQueryParamsImpl procdef, mandatoryArgs
 
-macro addQueryParams*(procdef): untyped =
+macro qparams*(procdef): untyped =
   addQueryParamsImpl procdef, newStmtList()
 
 

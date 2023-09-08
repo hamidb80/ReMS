@@ -243,4 +243,9 @@ proc copyToClipboard*(t: cstring) {.importjs: """
     navigator.clipboard.writeText(@);
   """.}
 
+proc text*(e: ClipboardEvent): cstring {.importjs: """
+  #.clipboardData.getData('text/plain')
+""".}
+
+
 proc redirect*(url: cstring) {.importjs: "location.href = #;".}

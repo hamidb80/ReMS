@@ -190,6 +190,62 @@ proc uploadStatusBtn(u: Upload): VNode =
 
 
 # TODO add "order by"
+
+proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode = 
+  buildHtml:
+    tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
+      tdiv(class = "d-flex flex-column"):
+        input(`type` = "text", class = "form-control", value = a.name)
+
+      tdiv(class = "d-flex flex-column justify-content-start"):
+        button(class = "mx-2 my-1 btn btn-outline-dark"):
+          icon "fa-chevron-up"
+          proc onclick =
+            selectedAssetIndex = -1
+
+        button(class = "mx-2 my-1 btn btn-outline-dark",
+            onclick = genCopyBtn(previewLink)):
+          span: text "copy link"
+          icon "fa-copy ms-2"
+
+        button(class = "mx-2 my-1 btn btn-outline-primary",
+            onclick = genCopyBtn(previewLink)):
+          span: text "apply"
+          icon "fa-check ms-2"
+
+proc assetItemComponent(index: int, a: AssetItemView, previewLink: string): Vnode =
+  buildHtml:
+    tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
+      tdiv:
+        span:
+          text "#"
+          text $a.id
+
+        bold(class = "mx-2"):
+          a(target = "_blank", href = previewLink):
+            text a.name
+
+        span(class = "text-muted fst-italic"):
+          text "("
+          text $a.size.int
+          text " B)"
+
+      tdiv(class = "d-flex flex-row align-items-center"):
+        span(class = "text-muted"):
+          # text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
+
+          iconr "fa-clock mx-1"
+
+        button(class = "mx-2 btn btn-outline-dark",
+            onclick = genSelectAsset(index)):
+          icon "fa-chevron-down"
+
+        # TODO
+        # file type logo like image or video or ...
+        # timestamp
+        # size
+
+
 proc createDom: Vnode =
   result = buildHtml tdiv:
     nav(class = "navbar navbar-expand-lg bg-white"):
@@ -246,6 +302,9 @@ proc createDom: Vnode =
             text "clear"
             icon "fa-trash-can ms-2"
 
+            proc onclick =
+              reset uploads
+
       tdiv(class = "list-group mb-4"):
         for u in uploads.ritems:
           tdiv(class = "d-flex flex-row align-items-center justify-content-between list-group-item list-group-item-action"):
@@ -287,57 +346,9 @@ proc createDom: Vnode =
           let u = get_asset_short_hand_url a.id
 
           if i == selectedAssetIndex:
-            tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
-              tdiv(class = "d-flex flex-column"):
-                input(`type` = "text", class = "form-control", value = a.name)
-
-              tdiv(class = "d-flex flex-column justify-content-start"):
-                button(class = "mx-2 my-1 btn btn-outline-dark"):
-                  icon "fa-chevron-up"
-                  proc onclick =
-                    selectedAssetIndex = -1
-
-                button(class = "mx-2 my-1 btn btn-outline-dark",
-                    onclick = genCopyBtn(u)):
-                  span: text "copy link"
-                  icon "fa-copy ms-2"
-
-                button(class = "mx-2 my-1 btn btn-outline-primary",
-                    onclick = genCopyBtn(u)):
-                  span: text "apply"
-                  icon "fa-check ms-2"
-
+            assetFocusedComponent a, u
           else:
-            tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
-              tdiv:
-                span:
-                  text "#"
-                  text $a.id
-
-                bold(class = "mx-2"):
-                  a(target = "_blank", href = u):
-                    text a.name
-
-                span(class = "text-muted fst-italic"):
-                  text "("
-                  text $a.size.int
-                  text " B)"
-
-              tdiv(class = "d-flex flex-row align-items-center"):
-                span(class = "text-muted"):
-                  # text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
-
-                  iconr "fa-clock mx-1"
-
-                button(class = "mx-2 btn btn-outline-dark",
-                    onclick = genSelectAsset(i)):
-                  icon "fa-chevron-down"
-
-                # TODO
-                # file type logo like image or video or ...
-                # timestamp
-                # size
-
+            assetItemComponent i, a, u
 
       tdiv(class = "form-group"):
         button(class = "btn btn-warning w-100 mt-3"):

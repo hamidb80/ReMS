@@ -45,7 +45,7 @@ proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
-proc staticFileHandler*(req: Request) {.addQueryParams.} =
+proc staticFileHandler*(req: Request) {.qparams.} =
   if "file" in q:
     let
       fname = q["file"]
@@ -77,14 +77,14 @@ proc saveAsset(req: Request): Id =
     if entry.data.isSome:
       let
         (start, last) = entry.data.get
-        fname = entry.filename.get
-        (_, name, ext) = splitFile fname
+        content = req.body[start..last]
+        (_, name, ext) = splitFile entry.filename.get
         mime = mimetype ext
         oid = genOid()
         storePath = fmt"./resources/{oid}{ext}"
 
-      writeFile storePath, req.body[start..last]
-      return !!<db.addAsset(name, mime, storePath.Path, Bytes last-start+1)
+      writeFile storePath, content
+      return !!<db.addAsset(name, mime, storePath.Path, Bytes len start..last)
 
   raise newException(ValueError, "no files found")
 
@@ -99,7 +99,7 @@ proc assetShorthand*(req: Request) =
     let assetid = req.uri[qi+1..^1]
     redirect get_assets_download_url parseInt assetid
 
-proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
+proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
   let
     asset = !!<db.findAsset(id)
     content = readfile asset.path
@@ -109,7 +109,7 @@ proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
 proc listAssets*(req: Request) =
   !!respJson toJson db.listAssets()
 
-proc deleteAsset*(req: Request) {.addQueryParams: {id: int}.} =
+proc deleteAsset*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteAsset id
   resp OK
 
@@ -120,15 +120,15 @@ proc newNote*(req: Request) =
 proc notesList*(req: Request) =
   !!respJson toJson db.listNotes()
 
-proc getNote*(req: Request) {.addQueryParams: {id: int}.} =
+proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getNote(id)
 
-proc updateNote*(req: Request) {.addQueryParams: {id: int}.} =
+proc updateNote*(req: Request) {.qparams: {id: int}.} =
   let d = fromJson(req.body, TreeNodeRaw[JsonNode])
   !!db.updateNote(id, d)
   resp OK
 
-proc deleteNote*(req: Request) {.addQueryParams: {id: int}.} =
+proc deleteNote*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteNote id
   resp OK
 
@@ -136,22 +136,22 @@ proc deleteNote*(req: Request) {.addQueryParams: {id: int}.} =
 proc newBoard*(req: Request) =
   !!respJson str db.newBoard()
 
-proc updateBoard*(req: Request) {.addQueryParams: {id: int}.} =
+proc updateBoard*(req: Request) {.qparams: {id: int}.} =
   let data = fromJson(req.body, BoardData)
   !!db.updateBoard(id, data)
   resp OK
 
-proc updateBoardScreenShot*(req: Request) {.addQueryParams: {id: int}.} =
+proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}.} =
   !!db.setScreenShot(id, saveAsset req)
   resp OK
 
-proc getBoard*(req: Request) {.addQueryParams: {id: int}.} =
+proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
 proc listBoards*(req: Request) =
   !!respJson toJson db.listBoards()
 
-proc deleteBoard*(req: Request) {.addQueryParams: {id: int}.} =
+proc deleteBoard*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteBoard id
   resp OK
 
@@ -160,12 +160,12 @@ proc newTag*(req: Request) =
   let t = fromJson(req.body, TagUserCreate)
   !!respJson toJson db.newTag(t)
 
-proc updateTag*(req: Request) {.addQueryParams: {id: int}.} =
+proc updateTag*(req: Request) {.qparams: {id: int}.} =
   let t = fromJson(req.body, TagUserCreate)
   !!db.updateTag(id, t)
   resp OK
 
-proc deleteTag*(req: Request) {.addQueryParams: {id: int}.} =
+proc deleteTag*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteTag id
   resp OK
 
