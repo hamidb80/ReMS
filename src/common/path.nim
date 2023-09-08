@@ -2,7 +2,7 @@ import std/[mimetypes, strutils, macros, os]
 import ./types
 
 
-func getMimeType*(ext: string): string =
+func mimeType*(ext: string): string =
   {.cast(noSideEffect).}:
     let m {.global.} = newMimetypes()
     m.getMimetype ext
@@ -13,11 +13,9 @@ func getExt*(s: string): string =
 func ext*(p: Path): string =
   getExt p.string
 
-func mimetype*(p: Path): string =
-  p.ext.getMimeType
-
 
 when not defined js:
+
   proc getProjectHome*: string =
     result = getProjectPath()
 
@@ -25,3 +23,6 @@ when not defined js:
       result = result / ".."
 
   const projectHome* = getProjectHome()
+
+  template readfile*(p: Path): string = 
+    readfile string p

@@ -50,7 +50,7 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
     let
       fname = q["file"]
       ext = getExt fname
-      mime = getMimeType ext
+      mime = mimeType ext
       fpath = projectHome / "dist" / fname
 
     if fileExists fpath:
@@ -62,7 +62,7 @@ proc staticFileHandler*(req: Request) {.addQueryParams.} =
 proc loadDist*(path: string): RequestHandler =
   let
     p = projectHome / "dist" / path
-    mime = getMimeType getExt p
+    mime = mimeType getExt path
 
   proc(req: Request) =
     respFile mime, readfile p
@@ -78,12 +78,13 @@ proc saveAsset(req: Request): Id =
       let
         (start, last) = entry.data.get
         fname = entry.filename.get
-        ext = getExt fname
+        (_, name, ext) = splitFile fname
+        mime = mimetype ext
         oid = genOid()
-        storePath = fmt"./resources/{oid}.{ext}"
+        storePath = fmt"./resources/{oid}{ext}"
 
       writeFile storePath, req.body[start..last]
-      return !!<db.addAsset(fname, storePath.Path, Bytes last-start+1)
+      return !!<db.addAsset(name, mime, storePath.Path, Bytes last-start+1)
 
   raise newException(ValueError, "no files found")
 
@@ -101,11 +102,9 @@ proc assetShorthand*(req: Request) =
 proc assetsDownload*(req: Request) {.addQueryParams: {id: int}.} =
   let
     asset = !!<db.findAsset(id)
-    p = asset.path
-    mime = p.mimetype
-    content = readfile p.string
+    content = readfile asset.path
 
-  respFile mime, content
+  respFile asset.mime, content
 
 proc listAssets*(req: Request) =
   !!respJson toJson db.listAssets()

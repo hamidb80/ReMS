@@ -12,8 +12,8 @@ type # database models
 
   User* = object
     id* {.primary, autoIncrement.}: Id
-    username* {.index.}: string
-    nickname*: string
+    username* {.index.}: Str
+    nickname*: Str
     role*: UserRole
 
   AuthPlatform* = enum
@@ -25,31 +25,31 @@ type # database models
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
     platform*: AuthPlatform
-    data*: string ## additional data like chat_id or username in that platform
+    data*: Str ## additional data like chat_id or username in that platform
     timestamp*: UnixTime
 
   InvitationSecret* = object
     ## must be deleted after usage
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Option[Id] # wanna create new user? or use existing one?
-    secret* {.uniqueIndex.}: string
-    expires*: UnixTime
-    timestamp*: UnixTime
+    secret* {.uniqueIndex.}: Str
+    expiration*: UnixTime
+    creation*: UnixTime
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
-    name*: string # name without extention
-    mimetype*: string
+    name*: Str # name without extention
+    mime*: Str
     size*: Bytes
     path*: Path # where is it stored?
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    data*: TreeNodeRaw[JsO]
+    data*: TreeNodeRaw[NativeJson]
 
   Board* = object
     id* {.primary, autoIncrement.}: Id
-    title*: string
+    title*: Str
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
 
@@ -127,17 +127,17 @@ type # database models
   ## is for
 
 type # view models
-  AssetUser* = object
+  AssetItemView* = object
     id*: Id
-    # owner*: Id
     name*: Str
+    mime*: Str
     size*: Bytes
+    # owner*: Id
     # timestamp*: UnixTime
 
   BoardPreview* = object
     id*: Id
     title*: Str
-    description*: Str
     screenshot*: Option[Id]
 
   TagUserCreate* = object

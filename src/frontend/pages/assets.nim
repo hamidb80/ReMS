@@ -45,7 +45,7 @@ const
 
 var
   uploads: seq[Upload]
-  assets: seq[AssetUser]
+  assets: seq[AssetItemView]
   selectedAssetIndex: int = -1 # noIndex
 
 

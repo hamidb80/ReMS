@@ -5,7 +5,7 @@ when defined js:
   import std/jsffi
   type
     Str* = cstring
-    JsO* = JsObject
+    NativeJson* = JsObject
     CTable*[S: Str, T] = JsAssoc[S, T]
     Option*[T] = distinct JsObject
 
@@ -13,7 +13,7 @@ else:
   import std/json
   type
     Str* = string
-    JsO* = JsonNode
+    NativeJson* = JsonNode
     CTable*[A, B] = Table[A, B]
     Option*[T] = options.Option[T]
 
