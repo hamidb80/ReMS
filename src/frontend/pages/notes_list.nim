@@ -1,4 +1,4 @@
-import std/[options, lenientops, strformat, httpcore, sequtils, times]
+import std/[options, lenientops, strformat, httpcore, sequtils, times, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -12,25 +12,36 @@ import ./editor/[core, components]
 
 
 let compTable = defaultComponents()
-var notes: seq[Note]
+var
+  notes: seq[Note]
+  msgCache: Table[Id, cstring]
+
+proc getMsg(n: Note) = 
+  deserizalize(compTable, n.data).dthen proc(t: TwNode) =
+    msgCache[n.id] = t.dom.innerHtml
+    redraw()
 
 proc fetchNotes =
   get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
     notes = cast[typeof notes](r.data)
-    redraw()
-
+    for n in notes:
+      getMsg n
+      
 proc reqNewNote =
   post_api_notes_new_url().postApi.dthen proc(r: AxiosResponse) =
     let id = cast[Id](r.data)
     redirect get_note_editor_url id
-
 
 # ----- UI
 proc notePreviewC(np: Note): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
-        verbatim deserizalize(compTable, np.data).innerHtml
+        if np.id in msgCache:
+          verbatim msgCache[np.id]
+        else:
+          text "loading..."
+
       tdiv(class = "card-footer d-flex justify-content-center"):
         tdiv(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-copy"

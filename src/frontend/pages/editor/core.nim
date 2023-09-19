@@ -1,7 +1,7 @@
 import std/[sets, tables, strutils, sequtils, options, sugar, enumerate]
-import std/[jsffi, dom]
+import std/[jsffi, dom, asyncjs] #, jsconsole]
 
-import karax/[vdom]
+import karax/[vdom], questionable
 
 import ../../../common/[datastructures]
 import ../../utils/[browser, js]
@@ -59,7 +59,7 @@ type
     capture*: proc(): JsObject           ## returns internal states
     restore*: proc(input: JsObject)      ## restores internal states
     refresh*: proc()                     ## refreshes, can be used before render called
-    render*: proc()                      ## renders forcefully, used after restore
+    render*: proc(): Option[Future[void]] ## renders forcefully, used after restore
 
     acceptsAsChild*: proc(): seq[cstring] ## accepts what tags as child? use '*' for any
     settings*: proc(): seq[SettingsPart] ## settings page
@@ -99,7 +99,7 @@ proc detachNode*(t: TwNode, i: Index) = t.data.hooks.detachNode(i)
 proc capture*(t: TwNode): auto = t.data.hooks.capture()
 proc restore*(t: TwNode, input: JsObject) = t.data.hooks.restore(input)
 proc refresh*(t: TwNode) = t.data.hooks.refresh()
-proc render*(t: TwNode) = t.data.hooks.render()
+proc render*(t: TwNode): Option[Future[void]] = t.data.hooks.render()
 proc acceptsAsChild*(t: TwNode): auto = t.data.hooks.acceptsAsChild()
 proc settings*(t: TwNode): auto = t.data.hooks.settings()
 
@@ -183,8 +183,11 @@ func add*(ct: var ComponentsTable, cs: openArray[Component]) =
 proc serialize*(app: App): TreeNodeRaw[JsObject] =
   app.tree.serialize
 
-proc deserizalize*(
-  ct: ComponentsTable, root: Element, j: TreeNodeRaw[JsObject]
+proc deserizalizeImpl(
+  ct: ComponentsTable,
+  root: Element,
+  j: TreeNodeRaw[JsObject],
+  allFutures: var seq[Future[void]]
 ): TwNode =
   let cname = $j.name
   result = instantiate ct[cname]
@@ -193,14 +196,30 @@ proc deserizalize*(
     result.data.hooks.dom = () => root
 
   for i, ch in enumerate j.children:
-    result.attach deserizalize(ct, root, ch), i
+    result.attach deserizalizeImpl(ct, root, ch, allFutures), i
 
   result.restore j.data
   result.mounted(mbDeserializer, tmInteractive)
-  result.render()
 
-# FIXME cannot load github gists
-# TODO var allFutures: seq[Future[void]], Promise.all(allFutures)
-proc deserizalize*(ct: ComponentsTable, j: TreeNodeRaw[JsObject]): Element =
-  result = createElement("div", {"class": "tw-content"})
-  discard deserizalize(ct, result, j)
+  if fut =? result.render():
+    add allFutures, fut
+
+proc deserizalize*(
+  ct: ComponentsTable,
+  j: TreeNodeRaw[JsObject],
+  elem: Option[Element] = none Element,
+  wait = true
+): Future[TwNode] =
+  var
+    allFutures: seq[Future[void]]
+    el =
+      if t =? elem: t
+      else: createElement("div", {"class": "tw-content"})
+    payload = deserizalizeImpl(ct, el, j, allFutures)
+
+  newPromise proc(resolve: proc(t: TwNode)) = 
+    if wait:
+      allFutures.waitAll proc = 
+        resolve payload
+    else:
+      resolve payload

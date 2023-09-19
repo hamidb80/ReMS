@@ -20,6 +20,8 @@ proc substr(str: cstring, start, ende: int): cstring {.importjs: "#.substring(@)
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
+proc waitAll*(promises: seq[Future], cb: proc()) {.importjs: "Promise.all(#).then(#)".}
+
 func newJsSet*(): JsSet {.importjs: "new Set(@)".}
 func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}
 iterator items*(obj: JsSet): cstring =

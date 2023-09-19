@@ -1,5 +1,5 @@
-import std/[jsffi, dom]
-import std/[with, sequtils, tables, sugar]
+import std/[jsffi, dom, asyncjs]
+import std/[with, options, sequtils, tables, sugar]
 
 import ./core
 import ../../utils/[browser, js]
@@ -38,7 +38,7 @@ template defHooks(body): untyped {.dirty.} =
     capture = returnNull
     restore = nothingToRestore
     mounted = genMounted: discard
-    render = noop
+    render = genRender: discard
     refresh = noop
     settings = noSettings
 
@@ -119,10 +119,14 @@ template mutState(setter, datatype): untyped {.dirty.} =
   proc (data: JsObject) =
     hooks.refresh()
     setter data.to datatype
-    hooks.render()
+    discard hooks.render()
 
 template genMounted(body): untyped {.dirty.} =
   proc(by: MountedBy, mode: TwNodeMode) =
+    body
+
+template genRender(body): untyped {.dirty.} =
+  proc(): Option[Future[void]] =
     body
 
 # ----- Definition -----------
@@ -172,7 +176,7 @@ proc initRawText: Hooks =
       cSet input["content"].to cstring
       spSet input["spaceAround"].to bool
 
-    render = proc =
+    render = genRender:
       el.innerText =
         if spaceAround(): c" " & content() & c" "
         else: content()
@@ -239,7 +243,7 @@ proc initParagraph: Hooks =
     acceptsAsChild = onlyInlines
     capture = () => tojs dir()
     restore = (j: JsObject) => setDir j.to cstring
-    render = proc =
+    render = genRender:
       case $dir()
       of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
@@ -247,7 +251,7 @@ proc initParagraph: Hooks =
       else: discard
 
     mounted = genMounted:
-      hooks.render()
+      # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
         attachInstance rawTextComponent, hooks
 
@@ -289,7 +293,9 @@ proc initLink: Hooks =
     acceptsAsChild = onlyInlines
     capture = () => tojs url()
     restore = (j: JsObject) => setUrl(j.to cstring)
-    render = () => el.setAttr("href", url())
+    render = genRender:
+      el.setAttr("href", url())
+
     mounted = genMounted:
       el.setAttr "target", "_blank"
 
@@ -323,7 +329,7 @@ proc initLatex: Hooks =
       cset input["content"].to cstring
       iset input["inline"].to bool
 
-    render = proc =
+    render = genRender:
       el.ctrlClass displayInlineClass, inline()
       el.innerHTML = latexToHtml(content(), inline())
 
@@ -381,7 +387,7 @@ proc initImage: Hooks =
     role = (i: Index) => "caption"
     status = () => status()
 
-    render = proc =
+    render = genRender:
       img.setAttr "src", url()
       img.setAttr "style", toInlineCss {"max-width": width(),
           "max-height": height()}
@@ -429,7 +435,9 @@ proc initVideo: Hooks =
     acceptsAsChild = noTags
     capture = () => tojs url()
     restore = (j: JsObject) => setUrl j.to cstring
-    render = () => el.setAttr("src", url())
+    render = genRender:
+      el.setAttr("src", url())
+    
     mounted = genMounted:
       el.setAttr "controls", ""
 
@@ -458,7 +466,7 @@ proc initList: Hooks =
     refresh = proc =
       ul.class = "content-list"
 
-    render = proc =
+    render = genRender:
       let c =
         case $style()
         of "persian": "list-persian-number"
@@ -471,7 +479,6 @@ proc initList: Hooks =
 
     mounted = genMounted:
       hooks.refresh()
-      hooks.render()
 
     attachNode = proc(child: TwNode, at: Index) =
       let li = createElement "li"
@@ -532,7 +539,7 @@ proc initConfig: Hooks =
     status = () => (tsNothing, "")
     # capture = () => tojs configIni()
     # restore = (j: JsObject) => setConfig j.to cstring
-    render = proc = discard
+    # render = genRender:  discard
     mounted = genMounted: discard
 
     settings = () => @[
@@ -557,7 +564,7 @@ proc initCustomHtml: Hooks =
     restore = proc(input: JsObject) =
       cset input.to cstring
 
-    render = proc =
+    render = genRender:
       el.innerHTML = content()
 
     settings = () => @[
@@ -584,7 +591,7 @@ proc initMd: Hooks =
     restore = proc(input: JsObject) =
       cset input["content"].to cstring
 
-    render = proc =
+    render = genRender:
       el.innerHTML = mdparse content()
 
     settings = () => @[
@@ -613,8 +620,9 @@ proc initGithubCode: Hooks =
     restore = proc(input: JsObject) =
       uset input["url"].to cstring
 
-    render = proc =
-      get_utils_github_code_url($url()).getApi.dthen proc(a: AxiosResponse) =
+    render = genRender:
+      some get_utils_github_code_url($url()).getApi.then proc(
+          a: AxiosResponse) =
         cssLinkEl.setAttr "href", a.data["styleLink"].to cstring
         codeEl.innerHTML = a.data["htmlCode"].to cstring
 

@@ -762,11 +762,11 @@ proc getMsg(id: Id) =
 
   let q = get_api_note_url(id).getApi
   q.dthen proc(r: AxiosResponse) =
-    let
-      d = cast[Note](r.data)
-      msg = deserizalize(compTable, d.data).innerHtml
-    msgCache[id] = some msg
-    redraw()
+    let d = cast[Note](r.data)
+    
+    deserizalize(compTable, d.data).dthen proc(t: TwNode) = 
+      msgCache[id] = some t.dom.innerHtml
+      redraw()
 
 type MsgState = enum
   msReady

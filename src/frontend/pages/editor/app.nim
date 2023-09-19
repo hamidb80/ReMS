@@ -295,7 +295,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         notify "note updated!"
 
     of "h": 
-      downloadFile "data.html", "text/html", deserizalize(app.components, serialize app).innerHTML
+      deserizalize(app.components, serialize app).dthen proc(t: TwNode) = 
+        downloadFile "data.html", "text/html", t.dom.innerHTML
       
     of "c":
       ## cut
@@ -310,8 +311,9 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       selectFile proc(c: cstring) = 
         purge app.tree.dom
         let d = cast[TreeNodeRaw[JsObject]](c.parseJs)
-        resetApp deserizalize(app.components, app.tree.dom, d)
-        redraw()
+        deserizalize(app.components, d, some app.tree.dom).dthen proc(t: TwNode) = 
+          resetApp t
+          redraw()
 
 
     of "r":
@@ -391,8 +393,9 @@ proc fetchNote =
   let id = parseInt getWindowQueryParam("id")
   get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
     let doc = cast[Note](r.data)
-    resetApp deserizalize(app.components, app.tree.dom, doc.data)
-    redraw()
+    deserizalize(app.components, doc.data, some app.tree.dom, wait= false).dthen proc(t: TwNode) = 
+      resetApp t
+      redraw()
 
 proc init* = 
   let root = instantiate rootComponent
