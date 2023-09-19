@@ -199,7 +199,8 @@ proc deserizalize*(
   result.mounted(mbDeserializer, tmInteractive)
   result.render()
 
-
+# FIXME cannot load github gists
+# TODO var allFutures: seq[Future[void]], Promise.all(allFutures)
 proc deserizalize*(ct: ComponentsTable, j: TreeNodeRaw[JsObject]): Element =
   result = createElement("div", {"class": "tw-content"})
   discard deserizalize(ct, result, j)
