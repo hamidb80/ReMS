@@ -146,6 +146,9 @@ type # view models
     icon*: Str
     value_type*: TagValueType
 
+  GithubCodeEmbed* = object
+    styleLink*: string
+    htmlCode*: string
 
 
 when not defined js:

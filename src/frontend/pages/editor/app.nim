@@ -384,11 +384,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     w.scrollTop = t.offsetTop - 160
 
-  ## TODO shortcuts ----
-  # folding shortcuts 
-  ## Toggle input/textarea
-  ## Toggle input/textarea
-  ## Toggle rtl/ltr
 
 # ----- Init ------------------------------
 

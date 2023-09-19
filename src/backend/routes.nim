@@ -57,6 +57,8 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
+  # to aviod CORS
+  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.}
 
 func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id

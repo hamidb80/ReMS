@@ -1,9 +1,12 @@
 import std/[jsffi, dom]
 import std/[with, sequtils, tables, sugar]
+
 import ./core
 import ../../utils/[browser, js]
-import ../../jslib/[katex, marked]
+import ../../jslib/[katex, marked, axios]
 import ../../../common/conventions
+import ../../../backend/[routes]
+import ../../../backend/database/[models]
 
 
 # ----- Utils -----------
@@ -70,7 +73,6 @@ let
 func noOp = discard # no Operation
 func noSettings: seq[SettingsPart] = @[]
 func returnNull: JsObject = nil
-# func nothingToDo(config: TwNode, by: MountedBy, mode: TwNodeMode) = discard
 func nothingToRestore(input: JsObject) = discard
 
 proc addFocusClass(hooks: Hooks): proc() =
@@ -542,10 +544,6 @@ proc initConfig: Hooks =
           input: toJs status(),
           updateCallback: mutState(setStatus, cstring)))]
 
-# proc initStyle: Hooks =
-#   ## we must assign a unique id to the root Element
-#   discard
-
 proc initCustomHtml: Hooks =
   let
     el = createElement "div"
@@ -571,12 +569,12 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-
 proc initMd: Hooks =
+
   let
     el = createElement("div", {"class": "tw-md " & displayInlineClass})
     (content, cset) = genState c""
-    # TODO add dire="auto"
+    # TODO add dir="auto"
 
   defHooks:
     dom = () => el
@@ -597,12 +595,42 @@ proc initMd: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-# ----- Code[language + (text/link)]
+
+proc initGithubCode: Hooks =
+  let
+    wrapperEl = createElement("div", {"class": "tw-gh-code"})
+    cssLinkEl = createElement("link", {"rel": "stylesheet", "href": ""})
+    codeEl = createElement("div", {"class": "tw-gh-code-content"})
+    (url, uset) = genState c""
+
+  wrapperEl.appendChildren cssLinkEl, codeEl
+
+  defHooks:
+    dom = () => wrapperEl
+    acceptsAsChild = noTags
+    capture = () => <*{"url": url()}
+    restore = proc(input: JsObject) =
+      uset input["url"].to cstring
+
+    render = proc =
+      get_utils_github_code_url($url()).getApi.dthen proc(a: AxiosResponse) =
+        cssLinkEl.setAttr "href", a.data["styleLink"].to cstring
+        codeEl.innerHTML = a.data["htmlCode"].to cstring
+
+    settings = () => @[
+      SettingsPart(
+        field: "link",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs url(),
+          updateCallback: mutState(uset, cstring)))]
+
+# TODO
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
-# ----- Embed | from youtube, aparat, github
-# ----- Slide
-# ----- :Custom Component:
+# ----- Embed | from youtube, aparat
 # ----- Table Of Contents
+# ----- Slide
 
 # ----- Export ------------------------
 
@@ -738,6 +766,11 @@ defComponent configComponent,
   @[],
   initConfig
 
+defComponent githubCodeComponent,
+  "github",
+  "bi bi-github",
+  @["global", "block"],
+  initGithubCode
 
 proc defaultComponents*: ComponentsTable =
   new result
@@ -764,4 +797,5 @@ proc defaultComponents*: ComponentsTable =
     listComponent,
     tableComponent,
     tableRowComponent,
+    githubCodeComponent,
     customHtmlComponent]

@@ -12,6 +12,13 @@ proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
 func newJsArray*(): JsObject {.importjs: "[@]".}
 func add*(a, b: JsObject) {.importjs: "#.push(#)".}
 func toCstring*(a: SomeNumber): cstring {.importjs: "#.toString(@)".}
+func splitLines*(s: cstring): seq[cstring] {.importjs: "#.split('\\n')".}
+func find*(str, sub: cstring): int {.importjs: "#.indexOf(#)".}
+func rfind*(str, sub: cstring): int {.importjs: "#.lastIndexOf(#)".}
+proc unscape*(s: cstring): cstring {.importjs: "JSON.parse('@')".}
+proc substr(str: cstring, start, ende: int): cstring {.importjs: "#.substring(@)".}
+proc `[]`*(str: cstring, rng: Slice[int]): cstring =
+  str.substr rng.a, rng.b+1
 
 func newJsSet*(): JsSet {.importjs: "new Set(@)".}
 func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}

@@ -1,4 +1,4 @@
-import std/[strformat, tables, strutils, os, oids, json]
+import std/[strformat, tables, strutils, os, oids, json, httpclient]
 
 import mummy, mummy/multipart
 import jsony
@@ -171,3 +171,30 @@ proc deleteTag*(req: Request) {.qparams: {id: int}.} =
 
 proc listTags*(req: Request) =
   !!respJson toJson db.listTags
+
+
+proc getDataReq(url: string): string =
+  var client = newHttpClient()
+  client.get(url).body
+
+template htmlUnescape(str): untyped =
+   str.multiReplace(("\\\"", "\""), ("\\n", "\n"), ("\\/", "/"))
+
+func parseGhFile(content: string): GithubCodeEmbed =
+  const
+    linkStamps = "href=\"" .. "\">')"
+    codeStamps = "document.write('" .. "')"
+
+  let
+    parts = splitlines content
+    cssLinkStart = parts[0].find linkStamps.a
+    cssLinkEnd = parts[0].rfind linkStamps.b
+    htmlCodeEnd = parts[1].rfind codeStamps.b
+
+  result.styleLink = parts[0][(cssLinkStart + linkStamps.a.len) ..< cssLinkEnd]
+  result.htmlCode = htmlUnescape parts[1][codeStamps.a.len ..< htmlCodeEnd]
+
+  debugEcho result.htmlCode
+
+proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
+  respJson toJson parseGhFile getDataReq url
