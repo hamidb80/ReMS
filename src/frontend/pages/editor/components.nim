@@ -64,7 +64,7 @@ func genAllowedTags(tags: seq[cstring]): () -> seq[cstring] =
 
 let
   noTags = genAllowedTags @[]
-  anyTag = genAllowedTags @[c"*"]
+  anyTag = genAllowedTags @[c"global"]
   onlyInlines = genAllowedTags @[c"inline"]
 
 func noOp = discard # no Operation
@@ -195,7 +195,7 @@ proc initRawText: Hooks =
 defComponent rawTextComponent,
   "raw-text",
   "bi bi-type",
-  @["inline", "text", "raw"],
+  @["global", "inline", "text", "raw"],
   initRawText
 
 proc attachInstance(comp: Component, hooks: Hooks) =
@@ -203,7 +203,6 @@ proc attachInstance(comp: Component, hooks: Hooks) =
   hooks.self().attach n, 0
   n.mounted mbUser, tmInteractive
 
-# --------------------------------
 
 proc wrapperTextElement(tag: string): () -> Hooks =
   proc: Hooks =
@@ -267,12 +266,12 @@ proc initParagraph: Hooks =
 defComponent paragraphComponent,
   "paragraph",
   "bi bi-paragraph",
-  @["text", "block"],
+  @["global", "text", "block"],
   initParagraph
 
 
 proc initVerticalSpace: Hooks =
-  let el = createElement("div", {"class": "tw-vertical-space"})
+  let el = createElement("hr", {"class": "tw-vertical-space"})
 
   defHooks:
     dom = () => el
@@ -497,7 +496,7 @@ proc initList: Hooks =
 
           updateCallback: mutState(setStyle, cstring)))]
 
-proc initRow: Hooks =
+proc initTableRow: Hooks =
   let el = createElement "tr"
 
   defHooks:
@@ -517,7 +516,7 @@ proc initTable: Hooks =
 
   defHooks:
     dom = () => el
-    acceptsAsChild = genAllowedTags @[c"row"]
+    acceptsAsChild = genAllowedTags @[c"table-row"]
 
 
 proc initConfig: Hooks =
@@ -598,8 +597,6 @@ proc initMd: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-
-# ----- MarkDownNode
 # ----- Code[language + (text/link)]
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
 # ----- Embed | from youtube, aparat, github
@@ -618,121 +615,121 @@ defComponent rootComponent,
 defComponent linkComponent,
   "link",
   "bi bi-link-45deg",
-  @["inline"],
+  @["global", "inline"],
   initLink
 
 defComponent boldComponent,
   "bold",
   "bi bi-type-bold",
-  @["inline"],
+  @["global", "inline"],
   initBold
 
 defComponent italicComponent,
   "italic",
   "bi bi-type-italic",
-  @["inline"],
+  @["global", "inline"],
   initItalic
 
 defComponent underlineComponent,
   "underline",
   "bi bi-type-underline",
-  @["inline"],
+  @["global", "inline"],
   initUnderline
 
 defComponent strikethroughComponent,
   "strike through",
   "bi bi-type-strikethrough",
-  @["inline"],
+  @["global", "inline"],
   initStrikethrough
 
 defComponent h1Component,
   "h1",
   "bi bi-type-h1",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH1
 
 defComponent h2Component,
   "h2",
   "bi bi-type-h2",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH2
 
 defComponent h3Component,
   "h3",
   "bi bi-type-h3",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH3
 
 defComponent h4Component,
   "h4",
   "bi bi-type-h4",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH4
 
 defComponent h5Component,
   "h5",
   "bi bi-type-h5",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH5
 
 defComponent h6Component,
   "h6",
   "bi bi-type-h6",
-  @["title", "block"],
+  @["global", "title", "block"],
   initTitleH6
 
 defComponent latexComponent,
   "latex",
   "bi bi-regex",
-  @["inline", "block"],
+  @["global", "inline", "block"],
   initLatex
 
 defComponent mdComponent,
   "markdown",
   "bi bi-markdown",
-  @["inline", "block"],
+  @["global", "inline", "block"],
   initMd
 
 defComponent verticalSpaceComponent,
   "vertical-space",
   "bi bi-distribute-vertical",
-  @["space", "vertical", "block"],
+  @["global", "space", "vertical", "block"],
   initVerticalSpace
 
 defComponent imageComponent,
   "image",
   "bi bi-image-fill",
-  @["media", "block", "picture"],
+  @["global", "media", "block", "picture"],
   initImage
 
 defComponent videoComponent,
   "video",
   "bi bi-film",
-  @["media", "block"],
+  @["global", "media", "block"],
   initVideo
 
 defComponent listComponent,
   "list",
   "bi bi-list-task",
-  @["block", "inline"],
+  @["global", "block", "inline"],
   initList
-
-defComponent tableRowComponent,
-  "table",
-  "bi bi-table",
-  @["block"],
-  initRow
 
 defComponent tableComponent,
   "table",
   "bi bi-table",
-  @["block"],
+  @["global", "block"],
   initTable
+
+defComponent tableRowComponent,
+  "table-row",
+  "bi bi-table",
+  @[],
+  initTableRow
 
 defComponent customHtmlComponent,
   "HTML",
   "bi bi-filetype-html",
-  @["block", "inline"],
+  @["global", "block", "inline"],
   initCustomHtml
 
 defComponent configComponent,
@@ -747,7 +744,6 @@ proc defaultComponents*: ComponentsTable =
   result.add [
     rootComponent,
     configComponent,
-    tableRowComponent,
     rawTextComponent,
     paragraphComponent,
     linkComponent,
@@ -767,4 +763,5 @@ proc defaultComponents*: ComponentsTable =
     videoComponent,
     listComponent,
     tableComponent,
+    tableRowComponent,
     customHtmlComponent]

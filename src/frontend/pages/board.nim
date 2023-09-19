@@ -155,8 +155,8 @@ const
     "Vazirmatn", "cursive", "monospace"]
 
 # TODO use FontFaceObserver
+# TODO do not let user choose exlipict sizes, use predefined levels
 # TODO add hover view when selecting a node
-# TODO remove implicit global argument `app` and make it explicit
 # TODO add multi select => move, change theme, ...
 # TODO add beizier curve
 # TODO shadow node when creating node, make it opaque after placing it

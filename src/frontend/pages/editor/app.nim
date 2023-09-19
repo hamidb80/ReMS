@@ -159,7 +159,7 @@ proc createDom: VNode =
                 italic(class = c.icon)
 
           tdiv:
-            input(id=searchComponentInputId, `type`="text", class="form-control w-100"):
+            input(id=searchComponentInputId, `type`="text", class="form-control w-100", autocomplete="off"):
               proc oninput(e: Event, v: VNode) = 
                 app.listIndex = 0
                 app.filterString = e.target.value.toLower
