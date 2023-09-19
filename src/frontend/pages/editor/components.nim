@@ -569,6 +569,7 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
+# TODO replace raw-text with custom MarkDown
 proc initMd: Hooks =
 
   let
