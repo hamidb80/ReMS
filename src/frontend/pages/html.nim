@@ -85,7 +85,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
     link(rel = "preconnect", href = "https://fonts.gstatic.com",
         crossorigin = "")
-    extCss "https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400&display=swap"
+    extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&display=swap"
 
     # custom
     extCss "./custom.css"

@@ -1,4 +1,4 @@
-import std/[with, math, options, lenientops, strutils, strformat, sets, tables]
+import std/[with, math, stats, options, lenientops, strutils, strformat, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -153,7 +153,7 @@ const
     trans]
 
   fontFamilies = [
-    "Vazirmatn", "cursive", "monospace"]
+    "Vazirmatn", "Mooli", "cursive", "monospace"]
 
 # TODO use FontFaceObserver
 # TODO do not let user choose exlipict sizes, use predefined levels
@@ -523,7 +523,6 @@ proc getFocusedEdgeWidth: Tenth =
 proc getFocusedTheme: ColorTheme =
   if v =? app.selectedVisualNode: v.config.theme
   elif e =? app.selectedEdge: e.data.config.theme
-
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
@@ -765,8 +764,8 @@ proc getMsg(id: Id) =
   let q = get_api_note_url(id).getApi
   q.dthen proc(r: AxiosResponse) =
     let d = cast[Note](r.data)
-    
-    deserizalize(compTable, d.data).dthen proc(t: TwNode) = 
+
+    deserizalize(compTable, d.data).dthen proc(t: TwNode) =
       msgCache[id] = some t.dom.innerHtml
       redraw()
 
@@ -887,8 +886,8 @@ proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
 
 
 proc createDom*(data: RouterData): VNode =
-  let freeze = winel.onmousemove != nil
   console.info "just updated the whole virtual DOM"
+  let freeze = winel.onmousemove != nil
 
   buildHtml:
     tdiv(class = "karax"):
@@ -979,15 +978,35 @@ proc createDom*(data: RouterData): VNode =
             text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "fa-plus fa-lg"
 
-        # TODO show shortcut and name via a tooltip
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "fa-expand fa-lg"
+        if vn =? app.selectedVisualNode:
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-message"
 
-        button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-          icon "fa-download fa-lg"
+            proc onclick = 
+              if app.sidebarWidth <= 10:
+                app.sidebarWidth = defaultWidth
+                app.sidebarState = ssMessagesView
+            
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-info"
+
+            proc onclick = 
+              if app.sidebarWidth <= 10:
+                app.sidebarWidth = defaultWidth
+                app.sidebarState = ssPropertiesView
+          
+        else:
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-plus fa-lg"
+
+          # TODO show shortcut and name via a tooltip
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-expand fa-lg"
+
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-download fa-lg"
+
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
@@ -1033,6 +1052,13 @@ proc createDom*(data: RouterData): VNode =
                 icon(
                     if isMaximized(): "fa-window-minimize"
                     else: "fa-window-maximize")
+
+              span(class = "nav-link px-1 pointer"):
+                invisibleText()
+                icon "fa-close"
+
+                proc onclick = 
+                  app.sidebarWidth = 0
 
           main(class = "p-4 content-wrapper h-100"):
             case app.sidebarState
@@ -1114,6 +1140,7 @@ proc createDom*(data: RouterData): VNode =
                         id = parseInt inp.value
                       addToMessages id
                       inp.value = c""
+
 
       snackbar()
 
@@ -1319,7 +1346,7 @@ proc init* =
         unselect()
         redraw()
 
-      addHotkey "n", proc = 
+      addHotkey "n", proc =
         discard createNode()
 
       addHotkey "c", proc = # go to center
