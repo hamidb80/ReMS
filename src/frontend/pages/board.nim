@@ -155,14 +155,13 @@ const
   fontFamilies = [
     "Vazirmatn", "Mooli", "cursive", "monospace"]
 
-# TODO use FontFaceObserver
-# TODO do not let user choose exlipict sizes, use predefined levels
-# TODO add hover view when selecting a node
-# TODO add multi select => move, change theme, ...
-# TODO add beizier curve
 # TODO shadow node when creating node, make it opaque after placing it
-# TODO ability to write query instead of message id in message list of a node
+# TODO add multi select | area select to move, change theme together
+# TODO do not let user choose exlipict sizes, use predefined levels
 # TODO custom color palletes
+# TODO use FontFaceObserver
+# TODO add beizier curve
+# FIXME image node border radius is depend on font size
 
 var app = AppData()
 
