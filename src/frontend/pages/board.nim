@@ -8,7 +8,7 @@ import ../jslib/[konva, hotkeys, axios]
 import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js]
-import ../../common/[conventions, datastructures, types]
+import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/[routes]
 import ../../backend/database/[models]
@@ -61,6 +61,7 @@ type
     # app states
     hoverVisualNode: NOption[VisualNode]
     selectedVisualNodes: seq[VisualNode]
+    # TODO cache connections for speed when draging
     selectedEdge: NOption[Edge]
 
     font: FontConfig
@@ -77,10 +78,8 @@ type
     lastClientMousePos: Vector
     leftClicked: bool
 
-    ## TODO store set of keys that are pressed
     state: AppState
-    isShiftDown: bool
-    isSpaceDown: bool
+    pressedKeys: set[KeyCode]
 
     # board data
     # TODO pallete: seq[ColorTheme]
@@ -256,6 +255,10 @@ proc highlight(vn: VisualNode) =
 proc removeHighlight(vn: VisualNode) =
   vn.konva.wrapper.opacity = 1
 
+proc unselect(vn: VisualNode) =
+  removeHighlight vn
+  app.selectedVisualNodes.remove vn
+
 proc unselect =
   for v in app.selectedVisualNodes:
     removeHighlight v
@@ -265,7 +268,6 @@ proc unselect =
     reset app.selectedEdge
 
 proc select(vn: VisualNode) =
-  unselect()
   app.selectedVisualNodes.add vn
 
 proc select(e: Edge) =
@@ -536,11 +538,10 @@ proc getFocusedTheme: ColorTheme =
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
-  if app.selectedVisualNodes.len == 1:
-    let v = app.selectedVisualNodes[0]
+  for v in  app.selectedVisualNodes:
     v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
-  elif e =? app.selectedEdge:
+  if e =? app.selectedEdge:
     updateEdgeTheme e, theme
   else:
     app.theme = theme
@@ -597,6 +598,15 @@ proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
 
     moveStage d * s′
 
+proc startAddConn(vn: VisualNode) =
+  let w = vn.konva.wrapper
+  highlight vn
+  show app.tempEdge.konva.wrapper
+  updateEdgePos app.tempEdge, w.area, w.center, w.area, w.center
+  updateEdgeTheme app.tempEdge, getFocusedTheme()
+  updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
+  app.boardState = bsMakeConnection
+
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
   var
@@ -605,6 +615,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     txt = newText()
     img = newImage()
     vn = VisualNode(config: cfg)
+    lastPos = v(0, 0)
 
   with vn.konva:
     wrapper = wrapper
@@ -630,26 +641,17 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     on "click", proc =
       case app.boardState
       of bsFree:
-        if app.selectedVisualNodes.len == 1:
-          let sv = app.selectedVisualNodes[0]
-          if sv == vn:
-            let w = vn.konva.wrapper
-            # TODO make a function
-            highlight sv
-            show app.tempEdge.konva.wrapper
-            updateEdgePos app.tempEdge, w.area, w.center, w.area, w.center
-            updateEdgeTheme app.tempEdge, getFocusedTheme()
-            updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
-            app.boardState = bsMakeConnection
-          else:
-            select vn
+        if vn in app.selectedVisualNodes:
+          unselect vn
+        elif kcShift in app.pressedKeys:
+          select vn
         else:
+          unselect()
           select vn
 
       of bsMakeConnection:
         let sv = app.selectedVisualNodes[0]
-        if sv == vn:
-          discard
+        if sv == vn: discard
         else:
           let
             id1 = cfg.id
@@ -679,6 +681,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       if app.state != asNormal:
         stopDrag wrapper
       else:
+        lastpos = wrapper.position
         setCursor ccMove
 
     on "dragend", proc =
@@ -686,7 +689,13 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       setCursor ccPointer
 
     on "dragmove", proc =
-      redrawConnectionsTo cfg.id
+      for v in app.selectedVisualNodes:
+        if v == vn: discard
+        else:
+          v.konva.wrapper.move wrapper.position - lastpos
+        redrawConnectionsTo v.config.id
+      
+      lastPos = wrapper.position
 
   applyTheme txt, box, vn.config.theme
 
@@ -992,23 +1001,36 @@ proc createDom*(data: RouterData): VNode =
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
 
-        if app.selectedVisualNodes.len != 0:
+        let n = app.selectedVisualNodes.len
+        if n > 0:
           let vn = app.selectedVisualNodes[0]
+
+          if n == 1: 
+            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+              icon "fa-circle-nodes"
+
+              proc onclick =
+                startAddConn vn
+
+            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+              icon "fa-message"
+
+              proc onclick =
+                if app.sidebarWidth <= 10:
+                  app.sidebarWidth = defaultWidth
+                  app.sidebarState = ssMessagesView
+
+            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+              icon "fa-info"
+
+              proc onclick =
+                if app.sidebarWidth <= 10:
+                  app.sidebarWidth = defaultWidth
+                  app.sidebarState = ssPropertiesView
+
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-            icon "fa-message"
-
-            proc onclick =
-              if app.sidebarWidth <= 10:
-                app.sidebarWidth = defaultWidth
-                app.sidebarState = ssMessagesView
-
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-            icon "fa-info"
-
-            proc onclick =
-              if app.sidebarWidth <= 10:
-                app.sidebarWidth = defaultWidth
-                app.sidebarState = ssPropertiesView
+            span:
+              text $n
 
         else:
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -1073,7 +1095,7 @@ proc createDom*(data: RouterData): VNode =
                 proc onclick =
                   app.sidebarWidth = 0
 
-          main(class = "p-4 content-wrapper h-100"):
+          main(class = "p-2 content-wrapper h-100"):
             case app.sidebarState
             of ssMessagesView:
               if app.selectedVisualNodes.len == 1:
@@ -1202,7 +1224,7 @@ proc init* =
             currentMousePos = coordinate(m, app.stage)
             Δy = m.y - app.lastClientMousePos.y
 
-          if app.isShiftDown:
+          if kcShift in app.pressedKeys:
             let
               ⋊s = exp(-Δy / 400)
               s′ = clamp(s * ⋊s, minScale .. maxScale)
@@ -1243,7 +1265,7 @@ proc init* =
         app.leftClicked = true
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if app.leftClicked and app.isSpaceDown:
+        if app.leftClicked and (kcSpace in app.pressedKeys):
           moveStage movement e
 
       on "mouseup", proc =
@@ -1274,29 +1296,37 @@ proc init* =
 
       addEventListener document.body, "keydown":
         proc(e: Event as KeyboardEvent) {.caster.} =
-          if e.key == cstring" ":
-            app.isSpaceDown = true
+          let kc = e.keyCode.KeyCode
+          app.pressedKeys.incl kc
+
+          case kc
+          of kcSpace:
             setCursor ccGrabbing
             app.state = asPan
 
-          elif e.keyCode == kcj:
-            app.isShiftDown = true
+          of kcShift:
             setCursor ccZoom
 
+          else:
+            discard
+
       addEventListener document.body, "keyup":
-        proc(_: Event as KeyboardEvent) {.caster.} =
-          if app.isSpaceDown or app.isShiftDown:
-            app.isSpaceDown = false
-            app.isShiftDown = false
+        proc(e: Event as KeyboardEvent) {.caster.} =
+          app.pressedKeys.excl e.keyCode.KeyCode
+
+          if app.pressedKeys.len == 0:
             setCursor ccNone
             app.state = asNormal
 
       addEventListener document.body, "paste":
         proc(e: Event as ClipboardEvent) {.caster.} =
+
           let s = e.text
           if s.startswith "/":
             let n = createNode()
             loadImageGen s, n, true
+
+          # TODO paste image from cliboard
 
           # var
           #   form = toForm("screenshot.png", b)

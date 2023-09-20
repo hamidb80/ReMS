@@ -405,7 +405,7 @@ proc rotate*[N: Number](k: KonvaObject, deg: N) {.konva.}
 proc show*(k: KonvaObject) {.konva.}
 proc hide*(k: KonvaObject) {.konva.}
 
-proc move(k: KonvaObject, v: Vector) {.konva.}
+proc move*(k: KonvaObject, v: Vector) {.konva.}
 proc moveDown*(k: KonvaObject) {.konva.}
 proc moveToBottom*(k: KonvaObject) {.konva.}
 proc moveUp*(k: KonvaObject) {.konva.}
