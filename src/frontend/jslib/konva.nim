@@ -1,5 +1,7 @@
 import std/[macros, strformat]
 import std/[jsffi, dom, asyncjs]
+
+import ../../common/types
 import prettyvec
 
 
@@ -323,6 +325,9 @@ proc measureSize*(t: KonvaObject): Size {.konva.}
 proc `lineHeight=`*[N: Number](k: KonvaObject, v: N) {.konva.}
 proc `lineHeight`*(k: KonvaObject): float {.konva.}
 proc `lineCap=`*(k: KonvaObject, mode: Str) {.konva.}
+proc `lineCap=`*(k: KonvaObject, mode: LineCap) =
+  k.lineCap = $mode
+
 proc `lineCap`*(k: KonvaObject): Str {.konva.}
 proc `lineJoin=`*(k: KonvaObject, mode: Str) {.konva.}
 proc `lineJoin`*(k: KonvaObject): Str {.konva.}

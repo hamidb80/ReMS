@@ -157,7 +157,7 @@ const
 
 # TODO shadow node when creating node, make it opaque after placing it
 # TODO add multi select | area select to move, change theme together
-# TODO do not let user choose exlipict sizes, use predefined levels
+# TODO do not let user choose exlipict sizes, use predefined levels; in this way you can do some actions like 'select all sub nodes', ...
 # TODO custom color palletes
 # TODO use FontFaceObserver
 # TODO add beizier curve
@@ -268,7 +268,8 @@ proc unselect =
     reset app.selectedEdge
 
 proc select(vn: VisualNode) =
-  app.selectedVisualNodes.add vn
+  add app.selectedVisualNodes, vn
+  highlight vn
 
 proc select(e: Edge) =
   unselect()
@@ -340,7 +341,7 @@ proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
       if c2 in a1: c1
       else: c2 - onBorder(rectSide(a2 + -c2, r2), θ)
 
-  e.konva.line.points = [c1, c2]
+  e.konva.line.points = [h, t]
   e.konva.shape.position = (h + t) / 2
 
 proc updateEdgeWidth(e: Edge; w: Tenth) =
@@ -366,6 +367,7 @@ proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
 
   with k.line:
     listening = false
+    linecap = lcRound
 
   with k.shape:
     on "mouseenter", proc =
@@ -538,7 +540,7 @@ proc getFocusedTheme: ColorTheme =
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
-  for v in  app.selectedVisualNodes:
+  for v in app.selectedVisualNodes:
     v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
   if e =? app.selectedEdge:
@@ -678,7 +680,8 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     add txt
 
     on "dragstart", proc =
-      if app.state != asNormal:
+      if app.state != asNormal or (vn notin app.selectedVisualNodes and
+          kcM notin app.pressedKeys):
         stopDrag wrapper
       else:
         lastpos = wrapper.position
@@ -689,13 +692,19 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       setCursor ccPointer
 
     on "dragmove", proc =
-      for v in app.selectedVisualNodes:
-        if v == vn: discard
+      let Δv = wrapper.position - lastpos
+      var seen = false
+
+      for o in app.selectedVisualNodes:
+        if o == vn:
+          seen = true
         else:
-          v.konva.wrapper.move wrapper.position - lastpos
-        redrawConnectionsTo v.config.id
-      
+          o.konva.wrapper.move Δv
+        redrawConnectionsTo o.config.id
+
       lastPos = wrapper.position
+      if not seen:
+        redrawConnectionsTo vn.config.id
 
   applyTheme txt, box, vn.config.theme
 
@@ -1005,7 +1014,7 @@ proc createDom*(data: RouterData): VNode =
         if n > 0:
           let vn = app.selectedVisualNodes[0]
 
-          if n == 1: 
+          if n == 1:
             button(class = "btn btn-outline-primary border-0 px-3 py-4"):
               icon "fa-circle-nodes"
 
@@ -1160,7 +1169,6 @@ proc createDom*(data: RouterData): VNode =
                       scaleImage vn, parseFloat s
 
 
-
           footer(class = "mt-2"):
             case app.sidebarState
             of ssPropertiesView: discard
@@ -1224,7 +1232,7 @@ proc init* =
             currentMousePos = coordinate(m, app.stage)
             Δy = m.y - app.lastClientMousePos.y
 
-          if kcShift in app.pressedKeys:
+          if kcJ in app.pressedKeys:
             let
               ⋊s = exp(-Δy / 400)
               s′ = clamp(s * ⋊s, minScale .. maxScale)
@@ -1304,7 +1312,7 @@ proc init* =
             setCursor ccGrabbing
             app.state = asPan
 
-          of kcShift:
+          of kcJ:
             setCursor ccZoom
 
           else:
