@@ -1,5 +1,6 @@
 import std/[with, math, options, lenientops, strutils, strformat, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
+
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
@@ -162,6 +163,7 @@ const
 # TODO shadow node when creating node, make it opaque after placing it
 # TODO ability to write query instead of message id in message list of a node
 # TODO custom color palletes
+
 var app = AppData()
 
   # ----- Util

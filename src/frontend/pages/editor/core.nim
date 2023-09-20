@@ -99,7 +99,7 @@ proc detachNode*(t: TwNode, i: Index) = t.data.hooks.detachNode(i)
 proc capture*(t: TwNode): auto = t.data.hooks.capture()
 proc restore*(t: TwNode, input: JsObject) = t.data.hooks.restore(input)
 proc refresh*(t: TwNode) = t.data.hooks.refresh()
-proc render*(t: TwNode): Option[Future[void]] = t.data.hooks.render()
+proc render*(t: TwNode): auto = t.data.hooks.render()
 proc acceptsAsChild*(t: TwNode): auto = t.data.hooks.acceptsAsChild()
 proc settings*(t: TwNode): auto = t.data.hooks.settings()
 

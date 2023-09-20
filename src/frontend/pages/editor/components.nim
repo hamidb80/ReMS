@@ -450,6 +450,7 @@ proc initVideo: Hooks =
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring)))]
 
+# TODO make restore hook to get values optionally
 
 proc initList: Hooks =
   let
@@ -520,6 +521,7 @@ proc initTableRow: Hooks =
     detachNode = proc(at: Index) =
       dettachNodeDefault hooks.self(), at, true
 
+# TODO add border config 
 proc initTable: Hooks =
   let el = createElement "table"
 
@@ -527,30 +529,7 @@ proc initTable: Hooks =
     dom = () => el
     acceptsAsChild = genAllowedTags @[c"table-row"]
 
-
-proc initConfig: Hooks =
-  let
-    el = createElement "div"
-    (status, setstatus) = genState c""
-
-  defHooks:
-    dom = () => el
-    acceptsAsChild = anyTag
-    status = () => (tsNothing, "")
-    # capture = () => tojs configIni()
-    # restore = (j: JsObject) => setConfig j.to cstring
-    # render = genRender:  discard
-    mounted = genMounted: discard
-
-    settings = () => @[
-      SettingsPart(
-        field: "pin",
-        icon: "bi bi-pin",
-        editorData: () => EditorInitData(
-          name: "raw-text-editor",
-          input: toJs status(),
-          updateCallback: mutState(setStatus, cstring)))]
-
+# TODO add max height, height, width, max width
 proc initCustomHtml: Hooks =
   let
     el = createElement "div"
@@ -637,9 +616,30 @@ proc initGithubCode: Hooks =
 
 # TODO
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
-# ----- Embed | from youtube, aparat
 # ----- Table Of Contents
-# ----- Slide
+
+proc initConfig: Hooks =
+  let
+    el = createElement "div"
+    (status, setstatus) = genState c""
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = anyTag
+    status = () => (tsNothing, "")
+    # capture = () => tojs configIni()
+    # restore = (j: JsObject) => setConfig j.to cstring
+    # render = genRender:  discard
+    mounted = genMounted: discard
+
+    settings = () => @[
+      SettingsPart(
+        field: "pin",
+        icon: "bi bi-pin",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs status(),
+          updateCallback: mutState(setStatus, cstring)))]
 
 # ----- Export ------------------------
 
@@ -764,7 +764,7 @@ defComponent tableRowComponent,
   initTableRow
 
 defComponent customHtmlComponent,
-  "HTML",
+  "html",
   "bi bi-filetype-html",
   @["global", "block", "inline"],
   initCustomHtml
@@ -780,6 +780,7 @@ defComponent githubCodeComponent,
   "bi bi-github",
   @["global", "block"],
   initGithubCode
+
 
 proc defaultComponents*: ComponentsTable =
   new result

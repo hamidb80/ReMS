@@ -1,9 +1,8 @@
 import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables]
 import std/[dom, jsconsole, jsffi]
 
-import questionable
 import karax/[karax, karaxdsl, vdom]
-import caster
+import questionable, caster
 
 import ../../../backend/routes
 import ../../../backend/database/[models]
@@ -22,6 +21,10 @@ app.register "option-selector", selectEditor
 
 app.components = defaultComponents()
 app.regiterComponents
+
+# TODO add custom labels to any component
+# TODO auto suggest labels
+# TODO labels can have custom styles thanks to the config component
 
 # ----- UI ------------------------------
 

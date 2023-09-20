@@ -16,6 +16,7 @@ var
   notes: seq[Note]
   msgCache: Table[Id, cstring]
 
+# TODO write a note laod manager component in a different file
 proc getMsg(n: Note) = 
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =
     msgCache[n.id] = t.dom.innerHtml
@@ -33,12 +34,12 @@ proc reqNewNote =
     redirect get_note_editor_url id
 
 # ----- UI
-proc notePreviewC(np: Note): VNode =
+proc notePreviewC(n: Note): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
-        if np.id in msgCache:
-          verbatim msgCache[np.id]
+        if n.id in msgCache:
+          verbatim msgCache[n.id]
         else:
           text "loading..."
 
@@ -46,19 +47,18 @@ proc notePreviewC(np: Note): VNode =
         tdiv(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-copy"
           proc onclick =
-            copyToClipboard $np.id
+            copyToClipboard $n.id
 
         a(class = "btn mx-1 btn-compact btn-outline-dark",
-            href = get_note_editor_url(np.id)):
+            href = get_note_editor_url(n.id)):
           icon "fa-link"
         a(class = "btn mx-1 btn-compact btn-outline-warning",
-            href = get_note_editor_url(np.id)):
+            href = get_note_editor_url(n.id)):
           icon "fa-pen"
         button(class = "btn mx-1 btn-compact btn-outline-danger"):
           icon "fa-close"
 
-
-
+# TODO add ability to choose columns
 proc createDom: Vnode =
   echo "just redrawn"
 

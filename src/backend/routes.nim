@@ -14,16 +14,16 @@ dispatch router, ../views:
   get "/", loadDist"index.html" {.html.}
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
-  # get "/users/", assetsPage {.html.}
-  # get "/api/user/search/"?(name: string), assetsPage {.html.}
-  # get "/user/id/"?(id: int), assetsPage {.html.}
-  # get "/me/", assetsPage {.html.}
-  # get "/api/me/", assetsPage {.json.}
-  # post "/api/me/update/", assetsPage {.json.}
-  # get "/api/gen-invite-code/"?(user_id: int), assetsPage {.string.}
+  # get "/users/", usersPage {.html.}
+  # get "/me/", usersPage {.html.}
+  # get "/user/id/"?(id: int), usersPage {.html.}
+  # get "/api/user/search/"?(name: string), usersPage {.html.}
+  # get "/api/me/", myPage {.json.}
+  # put "/api/me/" usersPage {.json.}
+  # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
   get "/assets/", loadDist"assets.html" {.html.}
-  # get "/asset/"?(id: int), assetPreview {.html.}
+  # get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
@@ -39,12 +39,12 @@ dispatch router, ../views:
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
   # 'Pages' are just views for notes with predefined criteria
-  # get "/page/"?(user: Id, page: string), loadDist"page.html" {.html.}
-  # get "/api/page/"?(user: Id, page: string), page {.json: seq[Note].}
+  # get "/page/"?(s: string), loadDist"page.html" {.html.}
+  # get "/api/page/"?(page: string, start: Id, limit: int), page {.json: seq[Note].}
 
   get "/boards/", loadDist"boards.html" {.html.}
-  get "/api/boards/list", listBoards {.json: seq[BoardPreview].}
   get "/board/"?(id: Id), loadDist"board.html" {.html.}
+  get "/api/boards/list", listBoards {.json: seq[BoardPreview].}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
   post "/api/boards/new/", newBoard {.Id.}
   put "/api/board/update/"?(id: Id), updateBoard {.ok.}
@@ -59,6 +59,7 @@ dispatch router, ../views:
 
   # to aviod CORS
   get "/utils/github/code/"?(url: string), fetchGithubCode {.json.}
+
 
 func get_asset_short_hand_url*(asset_id: Id): string =
   "/a?" & $asset_id

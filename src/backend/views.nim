@@ -178,7 +178,7 @@ proc getDataReq(url: string): string =
   client.get(url).body
 
 template htmlUnescape(str): untyped =
-   str.multiReplace(("\\\"", "\""), ("\\n", "\n"), ("\\/", "/"))
+   str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
 
 func parseGhFile(content: string): GithubCodeEmbed =
   const
@@ -193,8 +193,6 @@ func parseGhFile(content: string): GithubCodeEmbed =
 
   result.styleLink = parts[0][(cssLinkStart + linkStamps.a.len) ..< cssLinkEnd]
   result.htmlCode = htmlUnescape parts[1][codeStamps.a.len ..< htmlCodeEnd]
-
-  debugEcho result.htmlCode
 
 proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGhFile getDataReq url
