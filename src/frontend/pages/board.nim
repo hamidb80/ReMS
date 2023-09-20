@@ -9,6 +9,7 @@ import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js]
 import ../../common/[conventions, datastructures, types]
+
 import ../../backend/[routes]
 import ../../backend/database/[models]
 
@@ -54,12 +55,12 @@ type
     bottomGroup: Group
 
     tempEdge: Edge
-    transformer: Transformer
+    # transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
     # app states
     hoverVisualNode: NOption[VisualNode]
-    selectedVisualNode: NOption[VisualNode]
+    selectedVisualNodes: seq[VisualNode]
     selectedEdge: NOption[Edge]
 
     font: FontConfig
@@ -227,21 +228,21 @@ proc redrawSizeNode(v: VisualNode; font: FontConfig) =
     cornerRadius = pad
 
 proc getFocusedFont: FontConfig =
-  if v =? app.selectedVisualNode:
-    v.config.font
-  else:
-    app.font
+  case app.selectedVisualNodes.len
+  of 1: app.selectedVisualNodes[0].config.font
+  else: app.font
 
 proc setCursor(c: CssCursor) =
   window.document.body.style.cursor = $c
 
 proc setFocusedFontFamily(fn: string) =
-  if issome app.selectedVisualNode:
-    let v = app.selectedVisualNode.get
-    v.config.font.family = fn
-    redrawSizeNode v, v.config.font
-  else:
+  case app.selectedVisualNodes.len
+  of 0:
     app.font.family = fn
+  else:
+    for v in app.selectedVisualNodes:
+      v.config.font.family = fn
+      redrawSizeNode v, v.config.font
 
 proc hover(vn: VisualNode) =
   app.hoverVisualNode = some vn
@@ -256,16 +257,16 @@ proc removeHighlight(vn: VisualNode) =
   vn.konva.wrapper.opacity = 1
 
 proc unselect =
-  if v =? app.selectedVisualNode:
+  for v in app.selectedVisualNodes:
     removeHighlight v
-    reset app.selectedVisualNode
+  reset app.selectedVisualNodes
 
   if e =? app.selectedEdge:
     reset app.selectedEdge
 
 proc select(vn: VisualNode) =
   unselect()
-  app.selectedVisualNode = some vn
+  app.selectedVisualNodes.add vn
 
 proc select(e: Edge) =
   unselect()
@@ -426,18 +427,26 @@ proc setText(v: VisualNode; t: cstring) =
   redrawConnectionsTo v.config.id
 
 proc setDataText =
-  if vn =? app.selectedVisualNode:
+  case app.selectedVisualNodes.len
+  of 1:
+    let vn = app.selectedVisualNodes[0]
     if vn.config.data.kind != vndkText:
       vn.config.data = VisualNodeData(kind: vndkText, text: "")
       vn.konva.txt.show
       vn.konva.img.hide
       setText vn, vn.config.data.text
+  else:
+    discard
 
 proc setDataImage =
-  if vn =? app.selectedVisualNode:
+  case app.selectedVisualNodes.len
+  of 1:
+    let vn = app.selectedVisualNodes[0]
     if vn.config.data.kind != vndkImage:
       vn.config.data = VisualNodeData(kind: vndkImage, url: "")
       vn.konva.txt.hide
+  else:
+    discard
 
 proc scaleImage(v: VisualNode; scale: float) =
   assert v.config.data.kind == vndkImage
@@ -500,12 +509,14 @@ proc setImageUrl(v: VisualNode; u: cstring) =
   loadImageGen u, v, true
 
 proc setFocusedFontSize(s: int) =
-  if v =? app.selectedVisualNode:
-    v.config.font.size = s
-    redrawSizeNode v, v.config.font
-    redrawConnectionsTo v.config.id
-  else:
+  case app.selectedVisualNodes.len
+  of 0:
     app.font.size = s
+  else:
+    for v in app.selectedVisualNodes:
+      v.config.font.size = s
+      redrawSizeNode v, v.config.font
+      redrawConnectionsTo v.config.id
 
 proc setFocusedEdgeWidth(w: Tenth) =
   if e =? app.selectedEdge:
@@ -520,12 +531,13 @@ proc getFocusedEdgeWidth: Tenth =
     app.edge.width
 
 proc getFocusedTheme: ColorTheme =
-  if v =? app.selectedVisualNode: v.config.theme
+  if app.selectedVisualNodes.len == 1: app.selectedVisualNodes[0].config.theme
   elif e =? app.selectedEdge: e.data.config.theme
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
-  if v =? app.selectedVisualNode:
+  if app.selectedVisualNodes.len == 1:
+    let v = app.selectedVisualNodes[0]
     v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
   elif e =? app.selectedEdge:
@@ -618,7 +630,8 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     on "click", proc =
       case app.boardState
       of bsFree:
-        if sv =? app.selectedVisualNode:
+        if app.selectedVisualNodes.len == 1:
+          let sv = app.selectedVisualNodes[0]
           if sv == vn:
             let w = vn.konva.wrapper
             # TODO make a function
@@ -634,7 +647,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
           select vn
 
       of bsMakeConnection:
-        let sv = !app.selectedVisualNode
+        let sv = app.selectedVisualNodes[0]
         if sv == vn:
           discard
         else:
@@ -826,10 +839,11 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
 
 
 proc addToMessages(id: Id) =
-  let v = app.selectedVisualNode.get
-  if id notin v.config.messageIdList:
-    v.config.messageIdList.add id
-    getmsg id
+  if app.selectedVisualNodes.len == 1:
+    let v = app.selectedVisualNodes[0]
+    if id notin v.config.messageIdList:
+      v.config.messageIdList.add id
+      getmsg id
 
 proc isMaximized*: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
@@ -898,7 +912,7 @@ proc createDom*(data: RouterData): VNode =
             StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
 
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
-            if ?app.selectedVisualNode:
+            if app.selectedVisualNodes.len != 0:
               icon "fa-crosshairs"
             elif ?app.selectedEdge:
               icon "fa-grip-lines"
@@ -978,23 +992,24 @@ proc createDom*(data: RouterData): VNode =
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
 
-        if vn =? app.selectedVisualNode:
+        if app.selectedVisualNodes.len != 0:
+          let vn = app.selectedVisualNodes[0]
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-message"
 
-            proc onclick = 
+            proc onclick =
               if app.sidebarWidth <= 10:
                 app.sidebarWidth = defaultWidth
                 app.sidebarState = ssMessagesView
-            
+
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-info"
 
-            proc onclick = 
+            proc onclick =
               if app.sidebarWidth <= 10:
                 app.sidebarWidth = defaultWidth
                 app.sidebarState = ssPropertiesView
-          
+
         else:
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-plus fa-lg"
@@ -1005,7 +1020,6 @@ proc createDom*(data: RouterData): VNode =
 
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-download fa-lg"
-
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
@@ -1056,18 +1070,20 @@ proc createDom*(data: RouterData): VNode =
                 invisibleText()
                 icon "fa-close"
 
-                proc onclick = 
+                proc onclick =
                   app.sidebarWidth = 0
 
           main(class = "p-4 content-wrapper h-100"):
             case app.sidebarState
             of ssMessagesView:
-              if sv =? app.selectedVisualNode:
+              if app.selectedVisualNodes.len == 1:
+                let sv = app.selectedVisualNodes[0]
                 for i, mid in sv.config.messageIdList:
                   msgComp sv, i, mid
 
             of ssPropertiesView:
-              if vn =? app.selectedVisualNode:
+              if app.selectedVisualNodes.len == 1:
+                let vn = app.selectedVisualNodes[0]
                 tdiv(class = "form-group"):
                   fieldset(class = "form-group"):
                     legend(class = "mt-4"):
@@ -1127,7 +1143,7 @@ proc createDom*(data: RouterData): VNode =
             case app.sidebarState
             of ssPropertiesView: discard
             of ssMessagesView:
-              if issome app.selectedVisualNode:
+              if app.selectedVisualNodes.len > 0:
                 tdiv(class = "input-group"):
                   input(`type` = "text", id = "new-message-input",
                       class = "form-control form-control-sm")
@@ -1161,7 +1177,7 @@ proc init* =
 
     with app:
       stage = newStage "board"
-      transformer = newTransformer()
+      # transformer = newTransformer()
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
@@ -1200,7 +1216,7 @@ proc init* =
           elif app.boardState == bsMakeConnection:
             let
               v = app.hoverVisualNode
-              n1 = !app.selectedVisualNode
+              n1 = app.selectedVisualNodes[0]
 
             if ?v:
               let n2 = !v
@@ -1308,17 +1324,18 @@ proc init* =
 
     block shortcuts:
       addHotkey "delete", proc =
-        if vn =? app.selectedVisualNode:
-          let oid = vn.config.id
+        if app.selectedVisualNodes.len > 0:
+          for vn in app.selectedVisualNodes:
+            let oid = vn.config.id
 
-          for n in app.edgeGraph.getOrDefault(oid):
-            let key = sorted oid..n
-            destroy app.edgeInfo[key].konva.wrapper
-            del app.edgeInfo, key
+            for n in app.edgeGraph.getOrDefault(oid):
+              let key = sorted oid..n
+              destroy app.edgeInfo[key].konva.wrapper
+              del app.edgeInfo, key
 
-          destroy vn.konva.wrapper
-          del app.objects, oid
-          removeNode app.edgeGraph, oid
+            destroy vn.konva.wrapper
+            del app.objects, oid
+            removeNode app.edgeGraph, oid
 
           unselect()
           redraw()
@@ -1363,7 +1380,8 @@ proc init* =
         app.stage.center = c
 
       addHotkey "f", proc = # focus
-        if v =? app.selectedVisualNode:
+        if app.selectedVisualNodes.len == 1:
+          let v = app.selectedVisualNodes[0]
           app.stage.center = v.center
           app.stage.x = app.stage.x - app.sidebarWidth/2
 
