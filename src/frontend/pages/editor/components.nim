@@ -616,7 +616,7 @@ proc initGithubCode: Hooks =
 
 # TODO
 # ----- link preview + poster image
-# ----- drop down with html elements
+# ----- [more] component :: a drop down with html elements
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
 # ----- Table Of Contents
 

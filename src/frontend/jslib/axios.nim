@@ -68,5 +68,5 @@ proc postApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse]
 proc putApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 
   {.importjs: "axios.put(@)".}
 
-proc deleteApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 
+proc deleteApi*(url: cstring, cfg: JsObject = nil): Future[AxiosResponse] 
   {.importjs: "axios.delete(@)".}

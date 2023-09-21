@@ -1,5 +1,6 @@
 import std/[options, lenientops, strformat, httpcore, sequtils, times, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
+
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
@@ -28,6 +29,11 @@ proc fetchNotes =
     for n in notes:
       getMsg n
       
+proc deleteNote(id: Id) = 
+  delete_api_note_url(id).deleteApi.dthen proc(r: AxiosResponse) = 
+    notes.deleteIt it.id == id
+    redraw()
+
 proc reqNewNote =
   post_api_notes_new_url().postApi.dthen proc(r: AxiosResponse) =
     let id = cast[Id](r.data)
@@ -44,6 +50,7 @@ proc notePreviewC(n: Note): VNode =
           text "loading..."
 
       tdiv(class = "card-footer d-flex justify-content-center"):
+
         tdiv(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-copy"
           proc onclick =
@@ -52,11 +59,16 @@ proc notePreviewC(n: Note): VNode =
         a(class = "btn mx-1 btn-compact btn-outline-dark",
             href = get_note_editor_url(n.id)):
           icon "fa-link"
+
         a(class = "btn mx-1 btn-compact btn-outline-warning",
             href = get_note_editor_url(n.id)):
           icon "fa-pen"
+
         button(class = "btn mx-1 btn-compact btn-outline-danger"):
           icon "fa-close"
+
+          proc onclick = 
+            deleteNote n.id
 
 # TODO add ability to choose columns
 proc createDom: Vnode =

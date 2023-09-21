@@ -10,7 +10,7 @@ import ./[core, components, inputs]
 import ../../utils/[js, browser]
 import ../../jslib/[axios]
 import ../../components/[snackbar]
-import ../../../common/[conventions, datastructures]
+import ../../../common/[conventions, datastructures, types]
 
 
 var app = App(state: asTreeView)
@@ -70,18 +70,14 @@ proc recursiveListImpl(
         else: ""
     
 
-
     h6(class = "badge text-start w-100 " & cls(path, hover, selected, c)):
       proc onMouseEnter = node.hover()
       proc onMouseLeave = node.unhover()
 
       italic(class =
-        if node.isLeaf:
-          "bi bi-asterisk"
-        elif node.data.visibleChildren:
-          "bi bi-caret-down-fill"
-        else:
-          "bi bi-caret-right-fill"):
+        if node.isLeaf: "bi bi-asterisk"
+        elif node.data.visibleChildren: "bi bi-caret-down-fill"
+        else: "bi bi-caret-right-fill"):
 
         proc onclick = 
           negate node.data.visibleChildren
@@ -268,8 +264,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
           i = app.focusedPath.pop
           f = n.father
 
-        n.die 
-        f.detachNode i
+        die n 
+        detachNode f, i
         app.focusedNode = f
       
     of "t":
@@ -384,19 +380,20 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     app.focusedNode.focus
 
     let
-      t = document.getElementById pathId app.focusedPath
-      w = document.getElementById treeViewId
+      t = el pathId app.focusedPath
+      w = el treeViewId
 
     w.scrollTop = t.offsetTop - 160
 
 
 # ----- Init ------------------------------
 
-proc fetchNote = 
-  let id = parseInt getWindowQueryParam("id")
+# FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
+proc fetchNote(id: Id) = 
   get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
     let doc = cast[Note](r.data)
-    deserizalize(app.components, doc.data, some app.tree.dom, wait= false).dthen proc(t: TwNode) = 
+    deserizalize(app.components, doc.data, some app.tree.dom, wait = false)
+    .dthen proc(t: TwNode) = 
       resetApp t
       redraw()
 
@@ -406,7 +403,8 @@ proc init* =
   resetApp root
 
   setRenderer createDom
-  settimeout 500, fetchNote
+  settimeout 500, proc = 
+    fetchNote parseInt getWindowQueryParam "id"
 
   with document.documentElement:
     addEventListener "keydown", keyboardListener

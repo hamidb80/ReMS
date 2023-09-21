@@ -131,9 +131,6 @@ func toForm*(name: cstring; file: Blob): FormData =
   result.add name, file
 
 
-proc qi*(id: string): Element =
-  document.getElementById id
-
 template winEl*: untyped =
   window.document.body
 
@@ -210,7 +207,8 @@ proc appendTemp(el: Element; action: proc()) =
   action()
   remove el
 
-proc addEventListener*(et: EventTarget; ev: cstring; cb: proc()) {.importjs: "#.addEventListener(@)".}
+proc addEventListener*(et: EventTarget; ev: cstring; cb: proc()) 
+  {.importjs: "#.addEventListener(@)".}
 
 proc downloadFile*(fileName, mimeType, content: cstring) =
   runnableExamples:
@@ -247,5 +245,5 @@ proc text*(e: ClipboardEvent): cstring {.importjs: """
   #.clipboardData.getData('text/plain')
 """.}
 
-
-proc redirect*(url: cstring) {.importjs: "location.href = #;".}
+proc redirect*(url: cstring) 
+  {.importjs: "location.href = #;".}

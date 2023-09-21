@@ -479,7 +479,7 @@ proc scaleImage(v: VisualNode; scale: float) =
   redrawConnectionsTo v.config.id
   v.config.data.width = v.konva.img.width
   v.config.data.height = v.konva.img.height
-  qi"scale-range".value = "1"
+  el"scale-range".value = "1"
 
 proc loadImageGen(url: cstring; vn: VisualNode; newSize: bool) =
   newImageFromUrl url:
@@ -1108,8 +1108,12 @@ proc createDom*(data: RouterData): VNode =
             of ssMessagesView:
               if app.selectedVisualNodes.len == 1:
                 let sv = app.selectedVisualNodes[0]
-                for i, mid in sv.config.messageIdList:
-                  msgComp sv, i, mid
+
+                if sv.config.messageIdList.len == 0:
+                  text "no messages!"
+                else:
+                  for i, mid in sv.config.messageIdList:
+                    msgComp sv, i, mid
 
             of ssPropertiesView:
               if app.selectedVisualNodes.len == 1:
@@ -1180,7 +1184,7 @@ proc createDom*(data: RouterData): VNode =
                     icon "fa-add"
                     proc onClick =
                       let
-                        inp = qi "new-message-input"
+                        inp = el"new-message-input"
                         id = parseInt inp.value
                       addToMessages id
                       inp.value = c""

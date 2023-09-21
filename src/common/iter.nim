@@ -8,3 +8,9 @@ func remove*[T](s: var seq[T], item: T) =
   case i
   of -1: discard
   else: s.del i
+
+template deleteIt*(s: var seq, cond: untyped) = 
+  for i, it {.inject.} in s:
+    if cond:
+      delete s, i
+      break
