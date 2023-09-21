@@ -24,7 +24,6 @@ type
   Mb* = distinct int
   Bytes* = distinct int64
 
-
   Degree* = distinct float
   Radian* = distinct float
 

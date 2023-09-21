@@ -20,7 +20,8 @@ proc substr(str: cstring, start, ende: int): cstring {.importjs: "#.substring(@)
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
-proc waitAll*(promises: seq[Future], cb: proc()) {.importjs: "Promise.all(#).then(#)".}
+proc noop = discard
+proc waitAll*(promises: seq[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 
 func newJsSet*(): JsSet {.importjs: "new Set(@)".}
 func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}

@@ -615,6 +615,7 @@ proc initGithubCode: Hooks =
           updateCallback: mutState(uset, cstring)))]
 
 # TODO
+# ----- drop down with html elements
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
 # ----- Table Of Contents
 

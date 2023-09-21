@@ -85,7 +85,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
     link(rel = "preconnect", href = "https://fonts.gstatic.com",
         crossorigin = "")
-    extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&display=swap"
+    extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
 
     # custom
     extCss "./custom.css"
@@ -106,6 +106,7 @@ proc boards: VNode =
 
 proc board: VNode =
   commonPage "Board", [
+      extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
       extJs("./script-board.js", true)]
 
 proc assets: VNode =

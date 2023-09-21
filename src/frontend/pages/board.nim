@@ -1,10 +1,10 @@
-import std/[with, math, stats, options, lenientops, strutils, strformat, sets, tables]
+import std/[with, math, stats, options, lenientops, strformat, sets, tables]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
-import ../jslib/[konva, hotkeys, axios]
+import ../jslib/[konva, hotkeys, axios, fontfaceobserver]
 import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js]
@@ -144,7 +144,7 @@ const
   lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
   dark = c(0x424242, 0xececec, 0x919191)
 
-  colorThemes = [
+  colorThemes = @[
     white, smoke, road, dark,
     yellow, orange, red,
     peach, pink, purple,
@@ -152,20 +152,18 @@ const
     mint, green, lemon,
     trans]
 
-  fontFamilies = [
-    "Vazirmatn", "Mooli", "cursive", "monospace"]
+  fontFamilies = @[
+    "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
 # TODO shadow node when creating node, make it opaque after placing it
-# TODO add multi select | area select to move, change theme together
-# TODO do not let user choose exlipict sizes, use predefined levels; in this way you can do some actions like 'select all sub nodes', ...
 # TODO custom color palletes
-# TODO use FontFaceObserver
-# TODO add beizier curve
+# TODO do not let user choose exlipict sizes, use predefined levels; in this way you can do some actions like 'select all sub nodes', ...
 # FIXME image node border radius is depend on font size
+# TODO add beizier curve
 
 var app = AppData()
 
-  # ----- Util
+# ----- Util
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
 template `||`*(v): untyped = v.asScalar
@@ -181,6 +179,16 @@ func `or`[S: string or cstring](a, b: S): S =
 template `?`(a): untyped =
   issome a
 
+
+proc whenFontsLoaded(fontsFamilies: seq[string], cb: proc()) = 
+  var loadEvents: seq[Future[void]]
+
+  for ff in fontsFamilies:
+    add loadEvents, load newFontFaceObserver ff
+
+  waitAll loadEvents, cb, proc = 
+    notify "some of the fonts are not loaded!"
+    cb()
 
 proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
@@ -315,7 +323,7 @@ func arctan(v: Vector): Degree =
   normalize arctan2(-v.y, v.x).radToDeg.Degree
 
 func whichRegion(θ: Degree; a: Area): Region =
-  ## devides the rectangle into 4 regions according to its diameters
+  ## divides the rectangle into 4 regions according to its diameters
   let
     d = a.topRight - a.center
     λ = normalize arctan d
@@ -1320,7 +1328,8 @@ proc init* =
 
       addEventListener document.body, "keyup":
         proc(e: Event as KeyboardEvent) {.caster.} =
-          app.pressedKeys.excl e.keyCode.KeyCode
+          let kc = KeyCode e.keyCode
+          app.pressedKeys.excl kc
 
           if app.pressedKeys.len == 0:
             setCursor ccNone
@@ -1344,8 +1353,6 @@ proc init* =
           # .putform(form, cfg)
           # .dthen proc(_: auto) =
           #   notify "screenshot updated!"
-
-
 
     block prepare:
       app.sidebarWidth = 0
@@ -1395,8 +1402,8 @@ proc init* =
 
       addHotkey "Escape", proc =
         app.boardState = bsFree
-        hide app.tempEdge.konva.wrapper
         app.footerState = fsOverview
+        hide app.tempEdge.konva.wrapper
         unselect()
         redraw()
 
@@ -1442,6 +1449,8 @@ proc init* =
 
 
     app.id = parseInt getWindowQueryParam "id"
-    fetchBoard app.id
+
+    whenFontsLoaded fontFamilies, proc = 
+      fetchBoard app.id
 
 when isMainModule: init()
