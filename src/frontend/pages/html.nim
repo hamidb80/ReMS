@@ -2,26 +2,6 @@ import std/[strutils, os, httpclient, sequtils]
 import karax/[vdom, karaxdsl]
 import ../../backend/routes
 
-# ----- aliases -----
-
-proc download(url, path: string) =
-  try:
-    var
-      client = newHttpClient()
-      bin = client.getContent url # , path
-
-    writeFile path, bin
-    echo "✅ Downloaded ", url
-
-  except:
-    echo "⭕ Failed to download ", url
-    echo "Reason: ", getCurrentExceptionMsg()
-
-
-const
-  saveDir = "./dist/"
-  cannot = ["font-awesome", "katex.min.css", "bootstrap-icons"]
-
 
 func normalizeOsName(url: string): string =
   for ch in url:
@@ -30,33 +10,21 @@ func normalizeOsName(url: string): string =
       of 'a'..'z', 'A'..'Z', '0'..'9', '_', '-', '.': ch
       else: '-'
 
-proc localize(url: string): string =
-  let
-    fileName = normalizeOsName url.splitPath.tail
-    filePath = saveDir & filename
-    loadPath = getDistUrl fileName
-    isFromInternet = url.startsWith "http"
+proc resolveUrl(url: string): string =
+  if url.startsWith "http": # is from internet
+    url
+  else: 
+    getDistUrl normalizeOsName url.splitPath.tail
 
-  if isFromInternet:
-    if defined localdev:
-      discard existsOrCreateDir saveDir
-
-      if cannot.anyIt(it in url): url
-      else:
-        if not fileExists filePath:
-          download url, filePath
-        loadPath
-    else: url
-  else: loadPath
 
 proc extLink(rel, url: string): VNode =
-  buildHtml link(rel = rel, href = localize url)
+  buildHtml link(rel = rel, href = resolveUrl url)
 
 proc extCss(url: string): VNode =
   buildHtml extLink("stylesheet", url)
 
 proc extJs(url: string, defered: bool = false): VNode =
-  result = buildHtml script(src = localize url, `defer` = defered)
+  result = buildHtml script(src = resolveUrl url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
   buildHtml head:

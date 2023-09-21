@@ -67,8 +67,5 @@ task gennl, "":
 task html, "generate index.html ./dist":
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 
-task localhtml, "generate index.html ./dist":
-  exec fmt"nim -d:frontend -d:ssl -d:localdev r src/frontend/pages/html.nim"
-
 task serv, "run server":
   exec fmt"nim --mm:arc --threads:on -d:ssl r ./src/backend/server.nim"
