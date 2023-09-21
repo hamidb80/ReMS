@@ -106,15 +106,6 @@ type
     shape: KonvaShape
     line: Line
 
-  CssCursor = enum
-    ccNone = ""
-    ccMove = "move"
-    ccZoom = "zoom-in"
-    ccPointer = "pointer"
-    ccResizex = "e-resize"
-    ccGrabbing = "grabbing"
-    # ccAdd
-
 
 const
   # TODO read these from css
@@ -159,6 +150,7 @@ const
 # TODO custom color palletes
 # TODO do not let user choose exlipict sizes, use predefined levels; in this way you can do some actions like 'select all sub nodes', ...
 # FIXME image node border radius is depend on font size
+# TODO customize border radius for nodes
 # TODO add beizier curve
 
 var app = AppData()
@@ -180,13 +172,13 @@ template `?`(a): untyped =
   issome a
 
 
-proc whenFontsLoaded(fontsFamilies: seq[string], cb: proc()) = 
+proc whenFontsLoaded(fontsFamilies: seq[string], cb: proc()) =
   var loadEvents: seq[Future[void]]
 
   for ff in fontsFamilies:
     add loadEvents, load newFontFaceObserver ff
 
-  waitAll loadEvents, cb, proc = 
+  waitAll loadEvents, cb, proc =
     notify "some of the fonts are not loaded!"
     cb()
 
@@ -495,9 +487,8 @@ proc loadImageGen(url: cstring; vn: VisualNode; newSize: bool) =
       let
         wi = imgNode.width             # width of image
         hi = imgNode.height            # height of image
-
-        fr =
-          if newSize:                  # final ratio
+        fr =                           # final ratio
+          if newSize:
             let
               sc = ||app.stage.scale   # scale
               ws = app.stage.width/sc  # width of screnn
@@ -687,7 +678,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     add box
     add txt
 
-    on "dragstart", proc =
+    on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
       if app.state != asNormal or (vn notin app.selectedVisualNodes and
           kcM notin app.pressedKeys):
         stopDrag wrapper
@@ -1338,21 +1329,34 @@ proc init* =
       addEventListener document.body, "paste":
         proc(e: Event as ClipboardEvent) {.caster.} =
 
-          let s = e.text
-          if s.startswith "/":
-            let n = createNode()
-            loadImageGen s, n, true
+          let
+            s = e.text
+            files = e.clipboardData.filesArray
 
-          # TODO paste image from cliboard
+          if s.startswith "/": # paste by link
+            let vn = createNode()
+            loadImageGen s, vn, true
 
-          # var
-          #   form = toForm("screenshot.png", b)
-          #   cfg = AxiosConfig[FormData]()
+          elif files.len == 1: # paste by image 
+            let f = files[0]
+            if f.`type`.startswith "image/":
+              var
+                form = toForm(f.name, f)
+                cfg = AxiosConfig[FormData]()
 
-          # put_api_board_screen_shot_url(app.id)
-          # .putform(form, cfg)
-          # .dthen proc(_: auto) =
-          #   notify "screenshot updated!"
+              post_assets_upload_url()
+              .postForm(form, cfg)
+              .dthen proc(r: AxiosResponse) =
+                let 
+                  assetId = cast[Id](r.data)
+                  url = get_asset_short_hand_url assetId
+                  vn = createnode()
+                
+                vn.config.data = VisualNodeData(
+                  kind: vndkImage,
+                  url: url)
+                
+                loadImageGen url, vn, true
 
     block prepare:
       app.sidebarWidth = 0
@@ -1450,7 +1454,7 @@ proc init* =
 
     app.id = parseInt getWindowQueryParam "id"
 
-    whenFontsLoaded fontFamilies, proc = 
+    whenFontsLoaded fontFamilies, proc =
       fetchBoard app.id
 
 when isMainModule: init()

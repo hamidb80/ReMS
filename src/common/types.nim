@@ -88,6 +88,14 @@ type
     tdLineThrough = "line-through"
     tdUnderline = "underline"
 
+  CssCursor* = enum
+    ccNone = ""
+    ccMove = "move"
+    ccZoom = "zoom-in"
+    ccPointer = "pointer"
+    ccResizex = "e-resize"
+    ccGrabbing = "grabbing"
+
 
 func getFields*[T](t: typedesc[T]): seq[string] =
   for k, v in fieldPairs(default t):
