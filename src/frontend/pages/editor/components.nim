@@ -529,7 +529,7 @@ proc initTable: Hooks =
     dom = () => el
     acceptsAsChild = genAllowedTags @[c"table-row"]
 
-# TODO add max height, height, width, max width
+# TODO add max height, height, width, max width OR USE [GRID component]
 proc initCustomHtml: Hooks =
   let
     el = createElement "div"
@@ -617,7 +617,7 @@ proc initGithubCode: Hooks =
 # TODO
 # ----- link preview + poster image
 # ----- [more] component :: a drop down with html elements
-# ----- Grid [margin/padding/center/left/right/flex+justify+alignment]
+# ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]
 # ----- Table Of Contents
 
 proc initConfig: Hooks =

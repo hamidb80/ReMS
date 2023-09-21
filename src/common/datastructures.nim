@@ -103,7 +103,7 @@ type
     config*: EdgeConfig
 
   BoardData* = object
-    objects*: CTable[Str, VisualNodeConfig]
+    objects*: NTable[Str, VisualNodeConfig]
     edges*: seq[EdgeData]
 
 

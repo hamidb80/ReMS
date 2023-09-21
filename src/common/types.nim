@@ -6,7 +6,7 @@ when defined js:
   type
     Str* = cstring
     NativeJson* = JsObject
-    CTable*[S: Str, T] = JsAssoc[S, T]
+    NTable*[S: Str, T] = JsAssoc[S, T] ## native table
     Option*[T] = distinct JsObject
 
 else:
@@ -14,7 +14,7 @@ else:
   type
     Str* = string
     NativeJson* = JsonNode
-    CTable*[A, B] = Table[A, B]
+    NTable*[A, B] = Table[A, B]
     Option*[T] = options.Option[T]
 
 type
@@ -189,7 +189,7 @@ func toColorString*(c: HexColorPack): Str =
 when defined js:
   import std/jsffi
 
-  func initCTable*[K: cstring, V](): CTable[K, V] =
+  func initNTable*[K: cstring, V](): NTable[K, V] =
     newJsAssoc[K, V]()
 
   func somec*[T](j: T): Option[T] =

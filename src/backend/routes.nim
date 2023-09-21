@@ -52,7 +52,8 @@ dispatch router, ../views:
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
-  get "/api/tags/list/", listTags {.json: seq[].}
+  get "/api/tags/list/", listTags {.json: seq[Tag].}
+  # get "/api/all-my-tags/", 
   post "/api/tag/new/", newTag {.Id.}
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}

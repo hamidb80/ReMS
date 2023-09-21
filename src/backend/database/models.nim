@@ -1,4 +1,4 @@
-import std/[tables, json, parseutils]
+import std/[json, parseutils]
 import ../../common/[types, datastructures]
 
 when defined js: import ponairi/pragmas
@@ -38,7 +38,7 @@ type # database models
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
-    name*: Str # name without extention
+    name*: Str  # name without extention
     mime*: Str
     size*: Bytes
     path*: Path # where is it stored?
@@ -108,13 +108,13 @@ type # database models
     created_due_to*: RelationCreationReason
     timestamp*: UnixTime
 
-  RelationsCache* = object
+  RelationsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    tags*: JsonNode # Table[Id, seq[Relation]]
+    activeRelsValues*: NTable[Str, seq[string]] ## active relation values grouped by tag id
 
   Notification* = object
     id* {.primary, autoIncrement.}: Id
@@ -132,8 +132,12 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    # owner*: Id
-    # timestamp*: UnixTime
+    # activeRelsValues*: NTable[Id, seq[string]] 
+
+  NoteView* = object
+    id*: Id
+    data*: TreeNodeRaw[NativeJson]
+    activeRelsValues*: NTable[Str, seq[string]] 
 
   BoardPreview* = object
     id*: Id
@@ -165,6 +169,7 @@ when not defined js:
   defSqlJsonType JsonNode
   defSqlJsonType TreeNodeRaw[JsonNode]
   defSqlJsonType BoardData
+  defSqlJsonType NTable
 
   proc sqlType*(t: typedesc[Path]): string = "TEXT"
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)

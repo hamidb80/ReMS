@@ -147,8 +147,8 @@ const
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
 # TODO shadow node when creating node, make it opaque after placing it
-# TODO custom color palletes
-# TODO do not let user choose exlipict sizes, use predefined levels; in this way you can do some actions like 'select all sub nodes', ...
+# TODO area selection
+# TODO select custom color palletes
 # FIXME image node border radius is depend on font size
 # TODO customize border radius for nodes
 # TODO add beizier curve
@@ -738,7 +738,7 @@ proc createNode: VisualNode =
   vn
 
 proc toJson(app: AppData): BoardData =
-  result.objects = initCTable[Str, VisualNodeConfig]()
+  result.objects = initNTable[Str, VisualNodeConfig]()
 
   for oid, node in app.objects:
     result.objects[oid] = node.config
@@ -875,7 +875,7 @@ proc sidebarStateMutator*(to: SidebarState): proc =
   proc =
     app.sidebarState = to
 
-proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
+proc colorSelectBtn(selectedTheme, theme: ColorTheme; seleNTable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
@@ -885,11 +885,11 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
           (StyleAttr.borderColor, toColorString theme.fg),
         )):
           proc onclick =
-            if selectable:
+            if seleNTable:
               setFocusedTheme theme
               app.footerState = fsOverview
 
-proc fontSizeSelectBtn[T](size, selected: T; selectable: bool; fn: proc()): Vnode =
+proc fontSizeSelectBtn[T](size, selected: T; seleNTable: bool; fn: proc()): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(size == selected, "bg-light")):
@@ -898,10 +898,10 @@ proc fontSizeSelectBtn[T](size, selected: T; selectable: bool; fn: proc()): Vnod
           text $size
 
         proc onclick =
-          if selectable:
+          if seleNTable:
             fn()
 
-proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
+proc fontFamilySelectBtn(name: string; seleNTable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(name == app.font.family, "bg-light")):
@@ -910,7 +910,7 @@ proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
           text name
 
         proc onclick =
-          if selectable:
+          if seleNTable:
             setFocusedFontFamily name
             app.footerState = fsOverview
 
@@ -1008,37 +1008,37 @@ proc createDom*(data: RouterData): VNode =
             text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
-
         let n = app.selectedVisualNodes.len
-        if n > 0:
-          let vn = app.selectedVisualNodes[0]
 
-          if n == 1:
-            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-              icon "fa-circle-nodes"
-
-              proc onclick =
-                startAddConn vn
-
-            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-              icon "fa-message"
-
-              proc onclick =
-                if app.sidebarWidth <= 10:
-                  app.sidebarWidth = defaultWidth
-                  app.sidebarState = ssMessagesView
-
-            button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-              icon "fa-info"
-
-              proc onclick =
-                if app.sidebarWidth <= 10:
-                  app.sidebarWidth = defaultWidth
-                  app.sidebarState = ssPropertiesView
-
+        if n > 1:
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             span:
               text $n
+
+        elif n == 1:
+          let vn = app.selectedVisualNodes[0]
+
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-circle-nodes"
+
+            proc onclick =
+              startAddConn vn
+
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-message"
+
+            proc onclick =
+              if app.sidebarWidth <= 10:
+                app.sidebarWidth = defaultWidth
+                app.sidebarState = ssMessagesView
+
+          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+            icon "fa-info"
+
+            proc onclick =
+              if app.sidebarWidth <= 10:
+                app.sidebarWidth = defaultWidth
+                app.sidebarState = ssPropertiesView
 
         else:
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -1052,8 +1052,8 @@ proc createDom*(data: RouterData): VNode =
             icon "fa-download fa-lg"
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
-          iff(freeze, "user-select-none ") & iff(app.sidebarWidth <
-              ciriticalWidth, "icons-only "),
+          iff(freeze, "user-select-none ") &
+          iff(app.sidebarWidth < ciriticalWidth, "icons-only "),
           style = style(StyleAttr.width, fmt"{app.sidebarWidth}px")):
 
         tdiv(class = "extender h-100 btn btn-light p-0"):
@@ -1341,7 +1341,7 @@ proc init* =
             let vn = createNode()
             loadImageGen s, vn, true
 
-          elif files.len == 1: # paste by image 
+          elif files.len == 1: # paste by image
             let f = files[0]
             if f.`type`.startswith "image/":
               var
@@ -1351,15 +1351,15 @@ proc init* =
               post_assets_upload_url()
               .postForm(form, cfg)
               .dthen proc(r: AxiosResponse) =
-                let 
+                let
                   assetId = cast[Id](r.data)
                   url = get_asset_short_hand_url assetId
                   vn = createnode()
-                
+
                 vn.config.data = VisualNodeData(
                   kind: vndkImage,
                   url: url)
-                
+
                 loadImageGen url, vn, true
 
     block prepare:

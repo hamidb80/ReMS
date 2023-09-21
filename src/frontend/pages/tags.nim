@@ -21,6 +21,11 @@ type
     hasValue, showName: bool
 
 
+
+# TODO add tag to DB
+# TODO recieve tags
+
+
 const
   white: ColorTheme = ("#ffffff", "#889bad")
   smoke: ColorTheme = ("#ecedef", "#778696")

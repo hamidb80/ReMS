@@ -16,6 +16,7 @@ let compTable = defaultComponents()
 var
   notes: seq[Note]
   msgCache: Table[Id, cstring]
+  tags: Table[Id, Tag]
 
 # TODO write a note laod manager component in a different file
 proc getMsg(n: Note) = 
@@ -29,6 +30,15 @@ proc fetchNotes =
     for n in notes:
       getMsg n
       
+proc fetchTags =
+  get_api_tags_list_url().getApi.dthen proc(r: AxiosResponse) =
+    let tagsList = cast[seq[Tag]](r.data)
+    
+    for t in tagsList:
+      tags[t.id] = t
+
+    redraw()
+     
 proc deleteNote(id: Id) = 
   delete_api_note_url(id).deleteApi.dthen proc(r: AxiosResponse) = 
     notes.deleteIt it.id == id
@@ -60,6 +70,12 @@ proc notePreviewC(n: Note): VNode =
             href = get_note_editor_url(n.id)):
           icon "fa-link"
 
+        button(class = "btn mx-1 btn-compact btn-outline-success"):
+          icon "fa-tags"
+
+          proc onclick = 
+            discard
+
         a(class = "btn mx-1 btn-compact btn-outline-warning",
             href = get_note_editor_url(n.id)):
           icon "fa-pen"
@@ -70,27 +86,37 @@ proc notePreviewC(n: Note): VNode =
           proc onclick = 
             deleteNote n.id
 
+proc  tagManager(s: seq[Tag]): Vnode = 
+  discard
+
 # TODO add ability to choose columns
 proc createDom: Vnode =
   echo "just redrawn"
 
   result = buildHtml tdiv:
-    nav(class = "navbar navbar-expand-lg bg-white"):
-      tdiv(class = "container-fluid"):
-        a(class = "navbar-brand", href = "#"):
-          icon("fa-note-sticky fa-xl me-3 ms-1")
-          text "Notes"
+    if true:
+      nav(class = "navbar navbar-expand-lg bg-white"):
+        tdiv(class = "container-fluid"):
+          a(class = "navbar-brand", href = "#"):
+            icon("fa-note-sticky fa-xl me-3 ms-1")
+            text "Notes"
 
-    tdiv(class = "px-4 py-2 my-2"):
-      tdiv(class = "masonry-container justify-content-around my-4"):
-        button(
-          class = "masonry-item my-3 btn btn-outline-primary rounded",
-          onclick = reqNewNote):
-          icon "fa-plus fa-xl my-4"
+      tdiv(class = "px-4 py-2 my-2"):
+        tdiv(class = "masonry-container justify-content-around my-4"):
+          button(
+            class = "masonry-item my-3 btn btn-outline-primary rounded",
+            onclick = reqNewNote):
+            icon "fa-plus fa-xl my-4"
 
-        for n in notes:
-          notePreviewC n
+          for n in notes:
+            notePreviewC n
+    else:
+      tdiv(class="w-100 h-100 bg-white"):
+        text "HEY!!!!!!!!!!"
+        # tagManager()
 
 when isMainModule:
   setRenderer createDom
+  fetchTags()
   fetchNotes()
+
