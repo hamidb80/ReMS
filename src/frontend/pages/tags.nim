@@ -1,48 +1,28 @@
 import std/[with, strutils, sequtils, options]
 import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
+
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
 import ../jslib/[hotkeys]
 import ../utils/[browser, ui]
+import ../../common/[datastructures, types]
 
 
 type
-  ColorTheme = tuple
-    bg, fg: string
-
   AppState = enum
     asInit
     asSelectIcon
+
+  ColorTheme = tuple
+    bg, fg: string
 
   Tag = object
     name, icon, value: string
     theme: ColorTheme
     hasValue, showName: bool
 
-
-
-# TODO add tag to DB
-# TODO recieve tags
-
-
 const
-  white: ColorTheme = ("#ffffff", "#889bad")
-  smoke: ColorTheme = ("#ecedef", "#778696")
-  road: ColorTheme = ("#dfe2e4", "#617288")
-  yellow: ColorTheme = ("#fef5a6", "#958505")
-  orange: ColorTheme = ("#ffdda9", "#a7690e")
-  red: ColorTheme = ("#ffcfc9", "#b26156")
-  peach: ColorTheme = ("#fbc4e2", "#af467e")
-  pink: ColorTheme = ("#f3d2ff", "#7a5a86")
-  purple: ColorTheme = ("#dac4fd", "#7453ab")
-  purpleLow: ColorTheme = ("#d0d5fe", "#4e57a3")
-  blue: ColorTheme = ("#b6e5ff", "#2d7aa5")
-  diomand: ColorTheme = ("#adefe3", "#027b64")
-  mint: ColorTheme = ("#c4fad6", "#298849")
-  green: ColorTheme = ("#cbfbad", "#479417")
-  lemon: ColorTheme = ("#e6f8a0", "#617900")
-
   icons = splitlines staticRead "./icons.txt"
   defaultIcon = icons[0]
   noIndex = -1

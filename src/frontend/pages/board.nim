@@ -7,7 +7,7 @@ import caster, uuid4, questionable, prettyvec
 import ../jslib/[konva, hotkeys, axios, fontfaceobserver]
 import ./editor/[components, core]
 import ../components/[snackbar]
-import ../utils/[ui, browser, js]
+import ../utils/[ui, browser, js, api]
 import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/[routes]
@@ -116,33 +116,7 @@ const
   ciriticalWidth = 400
   minimizeWidth = 360
 
-  trans = ColorTheme(bg: 0xffffff_0, fg: 0x889bad_a, st: 0xa5b7cf_a)
-  nonExistsTheme = ColorTheme(bg: 0, fg: 0, st: 0)
-  white = c(0xffffff, 0x889bad, 0xa5b7cf)
-  smoke = c(0xecedef, 0x778696, 0x9eaabb)
-  road = c(0xdfe2e4, 0x617288, 0x808fa6)
-  yellow = c(0xfef5a6, 0x958505, 0xdec908)
-  orange = c(0xffdda9, 0xa7690e, 0xe99619)
-  red = c(0xffcfc9, 0xb26156, 0xff634e)
-  peach = c(0xfbc4e2, 0xaf467e, 0xe43e97)
-  pink = c(0xf3d2ff, 0x7a5a86, 0xc86fe9)
-  purple = c(0xdac4fd, 0x7453ab, 0xa46bff)
-  purpleLow = c(0xd0d5fe, 0x4e57a3, 0x7886f4)
-  blue = c(0xb6e5ff, 0x2d7aa5, 0x399bd3)
-  diomand = c(0xadefe3, 0x027b64, 0x00d2ad)
-  mint = c(0xc4fad6, 0x298849, 0x25ba58)
-  green = c(0xcbfbad, 0x479417, 0x52d500)
-  lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
-  dark = c(0x424242, 0xececec, 0x919191)
-
-  colorThemes = @[
-    white, smoke, road, dark,
-    yellow, orange, red,
-    peach, pink, purple,
-    purpleLow, blue, diomand,
-    mint, green, lemon,
-    trans]
-
+  nonExistsTheme = c(0, 0, 0)
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
@@ -153,7 +127,9 @@ const
 # TODO customize border radius for nodes
 # TODO add beizier curve
 
-var app = AppData()
+var 
+  app = AppData()
+  colorThemes: seq[ColorTheme]
 
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
@@ -1366,8 +1342,8 @@ proc init* =
       app.sidebarWidth = 0
       app.font.family = fontFamilies[1]
       app.font.size = 20
-      app.theme = white
-      app.edge.theme = white
+      app.theme = nonExistsTheme
+      app.edge.theme = nonExistsTheme
       app.edge.width = 10.Tenth
 
     block init:
@@ -1458,7 +1434,13 @@ proc init* =
 
     app.id = parseInt getWindowQueryParam "id"
 
-    whenFontsLoaded fontFamilies, proc =
-      fetchBoard app.id
+    getPallete "default", proc(ct: seq[ColorTheme]) = 
+      colorThemes = ct
+      setFocusedTheme colorThemes[0] 
+
+      whenFontsLoaded fontFamilies, proc =
+        fetchBoard app.id
+
+      redraw()
 
 when isMainModule: init()

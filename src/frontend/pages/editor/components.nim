@@ -70,7 +70,6 @@ let
   anyTag = genAllowedTags @[c"global"]
   onlyInlines = genAllowedTags @[c"inline"]
 
-func noOp = discard # no Operation
 func noSettings: seq[SettingsPart] = @[]
 func returnNull: JsObject = nil
 func nothingToRestore(input: JsObject) = discard

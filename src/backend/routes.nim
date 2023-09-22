@@ -58,6 +58,8 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
+  get "/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
+
   # to aviod CORS
   get "/utils/github/code/"?(url: string), fetchGithubCode {.json.}
 

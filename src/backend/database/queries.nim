@@ -64,7 +64,7 @@ proc deleteBoard*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Board WHERE id = ?", id
 
 
-proc newTag*(db: DbConn, t: TagUserCreate): Id =
+proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
     owner: 0,
     creator: tcUser,
@@ -74,7 +74,7 @@ proc newTag*(db: DbConn, t: TagUserCreate): Id =
     icon: t.icon,
     value_type: t.value_type)
 
-proc updateTag*(db: DbConn, id: Id, t: TagUserCreate) =
+proc updateTag*(db: DbConn, id: Id, t: Tag) =
   discard
 
 proc deleteTag*(db: DbConn, id: Id) =
@@ -82,3 +82,7 @@ proc deleteTag*(db: DbConn, id: Id) =
 
 proc listTags*(db: DbConn): seq[Tag] =
   db.find R, sql"SELECT * FROM Tag ORDER by id DESC"
+
+
+proc getPalette*(db: DbConn, name: string): Palette =
+  db.find R, sql"SELECT * FROM Palette WHERE name = ?", name

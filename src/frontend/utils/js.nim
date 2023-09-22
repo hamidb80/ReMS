@@ -20,7 +20,7 @@ proc substr(str: cstring, start, ende: int): cstring {.importjs: "#.substring(@)
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
-proc noop = discard
+proc noop* = discard
 proc waitAll*(promises: seq[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 
 func newJsSet*(): JsSet {.importjs: "new Set(@)".}
@@ -50,6 +50,12 @@ proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
   discard f.then resolve
 
 proc dcatch*[T, E](f: Future[T]; catcher: proc(e: E)) =
+  discard f.catch catcher
+
+proc catch*[T](f: Future[T]; catcher: proc()): Future[T] 
+  {.importjs: "#.catch(@)".}
+
+proc dcatch*[T](f: Future[T]; catcher: proc()) =
   discard f.catch catcher
 
 proc toJsRecursiveImpl(t: NimNode): NimNode =

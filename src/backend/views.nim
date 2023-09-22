@@ -157,12 +157,10 @@ proc deleteBoard*(req: Request) {.qparams: {id: int}.} =
 
 
 proc newTag*(req: Request) =
-  let t = fromJson(req.body, TagUserCreate)
-  !!respJson toJson db.newTag(t)
+  !!respJson toJson db.newTag fromJson(req.body, Tag)
 
 proc updateTag*(req: Request) {.qparams: {id: int}.} =
-  let t = fromJson(req.body, TagUserCreate)
-  !!db.updateTag(id, t)
+  !!db.updateTag(id, fromJson(req.body, Tag))
   resp OK
 
 proc deleteTag*(req: Request) {.qparams: {id: int}.} =
@@ -173,7 +171,7 @@ proc listTags*(req: Request) =
   !!respJson toJson db.listTags
 
 
-proc getDataReq(url: string): string =
+proc download(url: string): string =
   var client = newHttpClient()
   client.get(url).body
 
@@ -181,6 +179,13 @@ template htmlUnescape(str): untyped =
    str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
 
 func parseGhFile(content: string): GithubCodeEmbed =
+  ## as of 2023/10/22 the Github embed `script.js` is in pattern of:
+  ## 
+  ## LINE_NUMBER| TEXT
+  ## 1| document.write('<link rel="stylesheet" href="<CSS_FILE_URL">')
+  ## 2| document.write('escaped string of HTML content')
+  ## 3|
+  
   const
     linkStamps = "href=\"" .. "\">')"
     codeStamps = "document.write('" .. "')"
@@ -195,4 +200,11 @@ func parseGhFile(content: string): GithubCodeEmbed =
   result.htmlCode = htmlUnescape parts[1][codeStamps.a.len ..< htmlCodeEnd]
 
 proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
-  respJson toJson parseGhFile getDataReq url
+  respJson toJson parseGhFile download url
+
+proc getPalette*(req: Request) {.qparams: {name: string}.} = 
+  !!respJson toJson db.getPalette(name).colorThemes
+
+# add palette
+# update palette
+# delete palette
