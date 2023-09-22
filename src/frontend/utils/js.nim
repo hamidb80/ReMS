@@ -46,6 +46,10 @@ proc newPromise*[T, E](action: proc(
   reject: proc(e: E)
 )): Future[T] {.importjs: "new Promise(@)".}
 
+
+proc then*[T](f: Future[T]; resolve: proc()): Future[T]
+  {.importjs: "#.then(@)".}
+
 proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
   discard f.then resolve
 

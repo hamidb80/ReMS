@@ -14,9 +14,6 @@ type
     asInit
     asSelectIcon
 
-  ColorTheme = tuple
-    bg, fg: string
-
   Tag = object
     name, icon, value: string
     theme: ColorTheme
@@ -26,7 +23,7 @@ const
   icons = splitlines staticRead "./icons.txt"
   defaultIcon = icons[0]
   noIndex = -1
-  defaultTag = Tag(
+  tempTag = Tag(
     icon: defaultIcon,
     theme: road,
     showName: true,
@@ -34,25 +31,9 @@ const
 
 var
   state = asInit
-  currentTag = defaultTag
+  currentTag = tempTag
   selectedTagI = noIndex
-  tags = @[
-    Tag(name: "Idea",
-      icon: "fa-lightbulb",
-      theme: pink,
-      hasValue: false, showName: true),
-    Tag(name: "Critical",
-      icon: "fa-gun",
-      theme: red,
-      hasValue: false, showName: true),
-    Tag(name: "Date",
-      icon: "fa-clock",
-      theme: blue,
-      hasValue: true, showName: false),
-    Tag(name: "Session",
-      icon: "fa-chair",
-      theme: lemon,
-      hasValue: true, showName: false)]
+  tags = @[]
 
 proc onIconSelected(icon: string) =
   currentTag.icon = icon
@@ -62,7 +43,7 @@ proc genChangeSelectedTagi(i: int): proc() =
   proc =
     if selectedTagI == i:
       selectedTagI = noIndex
-      currentTag = defaultTag
+      currentTag = tempTag
     else:
       selectedTagI = i
       currentTag = tags[i]

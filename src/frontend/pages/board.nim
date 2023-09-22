@@ -1,16 +1,15 @@
-import std/[with, math, stats, options, lenientops, strformat, sets, tables]
+import std/[with, math, stats, options, lenientops, strformat, sets, tables, sugar]
 import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
-import ../jslib/[konva, hotkeys, axios, fontfaceobserver]
+import ../jslib/[konva, hotkeys, fontfaceobserver]
 import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js, api]
 import ../../common/[conventions, datastructures, types, iter]
 
-import ../../backend/[routes]
 import ../../backend/database/[models]
 
 
@@ -748,9 +747,8 @@ proc restore(app: var AppData; data: BoardData) =
     addEdgeClick e
 
 proc fetchBoard(id: Id) =
-  get_api_board_url(id).getApi.dthen proc(r: AxiosResponse) =
-    let board = cast[Board](r.data)
-    app.restore board.data
+  apiGetBoard id, proc(b: Board) = 
+    app.restore b.data
 
 
 proc newPoint(pos: Vector; r = 1.0): Circle =
@@ -766,11 +764,8 @@ var msgCache: Table[Id, Option[cstring]]
 proc getMsg(id: Id) =
   msgCache[id] = none cstring
 
-  let q = get_api_note_url(id).getApi
-  q.dthen proc(r: AxiosResponse) =
-    let d = cast[Note](r.data)
-
-    deserizalize(compTable, d.data).dthen proc(t: TwNode) =
+  apiGetNote id, proc(n: Note) = 
+    deserizalize(compTable, n.data).dthen proc(t: TwNode) =
       msgCache[id] = some t.dom.innerHtml
       redraw()
 
@@ -1320,23 +1315,14 @@ proc init* =
           elif files.len == 1: # paste by image
             let f = files[0]
             if f.`type`.startswith "image/":
-              var
-                form = toForm(f.name, f)
-                cfg = AxiosConfig[FormData]()
-
-              post_assets_upload_url()
-              .postForm(form, cfg)
-              .dthen proc(r: AxiosResponse) =
-                let
-                  assetId = cast[Id](r.data)
-                  url = get_asset_short_hand_url assetId
-                  vn = createnode()
+              apiUploadAsset toForm(f.name, f), proc(assetUrl: string) = 
+                let vn = createNode()
 
                 vn.config.data = VisualNodeData(
                   kind: vndkImage,
-                  url: url)
+                  url: assetUrl)
 
-                loadImageGen url, vn, true
+                loadImageGen assetUrl, vn, true
 
     block prepare:
       app.sidebarWidth = 0
@@ -1399,8 +1385,7 @@ proc init* =
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
       addHotkey "s", proc = # save
-        let data = forceJsObject toJson app
-        put_api_board_update_url(app.id).putApi(data).dthen proc(_: auto) =
+        apiUpdateBoardContent app.id, forceJsObject toJson app, proc =
           notify "saved!"
 
       addHotkey "z", proc = # reset zoom
@@ -1422,25 +1407,15 @@ proc init* =
 
       addHotkey "p", proc = # scrennshot
         app.stage.toBlob(1/2).dthen proc(b: Blob) =
-          var
-            form = toForm("screenshot.png", b)
-            cfg = AxiosConfig[FormData]()
-
-          put_api_board_screen_shot_url(app.id)
-          .putform(form, cfg)
-          .dthen proc(_: auto) =
+          apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc = 
             notify "screenshot updated!"
-
 
     app.id = parseInt getWindowQueryParam "id"
 
-    getPallete "default", proc(ct: seq[ColorTheme]) = 
+    apiGetPallete "default", proc(ct: seq[ColorTheme]) = 
       colorThemes = ct
       setFocusedTheme colorThemes[0] 
-
-      whenFontsLoaded fontFamilies, proc =
-        fetchBoard app.id
-
+      whenFontsLoaded fontFamilies, () => fetchBoard app.id
       redraw()
 
 when isMainModule: init()
