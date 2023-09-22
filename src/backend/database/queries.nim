@@ -76,7 +76,17 @@ proc newTag*(db: DbConn, t: Tag): Id =
     value_type: t.value_type)
 
 proc updateTag*(db: DbConn, id: Id, t: Tag) =
-  discard
+  db.exec sql"""UPDATE Tag SET 
+      name = ?, 
+      value_type = ?, 
+      icon = ?, 
+      theme = ?
+    WHERE id = ?""", 
+    t.name,
+    t.value_type,
+    t.icon,
+    t.theme,
+    id
 
 proc deleteTag*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Tag WHERE id = ?", id

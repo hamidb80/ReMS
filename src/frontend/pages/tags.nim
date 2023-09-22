@@ -4,6 +4,7 @@ import std/[dom, jsconsole, jsffi]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
+import ../components/[snackbar]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
 import ../utils/[browser, ui, api]
@@ -20,22 +21,23 @@ const
   noIndex = -1
 
 
-func dummyTag: Tag =
-  Tag(
-    icon: defaultIcon,
-    theme: c(0, 0, 0),
-    name: "empty")
-
 var
   state = asInit
-  currentTag = dummyTag()
   selectedTagI = noIndex
+  currentTag: Tag
   tags: seq[Tag]
   colors: seq[ColorTheme]
 
 
-proc fetchTags = 
-  apiGetTagsList proc (ts: seq[Tag]) = 
+proc dummyTag: Tag =
+  Tag(
+    icon: defaultIcon,
+    theme: colors[1],
+    name: "name")
+
+
+proc fetchTags =
+  apiGetTagsList proc (ts: seq[Tag]) =
     tags = ts
     redraw()
 
@@ -93,6 +95,8 @@ proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
+    snackbar()
+    
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
@@ -146,11 +150,12 @@ proc createDom: Vnode =
           # has value
           # TODO select which type of value
           tdiv(class = "form-check form-switch"):
-            checkbox(currentTag.hasValue,
-              proc (b: bool) =
+            let onChange = proc (b: bool) =
               currentTag.value_type =
                 if b: tvtStr
-                  else: tvtNone)
+                else: tvtNone
+
+            checkbox currentTag.hasValue, onChange
 
             label(class = "form-check-label"):
               text "has value"
@@ -178,8 +183,7 @@ proc createDom: Vnode =
               proc oninput(e: Event, v: Vnode) =
                 currentTag.theme.fg = parseHexColorPack $e.target.value
 
-              # demo
-        tdiv:
+        tdiv(class="my-2"):
           tag(currentTag, "val", false, false, noop)
 
         if selectedTagI == noIndex:
@@ -187,14 +191,30 @@ proc createDom: Vnode =
             text "add"
             icon "mx-2 fa-plus"
 
-            proc onclick = 
+            proc onclick =
               apiCreateNewTag currentTag, proc = 
                 fetchTags()
+                notify "tag created"
 
         else:
-          button(class = "btn btn-primary w-100 mt-2 mb-4"):
+          button(class = "btn btn-primary w-100 mt-2"):
             text "update"
             icon "mx-2 fa-sync"
+
+            proc onclick =
+              apiUpdateTag currentTag, proc = 
+                fetchTags()
+                notify "tag updated"
+
+          button(class = "btn btn-danger w-100 mt-2 mb-4"):
+            text "delete"
+            icon "mx-2 fa-trash"
+
+            proc onclick =
+              apiDeleteTag currentTag.id, proc = 
+                fetchTags()
+                notify "tag deleted"
+
 
 proc init* =
   setRenderer createDom
@@ -202,7 +222,7 @@ proc init* =
   apiGetPallete "default", proc(cs: seq[ColorTheme]) =
     colors = cs
     currentTag.theme = cs[0]
-  
-  fetchTags()
+    currentTag = dummyTag()
+    fetchTags()
 
 when isMainModule: init()

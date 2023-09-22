@@ -160,8 +160,28 @@ proc apiCreateNewTag*(
     t: Tag,
     success: proc(),
     fail: proc() = noop
-) = 
+) =
     discard post_api_tag_new_url()
     .postApi(forceJsObject t)
+    .then(success)
+    .catch(fail)
+
+proc apiUpdateTag*(
+    t: Tag,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard put_api_tag_update_url(t.id)
+    .putApi(forceJsObject t)
+    .then(success)
+    .catch(fail)
+
+proc apiDeleteTag*(
+    id: Id,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard delete_api_tag_url(id)
+    .deleteApi()
     .then(success)
     .catch(fail)
