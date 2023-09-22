@@ -54,7 +54,7 @@ proc substr(str: cstring, start, ende: int): cstring
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
-proc waitAll*(promises: seq[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
+proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 
 func newJsSet*(): JsSet 
   {.importjs: "new Set(@)".}
@@ -80,6 +80,12 @@ template set*(container, value): untyped =
 
 proc setTimeout*(delay: Natural, action: proc): TimeOut {.discardable.} =
   setTimeout action, delay
+
+proc newPromise*(action: proc(
+  resovle: proc(),
+  reject: proc(),
+)): Future[void] 
+  {.importjs: "new Promise(@)".}
 
 proc newPromise*[T, E](action: proc(
   resovle: proc(t: T);

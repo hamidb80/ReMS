@@ -1,5 +1,5 @@
 import std/[options, sequtils, tables]
-import std/[dom, jsconsole, jsffi]
+import std/[dom, jsconsole, jsffi, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
@@ -24,17 +24,20 @@ proc loadMsg(n: Note) =
     msgCache[n.id] = t.dom.innerHtml
     redraw()
 
-proc fetchNotes =
-  apiGetNotesList proc(ns: seq[Note]) = 
-    notes = ns
-    for n in notes:
-      loadMsg n
+proc fetchNotes: Future[void] =
+  newPromise proc(resolve, reject: proc()) = 
+    apiGetNotesList proc(ns: seq[Note]) = 
+      notes = ns
+      for n in notes:
+        loadMsg n
+      resolve()
       
-proc fetchTags =
-  apiGetTagsList proc(tagsList: seq[Tag]) = 
-    for t in tagsList:
-      tags[t.id] = t
-    redraw()
+proc fetchTags(): Future[void] =
+  newPromise proc(resolve, reject: proc()) = 
+    apiGetTagsList proc(tagsList: seq[Tag]) = 
+      for t in tagsList:
+        tags[t.id] = t
+      resolve()
      
 proc deleteNote(id: Id) = 
   apiDeleteNote id, proc =
@@ -88,7 +91,8 @@ proc notePreviewC(n: Note): VNode =
           proc onclick = 
             deleteNote n.id
 
-proc  tagManager(s: seq[Tag]): Vnode = 
+# TODO
+proc tagManager(s: seq[Tag]): Vnode = 
   discard
 
 
@@ -127,6 +131,6 @@ proc createDom: Vnode =
 
 when isMainModule:
   setRenderer createDom
-  fetchTags()
-  fetchNotes()
-
+  
+  waitAll [fetchTags(), fetchNotes()], proc =
+    redraw()
