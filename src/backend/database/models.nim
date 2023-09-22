@@ -60,7 +60,7 @@ type # database models
     colorThemes*: seq[ColorTheme]
 
   TagValueType* = enum
-    tvtNone = "---"
+    tvtNone = "none"
     tvtStr = "text"
     tvtFloat = "number"
     tvtDate = "date"

@@ -175,7 +175,7 @@ proc download(url: string): string =
   var client = newHttpClient()
   client.get(url).body
 
-template htmlUnescape(str): untyped =
+func htmlUnescape(str: string): string =
    str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
 
 func parseGhFile(content: string): GithubCodeEmbed =
