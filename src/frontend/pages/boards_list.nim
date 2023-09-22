@@ -13,19 +13,19 @@ import ../../backend/database/[models]
 var boards: seq[BoardPreview]
 
 proc fetchBoards =
-  get_api_boards_list_url().getApi.dthen proc(r: AxiosResponse) =
-    boards = cast[seq[BoardPreview]](r.data)
+  apiGetBoards proc(bs: seq[BoardPreview]) =
+    boards = bs
     redraw()
 
 proc reqNewBoard =
-  post_api_boards_new_url().postApi.dthen proc(r: AxiosResponse) =
-    let id = cast[Id](r.data)
+  apiCreateNewBoard proc(id: Id) =
     redirect get_board_url id
 
 proc deleteBoard(id: Id) =
-  discard deleteApi delete_api_board_url id
+  apiDeleteBoard id, fetchBoards
 
 # ----- UI
+
 proc boardPreviewC(b: BoardPreview): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):

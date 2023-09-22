@@ -765,7 +765,8 @@ proc getMsg(id: Id) =
   msgCache[id] = none cstring
 
   apiGetNote id, proc(n: Note) = 
-    deserizalize(compTable, n.data).dthen proc(t: TwNode) =
+    deserizalize(compTable, n.data)
+    .dthen proc(t: TwNode) =
       msgCache[id] = some t.dom.innerHtml
       redraw()
 

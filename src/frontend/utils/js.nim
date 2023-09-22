@@ -1,39 +1,75 @@
 import std/[macros, options]
 import std/[jsffi, asyncjs, dom]
 
+
 type
   JsSet = ref object of JsObject
 
-func parseInt*(s: cstring): int {.importjs: "parseInt(@)".}
-func parseFloat*(s: cstring): float {.importjs: "parseFloat(@)".}
-func toLower*(s: cstring): cstring {.importjs: "#.toLowerCase()".}
-proc parseJs*(s: cstring): JsObject {.importjs: "JSON.parse(@)".}
-proc stringify*(s: JsObject): cstring {.importjs: "JSON.stringify(@)".}
-func newJsArray*(): JsObject {.importjs: "[@]".}
-func add*(a, b: JsObject) {.importjs: "#.push(#)".}
-func toCstring*(a: SomeNumber): cstring {.importjs: "#.toString(@)".}
-func splitLines*(s: cstring): seq[cstring] {.importjs: "#.split('\\n')".}
-func find*(str, sub: cstring): int {.importjs: "#.indexOf(#)".}
-func rfind*(str, sub: cstring): int {.importjs: "#.lastIndexOf(#)".}
-proc unscape*(s: cstring): cstring {.importjs: "JSON.parse('@')".}
-proc substr(str: cstring, start, ende: int): cstring {.importjs: "#.substring(@)".}
+func parseInt*(s: cstring): int
+  {.importjs: "parseInt(@)".}
+
+func parseFloat*(s: cstring): float
+  {.importjs: "parseFloat(@)".}
+
+func toLower*(s: cstring): cstring
+  {.importjs: "#.toLowerCase()".}
+
+proc parseJs*(s: cstring): JsObject
+  {.importjs: "JSON.parse(@)".}
+
+proc stringify*(s: JsObject): cstring
+  {.importjs: "JSON.stringify(@)".}
+
+func newJsArray*(): JsObject
+  {.importjs: "[@]".}
+
+func add*(a, b: JsObject)
+  {.importjs: "#.push(#)".}
+
+func toCstring*(a: SomeNumber): cstring
+  {.importjs: "#.toString(@)".}
+
+func splitLines*(s: cstring): seq[cstring]
+  {.importjs: "#.split('\\n')".}
+
+func find*(str, sub: cstring): int
+  {.importjs: "#.indexOf(#)".}
+
+func rfind*(str, sub: cstring): int
+  {.importjs: "#.lastIndexOf(#)".}
+
+proc unscape*(s: cstring): cstring
+  {.importjs: "JSON.parse('@')".}
+
+proc substr(str: cstring, start, ende: int): cstring
+  {.importjs: "#.substring(@)".}
+
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
-proc noop* = discard
+proc noop* = 
+  discard
+
 proc waitAll*(promises: seq[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 
-func newJsSet*(): JsSet {.importjs: "new Set(@)".}
-func incl*(j: JsSet, c: cstring) {.importjs: "#.add(@)".}
+func newJsSet*(): JsSet 
+  {.importjs: "new Set(@)".}
+
+func incl*(j: JsSet, c: cstring) 
+  {.importjs: "#.add(@)".}
+
 iterator items*(obj: JsSet): cstring =
   var v: cstring
   {.emit: "for (`v` of `obj`) {".}
   yield v
   {.emit: "}".}
 
-func forceJsObject*(t: auto): JsObject {.importjs: "(@)".}
 
-template c*(str): untyped = cstring str
+template c*(str): untyped = 
+  cstring str
+
+func forceJsObject*(t: auto): JsObject 
+  {.importjs: "(@)".}
 
 template set*(container, value): untyped =
   container = value
@@ -44,23 +80,34 @@ proc setTimeout*(delay: Natural, action: proc): TimeOut {.discardable.} =
 proc newPromise*[T, E](action: proc(
   resovle: proc(t: T);
   reject: proc(e: E)
-)): Future[T] {.importjs: "new Promise(@)".}
+)): Future[T] 
+  {.importjs: "new Promise(@)".}
 
 
-proc then*[T](f: Future[T]; resolve: proc()): Future[T]
+proc then*[T](f: Future[T]; resolve: proc()): Future[void]
   {.importjs: "#.then(@)".}
 
-proc dthen*[T](f: Future[T]; resolve: proc(t: T)) =
-  discard f.then resolve
+proc then*[T](f: Future[T]; resolve: proc(t: T)): Future[void]
+  {.importjs: "#.then(@)".}
 
-proc dcatch*[T, E](f: Future[T]; catcher: proc(e: E)) =
-  discard f.catch catcher
+proc then*[A, B](f: Future[A]; resolve: proc(t: A): B): Future[B]
+  {.importjs: "#.then(@)".}
 
-proc catch*[T](f: Future[T]; catcher: proc()): Future[T] 
+proc catch*[T](f: Future[T]; catcher: proc()): Future[void]
   {.importjs: "#.catch(@)".}
 
-proc dcatch*[T](f: Future[T]; catcher: proc()) =
-  discard f.catch catcher
+proc catch*[T](f: Future[T]; catcher: proc(t: T)): Future[void]
+  {.importjs: "#.catch(@)".}
+
+# proc catche*[T, E](f: Future[T]; catcher: proc(e: E)): Future[void]
+  # {.importjs: "#.catch(@)".}
+
+template dthen*(fut, cb): untyped =
+  discard fut.then(cb)
+
+template dcatch*(fut, cb): untyped =
+  discard fut.catch(cb)
+
 
 proc toJsRecursiveImpl(t: NimNode): NimNode =
   result = newStmtList()
@@ -110,4 +157,3 @@ macro toJsRecursive*(expr): untyped =
 
 template `<*`*(expr): untyped =
   toJsRecursive expr
-

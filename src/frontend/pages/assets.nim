@@ -63,17 +63,17 @@ proc startUpload(u: Upload) =
   cfg.onUploadProgress = proc(pe: ProgressEvent) =
     u.progress = pe.loaded / pe.total * 100
     redraw()
-
+  
   u.promise = postForm(post_assets_upload_url(), form, cfg)
 
-  u.promise.dcatch proc(e: Error) =
-    u.status = usFailed
-    u.reason = e.message
-    redraw()
-
-  u.promise.dthen proc(r: AxiosResponse) =
+  u.promise.dthen proc(r: AxiosResponse) = 
     u.status = usCompleted
     fetchAssets()
+    redraw()
+  
+  u.promise.dcatch proc(r: AxiosResponse) =
+    u.status = usFailed
+    u.reason = cast[cstring](r.data)
     redraw()
 
   u.status = usInProgress

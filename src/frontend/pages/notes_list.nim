@@ -1,12 +1,10 @@
-import std/[options, lenientops, strformat, httpcore, sequtils, times, tables]
-import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, sugar]
+import std/[options, sequtils, tables]
+import std/[dom, jsconsole, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster
 
-import ../jslib/[hotkeys, axios]
-import ../utils/[browser, js, ui]
-import ../../common/[conventions, iter, types]
+import ../utils/[browser, js, ui, api]
+import ../../common/[iter, types]
 import ../../backend/routes
 import ../../backend/database/[models]
 import ./editor/[core, components]
@@ -19,34 +17,30 @@ var
   tags: Table[Id, Tag]
 
 # TODO write a note laod manager component in a different file
-proc getMsg(n: Note) = 
+proc loadMsg(n: Note) = 
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =
     msgCache[n.id] = t.dom.innerHtml
     redraw()
 
 proc fetchNotes =
-  get_api_notes_list_url().getApi.dthen proc(r: AxiosResponse) =
-    notes = cast[typeof notes](r.data)
+  apiGetNotesList proc(ns: seq[Note]) = 
+    notes = ns
     for n in notes:
-      getMsg n
+      loadMsg n
       
 proc fetchTags =
-  get_api_tags_list_url().getApi.dthen proc(r: AxiosResponse) =
-    let tagsList = cast[seq[Tag]](r.data)
-    
+  apiGetTagsList proc(tagsList: seq[Tag]) = 
     for t in tagsList:
       tags[t.id] = t
-
     redraw()
      
 proc deleteNote(id: Id) = 
-  delete_api_note_url(id).deleteApi.dthen proc(r: AxiosResponse) = 
+  apiDeleteNote id, proc =
     notes.deleteIt it.id == id
     redraw()
 
 proc reqNewNote =
-  post_api_notes_new_url().postApi.dthen proc(r: AxiosResponse) =
-    let id = cast[Id](r.data)
+  apiCreateNewNote proc(id: Id) =
     redirect get_note_editor_url id
 
 # ----- UI

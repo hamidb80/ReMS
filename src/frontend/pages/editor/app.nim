@@ -7,8 +7,7 @@ import questionable, caster
 import ../../../backend/routes
 import ../../../backend/database/[models]
 import ./[core, components, inputs]
-import ../../utils/[js, browser]
-import ../../jslib/[axios]
+import ../../utils/[js, browser, api]
 import ../../components/[snackbar]
 import ../../../common/[conventions, datastructures, types]
 
@@ -287,16 +286,18 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## show actions of focused element
     
     of "s":
-      let s = serialize app
       # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
-      put_api_notes_update_url(id).putApi(cast[JsObject](s)).dthen proc(_: auto) = 
+      apiUpdateNote id, serialize app, proc = 
         notify "note updated!"
 
     of "h": 
-      deserizalize(app.components, serialize app).dthen proc(t: TwNode) = 
+      proc afterLoad(t: TwNode) = 
         downloadFile "data.html", "text/html", t.dom.innerHTML
-      
+
+      deserizalize(app.components, serialize app)
+      .dthen(afterLoad)
+
     of "c":
       ## cut
 
@@ -309,11 +310,15 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "o":
       selectFile proc(c: cstring) = 
         purge app.tree.dom
-        let d = cast[TreeNodeRaw[JsObject]](c.parseJs)
-        deserizalize(app.components, d, some app.tree.dom).dthen proc(t: TwNode) = 
+        
+        proc done(t: TwNode) = 
           resetApp t
           redraw()
 
+        let data = cast[TreeNodeRaw[JsObject]](c.parseJs)
+        deserizalize(app.components, data, some app.tree.dom)
+        .then(done)
+        .dcatch () => notify "could not load the file"
 
     of "r":
       ## redo
@@ -390,12 +395,11 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) = 
-  get_api_note_url(id).getApi.dthen proc(r: AxiosResponse) = 
-    let doc = cast[Note](r.data)
-    deserizalize(app.components, doc.data, some app.tree.dom, wait = false)
-    .dthen proc(t: TwNode) = 
-      resetApp t
-      redraw()
+  apiGetNote id, proc(n: Note) = 
+    deserizalize(app.components, n.data, some app.tree.dom, wait = false)
+    .then(resetApp)
+    .dcatch proc = 
+      notify "failed to fetch note data"
 
 proc init* = 
   let root = instantiate rootComponent
