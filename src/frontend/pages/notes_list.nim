@@ -112,7 +112,7 @@ proc createDom: Vnode =
 
           tdiv(class = "d-flex justify-content-center"):
             ul(class = "pagination pagination-lg"):
-              for i in 1..3:
+              for i in 1..4:
                 li(class = "page-item " & iff(i == columnsCount, "active"), onclick = columnCountSetter i):
                   a(class="page-link", href="#"):
                     text $i

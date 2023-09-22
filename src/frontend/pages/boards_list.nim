@@ -63,7 +63,7 @@ proc createDom: Vnode =
           text "Boards"
 
     tdiv(class = "px-4 py-2 my-2"):
-      tdiv(class = "masonry-container justify-content-around my-4"):
+      tdiv(class = "masonry-3 masonry-container justify-content-around my-4"):
         button(
           class = "masonry-item my-3 btn btn-outline-primary rounded",
           onclick = reqNewBoard):
