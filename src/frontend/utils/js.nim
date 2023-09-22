@@ -1,6 +1,7 @@
 import std/[macros, options]
 import std/[jsffi, asyncjs, dom]
 
+import ../../common/conventions
 
 type
   JsSet = ref object of JsObject
@@ -46,9 +47,6 @@ proc substr(str: cstring, start, ende: int): cstring
 
 proc `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
-
-proc noop* = 
-  discard
 
 proc waitAll*(promises: seq[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 

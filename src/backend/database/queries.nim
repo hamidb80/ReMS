@@ -70,6 +70,7 @@ proc newTag*(db: DbConn, t: Tag): Id =
     creator: tcUser,
     label: tlOrdinary,
     can_repeated: false,
+    theme: t.theme,
     name: t.name,
     icon: t.icon,
     value_type: t.value_type)

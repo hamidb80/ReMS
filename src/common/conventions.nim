@@ -1,7 +1,3 @@
-type
-  SomeString* = string or cstring
-
-
 template iff*(cond, val): untyped =
   if cond: val
   else: default type val
@@ -19,3 +15,6 @@ proc negate*(b: var bool) =
 
 template str*(smth): untyped =
   $smth
+
+proc noop* = 
+  discard

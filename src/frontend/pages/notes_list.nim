@@ -17,6 +17,7 @@ var
   tags: Table[Id, Tag]
   columnsCount = 3
 
+
 # TODO write a note laod manager component in a different file
 proc loadMsg(n: Note) = 
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =

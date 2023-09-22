@@ -1,5 +1,8 @@
 import std/[strformat]
+
 import karax/[karaxdsl, vdom]
+
+import ../../common/types
 
 # --- components ---
 
@@ -11,7 +14,7 @@ func iconr*(class: string): VNode =
   buildHtml:
     bold(class = "fa-regular " & class)
 
-func konva*(id: cstring): VNode =
+func konva*(id: string): VNode =
   verbatim fmt"""
     <div id="{id}"></div>
   """

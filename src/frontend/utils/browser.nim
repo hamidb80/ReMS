@@ -1,7 +1,7 @@
 import std/[dom, jsffi, asyncjs, jsconsole, jsformdata]
 import std/[sugar, with]
 import ./js
-import ../../common/conventions
+import ../../common/[conventions, types]
 
 type
   ProgressEvent* = ref object of Event

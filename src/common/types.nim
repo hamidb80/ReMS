@@ -1,5 +1,7 @@
 import std/[times, tables, math, strutils, options]
 
+import ./conventions
+
 
 when defined js:
   import std/jsffi
@@ -18,6 +20,8 @@ else:
     Option*[T] = options.Option[T]
 
 type
+  SomeString* = string or cstring
+
   Id* = int64
   UnixTime* = distinct int64
   Path* = distinct string
@@ -184,6 +188,19 @@ func toColorString*(c: HexColorPack): Str =
     toHex c.color
   else:
     toRgba c
+
+func parseHexColorPack*(s: string): HexColorPack = 
+  let 
+    hasPrefix = s[0] == '#'
+    number = parseHexInt:
+      if hasPrefix: s[1..^1]
+      else: s 
+    size = s.len - iff(hasPrefix, 1, 0)
+
+  case size
+  of 6: opaque HexColor number
+  of 7: HexColorPack number
+  else: raise newException(ValueError, "invalid length, expected 6 or 7 but got: " & $number)
 
 # TODO move it to js module
 when defined js:

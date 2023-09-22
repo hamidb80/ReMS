@@ -2,7 +2,7 @@ import std/[asyncjs, dom, jsformdata, jsffi]
 
 import ../../backend/routes
 import ../../backend/database/[models]
-import ../../common/[types, datastructures]
+import ../../common/[types, datastructures, conventions]
 import ../jslib/axios
 import ./js
 
@@ -154,4 +154,14 @@ proc apiGetTagsList*(
     discard get_api_tags_list_url()
     .getApi()
     .then(wrapResp success cast[seq[Tag]](r.data))
+    .catch(fail)
+
+proc apiCreateNewTag*(
+    t: Tag,
+    success: proc(),
+    fail: proc() = noop
+) = 
+    discard post_api_tag_new_url()
+    .postApi(forceJsObject t)
+    .then(success)
     .catch(fail)

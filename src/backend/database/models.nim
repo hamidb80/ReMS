@@ -246,3 +246,6 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     name: "root",
     children: @[],
     data: newJNull())
+
+func hasValue*(t: Tag): bool = 
+  t.value_type == tvtNone

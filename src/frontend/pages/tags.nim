@@ -1,12 +1,12 @@
 import std/[with, strutils, sequtils, options]
-import std/[dom, jsconsole, jsffi, jsfetch, asyncjs, sugar]
+import std/[dom, jsconsole, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
-import ../jslib/[hotkeys]
-import ../utils/[browser, ui]
-import ../../common/[datastructures, types]
+import ../../backend/database/models
+import ../../common/[conventions, datastructures, types]
+import ../utils/[browser, ui, api]
 
 
 type
@@ -14,26 +14,30 @@ type
     asInit
     asSelectIcon
 
-  Tag = object
-    name, icon, value: string
-    theme: ColorTheme
-    hasValue, showName: bool
-
 const
   icons = splitlines staticRead "./icons.txt"
   defaultIcon = icons[0]
   noIndex = -1
-  tempTag = Tag(
+
+
+func dummyTag: Tag =
+  Tag(
     icon: defaultIcon,
-    theme: road,
-    showName: true,
+    theme: c(0, 0, 0),
     name: "empty")
 
 var
   state = asInit
-  currentTag = tempTag
+  currentTag = dummyTag()
   selectedTagI = noIndex
-  tags = @[]
+  tags: seq[Tag]
+  colors: seq[ColorTheme]
+
+
+proc fetchTags = 
+  apiGetTagsList proc (ts: seq[Tag]) = 
+    tags = ts
+    redraw()
 
 proc onIconSelected(icon: string) =
   currentTag.icon = icon
@@ -43,12 +47,10 @@ proc genChangeSelectedTagi(i: int): proc() =
   proc =
     if selectedTagI == i:
       selectedTagI = noIndex
-      currentTag = tempTag
+      currentTag = dummyTag()
     else:
       selectedTagI = i
       currentTag = tags[i]
-
-proc noop = discard
 
 proc tag(
   t: Tag,
@@ -57,35 +59,29 @@ proc tag(
   forceShowName: bool,
   clickHandler: proc()
 ): VNode =
-  let showNameForce = forceShowName or t.showName
-
   buildHtml:
     tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
       badge border-1 solid-border rounded-pill pointer""",
       onclick = clickHandler,
       style = style(
-      (StyleAttr.background, t.theme.bg.cstring),
-      (StyleAttr.color, t.theme.fg.cstring),
-      (StyleAttr.borderColor, t.theme.fg.cstring),
+      (StyleAttr.background, toColorString t.theme.bg),
+      (StyleAttr.color, toColorString t.theme.fg),
+      (StyleAttr.borderColor, toColorString t.theme.fg),
     )):
-      icon t.icon
+      icon $t.icon
 
-      if showNameForce or t.hasValue:
-        span(dir = "auto", class = "ms-2"):
-          if showNameForce:
-            text t.name
+      span(dir = "auto", class = "ms-2"):
+        text t.name
 
-          if showNameForce and t.hasValue:
-            text ": "
+        if t.hasValue:
+          text ": "
+          text value
 
-          if t.hasValue:
-            text value
-
-proc checkbox(checked: bool, changeHandler: proc(b: bool)): VNode =
+proc checkbox(active: bool, changeHandler: proc(b: bool)): VNode =
   result = buildHtml:
-    input(class = "form-check-input", `type` = "checkbox", checked = checked):
-      proc oninput(e: Event, v: Vnode) =
-        changeHandler e.target.checked
+    input(class = "form-check-input", `type` = "checkbox", checked = active):
+      proc onInput(e: Event, v: Vnode) =
+        changeHandler not e.target.checked
 
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
@@ -142,25 +138,19 @@ proc createDom: Vnode =
 
             tdiv(class = "d-inline-block"):
               tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
-                icon "m-2 " & currentTag.icon
+                icon "m-2 " & $currentTag.icon
 
               proc onclick =
                 state = asSelectIcon
 
-          # show name
-          tdiv(class = "form-check form-switch"):
-            checkbox(currentTag.showName,
-              proc(b: bool) =
-              currentTag.showName = b)
-
-            label(class = "form-check-label"):
-              text "show name"
-
           # has value
+          # TODO select which type of value
           tdiv(class = "form-check form-switch"):
             checkbox(currentTag.hasValue,
               proc (b: bool) =
-              currentTag.hasValue = b)
+              currentTag.value_type =
+                if b: tvtStr
+                  else: tvtNone)
 
             label(class = "form-check-label"):
               text "has value"
@@ -173,22 +163,22 @@ proc createDom: Vnode =
 
             input(`type` = "color",
                 class = "form-control",
-                value = currentTag.theme.bg):
+                value = toColorString currentTag.theme.bg):
               proc oninput(e: Event, v: Vnode) =
-                currentTag.theme.bg = $e.target.value
+                currentTag.theme.bg = parseHexColorPack $e.target.value
 
-          # foreground
+              # foreground
           tdiv(class = "form-group d-inline-block mx-2"):
             label(class = "form-check-label"):
               text "foreground color: "
 
             input(`type` = "color",
                 class = "form-control",
-                value = currentTag.theme.fg):
+                value = toColorString currentTag.theme.fg):
               proc oninput(e: Event, v: Vnode) =
-                currentTag.theme.fg = $e.target.value
+                currentTag.theme.fg = parseHexColorPack $e.target.value
 
-        # demo
+              # demo
         tdiv:
           tag(currentTag, "val", false, false, noop)
 
@@ -196,6 +186,11 @@ proc createDom: Vnode =
           button(class = "btn btn-success w-100 mt-2 mb-4"):
             text "add"
             icon "mx-2 fa-plus"
+
+            proc onclick = 
+              apiCreateNewTag currentTag, proc = 
+                fetchTags()
+
         else:
           button(class = "btn btn-primary w-100 mt-2 mb-4"):
             text "update"
@@ -203,5 +198,11 @@ proc createDom: Vnode =
 
 proc init* =
   setRenderer createDom
+
+  apiGetPallete "default", proc(cs: seq[ColorTheme]) =
+    colors = cs
+    currentTag.theme = cs[0]
+  
+  fetchTags()
 
 when isMainModule: init()
