@@ -4,7 +4,7 @@ import std/[dom, jsconsole, jsffi]
 import karax/[karax, karaxdsl, vdom, vstyles]
 
 import ../utils/[browser, js, ui, api]
-import ../../common/[iter, types]
+import ../../common/[iter, types, conventions]
 import ../../backend/routes
 import ../../backend/database/[models]
 import ./editor/[core, components]
@@ -15,6 +15,7 @@ var
   notes: seq[Note]
   msgCache: Table[Id, cstring]
   tags: Table[Id, Tag]
+  columnsCount = 3
 
 # TODO write a note laod manager component in a different file
 proc loadMsg(n: Note) = 
@@ -44,6 +45,12 @@ proc reqNewNote =
     redirect get_note_editor_url id
 
 # ----- UI
+
+proc columnCountSetter(i: int): proc() = 
+  proc =
+    columnsCount = i
+
+
 proc notePreviewC(n: Note): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
@@ -83,7 +90,7 @@ proc notePreviewC(n: Note): VNode =
 proc  tagManager(s: seq[Tag]): Vnode = 
   discard
 
-# TODO add ability to choose columns
+
 proc createDom: Vnode =
   echo "just redrawn"
 
@@ -92,15 +99,23 @@ proc createDom: Vnode =
       nav(class = "navbar navbar-expand-lg bg-white"):
         tdiv(class = "container-fluid"):
           a(class = "navbar-brand", href = "#"):
-            icon("fa-note-sticky fa-xl me-3 ms-1")
+            icon "fa-note-sticky fa-xl me-3 ms-1"
             text "Notes"
 
       tdiv(class = "px-4 py-2 my-2"):
-        tdiv(class = "masonry-container justify-content-around my-4"):
+        tdiv(class = "masonry-container justify-content-around my-4 masonry-" & $columnsCount):
+
           button(
             class = "masonry-item my-3 btn btn-outline-primary rounded",
             onclick = reqNewNote):
             icon "fa-plus fa-xl my-4"
+
+          tdiv(class = "d-flex justify-content-center"):
+            ul(class = "pagination pagination-lg"):
+              for i in 1..3:
+                li(class = "page-item " & iff(i == columnsCount, "active"), onclick = columnCountSetter i):
+                  a(class="page-link", href="#"):
+                    text $i
 
           for n in notes:
             notePreviewC n

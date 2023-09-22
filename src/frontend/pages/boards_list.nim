@@ -3,8 +3,7 @@ import std/[dom, jsconsole, asyncjs, jsformdata, sugar]
 import karax/[karax, karaxdsl, vdom]
 import caster, questionable
 
-import ../jslib/[axios]
-import ../utils/[browser, js, ui]
+import ../utils/[browser, js, ui, api]
 import ../../common/[conventions, iter, types]
 import ../../backend/routes
 import ../../backend/database/[models]
@@ -13,7 +12,7 @@ import ../../backend/database/[models]
 var boards: seq[BoardPreview]
 
 proc fetchBoards =
-  apiGetBoards proc(bs: seq[BoardPreview]) =
+  apiGetBoardsList proc(bs: seq[BoardPreview]) =
     boards = bs
     redraw()
 

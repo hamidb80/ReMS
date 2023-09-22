@@ -585,6 +585,8 @@ proc startAddConn(vn: VisualNode) =
 
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
+  unselect()
+  
   var
     wrapper = newGroup()
     box = newRect()
