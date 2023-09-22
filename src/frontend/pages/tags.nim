@@ -1,4 +1,4 @@
-import std/[with, strutils, sequtils, options]
+import std/[with, strutils, sequtils, options, random]
 import std/[dom, jsconsole, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -7,7 +7,7 @@ import caster
 import ../components/[snackbar]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
-import ../utils/[browser, ui, api]
+import ../utils/[browser, ui, api, js]
 
 
 type
@@ -18,8 +18,6 @@ type
 const
   icons = splitlines staticRead "./icons.txt"
   defaultIcon = icons[0]
-  noIndex = -1
-
 
 var
   state = asInit
@@ -32,9 +30,8 @@ var
 proc dummyTag: Tag =
   Tag(
     icon: defaultIcon,
-    theme: colors[1],
+    theme: sample colors,
     name: "name")
-
 
 proc fetchTags =
   apiGetTagsList proc (ts: seq[Tag]) =
@@ -83,7 +80,7 @@ proc checkbox(active: bool, changeHandler: proc(b: bool)): VNode =
   result = buildHtml:
     input(class = "form-check-input", `type` = "checkbox", checked = active):
       proc onInput(e: Event, v: Vnode) =
-        changeHandler not e.target.checked
+        changeHandler e.target.checked
 
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
@@ -148,7 +145,6 @@ proc createDom: Vnode =
                 state = asSelectIcon
 
           # has value
-          # TODO select which type of value
           tdiv(class = "form-check form-switch"):
             let onChange = proc (b: bool) =
               currentTag.value_type =
@@ -160,7 +156,25 @@ proc createDom: Vnode =
             label(class = "form-check-label"):
               text "has value"
 
-          # color theme
+          # value type
+          if currentTag.hasValue:
+            tdiv(class = "form-group my-2"):
+              label(class = "form-label"):
+                text "value type"
+              
+              select(class = "form-select"):
+                option(value = cstr tvtStr.ord, selected = currentTag.value_type == tvtStr):
+                  text $tvtStr
+                option(value = cstr tvtFloat.ord, selected = currentTag.value_type == tvtFloat):
+                  text $tvtFloat
+                option(value = cstr tvtDate.ord, selected = currentTag.value_type == tvtDate):
+                  text $tvtDate
+                option(value = cstr tvtJson.ord, selected = currentTag.value_type == tvtJson):
+                  text $tvtJson
+
+                proc onInput(e: Event, v: Vnode) = 
+                  currentTag.value_type = TagValueType parseInt e.target.value
+
           # background
           tdiv(class = "form-group d-inline-block mx-2"):
             label(class = "form-check-label"):
@@ -172,7 +186,7 @@ proc createDom: Vnode =
               proc oninput(e: Event, v: Vnode) =
                 currentTag.theme.bg = parseHexColorPack $e.target.value
 
-              # foreground
+          # foreground
           tdiv(class = "form-group d-inline-block mx-2"):
             label(class = "form-check-label"):
               text "foreground color: "

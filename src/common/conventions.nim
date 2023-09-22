@@ -1,3 +1,5 @@
+const noIndex* = -1
+
 template iff*(cond, val): untyped =
   if cond: val
   else: default type val

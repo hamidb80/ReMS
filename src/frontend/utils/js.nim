@@ -12,6 +12,12 @@ func parseInt*(s: cstring): int
 func parseFloat*(s: cstring): float
   {.importjs: "parseFloat(@)".}
 
+func cleanStr*(n: float): cstring
+  {.importjs: "(#).toString()".}
+
+func cstr*(n: int): cstring
+  {.importjs: "(#).toString()".}
+
 func toLower*(s: cstring): cstring
   {.importjs: "#.toLowerCase()".}
 

@@ -60,11 +60,11 @@ type # database models
     colorThemes*: seq[ColorTheme]
 
   TagValueType* = enum
-    tvtNone
-    tvtInt
-    tvtStr
-    tvtDate
-    tvtJson
+    tvtNone = "---"
+    tvtStr = "text"
+    tvtFloat = "number"
+    tvtDate = "date"
+    tvtJson = "JSON"
 
   TagCreator* = enum
     tcUser   ## created by user
@@ -248,4 +248,4 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     data: newJNull())
 
 func hasValue*(t: Tag): bool = 
-  t.value_type == tvtNone
+  t.value_type != tvtNone
