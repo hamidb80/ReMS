@@ -217,9 +217,9 @@ proc deserizalize*(
       else: createElement("div", {"class": "tw-content"})
     payload = deserizalizeImpl(ct, el, j, allFutures)
 
-  newPromise proc(resolve: proc(t: TwNode)) = 
+  newPromise proc(resolve: proc(t: TwNode)) =
     if wait:
-      allFutures.waitAll proc = 
+      allFutures.waitAll proc =
         resolve payload
     else:
       resolve payload

@@ -56,13 +56,14 @@ type # database models
   Palette* = object
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Option[Id]
-    name* {.index.}: Str
+    name* {.uniqueIndex.}: Str
     colorThemes*: seq[ColorTheme]
 
   TagValueType* = enum
     tvtNone = "none"
     tvtStr = "text"
-    tvtFloat = "number"
+    tvtFloat = "float"
+    tvtInt = "int"
     tvtDate = "date"
     tvtJson = "JSON"
 
@@ -99,7 +100,7 @@ type # database models
     owner* {.references: User.id.}: Id
     creator*: TagCreator
     label*: TagLabel
-    can_repeated*: bool
+    can_be_repeated*: bool
     name*: Str
     icon*: Str
     theme*: ColorTheme
@@ -120,11 +121,14 @@ type # database models
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    number_value*: Option[float]
-    str_value*: Option[Str]
+    fval*: Option[float]
+    ival*: Option[int]
+    sval*: Option[Str]
     state*: RelationState
     created_due_to*: RelationCreationReason
     timestamp*: UnixTime
+
+  RelValuesByTagId* = NTable[Str, seq[Str]]
 
   RelationsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
@@ -132,7 +136,7 @@ type # database models
     asset* {.references: Asset.id.}: Option[Id]
     board* {.references: Board.id.}: Option[Id]
     note* {.references: Note.id.}: Option[Id]
-    activeRelsValues*: NTable[Str, seq[Str]] ## active relation values grouped by tag id
+    active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
 
   Notification* = object
     id* {.primary, autoIncrement.}: Id
@@ -140,9 +144,6 @@ type # database models
     content*: Str
     timestamp*: UnixTime # set after sending
 
-  ## I'm trying to implment Remember entries as `Tag`s
-  ## that's what `int_value`, `str_value`, `value_type`
-  ## is for
 
 type # view models
   AssetItemView* = object
@@ -150,14 +151,14 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    # activeRelsValues*: NTable[Id, seq[Str]] 
+    # activeRelsValues*: RelValuesByTagId
 
-  NoteView* = object
+  NoteItemView* = object
     id*: Id
     data*: TreeNodeRaw[NativeJson]
-    activeRelsValues*: NTable[Str, seq[Str]] 
+    activeRelsValues*: RelValuesByTagId
 
-  BoardPreview* = object
+  BoardItemView* = object
     id*: Id
     title*: Str
     screenshot*: Option[Id]
@@ -207,37 +208,35 @@ when not defined js:
 
   # ----- basic operations
 
-  proc defaultPalette(db: DbConn) = 
-    const
-      trans = ColorTheme(bg: 0xffffff_0, fg: 0x889bad_a, st: 0xa5b7cf_a)
-      white = c(0xffffff, 0x889bad, 0xa5b7cf)
-      smoke = c(0xecedef, 0x778696, 0x9eaabb)
-      road = c(0xdfe2e4, 0x617288, 0x808fa6)
-      yellow = c(0xfef5a6, 0x958505, 0xdec908)
-      orange = c(0xffdda9, 0xa7690e, 0xe99619)
-      red = c(0xffcfc9, 0xb26156, 0xff634e)
-      peach = c(0xfbc4e2, 0xaf467e, 0xe43e97)
-      pink = c(0xf3d2ff, 0x7a5a86, 0xc86fe9)
-      purple = c(0xdac4fd, 0x7453ab, 0xa46bff)
-      purpleLow = c(0xd0d5fe, 0x4e57a3, 0x7886f4)
-      blue = c(0xb6e5ff, 0x2d7aa5, 0x399bd3)
-      diomand = c(0xadefe3, 0x027b64, 0x00d2ad)
-      mint = c(0xc4fad6, 0x298849, 0x25ba58)
-      green = c(0xcbfbad, 0x479417, 0x52d500)
-      lemon = c(0xe6f8a0, 0x617900, 0xa5cc08)
-      dark = c(0x424242, 0xececec, 0x919191)
-
+  proc defaultPalette(db: DbConn) =
     db.insert Palette(
       name: "default",
       colorThemes: @[
-        trans, white, smoke, road, yellow, 
-        orange, red, peach, pink, purple, 
-        purpleLow, blue, diomand, mint, 
-        green, lemon, dark])
+        ColorTheme(bg: 0xffffff_0, fg: 0x889bad_a, st: 0xa5b7cf_a), # transparent
+        c(0xffffff, 0x889bad, 0xa5b7cf), # white
+        c(0xecedef, 0x778696, 0x9eaabb), # smoke
+        c(0xdfe2e4, 0x617288, 0x808fa6), # road
+        c(0xfef5a6, 0x958505, 0xdec908), # yellow
+        c(0xffdda9, 0xa7690e, 0xe99619), # orange
+        c(0xffcfc9, 0xb26156, 0xff634e), # red
+        c(0xfbc4e2, 0xaf467e, 0xe43e97), # peach
+        c(0xf3d2ff, 0x7a5a86, 0xc86fe9), # pink
+        c(0xdac4fd, 0x7453ab, 0xa46bff), # purple
+        c(0xd0d5fe, 0x4e57a3, 0x7886f4), # purpleLow
+        c(0xb6e5ff, 0x2d7aa5, 0x399bd3), # blue
+        c(0xadefe3, 0x027b64, 0x00d2ad), # diomand
+        c(0xc4fad6, 0x298849, 0x25ba58), # mint
+        c(0xcbfbad, 0x479417, 0x52d500), # green
+        c(0xe6f8a0, 0x617900, 0xa5cc08), # lemon
+        c(0x424242, 0xececec, 0x919191), # dark
+      ])
 
   proc createTables*(db: DbConn) =
     db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
-    db.defaultPalette()
+    try:
+      db.defaultPalette()
+    except:
+      discard
 
 # ----- ...
 
@@ -247,5 +246,5 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     children: @[],
     data: newJNull())
 
-func hasValue*(t: Tag): bool = 
+func hasValue*(t: Tag): bool =
   t.value_type != tvtNone

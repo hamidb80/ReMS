@@ -123,9 +123,14 @@ proc notesList*(req: Request) =
 proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getNote(id)
 
-proc updateNote*(req: Request) {.qparams: {id: int}.} =
+proc updateNoteContent*(req: Request) {.qparams: {id: int}.} =
   let d = fromJson(req.body, TreeNodeRaw[JsonNode])
-  !!db.updateNote(id, d)
+  !!db.updateNoteContent(id, d)
+  resp OK
+
+proc updateNoteRelTags*(req: Request) {.qparams: {id: int}.} =
+  let d = fromJson(req.body, RelValuesByTagId) # TODO add macro for parsing body like qparams
+  !!db.updateNoteRelTags(id, d)
   resp OK
 
 proc deleteNote*(req: Request) {.qparams: {id: int}.} =
@@ -176,16 +181,16 @@ proc download(url: string): string =
   client.get(url).body
 
 func htmlUnescape(str: string): string =
-   str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
+  str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
 
 func parseGhFile(content: string): GithubCodeEmbed =
   ## as of 2023/10/22 the Github embed `script.js` is in pattern of:
-  ## 
+  ##
   ## LINE_NUMBER| TEXT
   ## 1| document.write('<link rel="stylesheet" href="<CSS_FILE_URL">')
   ## 2| document.write('escaped string of HTML content')
   ## 3|
-  
+
   const
     linkStamps = "href=\"" .. "\">')"
     codeStamps = "document.write('" .. "')"
@@ -202,7 +207,7 @@ func parseGhFile(content: string): GithubCodeEmbed =
 proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGhFile download url
 
-proc getPalette*(req: Request) {.qparams: {name: string}.} = 
+proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
 # add palette

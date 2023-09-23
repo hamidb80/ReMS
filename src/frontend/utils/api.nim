@@ -25,12 +25,12 @@ proc apiGetPallete*(
 
 
 proc apiGetBoardsList*(
-    success: proc(bs: seq[BoardPreview]),
+    success: proc(bs: seq[BoardItemView]),
     fail: proc() = noop
 ) =
     discard get_api_boards_list_url()
     .getApi()
-    .then(wrapResp success cast[seq[BoardPreview]](r.data))
+    .then(wrapResp success cast[seq[BoardItemView]](r.data))
     .catch(fail)
 
 proc apiGetBoard*(
@@ -105,13 +105,24 @@ proc apiGetNote*(
     .then(wrapResp success cast[Note](r.data))
     .catch(fail)
 
-proc apiUpdateNote*(
+proc apiUpdateNoteContent*(
     id: Id,
     data: TreeNodeRaw[NativeJson],
     success: proc(),
     fail: proc() = noop
 ) =
-    discard put_api_notes_update_url(id)
+    discard put_api_notes_update_content_url(id)
+    .putApi(cast[JsObject](data))
+    .then(success)
+    .catch(fail)
+
+proc apiUpdateNoteTags*(
+    id: Id,
+    data: RelValuesByTagId,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard put_api_notes_update_tags_url(id)
     .putApi(cast[JsObject](data))
     .then(success)
     .catch(fail)

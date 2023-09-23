@@ -21,10 +21,10 @@ func cstr*(n: int): cstring
 func toLower*(s: cstring): cstring
   {.importjs: "#.toLowerCase()".}
 
-proc parseJs*(s: cstring): JsObject
+func parseJs*(s: cstring): JsObject
   {.importjs: "JSON.parse(@)".}
 
-proc stringify*(s: JsObject): cstring
+func stringify*(s: JsObject): cstring
   {.importjs: "JSON.stringify(@)".}
 
 func newJsArray*(): JsObject
@@ -45,14 +45,20 @@ func find*(str, sub: cstring): int
 func rfind*(str, sub: cstring): int
   {.importjs: "#.lastIndexOf(#)".}
 
-proc unscape*(s: cstring): cstring
+func unscape*(s: cstring): cstring
   {.importjs: "JSON.parse('@')".}
 
-proc substr(str: cstring, start, ende: int): cstring
+func substr(str: cstring, start, ende: int): cstring
   {.importjs: "#.substring(@)".}
 
-proc `[]`*(str: cstring, rng: Slice[int]): cstring =
+func `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
+
+func isKeyOf(key: cstring, t: JsAssoc): bool 
+  {.importjs: "(# in #)".}
+
+func contains*[T](t: JsAssoc[cstring, T], key: cstring): bool = 
+  isKeyOf key, t
 
 proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
 

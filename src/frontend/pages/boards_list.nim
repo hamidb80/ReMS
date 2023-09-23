@@ -10,10 +10,10 @@ import ../../backend/routes
 import ../../backend/database/[models]
 
 
-var boards: seq[BoardPreview]
+var boards: seq[BoardItemView]
 
 proc fetchBoards =
-  apiGetBoardsList proc(bs: seq[BoardPreview]) =
+  apiGetBoardsList proc(bs: seq[BoardItemView]) =
     boards = bs
     redraw()
 
@@ -26,7 +26,7 @@ proc deleteBoard(id: Id) =
 
 # ----- UI
 
-proc boardPreviewC(b: BoardPreview): VNode =
+proc BoardItemViewC(b: BoardItemView): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       if issome b.screenshot:
@@ -71,7 +71,7 @@ proc createDom: Vnode =
           icon "fa-plus fa-xl my-4"
 
         for b in boards:
-          boardPreviewC b
+          BoardItemViewC b
 
 when isMainModule:
   setRenderer createDom

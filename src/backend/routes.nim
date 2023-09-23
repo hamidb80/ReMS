@@ -35,7 +35,8 @@ dispatch router, ../views:
   get "/api/notes/list/", notesList {.json: seq[Note].}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   post "/api/notes/new/", newNote {.Id.}
-  put "/api/notes/update/"?(id: Id), updateNote {.form: Note.data, ok.}
+  put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
+  put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
   # 'Pages' are just views for notes with predefined criteria
@@ -44,7 +45,7 @@ dispatch router, ../views:
 
   get "/boards/", loadDist"boards.html" {.html.}
   get "/board/"?(id: Id), loadDist"board.html" {.html.}
-  get "/api/boards/list", listBoards {.json: seq[BoardPreview].}
+  get "/api/boards/list", listBoards {.json: seq[BoardItemView].}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
   post "/api/boards/new/", newBoard {.Id.}
   put "/api/board/update/"?(id: Id), updateBoard {.ok.}
@@ -53,7 +54,7 @@ dispatch router, ../views:
 
   get "/tags/", loadDist"tags.html" {.html.}
   get "/api/tags/list/", listTags {.json: seq[Tag].}
-  # get "/api/all-my-tags/", 
+  # get "/api/all-my-tags/",
   post "/api/tag/new/", newTag {.Id.}
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}

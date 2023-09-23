@@ -51,36 +51,6 @@ proc genChangeSelectedTagi(i: int): proc() =
       selectedTagI = i
       currentTag = tags[i]
 
-proc tag(
-  t: Tag,
-  value: string,
-  selected: bool,
-  forceShowName: bool,
-  clickHandler: proc()
-): VNode =
-  buildHtml:
-    tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
-      badge border-1 solid-border rounded-pill pointer""",
-      onclick = clickHandler,
-      style = style(
-      (StyleAttr.background, toColorString t.theme.bg),
-      (StyleAttr.color, toColorString t.theme.fg),
-      (StyleAttr.borderColor, toColorString t.theme.fg),
-    )):
-      icon $t.icon
-
-      span(dir = "auto", class = "ms-2"):
-        text t.name
-
-        if t.hasValue:
-          text ": "
-          text value
-
-proc checkbox(active: bool, changeHandler: proc(b: bool)): VNode =
-  result = buildHtml:
-    input(class = "form-check-input", `type` = "checkbox", checked = active):
-      proc onInput(e: Event, v: Vnode) =
-        changeHandler e.target.checked
 
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
@@ -107,8 +77,7 @@ proc createDom: Vnode =
 
       tdiv(class = "d-flex flex-row"):
         for i, t in tags:
-          tag(t, "val", t.icon == currentTag.icon, true,
-              genChangeSelectedTagi i)
+          tagViewC t, "val", genChangeSelectedTagi i
 
     tdiv(class = "p-4 mx-4 my-2"):
       h6(class = "mb-3"):
@@ -163,14 +132,9 @@ proc createDom: Vnode =
                 text "value type"
               
               select(class = "form-select"):
-                option(value = cstr tvtStr.ord, selected = currentTag.value_type == tvtStr):
-                  text $tvtStr
-                option(value = cstr tvtFloat.ord, selected = currentTag.value_type == tvtFloat):
-                  text $tvtFloat
-                option(value = cstr tvtDate.ord, selected = currentTag.value_type == tvtDate):
-                  text $tvtDate
-                option(value = cstr tvtJson.ord, selected = currentTag.value_type == tvtJson):
-                  text $tvtJson
+                for lbl in tvtStr..tvtJson:
+                  option(value = cstr lbl.ord, selected = currentTag.value_type == lbl):
+                    text $lbl
 
                 proc onInput(e: Event, v: Vnode) = 
                   currentTag.value_type = TagValueType parseInt e.target.value
@@ -198,7 +162,7 @@ proc createDom: Vnode =
                 currentTag.theme.fg = parseHexColorPack $e.target.value
 
         tdiv(class="my-2"):
-          tag(currentTag, "val", false, false, noop)
+          tagViewC currentTag, "val", noop
 
         if selectedTagI == noIndex:
           button(class = "btn btn-success w-100 mt-2 mb-4"):
