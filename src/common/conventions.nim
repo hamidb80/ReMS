@@ -20,3 +20,6 @@ template str*(smth): untyped =
 
 proc noop* = 
   discard
+
+func nor*(a, b: bool): bool = 
+  (not a) and (not b)

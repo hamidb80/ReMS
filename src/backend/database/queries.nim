@@ -27,6 +27,7 @@ proc newTag*(db: DbConn, t: Tag): Id =
     creator: tcUser,
     label: tlOrdinary,
     can_be_repeated: false,
+    show_name: t.show_name,
     theme: t.theme,
     name: t.name,
     icon: t.icon,
@@ -36,11 +37,13 @@ proc updateTag*(db: DbConn, id: Id, t: Tag) =
   db.exec sql"""UPDATE Tag SET 
       name = ?, 
       value_type = ?, 
+      show_name = ?, 
       icon = ?, 
       theme = ?
     WHERE id = ?""",
     t.name,
     t.value_type,
+    t.show_name,
     t.icon,
     t.theme,
     id

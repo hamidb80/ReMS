@@ -288,7 +288,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "s":
       # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
-      apiUpdateNote id, serialize app, proc = 
+      apiUpdateNoteContent id, serialize app, proc = 
         notify "note updated!"
 
     of "h": 

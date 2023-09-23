@@ -4,6 +4,7 @@ import std/[dom, jsconsole, jsffi, asyncjs]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable
 
+import ../components/[snackbar]
 import ../utils/[browser, js, ui, api]
 import ../../common/[iter, types, conventions]
 import ../../backend/routes
@@ -27,6 +28,7 @@ var
   tags: Table[Id, Tag]
   columnsCount = 3
   currentRelTags: RelValuesByTagId = initNTable[cstring, seq[cstring]]()
+  selectedNoteId: Id
   activeRelTag = none RelTagPath
 
 # TODO write a note laod manager component in a different file
@@ -90,6 +92,7 @@ proc notePreviewC(n: Note): VNode =
           icon "fa-tags"
 
           proc onclick =
+            selectedNoteId = n.id
             appState = asTagManager
 
         a(class = "btn mx-1 btn-compact btn-outline-warning",
@@ -105,6 +108,7 @@ proc notePreviewC(n: Note): VNode =
 proc genAddTagToList(id: Id): proc() =
   let key = cstr int id
   proc =
+    # FIXME var getter for [] is not defined
     # if key in currentRelTags:
     #   currentRelTags[key].add Str c""
     # else:
@@ -139,11 +143,39 @@ proc relTagManager(rtvs: RelValuesByTagId): Vnode =
               tagViewC tags[id], v, genActiveTagClick(id, index)
 
       if path =? activeRelTag:
-        discard
-        # cancel/update btn on top for cancel
-        
-        # if had value, input for change
-        # remove btn
+        let t = tags[path.tagid]
+        if t.hasValue:
+          input(`type` = "text", class = "form-control", value = rtvs[
+              cstr int path.tagid][path.index]):
+            proc oninput(e: Event, v: Vnode) =
+              let k = cstr int path.tagid
+              # currentRelTags.sett k, path.index, cstring $e.target.value
+
+        button(class = "btn btn-danger w-100 mt-2 mb-4"):
+          text "remove"
+          icon "mx-2 fa-close"
+
+          proc onclick =
+            let k = cstr int path.tagid
+            delete currentRelTags[k], path.index
+
+
+      button(class = "btn btn-primary w-100 mt-2"):
+        text "save"
+        icon "mx-2 fa-save"
+
+        proc onclick =
+          apiUpdateNoteTags selectedNoteId, currentRelTags, proc =
+            discard fetchTags()
+            notify "changes applied"
+
+      button(class = "btn btn-warning w-100 mt-2 mb-4"):
+        text "cancel"
+        icon "mx-2 fa-hand"
+
+        proc onclick =
+          reset activeRelTag
+          appState = asNormal
 
 
 proc createDom: Vnode =

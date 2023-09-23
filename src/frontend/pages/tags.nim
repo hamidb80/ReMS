@@ -31,6 +31,8 @@ proc dummyTag: Tag =
   Tag(
     icon: defaultIcon,
     theme: sample colors,
+    showName: true,
+    valueType: tvtNone,
     name: "name")
 
 proc fetchTags =
@@ -113,33 +115,35 @@ proc createDom: Vnode =
               proc onclick =
                 state = asSelectIcon
 
-          # TODO add show name
+          tdiv(class = "form-check form-switch"):
+            checkbox currentTag.showName, proc (b: bool) =
+              currentTag.showName = b
+
+            label(class = "form-check-label"):
+              text "show name"
 
           # has value
           tdiv(class = "form-check form-switch"):
-            let onChange = proc (b: bool) =
+            checkbox currentTag.hasValue, proc (b: bool) =
               currentTag.value_type =
                 if b: tvtStr
                 else: tvtNone
-
-            checkbox currentTag.hasValue, onChange
 
             label(class = "form-check-label"):
               text "has value"
 
           # value type
-          if currentTag.hasValue:
-            tdiv(class = "form-group my-2"):
-              label(class = "form-label"):
-                text "value type"
-              
-              select(class = "form-select"):
-                for lbl in tvtStr..tvtJson:
-                  option(value = cstr lbl.ord, selected = currentTag.value_type == lbl):
-                    text $lbl
+          tdiv(class = "form-group my-2"):
+            label(class = "form-label"):
+              text "value type"
+            
+            select(class = "form-select", disabled = not currentTag.hasValue):
+              for lbl in tvtStr..tvtJson:
+                option(value = cstr lbl.ord, selected = currentTag.value_type == lbl):
+                  text $lbl
 
-                proc onInput(e: Event, v: Vnode) = 
-                  currentTag.value_type = TagValueType parseInt e.target.value
+              proc onInput(e: Event, v: Vnode) = 
+                currentTag.value_type = TagValueType parseInt e.target.value
 
           # background
           tdiv(class = "form-group d-inline-block mx-2"):

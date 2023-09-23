@@ -45,12 +45,14 @@ proc tagViewC*(
     )):
       icon $t.icon
 
-      span(dir = "auto", class = "ms-2"):
-        text t.name
+      if t.showName or t.hasValue:
+        span(dir = "auto", class = "ms-2"):
+          if t.showName:
+            text t.name
 
-        if t.hasValue:
-          text ": "
-          text value
+          if t.hasValue:
+            text ": "
+            text value
 
 proc checkbox*(active: bool, changeHandler: proc(b: bool)): VNode =
   result = buildHtml:

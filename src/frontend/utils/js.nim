@@ -18,6 +18,9 @@ func cleanStr*(n: float): cstring
 func cstr*(n: int): cstring
   {.importjs: "(#).toString()".}
 
+func del*[T](s: var JsAssoc[cstring, T], key: cstring) 
+  {.importJs: "delete #[#]".}
+
 func toLower*(s: cstring): cstring
   {.importjs: "#.toLowerCase()".}
 
