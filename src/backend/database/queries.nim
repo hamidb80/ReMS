@@ -94,28 +94,29 @@ proc updateNoteContent*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
   db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
 
 # TODO make it generic for notes/assets
-proc updateNoteRelTags*(db: DbConn, id: Id, data: RelValuesByTagId) =
+proc updateNoteRelTags*(db: DbConn, noteid: Id, data: RelValuesByTagId) =
   transaction db:
     # remove existing rels
-    db.exec sql"DELETE FROM Relation WHERE note = ?", id
+    db.exec sql"DELETE FROM Relation WHERE note = ?", noteid
     # remove rel cache
-    db.exec sql"DELETE FROM RelationsCache WHERE note = ?", id
+    db.exec sql"DELETE FROM RelationsCache WHERE note = ?", noteid
 
     # insert new rel cache
     db.insert RelationsCache(
-      note: some id,
+      note: some noteid,
       active_rels_values: data)
     
     # insert all rels again
     let tags = db.findTags tagIds data
     for key, values in data:
       let
-        id = Id parseInt key
-        t = tags[id]
+        tagid = Id parseInt key
+        t = tags[tagid]
 
       for v in values:
         var r = Relation(
-          note: some id,
+          note: some noteid,
+          tag: tagid,
           #TODO timestamp: now(),
         )
 

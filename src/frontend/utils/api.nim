@@ -87,12 +87,12 @@ proc apiUpdateBoardContent*(
 
 
 proc apiGetNotesList*(
-    success: proc(ns: seq[Note]),
+    success: proc(ns: seq[NoteItemView]),
     fail: proc() = noop
 ) =
     discard get_api_notes_list_url()
     .getApi()
-    .then(wrapResp success cast[seq[Note]](r.data))
+    .then(wrapResp success cast[seq[NoteItemView]](r.data))
     .catch(fail)
 
 proc apiGetNote*(
@@ -118,12 +118,12 @@ proc apiUpdateNoteContent*(
 
 proc apiUpdateNoteTags*(
     id: Id,
-    data: RelValuesByTagId,
+    data: JsObject,
     success: proc(),
     fail: proc() = noop
 ) =
     discard put_api_notes_update_tags_url(id)
-    .putApi(cast[JsObject](data))
+    .putApi(data)
     .then(success)
     .catch(fail)
 

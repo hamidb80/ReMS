@@ -6,7 +6,7 @@ import questionable
 
 import ../components/[snackbar]
 import ../utils/[browser, js, ui, api]
-import ../../common/[iter, types, conventions]
+import ../../common/[iter, types, datastructures, conventions]
 import ../../backend/routes
 import ../../backend/database/[models]
 import ./editor/[core, components]
@@ -20,26 +20,38 @@ type
   RelTagPath = tuple[tagid: Id, index: int]
 
 
+func toJson(s: Table[Id, seq[cstring]]): JsObject =
+  result = newJsObject()
+  for k, v in s:
+    if v.len > 0:
+      result[cstr int k] = v
+
+func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
+  for k, v in s:
+    let id = Id parseInt k
+    result[id] = v
+
+
 let compTable = defaultComponents()
 var
   appState = asNormal
-  notes: seq[Note]
+  notes: seq[NoteItemView]
   msgCache: Table[Id, cstring]
   tags: Table[Id, Tag]
   columnsCount = 3
-  currentRelTags: RelValuesByTagId = initNTable[cstring, seq[cstring]]()
+  currentRelTags: Table[Id, seq[cstring]]
   selectedNoteId: Id
   activeRelTag = none RelTagPath
 
 # TODO write a note laod manager component in a different file
-proc loadMsg(n: Note) =
+proc loadMsg(n: NoteItemView) =
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =
     msgCache[n.id] = t.dom.innerHtml
     redraw()
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiGetNotesList proc(ns: seq[Note]) =
+    apiGetNotesList proc(ns: seq[NoteItemView]) =
       notes = ns
       for n in notes:
         loadMsg n
@@ -68,7 +80,7 @@ proc columnCountSetter(i: int): proc() =
     columnsCount = i
 
 
-proc notePreviewC(n: Note): VNode =
+proc notePreviewC(n: NoteItemView): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
@@ -76,6 +88,12 @@ proc notePreviewC(n: Note): VNode =
           verbatim msgCache[n.id]
         else:
           text "loading..."
+
+      tdiv(class = "m-2"):
+        for k, values in n.activeRelsValues:
+          for v in values:
+            let id = Id parseInt k
+            tagViewC tags[id], v, noop
 
       tdiv(class = "card-footer d-flex justify-content-center"):
 
@@ -93,6 +111,7 @@ proc notePreviewC(n: Note): VNode =
 
           proc onclick =
             selectedNoteId = n.id
+            currentRelTags = fromJson n.activeRelsValues
             appState = asTagManager
 
         a(class = "btn mx-1 btn-compact btn-outline-warning",
@@ -106,13 +125,8 @@ proc notePreviewC(n: Note): VNode =
             deleteNote n.id
 
 proc genAddTagToList(id: Id): proc() =
-  let key = cstr int id
   proc =
-    # FIXME var getter for [] is not defined
-    # if key in currentRelTags:
-    #   currentRelTags[key].add Str c""
-    # else:
-      currentRelTags[key] = @[c""]
+    currentRelTags.add id, c""
 
 proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
@@ -120,7 +134,7 @@ proc genActiveTagClick(tagId: Id, index: int): proc() =
 
 
 # TODO make it globally available
-proc relTagManager(rtvs: RelValuesByTagId): Vnode =
+proc relTagManager(): Vnode =
   buildHTML:
     tdiv:
       h3(class = "mt-4"):
@@ -129,7 +143,7 @@ proc relTagManager(rtvs: RelValuesByTagId): Vnode =
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            if (cstr int id) notin rtvs or t.can_be_repeated:
+            if id notin currentRelTags or t.can_be_repeated:
               tagViewC t, "val", genAddTagToList id
 
       h3(class = "mt-4"):
@@ -137,27 +151,26 @@ proc relTagManager(rtvs: RelValuesByTagId): Vnode =
 
       tdiv(class = "card"):
         tdiv(class = "card-body"):
-          for key, vals in rtvs:
+          for id, vals in currentRelTags:
             for index, v in vals:
-              let id = Id parseInt key
               tagViewC tags[id], v, genActiveTagClick(id, index)
 
       if path =? activeRelTag:
         let t = tags[path.tagid]
         if t.hasValue:
-          input(`type` = "text", class = "form-control", value = rtvs[
-              cstr int path.tagid][path.index]):
+          input(`type` = "text", class = "form-control",
+            placeholder = "value ...",
+            value = currentRelTags[path.tagid][path.index], ):
             proc oninput(e: Event, v: Vnode) =
-              let k = cstr int path.tagid
-              # currentRelTags.sett k, path.index, cstring $e.target.value
+              currentRelTags[path.tagid][path.index] = e.target.value
 
         button(class = "btn btn-danger w-100 mt-2 mb-4"):
           text "remove"
           icon "mx-2 fa-close"
 
           proc onclick =
-            let k = cstr int path.tagid
-            delete currentRelTags[k], path.index
+            del currentRelTags[path.tagid], path.index
+            reset activeRelTag
 
 
       button(class = "btn btn-primary w-100 mt-2"):
@@ -165,7 +178,7 @@ proc relTagManager(rtvs: RelValuesByTagId): Vnode =
         icon "mx-2 fa-save"
 
         proc onclick =
-          apiUpdateNoteTags selectedNoteId, currentRelTags, proc =
+          apiUpdateNoteTags selectedNoteId, toJson currentRelTags, proc =
             discard fetchTags()
             notify "changes applied"
 
@@ -211,7 +224,7 @@ proc createDom: Vnode =
             notePreviewC n
 
       of asTagManager:
-        relTagManager currentRelTags
+        relTagManager()
 
 when isMainModule:
   setRenderer createDom
