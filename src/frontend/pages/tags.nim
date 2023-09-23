@@ -113,6 +113,8 @@ proc createDom: Vnode =
               proc onclick =
                 state = asSelectIcon
 
+          # TODO add show name
+
           # has value
           tdiv(class = "form-check form-switch"):
             let onChange = proc (b: bool) =

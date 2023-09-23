@@ -32,6 +32,8 @@ proc tagViewC*(
   value: SomeString,
   clickHandler: proc()
 ): VNode =
+  # TODO check for show name
+
   buildHtml:
     tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
       badge border-1 solid-border rounded-pill pointer""",

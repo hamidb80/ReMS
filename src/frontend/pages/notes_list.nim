@@ -140,6 +140,8 @@ proc relTagManager(rtvs: RelValuesByTagId): Vnode =
 
       if path =? activeRelTag:
         discard
+        # cancel/update btn on top for cancel
+        
         # if had value, input for change
         # remove btn
 

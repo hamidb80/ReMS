@@ -100,9 +100,10 @@ type # database models
     owner* {.references: User.id.}: Id
     creator*: TagCreator
     label*: TagLabel
-    can_be_repeated*: bool
     name*: Str
     icon*: Str
+    show_name*: bool
+    can_be_repeated*: bool
     theme*: ColorTheme
     value_type*: TagValueType
 

@@ -20,7 +20,7 @@ func sqlize[T](items: seq[T]): string =
 func tagIds(data: RelValuesByTagId): seq[Id] =
   data.keys.toseq.mapIt(Id parseInt it)
 
-
+# TODO add show_name tag
 proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
     owner: 0,
