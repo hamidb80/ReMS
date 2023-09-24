@@ -356,7 +356,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       app.state = asTreeView
       
     of "Enter":
-      var newNode = instantiate(app.filteredComponents[app.listIndex])
+      var newNode = instantiate(app.filteredComponents[app.listIndex], app.components)
+      
       template i: untyped = app.focusedPath[^1]
 
       case app.insertionMode
@@ -368,6 +369,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       of imAfter:
         app.focusedNode.father.attach newNode, i+1
         app.focusedPath[^1] += 1
+
       of imBefore:
         app.focusedNode.father.attach newNode, i
 
@@ -402,7 +404,7 @@ proc fetchNote(id: Id) =
       notify "failed to fetch note data"
 
 proc init* = 
-  let root = instantiate rootComponent
+  let root = instantiate(rootComponent, nil)
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
 

@@ -1,5 +1,5 @@
 import std/[sets, tables, strutils, sequtils, options, sugar, enumerate]
-import std/[jsffi, dom, asyncjs] #, jsconsole]
+import std/[jsffi, dom, asyncjs, jsconsole]
 
 import karax/[vdom], questionable
 
@@ -38,8 +38,11 @@ type
   TwNodeStatus = tuple[code: TwNodeStatusCode, msg: string]
 
   Hooks* = ref object
+    componentTable*: proc(): ComponentsTable ## component table that is built with at the beginning
+
     dom*: proc(): Element                ## corresponding DOM element
     self*: proc(): TwNode                ## the node cotaining this
+
     role*: proc(child: Index): string    ## name of the node made by himself
     mark*: proc(child: Index)
 
@@ -77,6 +80,8 @@ type
 
   EditorInit* = proc(input: JsObject, updateCallback: CallBack): VNode
 
+  ComponentsTable* = TableRef[cstring, Component] ## components by name
+
   Component* = ref object
     name*, icon*: string ## name of the component
     tags*: seq[string]   ## inline/media/<special component name>
@@ -84,6 +89,7 @@ type
 
 ## ---- syntax sugar
 proc dom*(t: TwNode): auto = t.data.hooks.dom()
+proc componentTable*(t: TwNode): auto = t.data.hooks.componentTable()
 proc mounted*(t: TwNode, by: MountedBy,
     mode: TwNodeMode): auto = t.data.hooks.mounted(by, mode)
 proc die*(t: TwNode) = t.data.hooks.die()
@@ -115,13 +121,14 @@ proc serialize*(t: TwNode): TreeNodeRaw[JsObject] =
     data: t.capture,
     children: t.children.map(serialize))
 
-proc instantiate*(c: Component): TwNode =
-  var node = TwNode(data: TwNodeData(
+proc instantiate*(c: Component, ct: ComponentsTable): TwNode =
+  let node = TwNode(data: TwNodeData(
     visibleChildren: true,
     component: c,
     hooks: c.init()))
 
   node.data.hooks.self = () => node
+  node.data.hooks.componentTable = () => ct
   node
 
 proc attach*(father, child: TwNode, at: int) =
@@ -140,8 +147,6 @@ type
     imBefore
     imAfter
     imAppend
-
-  ComponentsTable* = TableRef[cstring, Component] ## components by name
 
   App* = object
     version*: string
@@ -190,7 +195,7 @@ proc deserizalizeImpl(
   allFutures: var seq[Future[void]]
 ): TwNode =
   let cname = $j.name
-  result = instantiate ct[cname]
+  result = instantiate(ct[cname], ct)
 
   if cname == "root":
     result.data.hooks.dom = () => root
@@ -198,10 +203,11 @@ proc deserizalizeImpl(
   for i, ch in enumerate j.children:
     result.attach deserizalizeImpl(ct, root, ch, allFutures), i
 
+  result.data.hooks.componentTable = () => ct
   result.restore j.data
-  result.mounted(mbDeserializer, tmInteractive)
+  result.mounted mbDeserializer, tmInteractive
 
-  if fut =? result.render():
+  if fut =? result.render:
     add allFutures, fut
 
 proc deserizalize*(

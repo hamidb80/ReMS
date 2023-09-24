@@ -20,7 +20,7 @@ proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml input(
     class = "form-check-input bw-checkbox",
     `type` = "checkbox",
-    cheched = input.to bool):
+    checked = input.to bool):
     proc onchange(e: Event, n: VNode) =
       cb e.target.checked.toJs
 

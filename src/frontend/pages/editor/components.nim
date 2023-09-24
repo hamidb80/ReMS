@@ -1,10 +1,10 @@
-import std/[jsffi, dom, asyncjs]
+import std/[jsffi, dom, asyncjs, jsconsole]
 import std/[with, options, sequtils, tables, sugar]
 
 import ./core
-import ../../utils/[browser, js]
+import ../../utils/[browser, js, api]
 import ../../jslib/[katex, marked, axios]
-import ../../../common/conventions
+import ../../../common/[conventions, types]
 import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
@@ -125,7 +125,7 @@ template genMounted(body): untyped {.dirty.} =
     body
 
 template genRender(body): untyped {.dirty.} =
-  proc(): Option[Future[void]] =
+  proc(): options.Option[Future[void]] =
     body
 
 # ----- Definition -----------
@@ -197,14 +197,8 @@ proc initRawText: Hooks =
           input: spaceAround().toJs,
           updateCallback: mutState(spSet, bool)))]
 
-defComponent rawTextComponent,
-  "raw-text",
-  "bi bi-type",
-  @["global", "inline", "text", "raw"],
-  initRawText
-
-proc attachInstance(comp: Component, hooks: Hooks) =
-  let n = instantiate comp
+proc attachInstance(comp: Component, hooks: Hooks, ct: ComponentsTable) =
+  let n = instantiate(comp, ct)
   hooks.self().attach n, 0
   n.mounted mbUser, tmInteractive
 
@@ -217,7 +211,7 @@ proc wrapperTextElement(tag: string): () -> Hooks =
       acceptsAsChild = onlyInlines
       mounted = genMounted:
         if mode == tmInteractive and by == mbUser:
-          attachInstance rawTextComponent, hooks
+          attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
 
 let
   initBold = wrapperTextElement "b"
@@ -252,7 +246,7 @@ proc initParagraph: Hooks =
     mounted = genMounted:
       # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
-        attachInstance rawTextComponent, hooks
+        attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
 
     settings = () => @[
       SettingsPart(
@@ -267,13 +261,6 @@ proc initParagraph: Hooks =
               ["ltr", "ltr"],
               ["rtl", "rtl"]]},
           updateCallback: mutState(setDir, cstring)))]
-
-defComponent paragraphComponent,
-  "paragraph",
-  "bi bi-paragraph",
-  @["global", "text", "block"],
-  initParagraph
-
 
 proc initVerticalSpace: Hooks =
   let el = createElement("hr", {"class": "tw-vertical-space"})
@@ -299,7 +286,7 @@ proc initLink: Hooks =
       el.setAttr "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
-        attachInstance rawTextComponent, hooks
+        attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
 
     settings = () => @[
       SettingsPart(
@@ -394,7 +381,7 @@ proc initImage: Hooks =
     mounted = genMounted:
       wrapper.appendChildren img, caption
       if mode == tmInteractive and by == mbUser:
-        attachInstance paragraphComponent, hooks
+        attachInstance hooks.componentTable()["paragraph"], hooks, hooks.componentTable()
 
     attachNode = proc(child: TwNode, at: Index) =
       attachNodeDefault hooks.self(), child, caption, child.dom, at
@@ -556,7 +543,6 @@ proc initCustomHtml: Hooks =
 
 # TODO replace raw-text with custom MarkDown
 proc initMd: Hooks =
-
   let
     el = createElement("div", {"class": "tw-md " & displayInlineClass})
     (content, cset) = genState c""
@@ -613,6 +599,62 @@ proc initGithubCode: Hooks =
           input: toJs url(),
           updateCallback: mutState(uset, cstring)))]
 
+proc initIncluder: Hooks = 
+  let
+    el = createElement( "div", {"class": "tw-include-external"})
+    (noteId, setNoteId) = genstate c""
+    (inline, inlineSet) = genstate false
+
+  var lastNoteId = -1
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = noTags
+    capture = () => <*{
+      "note_id": noteId(),
+      "inline": inline()}
+
+    restore = proc(j: JsObject) = 
+      setNoteId j["note_id"].to(cstring)
+      inlineSet j["inline"].to(bool)
+
+    render = genRender:
+      if inline():
+        el.classList.add "d-inline"
+      else:
+        el.classList.remove "d-inline"
+      
+      if lastNoteId != parseInt noteId():
+        some newPromise proc(resolve, fail: proc()) = 
+          apiGetNote Id parseInt noteId(), proc(n: NoteItemView) = 
+            let fut = deserizalize(
+              hooks.componentTable(),
+              n.data,
+              some hooks.dom(),
+              false)
+
+            lastNoteId = parseInt noteId()
+            discard fut.then(resolve).catch(fail)
+      else:
+        result
+
+    settings = () => @[
+      SettingsPart(
+        field: "note id",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs noteId(),
+          updateCallback: mutState(setNoteId, cstring))),
+
+      SettingsPart(
+        field: "inline",
+        icon: "bi bi-displayport",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: toJs inline(),
+          updateCallback: mutState(inlineSet, bool)))]
+
 # TODO
 # ----- link preview + poster image
 # ----- [more] component :: a drop down with html elements
@@ -649,6 +691,18 @@ defComponent rootComponent,
   "bi bi-diagram-3-fill",
   @["root"],
   initRoot
+
+defComponent paragraphComponent,
+  "paragraph",
+  "bi bi-paragraph",
+  @["global", "text", "block"],
+  initParagraph
+
+defComponent rawTextComponent,
+  "raw-text",
+  "bi bi-type",
+  @["global", "inline", "text", "raw"],
+  initRawText
 
 defComponent linkComponent,
   "link",
@@ -782,6 +836,12 @@ defComponent githubCodeComponent,
   @["global", "block"],
   initGithubCode
 
+defComponent includeCodeComponent,
+  "includer",
+  "bi bi-puzzle-fill",
+  @["global", "block"],
+  initIncluder
+
 
 proc defaultComponents*: ComponentsTable =
   new result
@@ -809,4 +869,5 @@ proc defaultComponents*: ComponentsTable =
     tableComponent,
     tableRowComponent,
     githubCodeComponent,
+    includeCodeComponent,
     customHtmlComponent]

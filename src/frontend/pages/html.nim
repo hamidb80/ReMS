@@ -1,5 +1,7 @@
-import std/[strutils, os, httpclient, sequtils]
+import std/[strutils, os]
+
 import karax/[vdom, karaxdsl]
+
 import ../../backend/routes
 
 

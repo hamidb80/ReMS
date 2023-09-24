@@ -16,7 +16,7 @@ body {
   cursor: pointer;
 }
 
-.w-40{
+.w-40 {
   width: 42%;
 }
 
@@ -191,16 +191,21 @@ body {
   width: 46vw;
 }
 
-.tw-focus-hover {
-  background-color: #9dadff4f;
-}
-
 .tw-pointer {
   cursor: pointer;
 }
 
+.tw-focus-hover {
+  background-color: #9dadff4f;
+}
+
 .tw-mouse-hover {
   background-color: #00720f4f;
+}
+
+.tw-include-external.tw-focus-hover>*,
+.tw-include-external.tw-mouse-hover>* {
+  opacity: 0.7;
 }
 
 figure {
