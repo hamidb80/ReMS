@@ -71,7 +71,9 @@ let
   onlyInlines = genAllowedTags @[c"inline"]
 
 func noSettings: seq[SettingsPart] = @[]
+
 func returnNull: JsObject = nil
+
 func nothingToRestore(input: JsObject) = discard
 
 proc addFocusClass(hooks: Hooks): proc() =
@@ -619,9 +621,9 @@ proc initIncluder: Hooks =
 
     render = genRender:
       if inline():
-        el.classList.add "d-inline"
+        el.classList.add displayInlineClass
       else:
-        el.classList.remove "d-inline"
+        el.classList.remove displayInlineClass
       
       if lastnoteQuery != noteQuery():
         purge el

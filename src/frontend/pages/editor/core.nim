@@ -192,7 +192,7 @@ proc deserizalizeImpl(
   ct: ComponentsTable,
   root: Element,
   j: TreeNodeRaw[JsObject],
-  allFutures: var seq[Future[void]],
+  futures: var seq[Future[void]],
   wrap: bool,
 ): TwNode =
   let cname = $j.name
@@ -202,14 +202,14 @@ proc deserizalizeImpl(
     result.data.hooks.dom = () => root
 
   for i, ch in enumerate j.children:
-    result.attach deserizalizeImpl(ct, root, ch, allFutures, false), i
+    result.attach deserizalizeImpl(ct, root, ch, futures, false), i
 
   result.data.hooks.componentTable = () => ct
   result.restore j.data
   result.mounted mbDeserializer, tmInteractive
 
   if fut =? result.render:
-    add allFutures, fut
+    add futures, fut
 
 proc deserizalize*(
   ct: ComponentsTable,
@@ -219,7 +219,7 @@ proc deserizalize*(
   wrap = true,
 ): Future[TwNode] =
   var
-    allFutures: seq[Future[void]]
+    futures: seq[Future[void]]
     el =
       if t =? elem: t
       else: createElement("div", {"class": "tw-content"})
@@ -230,11 +230,11 @@ proc deserizalize*(
           children: @[j])
       else: j
 
-    payload = deserizalizeImpl(ct, el, data, allFutures, wrap)
+    payload = deserizalizeImpl(ct, el, data, futures, wrap)
 
   newPromise proc(resolve: proc(t: TwNode)) =
     if wait:
-      allFutures.waitAll proc =
+      waitAll futures, proc =
         resolve payload
     else:
       resolve payload
