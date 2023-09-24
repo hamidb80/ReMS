@@ -228,7 +228,7 @@ let
 
 proc initParagraph: Hooks =
   let
-    el = createElement "p"
+    el = createElement( "span", {"class": "tw-paragraph"})
     (dir, setDir) = genState c"auto"
 
   defHooks:
@@ -625,6 +625,7 @@ proc initIncluder: Hooks =
         el.classList.remove "d-inline"
       
       if lastNoteId != parseInt noteId():
+        purge el
         some newPromise proc(resolve, fail: proc()) = 
           apiGetNote Id parseInt noteId(), proc(n: NoteItemView) = 
             let fut = deserizalize(
@@ -839,7 +840,7 @@ defComponent githubCodeComponent,
 defComponent includeCodeComponent,
   "includer",
   "bi bi-puzzle-fill",
-  @["global", "block"],
+  @["global", "block", "inline"],
   initIncluder
 
 

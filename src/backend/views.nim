@@ -123,6 +123,10 @@ proc notesList*(req: Request) =
 proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getNote(id)
 
+proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
+  let node = !!<db.getNote(id).data
+  respJson toJson node.follow path
+
 proc updateNoteContent*(req: Request) {.qparams: {id: int}.} =
   let d = fromJson(req.body, TreeNodeRaw[JsonNode])
   !!db.updateNoteContent(id, d)

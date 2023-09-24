@@ -59,6 +59,10 @@ func isLeaf*(tn: TreeNodeRec or TreeNodeRaw): bool =
 func isRoot*(tn: TreeNodeRec): bool =
   tn.father == nil
 
+func follow*[T](n: TreeNodeRaw[T], path: seq[int]): TreeNodeRaw[T] =
+  result = n
+  for i in path:
+    result = result.children[i]
 
 type
   ColorTheme* = object

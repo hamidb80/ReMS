@@ -395,11 +395,19 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # ----- Init ------------------------------
 
+template after(time, action): untyped = 
+  setTimeout time, () => action
+
+template fn(body): untyped = 
+  proc = 
+    body
+
 # FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) = 
   apiGetNote id, proc(n: NoteItemView) = 
     deserizalize(app.components, n.data, some app.tree.dom, wait = false)
     .then(resetApp)
+    .then(fn after(100, redraw()))
     .dcatch proc = 
       notify "failed to fetch note data"
 

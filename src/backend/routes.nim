@@ -34,6 +34,7 @@ dispatch router, ../views:
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
   get "/api/notes/list/", notesList {.json: seq[Note].}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
+  get "/api/note/content/query/"?(id: Id, path: seq[int]), getNoteContentQuery {.json: Note.}
   post "/api/notes/new/", newNote {.Id.}
   put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
   put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}

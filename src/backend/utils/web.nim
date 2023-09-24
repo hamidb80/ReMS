@@ -2,8 +2,27 @@ import std/[macros, uri, strutils, sequtils, tables]
 import macroplus
 
 
-func safeUrl*(i: SomeNumber or bool): string {.inline.} = $i
-func safeUrl*(s: string): string {.inline.} = encodeUrl s
+func safeUrl*(i: SomeNumber or bool): string {.inline.} =
+  $i
+
+func safeUrl*(s: string): string {.inline.} =
+  encodeUrl s
+
+func safeUrl*(s: seq[int]): string =
+  s.join(",")
+
+
+func parseq*(t: typedesc[seq[int]], s: string): seq[int] =
+  if s == "":
+    @[]
+  else:
+    map s.split ',', parseInt
+
+func parseq*(t: typedesc[int], s: string): int =
+  parseInt s
+
+func parseq*(t: typedesc[string], s: string): string =
+  s
 
 
 proc dispatchInfo(entry: NimNode): tuple[
@@ -96,6 +115,7 @@ macro dispatch*(router, viewModule, body): untyped =
       `rout`
 
 
+
 func extractQueryParams*(url: string): Table[string, string] =
   let
     qi = url.rfind('?')
@@ -122,7 +142,7 @@ proc addQueryParamsImpl(procDef, mandatoryArgs: NimNode): NimNode =
       varKey = newLit a[0].strVal
       varType = a[1]
     acc.add quote do:
-      let `varIdent` = parse(`varType`, `q`[`varKey`])
+      let `varIdent` = parseq(`varType`, `q`[`varKey`])
 
   procdef.body.insert 0, acc
   procdef
@@ -147,10 +167,10 @@ template redirect*(loc): untyped {.dirty.} =
   req.respond(302, @{"Location": loc})
 
 template respErr*(code, msg): untyped {.dirty.} =
-  let ct = 
+  let ct =
     if "api" in req.uri: "application/json"
     else: "text/html"
-  
+
   req.respond(code, @{"Content-Type": ct}, msg)
 
 template respErr*(msg): untyped {.dirty.} =
@@ -160,9 +180,3 @@ const OK* = 200
 
 template resp*(code): untyped {.dirty.} =
   req.respond code
-
-template parse*(t: typedesc[int], s: string): int =
-  parseInt s
-  
-template parse*(t: typedesc[string], s: string): string =
-  s

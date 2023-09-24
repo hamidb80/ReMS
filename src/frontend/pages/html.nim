@@ -105,13 +105,13 @@ proc index: VNode =
     buildHtml:
       tdiv(class = "p-3 my-4 w-40 card"):
         tdiv(class = "card-body d-flex flex-row justify-content-between"):
-          tdiv(class="d-flex flex-column align-items-center justify-content-evenly me-3 minw-30"):
-            h3(class="text-center"):
+          tdiv(class = "d-flex flex-column align-items-center justify-content-evenly me-3 minw-30"):
+            h3(class = "text-center"):
               text title
             img(src = getDistUrl icon)
 
             if link != "":
-              tdiv(class="mt-2"):
+              tdiv(class = "mt-2"):
                 tryBtnLink link
 
           tdiv:
@@ -122,7 +122,7 @@ proc index: VNode =
             """
 
   buildHtml html:
-    commonHead "editor", []
+    commonHead "intro", []
 
     body(class = "bg-light"):
       h1(class = "my-4 text-center w-100"):
@@ -133,7 +133,7 @@ proc index: VNode =
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Apps"
-      tdiv(class="d-flex flex-wrap justify-content-evenly"):
+      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "planet.svg", get_notes_url()
         blockk "Notes", "pen-writing-on-paper.svg", get_notes_url()
         blockk "Files", "inbox-archive.svg", get_assets_url()
@@ -142,11 +142,24 @@ proc index: VNode =
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
-      tdiv(class="d-flex flex-wrap justify-content-evenly"):
+      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Built-in Remembering Utils", "repeat.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", ""
         blockk "Be a User", "user.svg", ""
+
+      footer(class = "app-footer card text-white bg-primary rounded-0"):
+        tdiv(class = "card-body"):
+          h4(class = "card-title"):
+            text "Primary card title"
+          p(class = "card-text"):
+            text """
+  Some quick example text to build on the card title and make up the bulk of the
+  card's content."""
+
+        tdiv(class = "card-footer text-center"):
+          text "created by @hamidb80 with passion in Nim"
+
 
 # -----
 

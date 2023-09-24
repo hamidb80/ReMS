@@ -96,7 +96,6 @@ proc getNote*(db: DbConn, id: Id): NoteItemView =
     LIMIT 1
     """, id
 
-
 proc newNote*(db: DbConn): Id =
   result = db.insertID initEmptyNote()
   db.insert RelationsCache(note: some result)

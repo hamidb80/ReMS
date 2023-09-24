@@ -18,8 +18,5 @@ proc negate*(b: var bool) =
 template str*(smth): untyped =
   $smth
 
-proc noop* = 
+proc noop* =
   discard
-
-func nor*(a, b: bool): bool = 
-  (not a) and (not b)
