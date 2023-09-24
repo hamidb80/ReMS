@@ -99,21 +99,25 @@ proc index: VNode =
       a(class = "btn btn-primary", href = link):
         text "Open"
 
-  func t(s: string): VNode =
-    buildHtml h3:
-      text s
-
   func blockk(title, icon, link: string): VNode =
     buildHtml:
-      tdiv(class = "p-4 my-4 card"):
-        tdiv(class = "card-body d-flex flex-column align-items-center"):
-          t title
-          img(src = getDistUrl icon)
+      tdiv(class = "p-3 my-4 w-40 card"):
+        tdiv(class = "card-body d-flex flex-row justify-content-between"):
+          tdiv(class="d-flex flex-column align-items-center justify-content-evenly me-3 minw-30"):
+            h3(class="text-center"):
+              text title
+            img(src = getDistUrl icon)
 
-          if link != "":
-            tdiv(class="mt-2"):
-              tryBtnLink link
+            if link != "":
+              tdiv(class="mt-2"):
+                tryBtnLink link
 
+          tdiv:
+            text """
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                 incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+            """
 
   buildHtml html:
     commonHead "editor", []
@@ -127,15 +131,16 @@ proc index: VNode =
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Apps"
-      tdiv(class="d-flex justify-content-evenly"):
+      tdiv(class="d-flex flex-wrap justify-content-evenly"):
+        blockk "Explore", "planet.svg", get_notes_url()
         blockk "Notes", "pen-writing-on-paper.svg", get_notes_url()
         blockk "Files", "inbox-archive.svg", get_assets_url()
-        blockk "Labels", "tag.svg", get_tags_url()
+        blockk "Tags", "tag.svg", get_tags_url()
         blockk "Networks", "share-circle.svg", get_boards_url()
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
-      tdiv(class=""):
+      tdiv(class="d-flex flex-wrap justify-content-evenly"):
         blockk "Built-in Remembering Utils", "repeat.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", ""

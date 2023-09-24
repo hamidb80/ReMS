@@ -16,6 +16,10 @@ body {
   cursor: pointer;
 }
 
+.w-40{
+  width: 42%;
+}
+
 .color-square {
   width: 26px;
   height: 26px;

@@ -314,27 +314,9 @@ proc createDom: Vnode =
               uploadStatusBtn u
 
       tdiv(class = "form-group"):
-        h6(class = "mb-3"):
-          icon("fa-hashtag me-2")
-          text "search by tags"
-
-        tagSearch("id", "red", some neq)
-        tagSearch("extention", "black", some lte)
-        tagSearch("time", "gray", none CmpOperator)
-
-        button(class = "btn btn-success w-100 my-2"):
-          text "add tag"
-          # TODO remove this, add all tags below
-          icon("fa-plus ms-2")
-
-        h6(class = "mb-3"):
-          icon("fa-arrow-up-wide-short me-2")
-          text "order results by"
-
-      tdiv(class = "form-group"):
         button(class = "btn btn-primary w-100"):
-          text "search"
-          icon("fa-magnifying-glass ms-2")
+          text "refresh"
+          icon("fa-repeat ms-2")
 
           proc onclick =
             fetchAssets()
