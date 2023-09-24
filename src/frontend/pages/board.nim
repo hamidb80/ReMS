@@ -1,5 +1,5 @@
-import std/[with, math, stats, options, lenientops, strformat, sets, tables, sugar]
-import std/[dom, jsconsole, jsffi, asyncjs, sugar, jsformdata, cstrutils]
+import std/[with, math, stats, options, lenientops, strformat, sets, tables, random]
+import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
@@ -12,6 +12,8 @@ import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/database/[models]
 
+
+randomize()
 
 type
   SideBarState = enum
@@ -790,7 +792,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             text "Loading ..."
 
       if mid in noteRelTags:  
-        tdiv(class = "my-2"):
+        tdiv(class = "m-2"):
           for k, values in noteRelTags[mid]:
             for v in values:
               let id = Id parseInt k
@@ -901,15 +903,12 @@ proc loadFonts(fontsFamilies: seq[string]): Future[void] =
     for ff in fontsFamilies:
       add loadEvents, load newFontFaceObserver ff
 
-    waitAll loadEvents, proc =
-      notify "some of the fonts are not loaded!"
-      resolve()
+    waitAll loadEvents, resolve
 
 proc loadPalette(palette: string): Future[void] =
   newPromise proc(resolve, reject: proc()) =
     apiGetPallete palette, proc(ct: seq[ColorTheme]) =
       colorThemes = ct
-      setFocusedTheme colorThemes[0]
       resolve()
 
 proc fetchBoard(id: Id) =
@@ -1452,6 +1451,7 @@ proc init* =
 
     waitAll [loadPalette "default", loadFonts fontFamilies, fetchTags()], proc =
       fetchBoard app.id
+      setFocusedTheme sample colorThemes
       redraw()
 
 when isMainModule: init()

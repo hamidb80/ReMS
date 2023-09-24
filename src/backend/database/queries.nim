@@ -28,6 +28,7 @@ proc newTag*(db: DbConn, t: Tag): Id =
     label: tlOrdinary,
     can_be_repeated: false,
     show_name: t.show_name,
+    is_private: t.is_private,
     theme: t.theme,
     name: t.name,
     icon: t.icon,
@@ -39,13 +40,15 @@ proc updateTag*(db: DbConn, id: Id, t: Tag) =
       value_type = ?, 
       show_name = ?, 
       icon = ?, 
-      theme = ?
+      theme = ?,
+      is_private = ?
     WHERE id = ?""",
     t.name,
     t.value_type,
     t.show_name,
     t.icon,
     t.theme,
+    t.is_private,
     id
 
 proc deleteTag*(db: DbConn, id: Id) =
@@ -84,7 +87,7 @@ proc listNotes*(db: DbConn): seq[NoteItemView] =
     ORDER BY n.id DESC"""
 
 proc getNote*(db: DbConn, id: Id): NoteItemView =
-    db.find R, sql"""
+  db.find R, sql"""
     SELECT n.id, n.data, rc.active_rels_values 
     FROM Note n
     JOIN RelationsCache rc
@@ -113,7 +116,7 @@ proc updateNoteRelTags*(db: DbConn, noteid: Id, data: RelValuesByTagId) =
     db.insert RelationsCache(
       note: some noteid,
       active_rels_values: data)
-    
+
     # insert all rels again
     let tags = db.findTags tagIds data
     for key, values in data:

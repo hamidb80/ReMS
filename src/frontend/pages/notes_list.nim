@@ -40,6 +40,7 @@ var
   columnsCount = 3
   currentRelTags: Table[Id, seq[cstring]]
   selectedNoteId: Id
+  selectedNoteIndex = noIndex
   activeRelTag = none RelTagPath
 
 # TODO write a note laod manager component in a different file
@@ -79,7 +80,7 @@ proc columnCountSetter(i: int): proc() =
     columnsCount = i
 
 
-proc notePreviewC(n: NoteItemView): VNode =
+proc notePreviewC(n: NoteItemView, i: int): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
@@ -111,6 +112,7 @@ proc notePreviewC(n: NoteItemView): VNode =
 
           proc onclick =
             selectedNoteId = n.id
+            selectedNoteIndex = i
             currentRelTags = fromJson n.activeRelsValues
             appState = asTagManager
 
@@ -181,9 +183,10 @@ proc relTagManager(): Vnode =
         icon "mx-2 fa-save"
 
         proc onclick =
-          apiUpdateNoteTags selectedNoteId, toJson currentRelTags, proc =
-            discard fetchTags()
+          let d = toJson currentRelTags
+          apiUpdateNoteTags selectedNoteId, d, proc =
             notify "changes applied"
+            notes[selectedNoteIndex].activeRelsValues = cast[RelValuesByTagId](d)
 
       button(class = "btn btn-warning w-100 mt-2 mb-4"):
         text "cancel"
@@ -198,6 +201,8 @@ proc createDom: Vnode =
   echo "just redrawn"
 
   result = buildHtml tdiv:
+    snackbar()
+
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
@@ -223,8 +228,8 @@ proc createDom: Vnode =
                   a(class = "page-link", href = "#"):
                     text $i
 
-          for n in notes:
-            notePreviewC n
+          for i, n in notes:
+            notePreviewC n, i
 
       of asTagManager:
         relTagManager()

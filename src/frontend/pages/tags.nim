@@ -10,6 +10,9 @@ import ../../common/[conventions, datastructures, types]
 import ../utils/[browser, ui, api, js]
 
 
+randomize()
+
+
 type
   AppState = enum
     asInit
@@ -31,8 +34,9 @@ proc dummyTag: Tag =
   Tag(
     icon: defaultIcon,
     theme: sample colors,
-    showName: true,
-    valueType: tvtNone,
+    show_name: true,
+    is_private: false,
+    value_type: tvtNone,
     name: "name")
 
 proc fetchTags =
@@ -65,7 +69,7 @@ proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
 proc createDom: Vnode =
   result = buildHtml tdiv:
     snackbar()
-    
+
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
@@ -116,8 +120,15 @@ proc createDom: Vnode =
                 state = asSelectIcon
 
           tdiv(class = "form-check form-switch"):
-            checkbox currentTag.showName, proc (b: bool) =
-              currentTag.showName = b
+            checkbox currentTag.is_private, proc (b: bool) =
+              currentTag.is_private = b
+
+            label(class = "form-check-label"):
+              text "is private"
+
+          tdiv(class = "form-check form-switch"):
+            checkbox currentTag.show_name, proc (b: bool) =
+              currentTag.show_name = b
 
             label(class = "form-check-label"):
               text "show name"
@@ -136,13 +147,13 @@ proc createDom: Vnode =
           tdiv(class = "form-group my-2"):
             label(class = "form-label"):
               text "value type"
-            
+
             select(class = "form-select", disabled = not currentTag.hasValue):
               for lbl in tvtStr..tvtJson:
                 option(value = cstr lbl.ord, selected = currentTag.value_type == lbl):
                   text $lbl
 
-              proc onInput(e: Event, v: Vnode) = 
+              proc onInput(e: Event, v: Vnode) =
                 currentTag.value_type = TagValueType parseInt e.target.value
 
           # background
@@ -167,7 +178,7 @@ proc createDom: Vnode =
               proc oninput(e: Event, v: Vnode) =
                 currentTag.theme.fg = parseHexColorPack $e.target.value
 
-        tdiv(class="my-2"):
+        tdiv(class = "my-2"):
           tagViewC currentTag, "val", noop
 
         if selectedTagI == noIndex:
@@ -176,7 +187,7 @@ proc createDom: Vnode =
             icon "mx-2 fa-plus"
 
             proc onclick =
-              apiCreateNewTag currentTag, proc = 
+              apiCreateNewTag currentTag, proc =
                 fetchTags()
                 notify "tag created"
 
@@ -186,7 +197,7 @@ proc createDom: Vnode =
             icon "mx-2 fa-sync"
 
             proc onclick =
-              apiUpdateTag currentTag, proc = 
+              apiUpdateTag currentTag, proc =
                 fetchTags()
                 notify "tag updated"
 
@@ -195,7 +206,7 @@ proc createDom: Vnode =
             icon "mx-2 fa-trash"
 
             proc onclick =
-              apiDeleteTag currentTag.id, proc = 
+              apiDeleteTag currentTag.id, proc =
                 fetchTags()
                 notify "tag deleted"
 

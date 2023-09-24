@@ -103,6 +103,7 @@ type # database models
     name*: Str
     icon*: Str
     show_name*: bool
+    is_private*: bool
     can_be_repeated*: bool
     theme*: ColorTheme
     value_type*: TagValueType
