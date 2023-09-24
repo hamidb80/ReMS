@@ -65,6 +65,8 @@ task gennl, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-note-list.js src/frontend/pages/notes_list.nim"
 
 task html, "generate index.html ./dist":
+  cpfile "./src/frontend/custom.css", "./dist/custom.css"
+  cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 
 task serv, "run server":

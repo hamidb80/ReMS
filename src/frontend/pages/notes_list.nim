@@ -82,7 +82,7 @@ proc columnCountSetter(i: int): proc() =
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
   buildHtml:
-    tdiv(class = "masonry-item card my-3 border rounded bg-white"):
+    tdiv(class = "card my-3 masonry-item border rounded bg-white"):
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
           if n.id in msgCache:
@@ -134,6 +134,7 @@ proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
     activeRelTag = some (tagid, index)
 
+# TODO search tag component
 
 # TODO make it globally available
 proc relTagManager(): Vnode =

@@ -13,7 +13,7 @@ func normalizeOsName(url: string): string =
 proc resolveUrl(url: string): string =
   if url.startsWith "http": # is from internet
     url
-  else: 
+  else:
     getDistUrl normalizeOsName url.splitPath.tail
 
 
@@ -94,31 +94,56 @@ proc notes_list*: VNode =
       extJs("./script-note-list.js", true)]
 
 proc index: VNode =
+  func tryBtnLink(link: string): VNode =
+    buildHtml:
+      a(class = "btn btn-primary", href = link):
+        text "Open"
+
+  func t(s: string): VNode =
+    buildHtml h3:
+      text s
+
+  func blockk(title, icon, link: string): VNode =
+    buildHtml:
+      tdiv(class = "p-4 my-4 card"):
+        tdiv(class = "card-body d-flex flex-column align-items-center"):
+          t title
+          img(src = getDistUrl icon)
+
+          if link != "":
+            tdiv(class="mt-2"):
+              tryBtnLink link
+
+
   buildHtml html:
     commonHead "editor", []
 
     body(class = "bg-light"):
       h1(class = "my-4 text-center w-100"):
-        text "Bringing Tools🛠 Together🤝!"
+        italic(class = "text-primary"):
+          bold:
+            text "Remember"
+        text " Better With Us"
 
-      tdiv(class = "d-flex flex-wrap justify-content-around my-4"):
-        a(class = "p-4 border rounded m-4 bg-white", href = get_notes_url()):
-          text "Notes ✒"
+      h3(class = "mt-4 mb-2 text-center w-100"):
+        text "Apps"
+      tdiv(class="d-flex justify-content-evenly"):
+        blockk "Notes", "pen-writing-on-paper.svg", get_notes_url()
+        blockk "Files", "inbox-archive.svg", get_assets_url()
+        blockk "Labels", "tag.svg", get_tags_url()
+        blockk "Networks", "share-circle.svg", get_boards_url()
 
-        a(class = "p-4 border rounded m-4 bg-white", href = get_assets_url()):
-          text "Assets 📦"
-
-        a(class = "p-4 border rounded m-4 bg-white", href = get_boards_url()):
-          text "Board 👨‍🏫"
-
-        a(class = "p-4 border rounded m-4 bg-white", href = get_tags_url()):
-          text "tags 🏷"
+      h3(class = "mt-4 mb-2 text-center w-100"):
+        text "Features"
+      tdiv(class=""):
+        blockk "Built-in Remembering Utils", "repeat.svg", ""
+        blockk "Save your Time", "clock-square.svg", ""
+        blockk "It's Open Source", "hand-heart.svg", ""
+        blockk "Be a User", "user.svg", ""
 
 # -----
 
 when isMainModule:
-  copyFileToDir "./src/frontend/custom.css", "./dist"
-  copyFileToDir "./assets/icon.png", "./dist"
   writeFile "./dist/index.html", $index()
   writeFile "./dist/boards.html", $boards()
   writeFile "./dist/board.html", $board()
