@@ -1,6 +1,8 @@
 import std/[strformat]
+
 import ./utils/web
 import ../common/types
+
 
 when not (defined(js) or defined(frontend)):
   import mummy/routers
@@ -21,6 +23,14 @@ dispatch router, ../views:
   # get "/api/me/", myPage {.json.}
   # put "/api/me/" usersPage {.json.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
+
+  # TODO
+  get "/explore/", loadDist"explore.html" {.html.}
+  post "api/explore/notes/", loadDist"TODO.html" {.html.}
+  post "api/explore/assets/", loadDist"TODO.html" {.html.}
+  post "api/explore/boards/", loadDist"TODO.html" {.html.}
+  post "api/explore/users/", loadDist"TODO.html" {.html.}
+
 
   get "/assets/", loadDist"assets.html" {.html.}
   # get "/asset/preview/"?(id: int), assetPreview {.html.}

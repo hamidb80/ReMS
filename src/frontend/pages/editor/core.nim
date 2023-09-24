@@ -38,7 +38,7 @@ type
   TwNodeStatus = tuple[code: TwNodeStatusCode, msg: string]
 
   Hooks* = ref object
-    componentTable*: proc(): ComponentsTable ## component table that is built with at the beginning
+    componentsTable*: proc(): ComponentsTable ## component table that is built with at the beginning
 
     dom*: proc(): Element                ## corresponding DOM element
     self*: proc(): TwNode                ## the node cotaining this
@@ -89,7 +89,7 @@ type
 
 ## ---- syntax sugar
 proc dom*(t: TwNode): auto = t.data.hooks.dom()
-proc componentTable*(t: TwNode): auto = t.data.hooks.componentTable()
+proc componentsTable*(t: TwNode): auto = t.data.hooks.componentsTable()
 proc mounted*(t: TwNode, by: MountedBy,
     mode: TwNodeMode): auto = t.data.hooks.mounted(by, mode)
 proc die*(t: TwNode) = t.data.hooks.die()
@@ -128,7 +128,7 @@ proc instantiate*(c: Component, ct: ComponentsTable): TwNode =
     hooks: c.init()))
 
   node.data.hooks.self = () => node
-  node.data.hooks.componentTable = () => ct
+  node.data.hooks.componentsTable = () => ct
   node
 
 proc attach*(father, child: TwNode, at: int) =
@@ -204,7 +204,7 @@ proc deserizalizeImpl(
   for i, ch in enumerate j.children:
     result.attach deserizalizeImpl(ct, root, ch, futures, false), i
 
-  result.data.hooks.componentTable = () => ct
+  result.data.hooks.componentsTable = () => ct
   result.restore j.data
   result.mounted mbDeserializer, tmInteractive
 

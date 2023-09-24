@@ -213,7 +213,7 @@ proc wrapperTextElement(tag: string): () -> Hooks =
       acceptsAsChild = onlyInlines
       mounted = genMounted:
         if mode == tmInteractive and by == mbUser:
-          attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
+          attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
 
 let
   initBold = wrapperTextElement "b"
@@ -248,7 +248,7 @@ proc initParagraph: Hooks =
     mounted = genMounted:
       # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
+        attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
 
     settings = () => @[
       SettingsPart(
@@ -288,7 +288,7 @@ proc initLink: Hooks =
       el.setAttr "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentTable()["raw-text"], hooks, hooks.componentTable()
+        attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
 
     settings = () => @[
       SettingsPart(
@@ -383,7 +383,7 @@ proc initImage: Hooks =
     mounted = genMounted:
       wrapper.appendChildren img, caption
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentTable()["paragraph"], hooks, hooks.componentTable()
+        attachInstance hooks.componentsTable()["paragraph"], hooks, hooks.componentsTable()
 
     attachNode = proc(child: TwNode, at: Index) =
       attachNodeDefault hooks.self(), child, caption, child.dom, at
@@ -630,7 +630,7 @@ proc initIncluder: Hooks =
         some newPromise proc(resolve, fail: proc()) = 
           apiGetNoteContentQuery $noteQuery(), proc(data: TreeNodeRaw[JsObject]) = 
             let fut = deserizalize(
-              hooks.componentTable(),
+              hooks.componentsTable(),
               data,
               some hooks.dom())
 
