@@ -395,7 +395,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) = 
-  apiGetNote id, proc(n: Note) = 
+  apiGetNote id, proc(n: NoteItemView) = 
     deserizalize(app.components, n.data, some app.tree.dom, wait = false)
     .then(resetApp)
     .dcatch proc = 

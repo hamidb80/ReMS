@@ -23,8 +23,7 @@ type
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
   result = newJsObject()
   for k, v in s:
-    if v.len > 0:
-      result[cstr int k] = v
+    result[cstr int k] = v
 
 func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
   for k, v in s:
@@ -84,10 +83,11 @@ proc notePreviewC(n: NoteItemView): VNode =
   buildHtml:
     tdiv(class = "masonry-item card my-3 border rounded bg-white"):
       tdiv(class = "card-body"):
-        if n.id in msgCache:
-          verbatim msgCache[n.id]
-        else:
-          text "loading..."
+        tdiv(class = "tw-content"):
+          if n.id in msgCache:
+            verbatim msgCache[n.id]
+          else:
+            text "loading..."
 
       tdiv(class = "m-2"):
         for k, values in n.activeRelsValues:
@@ -169,8 +169,11 @@ proc relTagManager(): Vnode =
           icon "mx-2 fa-close"
 
           proc onclick =
-            del currentRelTags[path.tagid], path.index
             reset activeRelTag
+
+            del currentRelTags[path.tagid], path.index
+            if currentRelTags[path.tagid].len == 0:
+              del currentRelTags, path.tagid
 
 
       button(class = "btn btn-primary w-100 mt-2"):

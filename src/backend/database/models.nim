@@ -73,22 +73,22 @@ type # database models
 
   TagLabel* = enum
     tlOrdinary        ## can be removed :: if it's not ordinary then its special
+    tlReserved1
+    tlReserved2
 
     # -- Redundant Tags
     tlOwner           ## owner
     tlTimestamp       ## creation time
     tlSize            ## size in bytes
     tlBoardScreenShot ## Screenshots that are taken from boards
-    tlReserved1
-    tlReserved2
+    tlPrivate         ## everything is public except when it has private tag
+    tlHasAccess       ## tag with username of the person as value - is used with private
     tlReserved3
     tlReserved4
     tlReserved5
     tlReserved6
     tlReserved7
     tlReserved8
-    tlReserved9
-    tlReserved10
 
     # -- Remembering System
     tlRememberIn

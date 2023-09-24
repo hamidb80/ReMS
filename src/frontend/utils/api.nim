@@ -97,12 +97,12 @@ proc apiGetNotesList*(
 
 proc apiGetNote*(
     id: Id,
-    success: proc(n: Note),
+    success: proc(n: NoteItemView),
     fail: proc() = noop
 ) =
     discard get_api_note_url(id)
     .getApi()
-    .then(wrapResp success cast[Note](r.data))
+    .then(wrapResp success cast[NoteItemView](r.data))
     .catch(fail)
 
 proc apiUpdateNoteContent*(

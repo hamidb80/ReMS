@@ -126,7 +126,7 @@ const
 # TODO customize border radius for nodes
 # TODO add beizier curve
 
-var 
+var
   app = AppData()
   colorThemes: seq[ColorTheme]
 
@@ -147,15 +147,6 @@ template `?`(a): untyped =
   issome a
 
 
-proc whenFontsLoaded(fontsFamilies: seq[string], cb: proc()) =
-  var loadEvents: seq[Future[void]]
-
-  for ff in fontsFamilies:
-    add loadEvents, load newFontFaceObserver ff
-
-  waitAll loadEvents, cb, proc =
-    notify "some of the fonts are not loaded!"
-    cb()
 
 proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
@@ -586,7 +577,7 @@ proc startAddConn(vn: VisualNode) =
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
   unselect()
-  
+
   var
     wrapper = newGroup()
     box = newRect()
@@ -748,10 +739,6 @@ proc restore(app: var AppData; data: BoardData) =
     updateEdgePos e, n1.area, n1.center, n2.area, n2.center
     addEdgeClick e
 
-proc fetchBoard(id: Id) =
-  apiGetBoard id, proc(b: Board) = 
-    app.restore b.data
-
 
 proc newPoint(pos: Vector; r = 1.0): Circle =
   result = newCircle()
@@ -761,15 +748,20 @@ proc newPoint(pos: Vector; r = 1.0): Circle =
 
 # ----- UI
 let compTable = defaultComponents()
-var msgCache: Table[Id, Option[cstring]]
+var
+  noteHtmlContent: Table[Id, Option[cstring]]
+  noteRelTags: Table[Id, RelValuesByTagId]
+  tags: Table[Id, Tag]
+
 
 proc getMsg(id: Id) =
-  msgCache[id] = none cstring
+  noteHtmlContent[id] = none cstring
 
-  apiGetNote id, proc(n: Note) = 
+  apiGetNote id, proc(n: NoteItemView) =
     deserizalize(compTable, n.data)
     .dthen proc(t: TwNode) =
-      msgCache[id] = some t.dom.innerHtml
+      noteHtmlContent[id] = some t.dom.innerHtml
+      noteRelTags[id] = n.activeRelsValues
       redraw()
 
 type MsgState = enum
@@ -778,8 +770,8 @@ type MsgState = enum
   msOut
 
 proc msgState(id: Id): MsgState =
-  if id in msgCache:
-    let m = msgCache[id]
+  if id in noteHtmlContent:
+    let m = noteHtmlContent[id]
     if issome m: msReady
     else: msQueue
   else: msOut
@@ -790,12 +782,20 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
           case msgState mid
-          of msReady: verbatim get msgCache[mid]
+          of msReady: verbatim get noteHtmlContent[mid]
           of msQueue:
             text "Loading ..."
           of msOut:
             (getMsg mid)
             text "Loading ..."
+
+      if mid in noteRelTags:  
+        tdiv(class = "my-2"):
+          for k, values in noteRelTags[mid]:
+            for v in values:
+              let id = Id parseInt k
+              tagViewC tags[id], v, noop
+
 
       tdiv(class = "card-footer d-flex justify-content-center"):
         button(class = "btn mx-1 btn-compact btn-outline-info"):
@@ -887,6 +887,41 @@ proc fontFamilySelectBtn(name: string; seleNTable: bool): Vnode =
           if seleNTable:
             setFocusedFontFamily name
             app.footerState = fsOverview
+
+# FIXME duplicate fn from notes_list
+func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
+  for k, v in s:
+    let id = Id parseInt k
+    result[id] = v
+
+proc loadFonts(fontsFamilies: seq[string]): Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    var loadEvents: seq[Future[void]]
+
+    for ff in fontsFamilies:
+      add loadEvents, load newFontFaceObserver ff
+
+    waitAll loadEvents, proc =
+      notify "some of the fonts are not loaded!"
+      resolve()
+
+proc loadPalette(palette: string): Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetPallete palette, proc(ct: seq[ColorTheme]) =
+      colorThemes = ct
+      setFocusedTheme colorThemes[0]
+      resolve()
+
+proc fetchBoard(id: Id) =
+  apiGetBoard id, proc(b: Board) =
+    app.restore b.data
+
+proc fetchTags(): Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetTagsList proc(tagsList: seq[Tag]) =
+      for t in tagsList:
+        tags[t.id] = t
+      resolve()
 
 
 proc createDom*(data: RouterData): VNode =
@@ -1318,7 +1353,7 @@ proc init* =
           elif files.len == 1: # paste by image
             let f = files[0]
             if f.`type`.startswith "image/":
-              apiUploadAsset toForm(f.name, f), proc(assetUrl: string) = 
+              apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
                 let vn = createNode()
 
                 vn.config.data = VisualNodeData(
@@ -1410,15 +1445,13 @@ proc init* =
 
       addHotkey "p", proc = # scrennshot
         app.stage.toBlob(1/2).dthen proc(b: Blob) =
-          apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc = 
+          apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
             notify "screenshot updated!"
 
     app.id = parseInt getWindowQueryParam "id"
 
-    apiGetPallete "default", proc(ct: seq[ColorTheme]) = 
-      colorThemes = ct
-      setFocusedTheme colorThemes[0] 
-      whenFontsLoaded fontFamilies, () => fetchBoard app.id
+    waitAll [loadPalette "default", loadFonts fontFamilies, fetchTags()], proc =
+      fetchBoard app.id
       redraw()
 
 when isMainModule: init()

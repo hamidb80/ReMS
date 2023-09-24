@@ -83,8 +83,16 @@ proc listNotes*(db: DbConn): seq[NoteItemView] =
     ON rc.note = n.id
     ORDER BY n.id DESC"""
 
-proc getNote*(db: DbConn, id: Id): Note =
-  db.find R, sql"SELECT id, data FROM Note WHERE id = ?", id
+proc getNote*(db: DbConn, id: Id): NoteItemView =
+    db.find R, sql"""
+    SELECT n.id, n.data, rc.active_rels_values 
+    FROM Note n
+    JOIN RelationsCache rc
+    ON rc.note = n.id
+    WHERE n.id = ?
+    LIMIT 1
+    """, id
+
 
 proc newNote*(db: DbConn): Id =
   result = db.insertID initEmptyNote()
