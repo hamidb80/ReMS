@@ -4,7 +4,7 @@ import std/[with, options, sequtils, tables, sugar]
 import ./core
 import ../../utils/[browser, js, api]
 import ../../jslib/[katex, marked, axios]
-import ../../../common/[conventions, types]
+import ../../../common/[conventions, types, datastructures]
 import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
@@ -600,22 +600,21 @@ proc initGithubCode: Hooks =
           updateCallback: mutState(uset, cstring)))]
 
 proc initIncluder: Hooks = 
+  var lastnoteQuery = c""
   let
     el = createElement( "div", {"class": "tw-include-external"})
-    (noteId, setNoteId) = genstate c""
+    (noteQuery, setNoteQuery) = genstate c""
     (inline, inlineSet) = genstate false
-
-  var lastNoteId = -1
 
   defHooks:
     dom = () => el
     acceptsAsChild = noTags
     capture = () => <*{
-      "note_id": noteId(),
+      "query": noteQuery(),
       "inline": inline()}
 
     restore = proc(j: JsObject) = 
-      setNoteId j["note_id"].to(cstring)
+      setNoteQuery j["query"].to(cstring)
       inlineSet j["inline"].to(bool)
 
     render = genRender:
@@ -624,17 +623,16 @@ proc initIncluder: Hooks =
       else:
         el.classList.remove "d-inline"
       
-      if lastNoteId != parseInt noteId():
+      if lastnoteQuery != noteQuery():
         purge el
         some newPromise proc(resolve, fail: proc()) = 
-          apiGetNote Id parseInt noteId(), proc(n: NoteItemView) = 
+          apiGetNoteContentQuery $noteQuery(), proc(data: TreeNodeRaw[JsObject]) = 
             let fut = deserizalize(
               hooks.componentTable(),
-              n.data,
-              some hooks.dom(),
-              false)
+              data,
+              some hooks.dom())
 
-            lastNoteId = parseInt noteId()
+            lastnoteQuery = noteQuery()
             discard fut.then(resolve).catch(fail)
       else:
         result
@@ -645,8 +643,8 @@ proc initIncluder: Hooks =
         icon: "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
-          input: toJs noteId(),
-          updateCallback: mutState(setNoteId, cstring))),
+          input: toJs noteQuery(),
+          updateCallback: mutState(setNoteQuery, cstring))),
 
       SettingsPart(
         field: "inline",

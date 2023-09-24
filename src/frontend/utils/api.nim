@@ -1,3 +1,4 @@
+import std/[strutils, sequtils]
 import std/[asyncjs, dom, jsformdata, jsffi]
 
 import ../../backend/routes
@@ -105,9 +106,29 @@ proc apiGetNote*(
     .then(wrapResp success cast[NoteItemView](r.data))
     .catch(fail)
 
+proc apiGetNoteContentQuery*(
+    queryString: string, ## pattern: "id::path"
+    success: proc(n: TreeNodeRaw[JsObject]),
+    fail: proc() = noop
+) =
+    let 
+        pieces = queryString.split "::"
+        id = Id parseInt pieces[0]
+        path = 
+            if pieces.len == 1 or pieces[1] == "": 
+                default seq[int]
+            else: 
+                pieces[1].split(",").map(parseInt)
+
+    echo (id, path)
+    discard get_api_note_content_query_url(id, path)
+    .getApi()
+    .then(wrapResp success cast[TreeNodeRaw[JsObject]](r.data))
+    .catch(fail)
+
 proc apiUpdateNoteContent*(
     id: Id,
-    data: TreeNodeRaw[NativeJson],
+    data: TreeNodeRaw[JsObject],
     success: proc(),
     fail: proc() = noop
 ) =

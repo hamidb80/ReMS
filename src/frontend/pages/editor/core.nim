@@ -192,16 +192,17 @@ proc deserizalizeImpl(
   ct: ComponentsTable,
   root: Element,
   j: TreeNodeRaw[JsObject],
-  allFutures: var seq[Future[void]]
+  allFutures: var seq[Future[void]],
+  wrap: bool,
 ): TwNode =
   let cname = $j.name
   result = instantiate(ct[cname], ct)
 
-  if cname == "root":
+  if wrap: # and cname == "root":
     result.data.hooks.dom = () => root
 
   for i, ch in enumerate j.children:
-    result.attach deserizalizeImpl(ct, root, ch, allFutures), i
+    result.attach deserizalizeImpl(ct, root, ch, allFutures, false), i
 
   result.data.hooks.componentTable = () => ct
   result.restore j.data
@@ -214,14 +215,22 @@ proc deserizalize*(
   ct: ComponentsTable,
   j: TreeNodeRaw[JsObject],
   elem: Option[Element] = none Element,
-  wait = true
+  wait = true,
+  wrap = true,
 ): Future[TwNode] =
   var
     allFutures: seq[Future[void]]
     el =
       if t =? elem: t
       else: createElement("div", {"class": "tw-content"})
-    payload = deserizalizeImpl(ct, el, j, allFutures)
+    data =
+      if wrap and j.name != "root":
+        TreeNodeRaw[JsObject](
+          name: "root",
+          children: @[j])
+      else: j
+
+    payload = deserizalizeImpl(ct, el, data, allFutures, wrap)
 
   newPromise proc(resolve: proc(t: TwNode)) =
     if wait:
