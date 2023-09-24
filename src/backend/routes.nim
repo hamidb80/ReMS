@@ -26,10 +26,10 @@ dispatch router, ../views:
 
   # TODO
   get "/explore/", loadDist"explore.html" {.html.}
-  post "api/explore/notes/", loadDist"TODO.html" {.html.}
-  post "api/explore/assets/", loadDist"TODO.html" {.html.}
-  post "api/explore/boards/", loadDist"TODO.html" {.html.}
-  post "api/explore/users/", loadDist"TODO.html" {.html.}
+  post "/api/explore/notes/", loadDist"TODO.html" {.html.}
+  post "/api/explore/assets/", loadDist"TODO.html" {.html.}
+  post "/api/explore/boards/", loadDist"TODO.html" {.html.}
+  post "/api/explore/users/", loadDist"TODO.html" {.html.}
 
 
   get "/assets/", loadDist"assets.html" {.html.}
