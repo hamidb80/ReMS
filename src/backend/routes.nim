@@ -64,15 +64,10 @@ dispatch router, ../views:
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
   get "/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
-
-  # to aviod CORS
-  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.}
+  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
 
   get "/explore/", loadDist"explore.html" {.html.}
-  # post "/api/explore/users/", exploreUsers {.json.}
-  # post "/api/explore/notes/", exploreNotes {.json.}
-  # post "/api/explore/assets/", exploreAssets {.json.}
-  # post "/api/explore/boards/", exploreBoards {.json.}
+  post "/api/explore/", exploreGeneric {.json.}
 
 
 

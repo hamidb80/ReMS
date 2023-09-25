@@ -217,3 +217,14 @@ proc apiDeleteTag*(
     .deleteApi()
     .then(success)
     .catch(fail)
+
+
+proc apiExplore*(
+    xqdata: ExploreQuery,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard put_api_tag_update_url(t.id)
+    .putApi(forceJsObject t)
+    .then(success)
+    .catch(fail)

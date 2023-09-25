@@ -182,34 +182,18 @@ func toSubQuery(e: EntityClass, c: TagCriteria, entityIdVar: string): string =
 
     candidateCond = 
       case c.label
-      of tlOrdinary: 
+      of tlOrdinary:  
         fmt"rel.id = {c.tagId}"
       else: 
         fmt"rel.label = {c.label.ord}"
 
-    valueColumn = 
-      case c.valueType
-      of tvtNone: ""
-      of tvtFloat: "fval"
-      of tvtInt, tvtDate: "ival"
-      of tvtJson, tvtStr: "sval"
-
-    op = 
-      case c.operator
-      of qoExists, qoNotExists: "1"
-      of qoLess: "<"
-      of qoLessEq: "<="
-      of qoEq: "=="
-      of qoNotEq: "!="
-      of qoMoreEq: ">="
-      of qoMore: ">"
-      of qoLike: "LIKE" # FIXME security issue
-
+    # FIXME security issue when oeprator is qoLike: "LIKE"
+    # FIXME not covering "" in string
     primaryCond = 
-      case c.operator
-      of qoExists, qoNotExists: op
+      if isInfix c.operator:
+        fmt"rel.{columnName c.valueType} {c.operator} {c.value}"
       else:
-        fmt"rel.{valueColumn} {op} {c.value}"
+        "1"
 
   fmt""" 
   {introCond} (
@@ -223,11 +207,11 @@ func toSubQuery(e: EntityClass, c: TagCriteria, entityIdVar: string): string =
   )
   """
 
-
-func exploreGenericQuery*(qxdata: ExploreQuery): string =
+func exploreGenericQuery*(xqdata: ExploreQuery): string =
   let 
-    ss = qxdata.criterias.mapIt toSubQuery(qxdata.entity, it, "n.id")
+    ss = xqdata.criterias.mapIt toSubQuery(xqdata.entity, it, "n.id")
     repl = ss.join " AND "
+  
   fmt"""
   SELECT n.id, n.data, rc.active_rels_values
   FROM Note n
@@ -235,22 +219,3 @@ func exploreGenericQuery*(qxdata: ExploreQuery): string =
   ON rc.note = n.id
   WHERE {repl}
   """
-
-when isMainModule:
-  echo exploreGenericQuery ExploreQuery(
-    entity: ecNote,
-    criterias: @[
-      TagCriteria(
-        label: tlOrdinary,
-        tagid: Id 7,
-        valueType: tvtInt,
-        operator: qoMoreEq,
-        value: "10"
-      ),
-      TagCriteria(
-        label: tlOwner,
-        operator: qoExists,
-      )
-    ],
-    limit: 10,
-    skip: 0)

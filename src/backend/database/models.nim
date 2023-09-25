@@ -38,7 +38,7 @@ type # database models
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
-    name*: Str  # name without extention
+    name*: Str  # name with extention
     mime*: Str
     size*: Bytes
     path*: Path # where is it stored?
@@ -55,17 +55,17 @@ type # database models
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Option[Id] ## owner
+    user* {.references: User.id.}: Option[Id]         ## owner
     name* {.uniqueIndex.}: Str
     colorThemes*: seq[ColorTheme]
 
   TagValueType* = enum
-    tvtNone = "none"
-    tvtStr = "text"
-    tvtFloat = "float"
-    tvtInt = "int"
-    tvtDate = "date"
-    tvtJson = "JSON"
+    tvtNone
+    tvtStr
+    tvtFloat
+    tvtInt
+    tvtDate
+    tvtJson
 
   TagCreator* = enum
     tcUser   ## created by user
@@ -73,22 +73,34 @@ type # database models
 
   TagLabel* = enum
     tlOrdinary        ## can be removed :: if it's not ordinary then its special
-    tlReserved1
-    tlReserved2
 
-    # -- Redundant Tags
     tlOwner           ## owner
     tlTimestamp       ## creation time
     tlSize            ## size in bytes
+    tlName            ## name
+    tlMime            ## mime type of a file
     tlBoardScreenShot ## Screenshots that are taken from boards
+    tlTextContent     ## raw text - for searching purposes
+    tlLike            ## default like tag
+    tlReplyTo         ## ???
+
     tlPrivate         ## everything is public except when it has private tag
     tlHasAccess       ## tag with username of the person as value - is used with private
+
+    tlUsername        ## for user
+
+    tlReserved1
+    tlReserved2
     tlReserved3
     tlReserved4
     tlReserved5
     tlReserved6
     tlReserved7
     tlReserved8
+    tlReserved9
+    tlReserved10
+    tlReserved11
+    tlReserved12
 
     # -- Remembering System
     tlRememberIn
@@ -96,6 +108,9 @@ type # database models
 
 
   Tag* = object
+    ## most of the tags are primarily made for searching
+    ## purposes and have redundent data
+
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
     creator*: TagCreator
@@ -118,8 +133,8 @@ type # database models
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
     tag* {.references: Tag.id, index.}: Id
+    user* {.references: User.id.}: Option[Id]
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
@@ -153,15 +168,15 @@ type # view models
     ecBoard
 
   QueryOperator* = enum
-    qoExists ## ?? EXISTS
+    qoExists    ## ?? EXISTS
     qoNotExists ## ?! NOT EXISTS
-    qoLess ## <
-    qoLessEq ## <=
-    qoEq ## ==
-    qoNotEq ## !=
-    qoMoreEq ## =>
-    qoMore ## >
-    qoLike ## ~ LIKE string pattern
+    qoLess      ## <
+    qoLessEq    ## <=
+    qoEq        ## ==
+    qoNotEq     ## !=
+    qoMoreEq    ## =>
+    qoMore      ## >
+    qoLike      ## ~ LIKE string pattern
 
   TagCriteria* = object
     label*: TagLabel
@@ -169,7 +184,7 @@ type # view models
     valueType*: TagValueType
 
     operator*: QueryOperator
-    value*: Str    
+    value*: Str
 
   ExploreQuery* = object
     entity*: EntityClass
@@ -198,6 +213,37 @@ type # view models
   GithubCodeEmbed* = object
     styleLink*: Str
     htmlCode*: Str
+
+
+func columnName*(vt: TagValueType): string =
+  case vt
+  of tvtNone: ""
+  of tvtFloat: "fval"
+  of tvtInt, tvtDate: "ival"
+  of tvtJson, tvtStr: "sval"
+
+func isInfix*(qo: QueryOperator): bool =
+  qo in qoLess..qoLike
+
+func `$`*(qo: QueryOperator): string =
+  case qo
+  of qoExists, qoNotExists: ""
+  of qoLess: "<"
+  of qoLessEq: "<="
+  of qoEq: "=="
+  of qoNotEq: "!="
+  of qoMoreEq: ">="
+  of qoMore: ">"
+  of qoLike: "LIKE" # FIXME security issue
+
+func `$`*(tvt: TagValueType): string =
+  case tvt
+  of tvtNone: "none"
+  of tvtStr: "text"
+  of tvtFloat: "float"
+  of tvtInt: "int"
+  of tvtDate: "date"
+  of tvtJson: "JSON"
 
 
 when not defined js:
