@@ -49,7 +49,7 @@ func rfind*(str, sub: cstring): int
   {.importjs: "#.lastIndexOf(#)".}
 
 func unscape*(s: cstring): cstring
-  {.importjs: "JSON.parse('@')".}
+  {.importjs: "JSON.parse(@)".}
 
 func substr(str: cstring, start, ende: int): cstring
   {.importjs: "#.substring(@)".}
@@ -63,7 +63,8 @@ func isKeyOf(key: cstring, t: JsAssoc): bool
 func contains*[T](t: JsAssoc[cstring, T], key: cstring): bool = 
   isKeyOf key, t
 
-proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop) {.importjs: "Promise.all(#).then(#).catch(#)".}
+proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop) 
+  {.importjs: "Promise.all(#).then(#).catch(#)".}
 
 func newJsSet*(): JsSet 
   {.importjs: "new Set(@)".}

@@ -79,15 +79,18 @@ type # database models
     tlSize            ## size in bytes
     tlName            ## name
     tlMime            ## mime type of a file
-    tlBoardScreenShot ## Screenshots that are taken from boards
-    tlTextContent     ## raw text - for searching purposes
+    tlBoardScreenShot ## screenshots that are taken from boards
+    tlTextContent     ## raw text
     tlLike            ## default like tag
-    tlReplyTo         ## ???
+    tlReplyTo         ## ??? have no idea how to use it
 
     tlPrivate         ## everything is public except when it has private tag
     tlHasAccess       ## tag with username of the person as value - is used with private
 
-    tlUsername        ## for user
+    tlAdmin           ##
+    tlSuperAdmin      ##
+
+    tlFollows         ## user => ival (user.id)
 
     tlReserved1
     tlReserved2

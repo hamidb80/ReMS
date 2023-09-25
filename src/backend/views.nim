@@ -217,5 +217,6 @@ proc getPalette*(req: Request) {.qparams: {name: string}.} =
 
 
 proc exploreGeneric*(req: Request) {.jbody: ExploreQuery.} =
-  let s = !!<exploreGenericQuery(data)
+  let s = exploreGenericQuery(data)
+  
 
