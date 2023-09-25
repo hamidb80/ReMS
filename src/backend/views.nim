@@ -69,6 +69,9 @@ proc loadDist*(path: string): RequestHandler =
 
 # ------- Dynamic ones
 
+# proc exploreUsers*(req: Request) =
+
+
 proc saveAsset(req: Request): Id =
   # FIXME model changed -
   let multip = req.decodeMultipart()
@@ -127,14 +130,13 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
   let node = !!<db.getNote(id).data
   respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.qparams: {id: int}.} =
-  let d = fromJson(req.body, TreeNodeRaw[JsonNode])
-  !!db.updateNoteContent(id, d)
+proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[JsonNode].} =
+  !!db.updateNoteContent(id, data)
   resp OK
 
-proc updateNoteRelTags*(req: Request) {.qparams: {id: int}.} =
-  let d = fromJson(req.body, RelValuesByTagId) # TODO add macro for parsing body like qparams
-  !!db.updateNoteRelTags(id, d)
+proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
+    jbody: RelValuesByTagId.} =
+  !!db.updateNoteRelTags(id, data)
   resp OK
 
 proc deleteNote*(req: Request) {.qparams: {id: int}.} =
@@ -145,8 +147,7 @@ proc deleteNote*(req: Request) {.qparams: {id: int}.} =
 proc newBoard*(req: Request) =
   !!respJson str db.newBoard()
 
-proc updateBoard*(req: Request) {.qparams: {id: int}.} =
-  let data = fromJson(req.body, BoardData)
+proc updateBoard*(req: Request) {.qparams: {id: int}, jbody: BoardData.} =
   !!db.updateBoard(id, data)
   resp OK
 
@@ -165,11 +166,11 @@ proc deleteBoard*(req: Request) {.qparams: {id: int}.} =
   resp OK
 
 
-proc newTag*(req: Request) =
-  !!respJson toJson db.newTag fromJson(req.body, Tag)
+proc newTag*(req: Request) {.jbody: Tag.} =
+  !!respJson toJson db.newTag data
 
-proc updateTag*(req: Request) {.qparams: {id: int}.} =
-  !!db.updateTag(id, fromJson(req.body, Tag))
+proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag.} =
+  !!db.updateTag(id, data)
   resp OK
 
 proc deleteTag*(req: Request) {.qparams: {id: int}.} =
@@ -214,6 +215,7 @@ proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
 proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
-# add palette
-# update palette
-# delete palette
+
+proc exploreGeneric*(req: Request) {.jbody: ExploreQuery.} =
+  let s = !!<exploreGenericQuery(ec, data)
+

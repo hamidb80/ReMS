@@ -24,14 +24,6 @@ dispatch router, ../views:
   # put "/api/me/" usersPage {.json.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
-  # TODO
-  get "/explore/", loadDist"explore.html" {.html.}
-  post "/api/explore/notes/", loadDist"TODO.html" {.html.}
-  post "/api/explore/assets/", loadDist"TODO.html" {.html.}
-  post "/api/explore/boards/", loadDist"TODO.html" {.html.}
-  post "/api/explore/users/", loadDist"TODO.html" {.html.}
-
-
   get "/assets/", loadDist"assets.html" {.html.}
   # get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
@@ -44,7 +36,8 @@ dispatch router, ../views:
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
   get "/api/notes/list/", notesList {.json: seq[Note].}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
-  get "/api/note/content/query/"?(id: Id, path: seq[int]), getNoteContentQuery {.json: Note.}
+  get "/api/note/content/query/"?(id: Id, path: seq[int]),
+      getNoteContentQuery {.json: Note.}
   post "/api/notes/new/", newNote {.Id.}
   put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
   put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
@@ -74,6 +67,13 @@ dispatch router, ../views:
 
   # to aviod CORS
   get "/utils/github/code/"?(url: string), fetchGithubCode {.json.}
+
+  get "/explore/", loadDist"explore.html" {.html.}
+  # post "/api/explore/users/", exploreUsers {.json.}
+  # post "/api/explore/notes/", exploreNotes {.json.}
+  # post "/api/explore/assets/", exploreAssets {.json.}
+  # post "/api/explore/boards/", exploreBoards {.json.}
+
 
 
 func get_asset_short_hand_url*(asset_id: Id): string =

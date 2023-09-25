@@ -1,4 +1,4 @@
-import std/[times, json, options, strutils, sequtils, tables]
+import std/[times, json, options, strutils, strformat, sequtils, tables]
 
 import ponairi
 include jsony_fix
@@ -171,3 +171,37 @@ proc deleteBoard*(db: DbConn, id: Id) =
 
 proc getPalette*(db: DbConn, name: string): Palette =
   db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
+
+
+func toSubQuery(e: EntityClass, c: TagCriteria): string = 
+  let 
+    mainCond = 
+      case c.operator
+      of qoNotExists: "NOT EXISTS"
+      else: "EXISTS"
+
+    case c.label
+    of tlOrdinary: tagId
+    else: fmt"rel.{c.lable.ord}"
+
+
+  fmt"""
+  {mainCond} (
+    SELECT *
+    FROM Relations rel
+    JOIN Tag tg
+    ON rel.tag = tg.id
+    WHERE 
+  )
+  """
+
+func exploreGenericQuery*(qxdata: ExploreQuery): string =
+  fmt"""
+  SELECT * 
+  FROM Note n
+  
+  JOIN RelationsCache rc
+
+  WHERE
+  
+  """

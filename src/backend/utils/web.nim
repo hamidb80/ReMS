@@ -114,6 +114,8 @@ macro dispatch*(router, viewModule, body): untyped =
       import `viewModule`
       `rout`
 
+func firstArgument(procdef: NimNode): NimNode =
+  procdef.params[1][IdentDefName]
 
 
 func extractQueryParams*(url: string): Table[string, string] =
@@ -127,7 +129,7 @@ func extractQueryParams*(url: string): Table[string, string] =
     result[k] = v
 
 func defQueryVar(procdef, q: NimNode): NimNode =
-  let req = procdef.params[1][IdentDefName]
+  let req = procdef.firstArgument
   quote:
     let `q` = extractQueryParams(`req`.uri)
 
@@ -152,6 +154,16 @@ macro qparams*(mandatoryArgs, procdef): untyped =
 
 macro qparams*(procdef): untyped =
   addQueryParamsImpl procdef, newStmtList()
+
+macro jbody*(desttype, procdef): untyped =
+  let
+    req = procdef.firstArgument
+    data = ident"data"
+
+  procdef.body.insert 0, quote do:
+    let `data` = fromJson(`req`.body, `desttype`)
+
+  procdef
 
 
 template respJson*(body): untyped {.dirty.} =

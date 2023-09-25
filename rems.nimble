@@ -45,6 +45,10 @@ task make, "make all":
   exec "nimble gennl"
   exec "nimble gened"
   exec "nimble gentg"
+  exec "nimble genex"
+
+task genex, "":
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-explore.js src/frontend/pages/explore"
 
 task genbs, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-boards-list.js src/frontend/pages/boards_list"

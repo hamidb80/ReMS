@@ -55,7 +55,7 @@ type # database models
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Option[Id]
+    user* {.references: User.id.}: Option[Id] ## owner
     name* {.uniqueIndex.}: Str
     colorThemes*: seq[ColorTheme]
 
@@ -119,10 +119,10 @@ type # database models
   Relation* = object
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
-    tag* {.references: Tag.id.}: Id
-    asset* {.references: Asset.id.}: Option[Id]
-    board* {.references: Board.id.}: Option[Id]
-    note* {.references: Note.id.}: Option[Id]
+    tag* {.references: Tag.id, index.}: Id
+    asset* {.references: Asset.id, index.}: Option[Id]
+    board* {.references: Board.id, index.}: Option[Id]
+    note* {.references: Note.id, index.}: Option[Id]
     fval*: Option[float]
     ival*: Option[int]
     sval*: Option[Str]
@@ -135,9 +135,9 @@ type # database models
   RelationsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
-    asset* {.references: Asset.id.}: Option[Id]
-    board* {.references: Board.id.}: Option[Id]
-    note* {.references: Note.id.}: Option[Id]
+    asset* {.references: Asset.id, index.}: Option[Id]
+    board* {.references: Board.id, index.}: Option[Id]
+    note* {.references: Note.id, index.}: Option[Id]
     active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
 
   Notification* = object
@@ -146,8 +146,37 @@ type # database models
     content*: Str
     timestamp*: UnixTime # set after sending
 
-
 type # view models
+  EntityClass* = enum
+    ecNote
+    ecAsset
+    ecBoard
+
+  QueryOperator* = enum
+    qoExists ## ?? EXISTS
+    qoNotExists ## ?! NOT EXISTS
+    qoLess ## <
+    qoLessEq ## <=
+    qoEq ## ==
+    qoNotEq ## !=
+    qoMoreEq ## =>
+    qoMore ## >
+    qoLike ## ~ LIKE string pattern
+
+  TagCriteria* = object
+    label*: TagLabel
+    tagId*: Id
+
+    operator*: QueryOperator
+    value*: Str    
+
+  ExploreQuery* = object
+    entity*: EntityClass
+    criterias*: seq[TagCriteria]
+    limit*: Natural
+    skip*: int
+
+
   AssetItemView* = object
     id*: Id
     name*: Str

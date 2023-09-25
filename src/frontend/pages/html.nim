@@ -95,6 +95,11 @@ proc notes_list*: VNode =
   commonPage "note list", [
       extJs("./script-note-list.js", true)]
 
+proc explore*: VNode =
+  commonPage "explore", [
+      extJs("./script-explore.js", true)]
+
+
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
     buildHtml:
@@ -134,7 +139,7 @@ proc index: VNode =
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Apps"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Explore", "planet.svg", get_notes_url()
+        blockk "Explore", "planet.svg", get_explore_url()
         blockk "Notes", "pen-writing-on-paper.svg", get_notes_url()
         blockk "Files", "inbox-archive.svg", get_assets_url()
         blockk "Tags", "tag.svg", get_tags_url()
@@ -171,3 +176,4 @@ when isMainModule:
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/editor.html", $editor()
   writeFile "./dist/notes_list.html", $notes_list()
+  writeFile "./dist/explore.html", $explore()
