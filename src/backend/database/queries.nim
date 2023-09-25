@@ -173,35 +173,84 @@ proc getPalette*(db: DbConn, name: string): Palette =
   db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
 
 
-func toSubQuery(e: EntityClass, c: TagCriteria): string = 
+func toSubQuery(e: EntityClass, c: TagCriteria, entityIdVar: string): string = 
   let 
-    mainCond = 
+    introCond = 
       case c.operator
       of qoNotExists: "NOT EXISTS"
       else: "EXISTS"
 
-    case c.label
-    of tlOrdinary: tagId
-    else: fmt"rel.{c.lable.ord}"
+    candidateCond = 
+      case c.label
+      of tlOrdinary: 
+        fmt"rel.id = {c.tagId}"
+      else: 
+        fmt"rel.label = {c.label.ord}"
 
+    valueColumn = 
+      case c.valueType
+      of tvtNone: ""
+      of tvtFloat: "fval"
+      of tvtInt, tvtDate: "ival"
+      of tvtJson, tvtStr: "sval"
 
-  fmt"""
-  {mainCond} (
+    op = 
+      case c.operator
+      of qoExists, qoNotExists: "1"
+      of qoLess: "<"
+      of qoLessEq: "<="
+      of qoEq: "=="
+      of qoNotEq: "!="
+      of qoMoreEq: ">="
+      of qoMore: ">"
+      of qoLike: "LIKE" # FIXME security issue
+
+    primaryCond = 
+      case c.operator
+      of qoExists, qoNotExists: op
+      else:
+        fmt"rel.{valueColumn} {op} {c.value}"
+
+  fmt""" 
+  {introCond} (
     SELECT *
     FROM Relations rel
-    JOIN Tag tg
-    ON rel.tag = tg.id
     WHERE 
+        rel.note = {entityIdVar} AND
+        {candidateCond} AND
+        {primaryCond}
+    LIMIT 1
   )
   """
 
-func exploreGenericQuery*(qxdata: ExploreQuery): string =
-  fmt"""
-  SELECT * 
-  FROM Note n
-  
-  JOIN RelationsCache rc
 
-  WHERE
-  
+func exploreGenericQuery*(qxdata: ExploreQuery): string =
+  let 
+    ss = qxdata.criterias.mapIt toSubQuery(qxdata.entity, it, "n.id")
+    repl = ss.join " AND "
+  fmt"""
+  SELECT n.id, n.data, rc.active_rels_values
+  FROM Note n
+  JOIN RelationsCache rc
+  ON rc.note = n.id
+  WHERE {repl}
   """
+
+when isMainModule:
+  echo exploreGenericQuery ExploreQuery(
+    entity: ecNote,
+    criterias: @[
+      TagCriteria(
+        label: tlOrdinary,
+        tagid: Id 7,
+        valueType: tvtInt,
+        operator: qoMoreEq,
+        value: "10"
+      ),
+      TagCriteria(
+        label: tlOwner,
+        operator: qoExists,
+      )
+    ],
+    limit: 10,
+    skip: 0)

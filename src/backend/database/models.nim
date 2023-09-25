@@ -166,6 +166,7 @@ type # view models
   TagCriteria* = object
     label*: TagLabel
     tagId*: Id
+    valueType*: TagValueType
 
     operator*: QueryOperator
     value*: Str    
