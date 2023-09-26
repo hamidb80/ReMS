@@ -35,6 +35,7 @@ proc newTag*(db: DbConn, t: Tag): Id =
     value_type: t.value_type)
 
 proc updateTag*(db: DbConn, id: Id, t: Tag) =
+  # TODO write a macro called sqlFmt to use {} with sql
   db.exec sql"""UPDATE Tag SET 
       name = ?, 
       value_type = ?, 
@@ -61,9 +62,6 @@ proc findTags*(db: DbConn, ids: seq[Id]): Table[Id, Tag] =
   for t in db.find(seq[Tag], sql "SELECT * FROM Tag WHERE id IN " & sqlize ids):
     result[t.id] = t
 
-proc listAssets*(db: DbConn): seq[AssetItemView] =
-  db.find R, sql"SELECT id, name, mime, size FROM Asset ORDER BY id DESC"
-
 proc addAsset*(db: DbConn, n: string, m: string, p: Path, s: Bytes): int64 =
   db.insertID Asset(
       name: n,
@@ -77,14 +75,6 @@ proc findAsset*(db: DbConn, id: Id): Asset =
 proc deleteAsset*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Asset WHERE id = ?", id
 
-
-proc listNotes*(db: DbConn): seq[NoteItemView] =
-  db.find R, sql"""
-    SELECT n.id, n.data, rc.active_rels_values 
-    FROM Note n
-    JOIN RelationsCache rc
-    ON rc.note = n.id
-    ORDER BY n.id DESC"""
 
 proc getNote*(db: DbConn, id: Id): NoteItemView =
   db.find R, sql"""
@@ -162,9 +152,6 @@ proc setScreenShot*(db: DbConn, boardId, assetId: Id) =
 proc getBoard*(db: DbConn, id: Id): Board =
   db.find R, sql"SELECT * FROM Board WHERE id = ?", id
 
-proc listBoards*(db: DbConn): seq[BoardItemView] =
-  db.find R, sql"SELECT id, title, screenshot FROM Board ORDER by id DESC"
-
 proc deleteBoard*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Board WHERE id = ?", id
 
@@ -173,23 +160,23 @@ proc getPalette*(db: DbConn, name: string): Palette =
   db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
 
 
-func toSubQuery(e: EntityClass, c: TagCriteria, entityIdVar: string): string = 
-  let 
-    introCond = 
+func toSubQuery(c: TagCriteria, entityIdVar: string): string =
+  let
+    introCond =
       case c.operator
       of qoNotExists: "NOT EXISTS"
       else: "EXISTS"
 
-    candidateCond = 
+    candidateCond =
       case c.label
-      of tlOrdinary:  
+      of tlOrdinary:
         fmt"rel.id = {c.tagId}"
-      else: 
+      else:
         fmt"rel.label = {c.label.ord}"
 
     # FIXME security issue when oeprator is qoLike: "LIKE"
     # FIXME not covering "" in string
-    primaryCond = 
+    primaryCond =
       if isInfix c.operator:
         fmt"rel.{columnName c.valueType} {c.operator} {c.value}"
       else:
@@ -207,15 +194,44 @@ func toSubQuery(e: EntityClass, c: TagCriteria, entityIdVar: string): string =
   )
   """
 
-func exploreGenericQuery*(xqdata: ExploreQuery): string =
-  let 
-    ss = xqdata.criterias.mapIt toSubQuery(xqdata.entity, it, "n.id")
-    repl = ss.join " AND "
-  
-  fmt"""
-  SELECT n.id, n.data, rc.active_rels_values
-  FROM Note n
-  JOIN RelationsCache rc
-  ON rc.note = n.id
-  WHERE {repl}
-  """
+func exploreSqlConds(xqdata: ExploreQuery, ident: string): string =
+  xqdata.criterias
+  .mapIt(toSubQuery(it, ident))
+  .join " AND "
+
+func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
+  let repl = exploreSqlConds(xqdata, "thing.id")
+
+  case entity
+  of ecNote: sql fmt"""
+      SELECT thing.id, thing.data, rc.active_rels_values
+      FROM Note thing
+      JOIN RelationsCache rc
+      ON rc.note = thing.id
+      WHERE {repl}
+    """
+
+  of ecBoard: sql fmt"""
+      SELECT thing.id, thing.data, rc.active_rels_values
+      FROM Board thing
+      JOIN RelationsCache rc
+      ON rc.board = thing.id
+      WHERE {repl}
+    """
+
+  of ecAsset: sql fmt"""
+      SELECT thing.id, thing.name, thing.mime, thing.size rc.active_rels_values
+      FROM Asset thing
+      JOIN RelationsCache rc
+      ON rc.asset = thing.id
+      WHERE {repl}
+    """
+
+proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =
+  db.find R, exploreGenericQuery(ecNote, xqdata)
+
+proc exploreBoards*(db: DbConn, xqdata: ExploreQuery): seq[BoardItemView] =
+  db.find R, exploreGenericQuery(ecBoard, xqdata)
+
+proc exploreAssets*(db: DbConn, xqdata: ExploreQuery): seq[AssetItemView] =
+  db.find R, exploreGenericQuery(ecAsset, xqdata)

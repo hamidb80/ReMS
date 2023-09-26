@@ -19,7 +19,6 @@ dispatch router, ../views:
   # get "/users/", usersPage {.html.}
   # get "/me/", usersPage {.html.}
   # get "/user/id/"?(id: int), usersPage {.html.}
-  # get "/api/user/search/"?(name: string), usersPage {.html.}
   # get "/api/me/", myPage {.json.}
   # put "/api/me/" usersPage {.json.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
@@ -38,7 +37,8 @@ dispatch router, ../views:
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
-  post "/api/notes/new/", newNote {.Id.}
+  
+  post "/api/notes/new/", newNote {.Id.} # FIXME change it to a page with redirect
   put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
   put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
@@ -51,7 +51,7 @@ dispatch router, ../views:
   get "/board/"?(id: Id), loadDist"board.html" {.html.}
   get "/api/boards/list", listBoards {.json: seq[BoardItemView].}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
-  post "/api/boards/new/", newBoard {.Id.}
+  post "/api/boards/new/", newBoard {.Id.} # FIXME change it to a page with redirect
   put "/api/board/update/"?(id: Id), updateBoard {.ok.}
   put "/api/board/screen-shot/"?(id: Id), updateBoardScreenShot {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
@@ -67,7 +67,10 @@ dispatch router, ../views:
   get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
 
   get "/explore/", loadDist"explore.html" {.html.}
-  post "/api/explore/", exploreGeneric {.json.}
+  post "/api/explore/users", exploreUsers {.json.}
+  post "/api/explore/notes", exploreNotes {.json.}
+  post "/api/explore/board", exploreBoards {.json.}
+  post "/api/explore/assets", exploreAssets {.json.}
 
 
 

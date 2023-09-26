@@ -109,9 +109,6 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
 
   respFile asset.mime, content
 
-proc listAssets*(req: Request) =
-  !!respJson toJson db.listAssets()
-
 proc deleteAsset*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteAsset id
   resp OK
@@ -119,9 +116,6 @@ proc deleteAsset*(req: Request) {.qparams: {id: int}.} =
 
 proc newNote*(req: Request) =
   !!respJson str db.newNote()
-
-proc notesList*(req: Request) =
-  !!respJson toJson db.listNotes()
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getNote(id)
@@ -157,9 +151,6 @@ proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}.} =
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
-
-proc listBoards*(req: Request) =
-  !!respJson toJson db.listBoards()
 
 proc deleteBoard*(req: Request) {.qparams: {id: int}.} =
   !!db.deleteBoard id
@@ -216,7 +207,14 @@ proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
 
-proc exploreGeneric*(req: Request) {.jbody: ExploreQuery.} =
-  let s = exploreGenericQuery(data)
-  
+proc exploreUsers*(req: Request) =
+  resp OK
 
+proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
+  !!respJson toJson db.exploreNotes(data)
+
+proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
+  !!respJson toJson db.exploreBoards(data)
+
+proc exploreAssets*(req: Request) {.jbody: ExploreQuery.} =
+  !!respJson toJson db.exploreAssets(data)

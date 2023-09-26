@@ -190,7 +190,6 @@ type # view models
     value*: Str
 
   ExploreQuery* = object
-    entity*: EntityClass
     criterias*: seq[TagCriteria]
     limit*: Natural
     skip*: int
@@ -201,7 +200,7 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    # activeRelsValues*: RelValuesByTagId
+    activeRelsValues*: RelValuesByTagId
 
   NoteItemView* = object
     id*: Id
@@ -248,11 +247,9 @@ func `$`*(tvt: TagValueType): string =
   of tvtDate: "date"
   of tvtJson: "JSON"
 
-
 when not defined js:
   import jsony
   include jsony_fix
-
 
   template defSqlJsonType(typename): untyped =
     proc sqlType*(t: typedesc[typename]): string = "TEXT"
