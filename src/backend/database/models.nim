@@ -12,7 +12,7 @@ type # database models
 
   User* = object
     id* {.primary, autoIncrement.}: Id
-    username* {.index.}: Str
+    username* {.uniqueIndex.}: Str
     nickname*: Str
     role*: UserRole
 
@@ -86,9 +86,6 @@ type # database models
 
     tlPrivate         ## everything is public except when it has private tag
     tlHasAccess       ## tag with username of the person as value - is used with private
-
-    tlAdmin           ##
-    tlSuperAdmin      ##
 
     tlFollows         ## user => ival (user.id)
 
@@ -217,6 +214,12 @@ type # view models
     styleLink*: Str
     htmlCode*: Str
 
+  LoginForm* = object
+    pass*: Str
+
+  AuthResponse* = object
+    jwt*: Str
+
 
 func columnName*(vt: TagValueType): string =
   case vt
@@ -311,9 +314,16 @@ when not defined js:
       c(0x424242, 0xececec, 0x919191), # dark
     ])
 
+  proc addAdminUser*(db: DbConn) =
+    db.insert User(
+      username: "os_shahed_1402_TA",
+      nickname: "استاد یار های درس سیستم عامل",
+      role: urAdmin)
+
   proc createTables*(db: DbConn) =
     db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
     try:
+      db.addAdminUser()
       db.defaultPalette()
     except:
       discard

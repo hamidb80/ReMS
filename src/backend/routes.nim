@@ -16,7 +16,8 @@ dispatch router, ../views:
   get "/", loadDist"index.html" {.html.}
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
-  # get "/users/", usersPage {.html.}
+  get "/login/", loadDist"login.html" {.html.}
+  post "/api/login/", login {.html.}
   # get "/me/", usersPage {.html.}
   # get "/user/id/"?(id: int), usersPage {.html.}
   # get "/api/me/", myPage {.json.}

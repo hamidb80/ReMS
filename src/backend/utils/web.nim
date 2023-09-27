@@ -1,4 +1,5 @@
 import std/[macros, uri, strutils, sequtils, tables]
+
 import macroplus
 
 
@@ -162,6 +163,20 @@ macro jbody*(desttype, procdef): untyped =
 
   procdef.body.insert 0, quote do:
     let `data` = fromJson(`req`.body, `desttype`)
+
+  procdef
+
+
+macro adminOnly*(procdef): untyped =
+  let
+    req = procdef.firstArgument
+    body = procdef.body
+
+  procdef.body = quote:
+    if isAdmin `req`:
+      `body`
+    else:
+      raise newException(ValueError, "Permission Denied")
 
   procdef
 

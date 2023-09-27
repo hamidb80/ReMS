@@ -70,15 +70,6 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 # ----- pages -----
 
-proc boards: VNode =
-  commonPage "ReMS - Remembering Manangement System", [
-      extJs("./script-boards-list.js", true)]
-
-proc board: VNode =
-  commonPage "Board", [
-      extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
-      extJs("./script-board.js", true)]
-
 proc assets: VNode =
   commonPage "asset manager", [
       extJs("./script-assets.js", true)]
@@ -87,18 +78,22 @@ proc tags: VNode =
   commonPage "tag manager", [
       extJs("./script-tags.js", true)]
 
-proc editor: VNode =
+proc boardEditor: VNode =
+  commonPage "Board", [
+      extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
+      extJs("./script-board.js", true)]
+
+proc noteEditor: VNode =
   commonPage "editor", [
       extJs("./script-editor.js", true)]
-
-proc notes_list*: VNode =
-  commonPage "note list", [
-      extJs("./script-note-list.js", true)]
 
 proc explore*: VNode =
   commonPage "explore", [
       extJs("./script-explore.js", true)]
 
+proc login*: VNode =
+  commonPage "login", [
+      extJs("./script-login.js", true)]
 
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
@@ -151,7 +146,7 @@ proc index: VNode =
         blockk "Built-in Remembering Utils", "repeat.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", ""
-        blockk "Be a User", "user.svg", ""
+        blockk "Be a User", "user.svg", get_login_url()
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
@@ -163,17 +158,16 @@ proc index: VNode =
   card's content."""
 
         tdiv(class = "card-footer text-center"):
-          text "created by @hamidb80 with passion in Nim"
+          text "created with passion for everyone"
 
 
 # -----
 
 when isMainModule:
   writeFile "./dist/index.html", $index()
-  writeFile "./dist/boards.html", $boards()
-  writeFile "./dist/board.html", $board()
-  writeFile "./dist/assets.html", $assets()
+  writeFile "./dist/login.html", $login()
   writeFile "./dist/tags.html", $tags()
-  writeFile "./dist/editor.html", $editor()
-  writeFile "./dist/notes_list.html", $notes_list()
   writeFile "./dist/explore.html", $explore()
+  writeFile "./dist/assets.html", $assets()
+  writeFile "./dist/board.html", $boardEditor()
+  writeFile "./dist/editor.html", $noteEditor()

@@ -1,5 +1,6 @@
 import std/[options, sequtils]
 import std/[dom, jsffi, asyncjs, jsformdata]
+
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
@@ -8,6 +9,7 @@ import ../utils/[browser, ui, js, api]
 import ../../common/[conventions, iter]
 import ../../backend/routes
 import ../../backend/database/[models]
+
 
 type
   Percent = range[0.0 .. 100.0]
@@ -26,22 +28,6 @@ type
     promise: Future[AxiosResponse]
     reason: cstring
 
-
-
-  # TODO make tag searcher common in all modules [graph, assets, notes]
-  CmpOperator = enum
-    lt   #  <
-    lte  #  <=
-    eq   #  ==
-    neq  # !=
-    gte  # >=
-    gt   #  >
-    like #  %
-         # oneOf # ⊆
-
-
-const
-  noIndex = -1
 
 var
   uploads: seq[Upload]

@@ -20,6 +20,10 @@ func sqlize[T](items: seq[T]): string =
 func tagIds(data: RelValuesByTagId): seq[Id] =
   data.keys.toseq.mapIt(Id parseInt it)
 
+
+proc getFirstUser*(db: DbConn): User = 
+  db.find R, sql"SELECT * FROM USER"
+
 # TODO add show_name tag
 proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
@@ -225,7 +229,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
     """
 
   of ecAsset: sql fmt"""
-      SELECT thing.id, thing.name, thing.mime, thing.size rc.active_rels_values
+      SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
       FROM Asset thing
       JOIN RelationsCache rc
       ON rc.asset = thing.id

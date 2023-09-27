@@ -15,6 +15,18 @@ template wrapResp(body): untyped {.dirty.} =
         body
 
 
+proc loginApi*(
+    pass: cstring,
+    success: proc(a: AuthResponse),
+    fail: proc() = noop
+) =
+    discard post_api_login_url()
+    .postApi(forceJsObject LoginForm(pass: pass))
+    .then(wrapResp success cast[AuthResponse](r.data))
+    .catch(fail)
+
+
+
 proc apiGetPallete*(
     name: string,
     success: proc(cts: seq[ColorTheme]),

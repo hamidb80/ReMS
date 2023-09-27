@@ -1,6 +1,9 @@
-import std/[strformat, tables, strutils, os, oids, json, httpclient]
+import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1, times]
 
 import mummy, mummy/multipart
+import webby
+import quickjwt
+import cookiejar
 import jsony
 import waterpark/sqlite
 
@@ -69,10 +72,41 @@ proc loadDist*(path: string): RequestHandler =
 
 # ------- Dynamic ones
 
-# proc exploreUsers*(req: Request) =
+let jwtSecret = "TODO" # getEnv "JWT_KEY"
+
+proc toUserJwt(u: User, expire: int64): JsonNode =
+  %*{
+    "exp": expire,
+    "user_id": u.id,
+    "is_admin": u.role == urAdmin}
+
+proc toJwt(u: User): string =
+  sign(
+    header = %*{
+      "typ": "JWT",
+      "alg": "HS256"},
+    claim = toUserJwt(u, toUnix getTime() + 1.days),
+    secret = jwtSecret)
+
+proc login*(req: Request) {.gcsafe, jbody: LoginForm.} =
+  {.cast(gcsafe).}:
+    if data.pass == "111":
+      let u = !!<db.getFirstUser()
+      respJson toJson AuthResponse(jwt: toJwt u)
+
+    else:
+      raise newException(ValueError, "invalid password")
+
+proc isAdmin(req: Request): bool = 
+  {.cast(gcsafe).}:
+    if "Cookie" in `req`.headers:
+      let ck = initCookie `req`.headers["Cookie"]
+      ck.name == "jwt" and verify(ck.value, jwtSecret)
+    else:
+      false
 
 
-proc saveAsset(req: Request): Id =
+proc saveAsset(req: Request): Id {.adminOnly.} =
   # FIXME model changed -
   let multip = req.decodeMultipart()
 
@@ -91,7 +125,7 @@ proc saveAsset(req: Request): Id =
 
   raise newException(ValueError, "no files found")
 
-proc assetsUpload*(req: Request) =
+proc assetsUpload*(req: Request) {.adminOnly.} =
   respJson str saveAsset req
 
 proc assetShorthand*(req: Request) =
@@ -109,12 +143,12 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
 
   respFile asset.mime, content
 
-proc deleteAsset*(req: Request) {.qparams: {id: int}.} =
+proc deleteAsset*(req: Request) {.qparams: {id: int}, adminOnly.} =
   !!db.deleteAsset id
   resp OK
 
 
-proc newNote*(req: Request) =
+proc newNote*(req: Request) {.adminOnly.} =
   let id = !!<db.newNote()
   redirect get_note_editor_url id
 
@@ -125,48 +159,47 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
   let node = !!<db.getNote(id).data
   respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[JsonNode].} =
+proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[JsonNode], adminOnly.} =
   !!db.updateNoteContent(id, data)
   resp OK
 
-proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId.} =
+proc updateNoteRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
   !!db.updateNoteRelTags(id, data)
   resp OK
 
-proc deleteNote*(req: Request) {.qparams: {id: int}.} =
+proc deleteNote*(req: Request) {.qparams: {id: int}, adminOnly} =
   !!db.deleteNote id
   resp OK
 
 
-proc newBoard*(req: Request) =
+proc newBoard*(req: Request) {.adminOnly.} =
   let id = !!<db.newBoard()
   redirect get_board_editor_url id
 
-proc updateBoard*(req: Request) {.qparams: {id: int}, jbody: BoardData.} =
+proc updateBoard*(req: Request) {.qparams: {id: int}, jbody: BoardData, adminOnly.} =
   !!db.updateBoard(id, data)
   resp OK
 
-proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}.} =
+proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, adminOnly.} =
   !!db.setScreenShot(id, saveAsset req)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
-proc deleteBoard*(req: Request) {.qparams: {id: int}.} =
+proc deleteBoard*(req: Request) {.qparams: {id: int}, adminOnly.} =
   !!db.deleteBoard id
   resp OK
 
 
-proc newTag*(req: Request) {.jbody: Tag.} =
+proc newTag*(req: Request) {.jbody: Tag, adminOnly.} =
   !!respJson toJson db.newTag data
 
-proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag.} =
+proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, adminOnly.} =
   !!db.updateTag(id, data)
   resp OK
 
-proc deleteTag*(req: Request) {.qparams: {id: int}.} =
+proc deleteTag*(req: Request) {.qparams: {id: int}, adminOnly.} =
   !!db.deleteTag id
   resp OK
 

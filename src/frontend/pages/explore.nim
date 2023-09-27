@@ -41,6 +41,7 @@ var
   selectedNoteId: Id
   selectedNoteIndex = noIndex
   activeRelTag = none RelTagPath
+  userSearchStr = ""
 
 
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
@@ -345,7 +346,15 @@ proc createDom: Vnode =
                 a(class = "page-link", href = "#"):
                   text $i
 
-        searchTagManager()
+        case selectedClass
+        of scUsers:
+          input(`type` = "text", class = "form-control",
+            placeholder = "id or name"):
+            proc oninput(e: Event, v: Vnode) =
+              userSearchStr = $e.target.value
+
+        else:
+          searchTagManager()
 
         tdiv(class = "my-1"):
           button(class = "btn btn-outline-info w-100 mt-2 mb-4"):
