@@ -211,6 +211,7 @@ type # view models
     id*: Id
     title*: Str
     screenshot*: Option[Id]
+    activeRelsValues*: RelValuesByTagId
 
   GithubCodeEmbed* = object
     styleLink*: Str
@@ -229,7 +230,8 @@ func isInfix*(qo: QueryOperator): bool =
 
 func `$`*(qo: QueryOperator): string =
   case qo
-  of qoExists, qoNotExists: ""
+  of qoExists: "??"
+  of qoNotExists: "?!"
   of qoLess: "<"
   of qoLessEq: "<="
   of qoEq: "=="

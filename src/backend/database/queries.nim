@@ -83,7 +83,6 @@ proc getNote*(db: DbConn, id: Id): NoteItemView =
     JOIN RelationsCache rc
     ON rc.note = n.id
     WHERE n.id = ?
-    LIMIT 1
     """, id
 
 proc newNote*(db: DbConn): Id =
@@ -139,9 +138,14 @@ proc deleteNote*(db: DbConn, id: Id) =
 
 
 proc newBoard*(db: DbConn): Id =
-  db.insertID Board(
+  result = db.insertID Board(
     title: "no title",
     data: BoardData())
+
+  db.insert RelationsCache(
+    board: some result,
+    active_rels_values: RelValuesByTagId())
+
 
 proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
   db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
@@ -170,7 +174,7 @@ func toSubQuery(c: TagCriteria, entityIdVar: string): string =
     candidateCond =
       case c.label
       of tlOrdinary:
-        fmt"rel.id = {c.tagId}"
+        fmt"rel.tag = {c.tagId}"
       else:
         fmt"rel.label = {c.label.ord}"
 
@@ -185,12 +189,11 @@ func toSubQuery(c: TagCriteria, entityIdVar: string): string =
   fmt""" 
   {introCond} (
     SELECT *
-    FROM Relations rel
+    FROM Relation rel
     WHERE 
         rel.note = {entityIdVar} AND
         {candidateCond} AND
         {primaryCond}
-    LIMIT 1
   )
   """
 
@@ -214,7 +217,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
     """
 
   of ecBoard: sql fmt"""
-      SELECT thing.id, thing.data, rc.active_rels_values
+      SELECT thing.id, thing.title, thing.screenshot, rc.active_rels_values
       FROM Board thing
       JOIN RelationsCache rc
       ON rc.board = thing.id

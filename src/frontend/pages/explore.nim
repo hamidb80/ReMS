@@ -26,6 +26,23 @@ type
   RelTagPath = tuple[tagid: Id, index: int]
 
 
+let compTable = defaultComponents()
+var
+  appState = asNormal
+  tags: Table[Id, Tag]
+  msgCache: Table[Id, cstring]
+  notes: seq[NoteItemView]
+  boards: seq[BoardItemView]
+  searchCriterias: seq[TagCriteria]
+  selectedCriteriaI = noIndex
+  columnsCount = 3
+  selectedClass = scUsers
+  currentRelTags: Table[Id, seq[cstring]]
+  selectedNoteId: Id
+  selectedNoteIndex = noIndex
+  activeRelTag = none RelTagPath
+
+
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
   result = newJsObject()
   for k, v in s:
@@ -36,19 +53,19 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
     let id = Id parseInt k
     result[id] = v
 
+proc getExploreQuery: ExploreQuery =
+  ExploreQuery(criterias: searchCriterias)
 
-let compTable = defaultComponents()
-var
-  appState = asNormal
-  notes: seq[NoteItemView]
-  msgCache: Table[Id, cstring]
-  tags: Table[Id, Tag]
-  columnsCount = 3
-  selectedClass = scUsers
-  currentRelTags: Table[Id, seq[cstring]]
-  selectedNoteId: Id
-  selectedNoteIndex = noIndex
-  activeRelTag = none RelTagPath
+proc fetchBoards: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiExploreBoards getExploreQuery(), proc(bs: seq[BoardItemView]) =
+      boards = bs
+      resolve()
+
+proc deleteBoard(id: Id) =
+  apiDeleteBoard id, proc =
+    discard fetchBoards()
+
 
 # TODO write a note laod manager component in a different file
 proc loadMsg(n: NoteItemView) =
@@ -58,7 +75,7 @@ proc loadMsg(n: NoteItemView) =
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreNotes ExploreQuery(), proc(ns: seq[NoteItemView]) =
+    apiExploreNotes getExploreQuery(), proc(ns: seq[NoteItemView]) =
       notes = ns
       for n in notes:
         loadMsg n
@@ -82,8 +99,8 @@ proc columnCountSetter(i: int): proc() =
   proc =
     columnsCount = i
 
-proc searchClassSetter(i: SearchableClass): proc() = 
-  proc = 
+proc searchClassSetter(i: SearchableClass): proc() =
+  proc =
     selectedClass = i
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
@@ -132,6 +149,33 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
           proc onclick =
             deleteNote n.id
 
+proc boardItemViewC(b: BoardItemView): VNode =
+  buildHtml:
+    tdiv(class = "masonry-item card my-3 border rounded bg-white"):
+      if issome b.screenshot:
+        tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
+          img(src = get_asset_short_hand_url b.screenshot.get)
+
+      tdiv(class = "card-body"):
+        h3:
+          text b.title
+
+        span:
+          text "time:"
+          # text $b.timestamp
+
+      tdiv(class = "card-footer d-flex justify-content-center"):
+        a(class = "btn mx-1 btn-compact btn-outline-warning",
+            href = get_board_editor_url b.id):
+          icon "fa-pen"
+
+        a(class = "btn mx-1 btn-compact btn-outline-danger"):
+          icon "fa-close"
+
+          proc onclick(e: Event, v: Vnode) =
+            deleteBoard b.id
+            redirect ""
+
 proc genAddTagToList(id: Id): proc() =
   proc =
     currentRelTags.add id, c""
@@ -143,6 +187,7 @@ proc genActiveTagClick(tagId: Id, index: int): proc() =
 # TODO search tag component
 
 # TODO make it globally available
+
 proc relTagManager(): Vnode =
   buildHTML:
     tdiv:
@@ -203,6 +248,71 @@ proc relTagManager(): Vnode =
           reset activeRelTag
           appState = asNormal
 
+proc genRoundOperator(i: int, vt: TagValueType): proc() =
+  proc =
+    searchCriterias[i].operator.inc
+
+
+proc genAddSearchCriteria(t: Tag): proc() =
+  proc =
+    searchCriterias.add TagCriteria(
+      tagid: t.id,
+      label: t.label,
+      valuetype: t.valuetype,
+      operator: qoExists,
+      value: "")
+
+    selectedCriteriaI = searchCriterias.high
+
+proc genSelectCriteria(i: int): proc() = 
+  proc = 
+    selectedCriteriaI = i
+
+proc searchTagManager(): Vnode =
+  buildHTML:
+    tdiv:
+      h3(class = "mt-4"):
+        text "Available Tags"
+
+      tdiv(class = "card"):
+        tdiv(class = "card-body"):
+          for id, t in tags:
+            tagViewC t, "...", genAddSearchCriteria t
+
+      h3(class = "mt-4"):
+        text "Current Criterias"
+
+      tdiv(class = "card"):
+        tdiv(class = "card-body"):
+          for i, cr in searchCriterias:
+            tdiv:
+              text "@ "
+              span(onclick = genRoundOperator(i, tags[cr.tagid].valueType)):
+                text $cr.operator
+              tagViewC tags[cr.tagid], cr.value, genSelectCriteria i
+
+
+      if selectedCriteriaI != noIndex:
+        let
+          cr = searchCriterias[selectedCriteriaI]
+          tid = cr.tagid
+          t = tags[tid]
+
+        if t.hasValue:
+          input(`type` = "text", class = "form-control",
+            placeholder = "value ...",
+            value = cr.value):
+            proc oninput(e: Event, v: Vnode) =
+              searchCriterias[selectedCriteriaI].value = e.target.value
+
+        button(class = "btn btn-danger w-100 my-2"):
+          text "remove"
+          icon "mx-2 fa-close"
+
+          proc onclick =
+            delete searchCriterias, selectedCriteriaI
+            selectedCriteriaI = noIndex
+
 
 proc createDom: Vnode =
   echo "just redrawn"
@@ -213,8 +323,8 @@ proc createDom: Vnode =
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          icon "fa-note-sticky fa-xl me-3 ms-1"
-          text "Notes"
+          icon "fa-search fa-xl me-3 ms-1"
+          text "Explore"
 
     tdiv(class = "px-4 py-2 my-2"):
       case appState
@@ -235,15 +345,43 @@ proc createDom: Vnode =
                 a(class = "page-link", href = "#"):
                   text $i
 
+        searchTagManager()
+
+        tdiv(class = "my-1"):
+          button(class = "btn btn-outline-info w-100 mt-2 mb-4"):
+            text "search"
+            icon "mx-2 fa-search"
+
+            proc onclick =
+              case selectedClass
+              of scUsers: discard
+              of scNotes: discard fetchNotes()
+              of scBoards: discard fetchBoards()
+              of scAssets: discard
+
+
         tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
-          for i, n in notes:
-            notePreviewC n, i
+          case selectedClass
+          of scUsers:
+            text "not impl"
+
+          of scNotes:
+            for i, n in notes:
+              notePreviewC n, i
+
+          of scBoards:
+            for b in boards:
+              boardItemViewC b
+
+          of scAssets:
+            text "not impl"
 
       of asTagManager:
         relTagManager()
 
+
 when isMainModule:
   setRenderer createDom
 
-  waitAll [fetchTags(), fetchNotes()], proc =
+  waitAll [fetchTags(), fetchNotes(), fetchBoards()], proc =
     redraw()
