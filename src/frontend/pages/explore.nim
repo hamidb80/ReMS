@@ -12,6 +12,8 @@ import ../../backend/database/[models]
 import ./editor/[core, components]
 
 
+# TODO hide admin buttons for normal users
+
 type
   AppState = enum
     asNormal

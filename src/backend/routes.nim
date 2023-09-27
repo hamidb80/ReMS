@@ -19,10 +19,10 @@ dispatch router, ../views:
   get "/login/", loadDist"login.html" {.html.}
   post "/api/login/", login {.OK.}
   get "/api/logout/", logout {.OK.}
+  # TODO
   # get "/me/", usersPage {.html.}
-  # get "/user/id/"?(id: int), usersPage {.html.}
-  # get "/api/me/", myPage {.json.}
   # put "/api/me/" usersPage {.json.}
+  # get "/user/id/"?(id: int), usersPage {.html.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
   get "/assets/", loadDist"assets.html" {.html.}
@@ -37,8 +37,8 @@ dispatch router, ../views:
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
-  put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
-  put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
+  put "/api/notes/update/content/"?(id: Id), updateNoteContent {.form: Note.data, ok.}
+  put "/api/notes/update/tags/"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
   # 'Pages' are just views for notes with predefined criteria

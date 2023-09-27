@@ -139,6 +139,7 @@ proc index: VNode =
         blockk "Files", "inbox-archive.svg", get_assets_url()
         blockk "Tags", "tag.svg", get_tags_url()
         blockk "Boards", "share-circle.svg", get_boards_new_url()
+        blockk "Login", "user.svg", get_login_url()
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
@@ -146,7 +147,6 @@ proc index: VNode =
         blockk "Built-in Remembering Utils", "repeat.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", ""
-        blockk "Be a User", "user.svg", get_login_url()
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):

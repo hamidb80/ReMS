@@ -118,35 +118,6 @@ func progressbar(percent: Percent, status: UploadStatus): Vnode =
           StyleAttr.width,
           $iff(cond, percent, 100) & "%"))
 
-func tagSearch(name, color: string,
-  compareOperator: options.Option[CmpOperator]): VNode =
-
-  buildHtml:
-    tdiv(class = "form-group d-inline-block mx-2"):
-      tdiv(class = "input-group mb-3"):
-        span(class = "input-group-text"):
-          icon("fa-hashtag me-2")
-          span:
-            text name
-
-        if issome compareOperator:
-          button(class = "input-group-text pointer btn btn-outline-primary"):
-            let ic =
-              case get compareOperator
-              of lt: "fa-solid fa-less-than"
-              of lte: "fa-solid fa-less-than-equal"
-              of eq: "fa-solid fa-equals"
-              of neq: "fa-solid fa-not-equal"
-              of gte: "fa-solid fa-greater-than-equal"
-              of gt: "fa-solid fa-greater-than"
-              of like: "fa-solid fa-percent"
-
-            icon ic
-
-          input(class = "form-control tag-input", `type` = "text")
-
-        tdiv(class = "input-group-text btn btn-outline-danger d-flex align-items-center justify-content-center p-2"):
-          icon("fa-xmark")
 
 proc uploadStatusBtn(u: Upload): VNode = 
   buildHtml:
