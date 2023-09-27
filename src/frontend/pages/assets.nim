@@ -4,7 +4,7 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
 
 import ../jslib/[axios]
-import ../utils/[browser, ui, js]
+import ../utils/[browser, ui, js, api]
 import ../../common/[conventions, iter]
 import ../../backend/routes
 import ../../backend/database/[models]
@@ -50,10 +50,8 @@ var
 
 
 proc fetchAssets =
-  let res = get_api_assets_list_url().getApi
-  res.dthen proc(r: AxiosResponse) =
-    assets = cast[typeof assets](r.data)
-    redraw()
+  apiExploreAssets ExploreQuery(), proc(ass: seq[AssetItemView]) = 
+    assets = ass
 
 proc startUpload(u: Upload) =
   var 
