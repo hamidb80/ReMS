@@ -107,15 +107,15 @@ proc logout*(req: Request) =
 
 proc isAdmin(req: Request): bool =
   {.cast(gcsafe).}:
-    if "Cookie" in `req`.headers:
-      let ck = initCookie `req`.headers["Cookie"]
-      ck.name == "jwt" and verify(ck.value, jwtSecret)
-    else:
-      false
-
+    try:
+      if "Cookie" in `req`.headers:
+        let ck = initCookie `req`.headers["Cookie"]
+        ck.name == "jwt" and verify(ck.value, jwtSecret)
+      else: false
+    except: false
 
 proc saveAsset(req: Request): Id {.adminOnly.} =
-  # FIXME model changed -
+  # FIXME add extension of file
   let multip = req.decodeMultipart()
 
   for entry in multip:
