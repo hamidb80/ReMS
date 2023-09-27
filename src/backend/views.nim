@@ -115,7 +115,8 @@ proc deleteAsset*(req: Request) {.qparams: {id: int}.} =
 
 
 proc newNote*(req: Request) =
-  !!respJson str db.newNote()
+  let id = !!<db.newNote()
+  redirect get_note_editor_url id
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getNote(id)
@@ -139,7 +140,8 @@ proc deleteNote*(req: Request) {.qparams: {id: int}.} =
 
 
 proc newBoard*(req: Request) =
-  !!respJson str db.newBoard()
+  let id = !!<db.newBoard()
+  redirect get_board_editor_url id
 
 proc updateBoard*(req: Request) {.qparams: {id: int}, jbody: BoardData.} =
   !!db.updateBoard(id, data)
@@ -207,9 +209,6 @@ proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
 
-proc exploreUsers*(req: Request) =
-  resp OK
-
 proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreNotes(data)
 
@@ -218,3 +217,6 @@ proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
 
 proc exploreAssets*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreAssets(data)
+
+proc exploreUsers*(req: Request) {.qparams: {s: string}.} =
+  !!respJson toJson db.exploreUser(s)

@@ -25,15 +25,6 @@ proc apiGetPallete*(
     .catch(fail)
 
 
-proc apiGetBoardsList*(
-    success: proc(bs: seq[BoardItemView]),
-    fail: proc() = noop
-) =
-    discard get_api_boards_list_url()
-    .getApi()
-    .then(wrapResp success cast[seq[BoardItemView]](r.data))
-    .catch(fail)
-
 proc apiGetBoard*(
     id: Id,
     success: proc(b: Board),
@@ -42,15 +33,6 @@ proc apiGetBoard*(
     discard get_api_board_url(id)
     .getApi()
     .then(wrapResp success cast[Board](r.data))
-    .catch(fail)
-
-proc apiCreateNewBoard*(
-    success: proc(id: Id),
-    fail: proc() = noop
-) =
-    discard post_api_boards_new_url()
-    .postApi()
-    .then(wrapResp success cast[Id](r.data))
     .catch(fail)
 
 proc apiDeleteBoard*(
@@ -87,15 +69,6 @@ proc apiUpdateBoardContent*(
     .catch(fail)
 
 
-proc apiGetNotesList*(
-    success: proc(ns: seq[NoteItemView]),
-    fail: proc() = noop
-) =
-    discard get_api_notes_list_url()
-    .getApi()
-    .then(wrapResp success cast[seq[NoteItemView]](r.data))
-    .catch(fail)
-
 proc apiGetNote*(
     id: Id,
     success: proc(n: NoteItemView),
@@ -111,13 +84,13 @@ proc apiGetNoteContentQuery*(
     success: proc(n: TreeNodeRaw[JsObject]),
     fail: proc() = noop
 ) =
-    let 
+    let
         pieces = queryString.split "::"
         id = Id parseInt pieces[0]
-        path = 
-            if pieces.len == 1 or pieces[1] == "": 
+        path =
+            if pieces.len == 1 or pieces[1] == "":
                 default seq[int]
-            else: 
+            else:
                 pieces[1].split(",").map(parseInt)
 
     echo (id, path)
@@ -156,15 +129,6 @@ proc apiDeleteNote*(
     discard delete_api_note_url(id)
     .deleteApi()
     .then(success)
-    .catch(fail)
-
-proc apiCreateNewNote*(
-    success: proc(id: Id),
-    fail: proc() = noop
-) =
-    discard post_api_notes_new_url()
-    .postApi()
-    .then(wrapResp success cast[Id](r.data))
     .catch(fail)
 
 
@@ -219,12 +183,32 @@ proc apiDeleteTag*(
     .catch(fail)
 
 
-proc apiExplore*(
+proc apiExploreNotes*(
     xqdata: ExploreQuery,
-    success: proc(),
+    success: proc(ns: seq[NoteItemView]),
     fail: proc() = noop
 ) =
-    discard put_api_tag_update_url(t.id)
-    .putApi(forceJsObject t)
-    .then(success)
+    discard post_api_explore_notes_url()
+    .postApi(forceJsObject xqdata)
+    .then(wrapResp success cast[seq[NoteItemView]](r.data))
+    .catch(fail)
+
+proc apiExploreBoards*(
+    xqdata: ExploreQuery,
+    success: proc(bs: seq[BoardItemView]),
+    fail: proc() = noop
+) =
+    discard post_api_explore_boards_url()
+    .postApi(forceJsObject xqdata)
+    .then(wrapResp success cast[seq[BoardItemView]](r.data))
+    .catch(fail)
+
+proc apiExploreAssets*(
+    xqdata: ExploreQuery,
+    success: proc(ns: seq[AssetItemView]),
+    fail: proc() = noop
+) =
+    discard post_api_explore_assets_url()
+    .postApi(forceJsObject xqdata)
+    .then(wrapResp success cast[seq[AssetItemView]](r.data))
     .catch(fail)

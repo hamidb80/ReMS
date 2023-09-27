@@ -195,9 +195,11 @@ func toSubQuery(c: TagCriteria, entityIdVar: string): string =
   """
 
 func exploreSqlConds(xqdata: ExploreQuery, ident: string): string =
-  xqdata.criterias
-  .mapIt(toSubQuery(it, ident))
-  .join " AND "
+  if xqdata.criterias.len == 0: "1"
+  else:
+    xqdata.criterias
+    .mapIt(toSubQuery(it, ident))
+    .join " AND "
 
 func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
   let repl = exploreSqlConds(xqdata, "thing.id")
@@ -235,3 +237,13 @@ proc exploreBoards*(db: DbConn, xqdata: ExploreQuery): seq[BoardItemView] =
 
 proc exploreAssets*(db: DbConn, xqdata: ExploreQuery): seq[AssetItemView] =
   db.find R, exploreGenericQuery(ecAsset, xqdata)
+
+proc exploreUser*(db: DbConn, str: string): seq[User] =
+  ## FIXME https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
+  db.find R, sql"""
+    SELECT *
+    FROM User u
+    WHERE 
+      %?% LIKE u.username OR
+      %?% LIKE u.nickname
+  """, str, str

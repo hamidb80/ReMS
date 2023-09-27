@@ -40,18 +40,13 @@ task prepare, "creates the directory ./dist used for final output":
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
-  exec "nimble genbs"
   exec "nimble genas"
-  exec "nimble gennl"
   exec "nimble gened"
   exec "nimble gentg"
   exec "nimble genex"
 
 task genex, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-explore.js src/frontend/pages/explore"
-
-task genbs, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-boards-list.js src/frontend/pages/boards_list"
 
 task genb, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board.js src/frontend/pages/board"
@@ -64,9 +59,6 @@ task gentg, "":
 
 task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
-
-task gennl, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-note-list.js src/frontend/pages/notes_list.nim"
 
 task html, "generate index.html ./dist":
   cpfile "./src/frontend/custom.css", "./dist/custom.css"

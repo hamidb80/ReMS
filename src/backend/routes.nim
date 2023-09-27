@@ -28,17 +28,13 @@ dispatch router, ../views:
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
-  get "/api/assets/list/", listAssets {.json.}
   delete "/api/asset/"?(id: Id), deleteAsset {.json.}
 
-  get "/notes/", loadDist"notes_list.html" {.html.}
+  get "/notes/new/", newNote {.Id.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
-  get "/api/notes/list/", notesList {.json: seq[Note].}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
-  
-  post "/api/notes/new/", newNote {.Id.} # FIXME change it to a page with redirect
   put "/api/notes/update/content"?(id: Id), updateNoteContent {.form: Note.data, ok.}
   put "/api/notes/update/tags"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
@@ -47,18 +43,15 @@ dispatch router, ../views:
   # get "/page/"?(s: string), loadDist"page.html" {.html.}
   # get "/api/page/"?(page: string, start: Id, limit: int), page {.json: seq[Note].}
 
-  get "/boards/", loadDist"boards.html" {.html.}
-  get "/board/"?(id: Id), loadDist"board.html" {.html.}
-  get "/api/boards/list", listBoards {.json: seq[BoardItemView].}
+  get "/boards/new/", newBoard {.Id.}
+  get "/board/editor/"?(id: Id), loadDist"board.html" {.html.}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
-  post "/api/boards/new/", newBoard {.Id.} # FIXME change it to a page with redirect
   put "/api/board/update/"?(id: Id), updateBoard {.ok.}
   put "/api/board/screen-shot/"?(id: Id), updateBoardScreenShot {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
   get "/api/tags/list/", listTags {.json: seq[Tag].}
-  # get "/api/all-my-tags/",
   post "/api/tag/new/", newTag {.Id.}
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
@@ -67,10 +60,10 @@ dispatch router, ../views:
   get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
 
   get "/explore/", loadDist"explore.html" {.html.}
-  post "/api/explore/users", exploreUsers {.json.}
-  post "/api/explore/notes", exploreNotes {.json.}
-  post "/api/explore/board", exploreBoards {.json.}
-  post "/api/explore/assets", exploreAssets {.json.}
+  post "/api/explore/notes/", exploreNotes {.json.}
+  post "/api/explore/boards/", exploreBoards {.json.}
+  post "/api/explore/assets/", exploreAssets {.json.}
+  get "/api/explore/users/", exploreUsers {.json.}
 
 
 
