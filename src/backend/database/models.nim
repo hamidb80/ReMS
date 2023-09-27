@@ -217,10 +217,6 @@ type # view models
   LoginForm* = object
     pass*: Str
 
-  AuthResponse* = object
-    jwt*: Str
-
-
 func columnName*(vt: TagValueType): string =
   case vt
   of tvtNone: ""

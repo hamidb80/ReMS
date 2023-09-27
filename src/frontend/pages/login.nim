@@ -33,17 +33,24 @@ proc createDom: Vnode =
 
           button(class = "btn btn-success w-100 mt-2 mb-4"):
             text "login"
-            icon "mx-2 fa-enter"
+            icon "mx-2 fa-sign-in"
 
             proc onclick =
-              proc success(a: AuthResponse) =
-                document.cookie = "jwt=" & $a.jwt & ";path=/"
+              proc success =
                 notify "logged in :)"
 
               proc fail =
                 notify "pass wrong :("
 
               loginApi pass, success, fail
+
+          button(class = "btn btn-danger w-100 mt-2 mb-4"):
+            text "logout"
+            icon "mx-2 fa-sign-out"
+
+            proc onclick =
+              logoutApi proc =
+                notify "logged out"
 
 proc init* =
   setRenderer createDom

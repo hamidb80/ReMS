@@ -88,16 +88,24 @@ proc toJwt(u: User): string =
     claim = toUserJwt(u, toUnix getTime() + 1.days),
     secret = jwtSecret)
 
+proc jwtCookieSet(token: string): webby.HttpHeaders =
+  result["Set-Cookie"] = $initCookie("jwt", token, now() + 30.days, path = "/")
+
+proc logoutCookieSet: webby.HttpHeaders =
+  result["Set-Cookie"] = $initCookie("jwt", "", path = "/")
+
 proc login*(req: Request) {.gcsafe, jbody: LoginForm.} =
   {.cast(gcsafe).}:
     if data.pass == "111":
       let u = !!<db.getFirstUser()
-      respJson toJson AuthResponse(jwt: toJwt u)
-
+      respond req, 200, jwtCookieSet toJwt u
     else:
       raise newException(ValueError, "invalid password")
 
-proc isAdmin(req: Request): bool = 
+proc logout*(req: Request) =
+  respond req, 200, logoutCookieSet()
+
+proc isAdmin(req: Request): bool =
   {.cast(gcsafe).}:
     if "Cookie" in `req`.headers:
       let ck = initCookie `req`.headers["Cookie"]
@@ -159,15 +167,17 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
   let node = !!<db.getNote(id).data
   respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[JsonNode], adminOnly.} =
+proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[
+    JsonNode], adminOnly.} =
   !!db.updateNoteContent(id, data)
   resp OK
 
-proc updateNoteRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
+proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
+    jbody: RelValuesByTagId, adminOnly.} =
   !!db.updateNoteRelTags(id, data)
   resp OK
 
-proc deleteNote*(req: Request) {.qparams: {id: int}, adminOnly} =
+proc deleteNote*(req: Request) {.qparams: {id: int}, adminOnly.} =
   !!db.deleteNote id
   resp OK
 
