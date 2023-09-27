@@ -82,7 +82,7 @@ type # database models
     tlBoardScreenShot ## screenshots that are taken from boards
     tlTextContent     ## raw text
     tlLike            ## default like tag
-    tlReplyTo         ## ??? have no idea how to use it
+    tlNoteComment     ## a note (as comment) that refers to main note (ival)
 
     tlPrivate         ## everything is public except when it has private tag
     tlHasAccess       ## tag with username of the person as value - is used with private
