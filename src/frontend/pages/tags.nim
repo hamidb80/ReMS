@@ -30,6 +30,8 @@ var
   colors: seq[ColorTheme]
 
 
+# TODO show name of the icon on the bottom of it
+
 proc dummyTag: Tag =
   Tag(
     icon: defaultIcon,
