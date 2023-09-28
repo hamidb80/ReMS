@@ -70,10 +70,6 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 # ----- pages -----
 
-proc assets: VNode =
-  commonPage "asset manager", [
-      extJs("./script-assets.js", true)]
-
 proc tags: VNode =
   commonPage "tag manager", [
       extJs("./script-tags.js", true)]
@@ -136,7 +132,7 @@ proc index: VNode =
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "planet.svg", get_explore_url()
         blockk "Login", "user.svg", get_login_url()
-        blockk "Files", "inbox-archive.svg", get_assets_url()
+        blockk "Files", "inbox-archive.svg", ""
         blockk "Tags", "tag.svg", get_tags_url()
         blockk "Notes", "pen-writing-on-paper.svg", ""
         blockk "Boards", "share-circle.svg", ""
@@ -168,6 +164,5 @@ when isMainModule:
   writeFile "./dist/login.html", $login()
   writeFile "./dist/tags.html", $tags()
   writeFile "./dist/explore.html", $explore()
-  writeFile "./dist/assets.html", $assets()
   writeFile "./dist/board.html", $boardEditor()
   writeFile "./dist/editor.html", $noteEditor()

@@ -25,7 +25,6 @@ dispatch router, ../views:
   # get "/user/id/"?(id: int), usersPage {.html.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
-  get "/assets/", loadDist"assets.html" {.html.}
   # get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}

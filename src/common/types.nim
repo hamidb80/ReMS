@@ -30,6 +30,7 @@ type
 
   Degree* = distinct float
   Radian* = distinct float
+  Percent* = range[0.0 .. 100.0]
 
   Tenth* = distinct int
 
