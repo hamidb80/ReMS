@@ -217,6 +217,9 @@ type # view models
   LoginForm* = object
     pass*: Str
 
+func isAdmin*(u: User): bool = 
+  u.role == urAdmin
+
 func columnName*(vt: TagValueType): string =
   case vt
   of tvtNone: ""

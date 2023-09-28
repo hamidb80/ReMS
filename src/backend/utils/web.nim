@@ -171,10 +171,18 @@ macro adminOnly*(procdef): untyped =
   let
     req = procdef.firstArgument
     body = procdef.body
+    user = ident"user"
 
   procdef.body = quote:
-    if isAdmin `req`:
-      `body`
+    if tk =? `req`.jwt:
+      let verified = block:
+        {.cast(gcsafe).}:
+          verify(tk, jwtSecret)
+      if verified:
+        let 
+          s = tk.claim["user"]
+          `user` {.used.} = fromJson($s, User)
+        `body`
     else:
       raise newException(ValueError, "Permission Denied")
 

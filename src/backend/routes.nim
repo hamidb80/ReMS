@@ -17,11 +17,11 @@ dispatch router, ../views:
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
   get "/login/", loadDist"login.html" {.html.}
-  post "/api/login/", login {.OK.}
-  get "/api/logout/", logout {.OK.}
+  post "/api/login/", login {.ok.}
+  get "/api/logout/", logout {.ok.}
   # TODO
   # get "/me/", usersPage {.html.}
-  # put "/api/me/" usersPage {.json.}
+  get "/api/me/", getMe {.json: User.}
   # get "/user/id/"?(id: int), usersPage {.html.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 

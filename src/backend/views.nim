@@ -6,6 +6,7 @@ import quickjwt
 import cookiejar
 import jsony
 import waterpark/sqlite
+import questionable
 
 import ../common/[types, path, datastructures, conventions]
 import ./utils/web, ./routes
@@ -72,13 +73,17 @@ proc loadDist*(path: string): RequestHandler =
 
 # ------- Dynamic ones
 
+const jwtKey = "auth"
 let jwtSecret = "TODO" # getEnv "JWT_KEY"
 
 proc toUserJwt(u: User, expire: int64): JsonNode =
   %*{
     "exp": expire,
-    "user_id": u.id,
-    "is_admin": u.role == urAdmin}
+    "user": {
+      "id": u.id,
+      "username": u.username,
+      "nickname": u.nickname,
+      "role": u.role.ord}}
 
 proc toJwt(u: User): string =
   sign(
@@ -89,10 +94,10 @@ proc toJwt(u: User): string =
     secret = jwtSecret)
 
 proc jwtCookieSet(token: string): webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie("jwt", token, now() + 30.days, path = "/")
+  result["Set-Cookie"] = $initCookie(jwtKey, token, now() + 30.days, path = "/")
 
 proc logoutCookieSet: webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie("jwt", "", path = "/")
+  result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
 proc login*(req: Request) {.gcsafe, jbody: LoginForm.} =
   {.cast(gcsafe).}:
@@ -105,14 +110,17 @@ proc login*(req: Request) {.gcsafe, jbody: LoginForm.} =
 proc logout*(req: Request) =
   respond req, 200, logoutCookieSet()
 
-proc isAdmin(req: Request): bool =
-  {.cast(gcsafe).}:
-    try:
-      if "Cookie" in `req`.headers:
-        let ck = initCookie `req`.headers["Cookie"]
-        ck.name == "jwt" and verify(ck.value, jwtSecret)
-      else: false
-    except: false
+proc jwt(req: Request): options.Option[string] =
+  try:
+    if "Cookie" in req.headers:
+      let ck = initCookie req.headers["Cookie"]
+      if ck.name == jwtKey:
+        return some ck.value
+  except: 
+    discard
+
+proc getMe*(req: Request) {.adminOnly.} =
+  respJson toJson user
 
 proc saveAsset(req: Request): Id {.adminOnly.} =
   # FIXME add extension of file

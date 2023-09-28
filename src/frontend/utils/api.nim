@@ -34,6 +34,15 @@ proc logoutApi*(
     .then(success)
     .catch(fail)
 
+proc meApi*(
+    success: proc(u: User),
+    fail: proc() = noop
+) =
+    discard get_api_me_url()
+    .getApi()
+    .then(wrapResp success cast[User](r.data))
+    .catch(fail)
+
 
 proc apiGetPallete*(
     name: string,
