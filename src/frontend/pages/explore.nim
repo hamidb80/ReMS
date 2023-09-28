@@ -44,6 +44,8 @@ var
   selectedNoteIndex = noIndex
   activeRelTag = none RelTagPath
   userSearchStr = ""
+  users: seq[User]
+  assets: seq[AssetItemView]
 
 
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
@@ -365,16 +367,29 @@ proc createDom: Vnode =
 
             proc onclick =
               case selectedClass
-              of scUsers: discard
               of scNotes: discard fetchNotes()
               of scBoards: discard fetchBoards()
-              of scAssets: discard
+              of scAssets: 
+                apiExploreAssets getExploreQuery(), proc(ass: seq[AssetItemView]) = 
+                  assets = ass
+                  redraw()
+
+              of scUsers: 
+                apiExploreUsers userSearchStr, proc(us: seq[User]) = 
+                  users = us
+                  redraw()
 
 
         tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
           case selectedClass
           of scUsers:
-            text "not impl"
+            for u in users:
+              text "@"
+              text $u.id
+              text " "
+              text u.nickname
+              text " - "
+              text u.username
 
           of scNotes:
             for i, n in notes:
@@ -385,7 +400,8 @@ proc createDom: Vnode =
               boardItemViewC b
 
           of scAssets:
-            text "not impl"
+            for a in assets:
+              text a.name
 
       of asTagManager:
         relTagManager()

@@ -65,7 +65,7 @@ dispatch router, ../views:
   post "/api/explore/notes/", exploreNotes {.json.}
   post "/api/explore/boards/", exploreBoards {.json.}
   post "/api/explore/assets/", exploreAssets {.json.}
-  get "/api/explore/users/", exploreUsers {.json.}
+  get "/api/explore/users/"?(name: string), exploreUsers {.json.}
 
 
 

@@ -228,12 +228,9 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       WHERE {repl}
     """
 
-  of ecAsset: sql fmt"""
-      SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
+  of ecAsset: sql """
+      SELECT thing.id, thing.name, thing.mime, thing.size, "{}"
       FROM Asset thing
-      JOIN RelationsCache rc
-      ON rc.asset = thing.id
-      WHERE {repl}
     """
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =
@@ -246,11 +243,10 @@ proc exploreAssets*(db: DbConn, xqdata: ExploreQuery): seq[AssetItemView] =
   db.find R, exploreGenericQuery(ecAsset, xqdata)
 
 proc exploreUser*(db: DbConn, str: string): seq[User] =
-  ## FIXME https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
   db.find R, sql"""
     SELECT *
     FROM User u
     WHERE 
-      %?% LIKE u.username OR
-      %?% LIKE u.nickname
+      instr(u.username, ?) > 0 OR
+      instr(u.nickname, ?) > 0
   """, str, str

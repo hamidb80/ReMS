@@ -269,5 +269,5 @@ proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
 proc exploreAssets*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreAssets(data)
 
-proc exploreUsers*(req: Request) {.qparams: {s: string}.} =
-  !!respJson toJson db.exploreUser(s)
+proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
+  !!respJson toJson db.exploreUser(name)

@@ -241,3 +241,13 @@ proc apiExploreAssets*(
     .postApi(forceJsObject xqdata)
     .then(wrapResp success cast[seq[AssetItemView]](r.data))
     .catch(fail)
+
+proc apiExploreUsers*(
+    name: string,
+    success: proc(us: seq[User]),
+    fail: proc() = noop
+) =
+    discard get_api_explore_users_url(name)
+    .getApi()
+    .then(wrapResp success cast[seq[User]](r.data))
+    .catch(fail)
