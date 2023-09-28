@@ -269,8 +269,8 @@ proc genAddSearchCriteria(t: Tag): proc() =
 
     selectedCriteriaI = searchCriterias.high
 
-proc genSelectCriteria(i: int): proc() = 
-  proc = 
+proc genSelectCriteria(i: int): proc() =
+  proc =
     selectedCriteriaI = i
 
 proc searchTagManager(): Vnode =
@@ -352,12 +352,34 @@ proc createDom: Vnode =
 
         case selectedClass
         of scUsers:
+          a(class = "btn btn-outline-primary w-100 mt-2", href = get_login_url()):
+            text "login "
+            icon "mx-2 fa-sign-in"
+
           input(`type` = "text", class = "form-control",
             placeholder = "id or name"):
             proc oninput(e: Event, v: Vnode) =
               userSearchStr = $e.target.value
 
-        else:
+        of scBoards:
+          a(class = "btn btn-outline-primary w-100 mt-2", href = get_boards_new_url()):
+            text "new "
+            icon "mx-2 fa-plus"
+
+          searchTagManager()
+
+        of scNotes:
+          a(class = "btn btn-outline-primary w-100 mt-2", href = get_notes_new_url()):
+            text "new "
+            icon "mx-2 fa-plus"
+
+          searchTagManager()
+
+        of scAssets:
+          a(class = "btn btn-outline-primary w-100 mt-2", href = get_assets_url()):
+            text "upload "
+            icon "mx-2 fa-upload"
+
           searchTagManager()
 
         tdiv(class = "my-1"):
@@ -369,13 +391,14 @@ proc createDom: Vnode =
               case selectedClass
               of scNotes: discard fetchNotes()
               of scBoards: discard fetchBoards()
-              of scAssets: 
-                apiExploreAssets getExploreQuery(), proc(ass: seq[AssetItemView]) = 
+              of scAssets:
+                apiExploreAssets getExploreQuery(), proc(ass: seq[
+                    AssetItemView]) =
                   assets = ass
                   redraw()
 
-              of scUsers: 
-                apiExploreUsers userSearchStr, proc(us: seq[User]) = 
+              of scUsers:
+                apiExploreUsers userSearchStr, proc(us: seq[User]) =
                   users = us
                   redraw()
 

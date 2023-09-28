@@ -135,11 +135,11 @@ proc index: VNode =
         text "Apps"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "planet.svg", get_explore_url()
-        blockk "Notes", "pen-writing-on-paper.svg", get_notes_new_url()
+        blockk "Login", "user.svg", get_login_url()
         blockk "Files", "inbox-archive.svg", get_assets_url()
         blockk "Tags", "tag.svg", get_tags_url()
-        blockk "Boards", "share-circle.svg", get_boards_new_url()
-        blockk "Login", "user.svg", get_login_url()
+        blockk "Notes", "pen-writing-on-paper.svg", ""
+        blockk "Boards", "share-circle.svg", ""
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"

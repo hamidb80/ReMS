@@ -649,8 +649,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     add txt
 
     on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
-      if app.state != asNormal or (vn notin app.selectedVisualNodes and
-          kcM notin app.pressedKeys):
+      if app.state != asNormal:
         stopDrag wrapper
       else:
         lastpos = wrapper.position
