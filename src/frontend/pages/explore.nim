@@ -242,7 +242,7 @@ proc assetItemComponent(index: int, a: AssetItemView,
 
 proc assetUploader: VNode =
   buildHTML:
-    tdiv(class = "p-4 m-4"):
+    tdiv(class = ""):
       h6(class = "mb-3"):
         icon("fa-arrow-pointer me-2")
         text "Select / Paste / Drag"
@@ -300,34 +300,6 @@ proc assetUploader: VNode =
             tdiv(class = "d-flex flex-row align-items-center justify-content-between"):
               progressbar u.progress, u.status
               uploadStatusBtn u
-
-      tdiv(class = "form-group"):
-        button(class = "btn btn-primary w-100"):
-          text "refresh"
-          icon("fa-repeat ms-2")
-
-          proc onclick =
-            fetchAssets()
-
-
-      # uploaded files
-      tdiv(class = "list-group my-4"):
-        for i, a in assets:
-          let u = get_asset_short_hand_url a.id
-
-          if i == selectedAssetIndex:
-            assetFocusedComponent a, u
-          else:
-            assetItemComponent i, a, u
-
-      tdiv(class = "form-group"):
-        button(class = "btn btn-warning w-100 mt-3"):
-          text "load more"
-          icon("fa-angles-right ms-2")
-
-
-
-
 
 
 
@@ -684,29 +656,38 @@ proc createDom: Vnode =
                   users = us
                   redraw()
 
-
-        tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
           case selectedClass
           of scUsers:
-            for u in users:
-              text "@"
-              text $u.id
-              text " "
-              text u.nickname
-              text " - "
-              text u.username
+            tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
+              for u in users:
+                text "@"
+                text $u.id
+                text " "
+                text u.nickname
+                text " - "
+                text u.username
 
           of scNotes:
-            for i, n in notes:
-              notePreviewC n, i
+            tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
+              for i, n in notes:
+                notePreviewC n, i
 
           of scBoards:
-            for b in boards:
-              boardItemViewC b
+            tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
+              for b in boards:
+                boardItemViewC b
 
           of scAssets:
-            for a in assets:
-              text a.name
+            tdiv(class = "list-group my-4"):
+              for i, a in assets:
+                let u = get_asset_short_hand_url a.id
+
+                if i == selectedAssetIndex:
+                  assetFocusedComponent a, u
+                else:
+                  assetItemComponent i, a, u
+
+
 
       of asTagManager:
         relTagManager()
