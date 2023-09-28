@@ -1,3 +1,5 @@
+## https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
+
 import std/[times, json, options, strutils, strformat, sequtils, tables]
 
 import ponairi

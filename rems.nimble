@@ -70,6 +70,10 @@ task html, "generate index.html ./dist":
   cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 
+task bot, "bale box":
+  putEnv "BALE_BOT_TOKEN", readfile "bot.token"
+  exec "nim -d:bale_debug -d:ssl r src/backend/bot"
+
 task serv, "run server":
   # sudo apt-get install libssl-dev
   exec fmt"""nim --d:ssl --passL:"-lcrypto"  --mm:arc --threads:on -d:ssl r ./src/backend/server.nim"""

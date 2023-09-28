@@ -1,3 +1,5 @@
+## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
+
 import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1, times]
 
 import mummy, mummy/multipart

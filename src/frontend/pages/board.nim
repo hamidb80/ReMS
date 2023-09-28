@@ -1,3 +1,7 @@
+## [Pinch Zoom](https://gist.github.com/Martin-Pitt/2756cf86dca90e179b4e75003d7a1a2b)
+## [Touch](https://konvajs.org/docs/sandbox/Multi-touch_Scale_Stage.html)
+
+
 import std/[with, math, stats, options, lenientops, strformat, sets, tables, random]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 
@@ -790,7 +794,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             (getMsg mid)
             text "Loading ..."
 
-      if mid in noteRelTags:  
+      if mid in noteRelTags:
         tdiv(class = "m-2"):
           for k, values in noteRelTags[mid]:
             for v in values:

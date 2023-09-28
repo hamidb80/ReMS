@@ -128,21 +128,22 @@ proc index: VNode =
         text " Better With Us"
 
       h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Apps"
+        text "Features"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "planet.svg", get_explore_url()
-        blockk "Login", "user.svg", get_login_url()
         blockk "Files", "inbox-archive.svg", ""
         blockk "Tags", "tag.svg", get_tags_url()
         blockk "Notes", "pen-writing-on-paper.svg", ""
         blockk "Boards", "share-circle.svg", ""
+        blockk "Save your Time", "clock-square.svg", ""
 
       h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Features"
+        text "Coming Soon ..."
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
+        blockk "Login", "user.svg", get_login_url()
         blockk "Built-in Remembering Utils", "repeat.svg", ""
-        blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", ""
+
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
@@ -154,7 +155,7 @@ proc index: VNode =
   card's content."""
 
         tdiv(class = "card-footer text-center"):
-          text "created with passion for everyone"
+          text "created with passion"
 
 
 # -----

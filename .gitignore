@@ -2,6 +2,7 @@
 dist/
 resources/
 
+*.token
 play.*
 *.exe
 *.db

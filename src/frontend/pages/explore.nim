@@ -206,6 +206,17 @@ proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
           span: text "apply"
           icon "fa-check ms-2"
 
+proc userItemC(u: User): VNode = 
+  buildHTML:
+    tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
+      bold(class = "mx-2"):
+        a(target = "_blank"):
+          text "@"
+          text u.username
+
+      span(class = "text-muted fst-italic"):
+        text u.nickname
+
 proc assetItemComponent(index: int, a: AssetItemView,
     previewLink: string): Vnode =
   buildHtml:
@@ -658,14 +669,9 @@ proc createDom: Vnode =
 
           case selectedClass
           of scUsers:
-            tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
+            tdiv(class = "list-group my-4"):
               for u in users:
-                text "@"
-                text $u.id
-                text " "
-                text u.nickname
-                text " - "
-                text u.username
+                userItemC u
 
           of scNotes:
             tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
