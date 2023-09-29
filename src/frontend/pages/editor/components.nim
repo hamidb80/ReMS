@@ -133,8 +133,6 @@ template genRender(body): untyped {.dirty.} =
 # ----- Definition -----------
 
 proc initRoot: Hooks =
-  let (markedTil, setMarkedTil) = genState 0
-
   defHooks:
     dom = errProc(Element, "this hooks should be set by app manually")
     hover = noop
@@ -142,22 +140,6 @@ proc initRoot: Hooks =
     focus = noop
     blur = noop
     acceptsAsChild = genAllowedTags @[c"block", c"config"]
-
-    capture = () => <*{"mark_until_index": markedTil()}
-    restore = proc(input: JsObject) =
-      if input != nil:
-        setMarkedTil input["mark_until_index"].to int
-
-    mark = proc(i: Index) =
-      setMarkedTil i
-
-    role = proc(i: Index): string =
-      let
-        s = hooks.self()
-        c = s.children[i]
-      if i == 0 and c.data.component.name == "config": "global config"
-      elif i <= markedTil(): "Preview"
-      else: ""
 
 proc initRawText: Hooks =
   let
@@ -240,17 +222,19 @@ proc initParagraph: Hooks =
     capture = () => tojs dir()
     restore = (j: JsObject) => setDir j.to cstring
     render = genRender:
+      console.log "Hey", dir()
       case $dir()
       of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
       of "rtl": el.setAttr "dir", "rtl"
       else: discard
+      console.log "Bye", dir()
 
     mounted = genMounted:
       # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["raw-text"], hooks,
-            hooks.componentsTable()
+        let ct = hooks.componentsTable()
+        attachInstance ct["raw-text"], hooks, ct
 
     settings = () => @[
       SettingsPart(
@@ -573,6 +557,7 @@ proc initMd: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
+# TODO declarative schema check & assignment in restore hook
 
 proc initGithubCode: Hooks =
   let
@@ -664,19 +649,24 @@ proc initIncluder: Hooks =
 proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let
-    mainEl = createElement("div", {"class": "tw-link-preview card bg-light"})
-    titleEl = createElement("div", {"class": "tw-link-preview-title card-header"})
-    titleTextEl = createElement("a", {
-        "class": "tw-link-preview-title-text",
-        "target": "_blank"})
+    mainEl = createElement("div", {"class": "tw-link-preview card my-3 bg-light border-primary"})
 
+    titleEl = createElement("div", {"class": "tw-link-preview-title card-header",
+        "dir": "auto"})
+    titleTextEl = createElement("a", {
+        "class": "tw-link-preview-title-text card-link",
+        "target": "_blank"})
     detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
-    descEl = createElement("div", {"class": "tw-link-preview-desc card-text"})
-    photoEl = createElement("img", {"class": "tw-link-preview-img"})
+    descEl = createElement("div", {"class": "tw-link-preview-desc card-text text-muted",
+        "dir": "auto"})
+    photoWrapperEl = createElement("div", {"class": "tw-link-preview-img-wrapper mt-4 text-center"})
+    photoEl = createElement("img", {"class": "tw-link-preview-img rounded"})
+    
     (url, uset) = genstate c""
 
   titleEl.append titleTextEl
-  detailsEl.append descEl, photoEl
+  photoWrapperEl.append photoEl
+  detailsEl.append descEl, photoWrapperEl
   mainEl.append titleEl, detailsEl
 
   defHooks:
@@ -689,21 +679,17 @@ proc initLinkPreivew: Hooks =
     render = genRender:
       if lastUrl != url():
         some newPromise proc(resolve, fail: proc()) =
-          apiGetLinkPreviewData $url(), proc(data: LinkPreviewData) =
+          apiGetLinkPreviewData $url(), proc(resp: LinkPreviewData) =
+            destroyChildren hooks.self()
 
-            # let ct = hooks.componentsTable()
-            # attachInstance ct["raw-text"], hooks, ct
-
-            ## FIXME USE paragraph component for text so their direction is alright
-
-            titleTextEl.innerText = data.title
-            descEl.innerText = data.desc
+            titleTextEl.innerText = resp.title
+            descEl.innerText = resp.desc
             titleTextEl.setAttr "href", url()
-            photoEl.setAttr "src", data.image
+            photoEl.setAttr "src", resp.image
 
             lastUrl = url()
             resolve()
-      else: 
+      else:
         result
 
     settings = () => @[

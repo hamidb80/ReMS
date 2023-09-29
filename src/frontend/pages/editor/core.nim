@@ -13,6 +13,7 @@ type
 
   TwNodeData* = object
     visibleChildren*: bool ## to show in tree view
+    isTemp*: bool          ## should ignore when serializing? i.e. is it temporary node?
     component*: Component  ## the component that is instanciated from
     hooks*: Hooks          ## all the life cycle hooks and data retrival implemented lazy
 
@@ -116,10 +117,14 @@ proc firstChild*(t: TwNode, cname: string): TwNode =
   nil
 
 proc serialize*(t: TwNode): TreeNodeRaw[JsObject] =
-  TreeNodeRaw[JsObject](
+  result = TreeNodeRaw[JsObject](
     name: t.data.component.name.cstring,
     data: t.capture,
-    children: t.children.map(serialize))
+    children: @[])
+
+  for n in t.children:
+    if not n.data.isTemp:
+      result.children.add serialize n
 
 proc instantiate*(c: Component, ct: ComponentsTable): TwNode =
   let node = TwNode(data: TwNodeData(
@@ -134,6 +139,13 @@ proc instantiate*(c: Component, ct: ComponentsTable): TwNode =
 proc attach*(father, child: TwNode, at: int) =
   child.father = father
   father.attachNode child, at
+
+proc destroyChildren*(father: TwNode) =
+  for ch in mitems father.children:
+    ch.father = nil
+  
+  reset father.children
+  
 
 # ---------------------
 
@@ -208,7 +220,7 @@ proc deserizalizeImpl(
   result.restore j.data
   result.mounted mbDeserializer, tmInteractive
 
-  if fut =? result.render:
+  if fut =? result.render():
     add futures, fut
 
 proc deserizalize*(

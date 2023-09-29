@@ -285,8 +285,10 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "a":
       ## show actions of focused element
     
+    of "k":
+      downloadFile "data.json", "application/json", stringify forceJsObject serialize app
+    
     of "s":
-      # downloadFile "data.json", "application/json", stringify s
       let id = parseInt getWindowQueryParam("id")
       apiUpdateNoteContent id, serialize app, proc = 
         notify "note updated!"
@@ -295,6 +297,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       proc afterLoad(t: TwNode) = 
         downloadFile "data.html", "text/html", t.dom.innerHTML
 
+      # take a copy
       deserizalize(app.components, serialize app)
       .dthen(afterLoad)
 
