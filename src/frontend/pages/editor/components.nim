@@ -659,9 +659,10 @@ proc initLinkPreivew: Hooks =
     detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
     descEl = createElement("div", {"class": "tw-link-preview-desc card-text text-muted",
         "dir": "auto"})
-    photoWrapperEl = createElement("div", {"class": "tw-link-preview-img-wrapper mt-4 text-center"})
+    photoWrapperEl = createElement("div", {
+        "class": "tw-link-preview-img-wrapper mt-4 text-center"})
     photoEl = createElement("img", {"class": "tw-link-preview-img rounded"})
-    
+
     (url, uset) = genstate c""
 
   titleEl.append titleTextEl
@@ -714,8 +715,46 @@ proc initLinkPreivew: Hooks =
           input: toJs url(),
           updateCallback: mutState(uset, cstring)))]
 
+proc initMoreCollapse: Hooks =
+  let
+    wrapperEl = createElement("details", {"class": "tw-more"})
+    summaryEl = createElement("summary", {"class": "tw-more-summary"})
+    mainEl = createElement("main", {"class": "tw-more-body"})
+
+  # TODO add option to center the summary element
+  wrapperEl.append summaryEl, mainEl
+
+  defHooks:
+    dom = () => wrapperEl
+
+    role = proc(i: Index): string =
+      case i
+      of 0: "summary"
+      of 1: "body"
+      else: ""
+
+    acceptsAsChild = proc(): seq[cstring] =
+      if hooks.self().children.len < 2: @[c"global"]
+      else: @[]
+
+    attachNode = proc(child: TwNode, at: Index) =
+      case at
+      of 0:
+        attachNodeDefault hooks.self(), child, summaryEl, child.dom, at
+      of 1:
+        attachNodeDefault hooks.self(), child, mainEl, child.dom, at
+      else: discard
+
+    detachNode = proc(at: Index) =
+      # FIXME i probably need to set the father of children to null
+      case at
+      of 0, 1: 
+        purge [summaryEl, mainEl][at]
+        dettachNodeDefault hooks.self(), at, false
+      else: 
+        discard
+
 # TODO
-# ----- [more] component :: a drop down with html elements
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]
 # ----- Table Of Contents
 
@@ -906,6 +945,12 @@ defComponent linkPreviewComponent,
   @["global", "block"],
   initLinkPreivew
 
+defComponent moreCollapseComponent,
+  "more",
+  "bi bi-three-dots",
+  @["global", "block"],
+  initMoreCollapse
+
 
 proc defaultComponents*: ComponentsTable =
   new result
@@ -935,4 +980,5 @@ proc defaultComponents*: ComponentsTable =
     githubCodeComponent,
     includeCodeComponent,
     linkPreviewComponent,
+    moreCollapseComponent,
     customHtmlComponent]

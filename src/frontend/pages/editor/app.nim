@@ -21,9 +21,7 @@ app.register "option-selector", selectEditor
 app.components = defaultComponents()
 app.regiterComponents
 
-# TODO add custom labels to any component
-# TODO auto suggest labels
-# TODO labels can have custom styles thanks to the config component
+# TODO add side bar on the left for more options like save, load from disk, ...
 
 # ----- UI ------------------------------
 

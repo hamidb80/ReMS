@@ -125,6 +125,8 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
+# TODO multiselect for edges
 # TODO shadow node when creating node, make it opaque after placing it
 # TODO area selection
 # TODO select custom color palletes
