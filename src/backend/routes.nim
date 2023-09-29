@@ -64,9 +64,9 @@ dispatch router, ../views:
   get "/api/explore/users/"?(name: string), exploreUsers {.json.}
 
 
-  get "/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
-  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
-  get "/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.} ## to aviod CORS
+  get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
+  get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
+  get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.} ## to aviod CORS
 
 
 func get_asset_short_hand_url*(asset_id: Id): string =

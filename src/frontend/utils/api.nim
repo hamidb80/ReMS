@@ -44,16 +44,6 @@ proc meApi*(
     .catch(fail)
 
 
-proc apiGetPallete*(
-    name: string,
-    success: proc(cts: seq[ColorTheme]),
-    fail: proc() = noop
-) =
-    discard getApi(get_palette_url name)
-    .then(wrapResp success cast[seq[ColorTheme]](r.data))
-    .catch(fail)
-
-
 proc apiGetBoard*(
     id: Id,
     success: proc(b: Board),
@@ -251,3 +241,36 @@ proc apiExploreUsers*(
     .getApi()
     .then(wrapResp success cast[seq[User]](r.data))
     .catch(fail)
+
+
+proc apiGetPalette*(
+    name: string,
+    success: proc(cts: seq[ColorTheme]),
+    fail: proc() = noop
+) =
+    discard get_api_palette_url(name)
+    .getApi
+    .then(wrapResp success cast[seq[ColorTheme]](r.data))
+    .catch(fail)
+
+proc apiGetGithubCode*(
+    url: string,
+    success: proc(cts: GithubCodeEmbed),
+    fail: proc() = noop
+) =
+    discard get_api_utils_github_code_url(url)
+    .getApi
+    .then(wrapResp success cast[GithubCodeEmbed](r.data))
+    .catch(fail)
+
+
+proc apiGetLinkPreviewData*(
+    url: string,
+    success: proc(cts: LinkPreviewData),
+    fail: proc() = noop
+) =
+    discard get_api_utils_link_preview_url(url)
+    .getApi
+    .then(wrapResp success cast[LinkPreviewData](r.data))
+    .catch(fail)
+

@@ -1,11 +1,11 @@
 /* global */
 
 body {
-  --bs-body-font-family: "mooli";
+  --bs-body-font-family: "mooli", "Vazirmatn";
 }
 
 .btn {
-  --bs-btn-font-family: "mooli";
+  --bs-btn-font-family: "mooli", "Vazirmatn";
 }
 
 .btn {

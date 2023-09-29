@@ -213,7 +213,8 @@ proc wrapperTextElement(tag: string): () -> Hooks =
       acceptsAsChild = onlyInlines
       mounted = genMounted:
         if mode == tmInteractive and by == mbUser:
-          attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
+          let ct = hooks.componentsTable()
+          attachInstance ct["raw-text"], hooks, ct
 
 let
   initBold = wrapperTextElement "b"
@@ -230,7 +231,7 @@ let
 
 proc initParagraph: Hooks =
   let
-    el = createElement( "span", {"class": "tw-paragraph"})
+    el = createElement("span", {"class": "tw-paragraph"})
     (dir, setDir) = genState c"auto"
 
   defHooks:
@@ -248,7 +249,8 @@ proc initParagraph: Hooks =
     mounted = genMounted:
       # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
+        attachInstance hooks.componentsTable()["raw-text"], hooks,
+            hooks.componentsTable()
 
     settings = () => @[
       SettingsPart(
@@ -288,7 +290,8 @@ proc initLink: Hooks =
       el.setAttr "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["raw-text"], hooks, hooks.componentsTable()
+        attachInstance hooks.componentsTable()["raw-text"], hooks,
+            hooks.componentsTable()
 
     settings = () => @[
       SettingsPart(
@@ -381,9 +384,10 @@ proc initImage: Hooks =
           "max-height": height()}
 
     mounted = genMounted:
-      wrapper.appendChildren img, caption
+      wrapper.append img, caption
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["paragraph"], hooks, hooks.componentsTable()
+        attachInstance hooks.componentsTable()["paragraph"], hooks,
+            hooks.componentsTable()
 
     attachNode = proc(child: TwNode, at: Index) =
       attachNodeDefault hooks.self(), child, caption, child.dom, at
@@ -425,7 +429,7 @@ proc initVideo: Hooks =
     restore = (j: JsObject) => setUrl j.to cstring
     render = genRender:
       el.setAttr("src", url())
-    
+
     mounted = genMounted:
       el.setAttr "controls", ""
 
@@ -509,7 +513,7 @@ proc initTableRow: Hooks =
     detachNode = proc(at: Index) =
       dettachNodeDefault hooks.self(), at, true
 
-# TODO add border config 
+# TODO add border config
 proc initTable: Hooks =
   let el = createElement "table"
 
@@ -577,7 +581,7 @@ proc initGithubCode: Hooks =
     codeEl = createElement("div", {"class": "tw-gh-code-content"})
     (url, uset) = genState c""
 
-  wrapperEl.appendChildren cssLinkEl, codeEl
+  wrapperEl.append cssLinkEl, codeEl
 
   defHooks:
     dom = () => wrapperEl
@@ -587,10 +591,11 @@ proc initGithubCode: Hooks =
       uset input["url"].to cstring
 
     render = genRender:
-      some get_utils_github_code_url($url()).getApi.then proc(
-          a: AxiosResponse) =
-        cssLinkEl.setAttr "href", a.data["styleLink"].to cstring
-        codeEl.innerHTML = a.data["htmlCode"].to cstring
+      some newPromise proc(resolve, fail: proc()) =
+        apiGetGithubCode $url(), proc(a: GithubCodeEmbed) =
+          cssLinkEl.setAttr "href", a.styleLink
+          codeEl.innerHTML = a.htmlCode
+          resolve()
 
     settings = () => @[
       SettingsPart(
@@ -601,10 +606,10 @@ proc initGithubCode: Hooks =
           input: toJs url(),
           updateCallback: mutState(uset, cstring)))]
 
-proc initIncluder: Hooks = 
+proc initIncluder: Hooks =
   var lastnoteQuery = c""
   let
-    el = createElement( "div", {"class": "tw-include-external"})
+    el = createElement("div", {"class": "tw-include-external"})
     (noteQuery, setNoteQuery) = genstate c""
     (inline, inlineSet) = genstate false
 
@@ -615,7 +620,7 @@ proc initIncluder: Hooks =
       "query": noteQuery(),
       "inline": inline()}
 
-    restore = proc(j: JsObject) = 
+    restore = proc(j: JsObject) =
       setNoteQuery j["query"].to(cstring)
       inlineSet j["inline"].to(bool)
 
@@ -624,11 +629,11 @@ proc initIncluder: Hooks =
         el.classList.add displayInlineClass
       else:
         el.classList.remove displayInlineClass
-      
+
       if lastnoteQuery != noteQuery():
         purge el
-        some newPromise proc(resolve, fail: proc()) = 
-          apiGetNoteContentQuery $noteQuery(), proc(data: TreeNodeRaw[JsObject]) = 
+        some newPromise proc(resolve, fail: proc()) =
+          apiGetNoteContentQuery $noteQuery(), proc(data: TreeNodeRaw[JsObject]) =
             let fut = deserizalize(
               hooks.componentsTable(),
               data,
@@ -656,8 +661,74 @@ proc initIncluder: Hooks =
           input: toJs inline(),
           updateCallback: mutState(inlineSet, bool)))]
 
+proc initLinkPreivew: Hooks =
+  var lastUrl = c""
+  let
+    mainEl = createElement("div", {"class": "tw-link-preview card bg-light"})
+    titleEl = createElement("div", {"class": "tw-link-preview-title card-header"})
+    titleTextEl = createElement("a", {
+        "class": "tw-link-preview-title-text",
+        "target": "_blank"})
+
+    detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
+    descEl = createElement("div", {"class": "tw-link-preview-desc card-text"})
+    photoEl = createElement("img", {"class": "tw-link-preview-img"})
+    (url, uset) = genstate c""
+
+  titleEl.append titleTextEl
+  detailsEl.append descEl, photoEl
+  mainEl.append titleEl, detailsEl
+
+  defHooks:
+    dom = () => mainEl
+    acceptsAsChild = noTags
+    capture = () => <*{"url": url()}
+    restore = proc(j: JsObject) =
+      uset j["url"].to cstring
+
+    render = genRender:
+      if lastUrl != url():
+        some newPromise proc(resolve, fail: proc()) =
+          apiGetLinkPreviewData $url(), proc(data: LinkPreviewData) =
+
+            # let ct = hooks.componentsTable()
+            # attachInstance ct["raw-text"], hooks, ct
+
+            ## FIXME USE paragraph component for text so their direction is alright
+
+            titleTextEl.innerText = data.title
+            descEl.innerText = data.desc
+            titleTextEl.setAttr "href", url()
+            photoEl.setAttr "src", data.image
+
+            lastUrl = url()
+            resolve()
+      else: 
+        result
+
+    settings = () => @[
+      # SettingsPart(
+        #   field: "",
+        #   icon: "bi bi-signpost-fill",
+        #   editorData: () => EditorInitData(
+        #     name: "option-selector",
+        #     input: <* {
+        #       "default": dir(),
+        #       "data": [
+        #         ["auto", "auto"],
+        #         ["ltr", "ltr"],
+        #         ["rtl", "rtl"]]},
+        #     updateCallback: mutState(setDir, cstring))),
+
+      SettingsPart(
+        field: "link",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs url(),
+          updateCallback: mutState(uset, cstring)))]
+
 # TODO
-# ----- link preview + poster image
 # ----- [more] component :: a drop down with html elements
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]
 # ----- Table Of Contents
@@ -843,6 +914,12 @@ defComponent includeCodeComponent,
   @["global", "block", "inline"],
   initIncluder
 
+defComponent linkPreviewComponent,
+  "link preview",
+  "bi bi-terminal",
+  @["global", "block"],
+  initLinkPreivew
+
 
 proc defaultComponents*: ComponentsTable =
   new result
@@ -871,4 +948,5 @@ proc defaultComponents*: ComponentsTable =
     tableRowComponent,
     githubCodeComponent,
     includeCodeComponent,
+    linkPreviewComponent,
     customHtmlComponent]

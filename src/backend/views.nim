@@ -76,6 +76,10 @@ proc loadDist*(path: string): RequestHandler =
 
 # ------- Dynamic ones
 
+proc download*(url: string): string =
+    var client = newHttpClient()
+    client.get(url).body
+
 const jwtKey = "auth"
 let jwtSecret = "TODO" # getEnv "JWT_KEY"
 

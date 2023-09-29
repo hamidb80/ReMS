@@ -910,7 +910,7 @@ proc loadFonts(fontsFamilies: seq[string]): Future[void] =
 
 proc loadPalette(palette: string): Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiGetPallete palette, proc(ct: seq[ColorTheme]) =
+     apiGetPalette palette, proc(ct: seq[ColorTheme]) =
       colorThemes = ct
       resolve()
 

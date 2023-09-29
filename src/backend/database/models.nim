@@ -217,7 +217,15 @@ type # view models
   LoginForm* = object
     pass*: Str
 
-func isAdmin*(u: User): bool = 
+  LinkPreviewData* = object
+    title*: Str
+    desc*: Str
+    image*: Str
+    # timestamp*: string # TODO
+                       # cardType twitter:card
+
+
+func isAdmin*(u: User): bool =
   u.role == urAdmin
 
 func columnName*(vt: TagValueType): string =

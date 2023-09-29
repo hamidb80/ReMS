@@ -198,7 +198,7 @@ proc createElement*[A, B: SomeString](
   for (k, v) in attrs:
     result.setAttr k, v
 
-proc appendChildren*(el: Element; children: varargs[Element]) =
+proc append*(el: Element; children: varargs[Element]) =
   for ch in children:
     el.appendChild ch
 

@@ -1,11 +1,6 @@
-import std/[macros, uri, strutils, sequtils, tables, httpclient]
+import std/[macros, uri, strutils, sequtils, tables]
 
 import macroplus
-
-
-proc download*(url: string): string =
-  var client = newHttpClient()
-  client.get(url).body
 
 
 func safeUrl*(i: SomeNumber or bool): string {.inline.} =
@@ -188,6 +183,8 @@ macro adminOnly*(procdef): untyped =
           s = tk.claim["user"]
           `user` {.used.} = fromJson($s, User)
         `body`
+      else:
+        raise newException(ValueError, "Permission Denied")  
     else:
       raise newException(ValueError, "Permission Denied")
 

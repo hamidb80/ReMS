@@ -41,7 +41,6 @@ task prepare, "creates the directory ./dist used for final output":
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
-  exec "nimble genas"
   exec "nimble gened"
   exec "nimble gentg"
   exec "nimble genex"
@@ -55,9 +54,6 @@ task genex, "":
 
 task genb, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board.js src/frontend/pages/board"
-
-task genas, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-assets.js src/frontend/pages/assets"
 
 task gentg, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"

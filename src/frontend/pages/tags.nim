@@ -216,7 +216,7 @@ proc createDom: Vnode =
 proc init* =
   setRenderer createDom
 
-  apiGetPallete "default", proc(cs: seq[ColorTheme]) =
+  apiGetPalette "default", proc(cs: seq[ColorTheme]) =
     colors = cs
     currentTag.theme = cs[0]
     currentTag = dummyTag()
