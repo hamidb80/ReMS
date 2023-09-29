@@ -57,15 +57,16 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
-  get "/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
-  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
-
   get "/explore/", loadDist"explore.html" {.html.}
   post "/api/explore/notes/", exploreNotes {.json.}
   post "/api/explore/boards/", exploreBoards {.json.}
   post "/api/explore/assets/", exploreAssets {.json.}
   get "/api/explore/users/"?(name: string), exploreUsers {.json.}
 
+
+  get "/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
+  get "/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
+  get "/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.} ## to aviod CORS
 
 
 func get_asset_short_hand_url*(asset_id: Id): string =

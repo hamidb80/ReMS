@@ -1,4 +1,11 @@
+import std/strutils
+
+
 const noIndex* = -1
+
+template `or`*(a, b: string): untyped =
+  if a == "": b
+  else: a
 
 template iff*(cond, val): untyped =
   if cond: val
@@ -20,3 +27,10 @@ template str*(smth): untyped =
 
 proc noop* =
   discard
+
+
+func findlen*(a, b: string): int =
+  let i = a.find b
+  if i == -1: -1
+  else: i + b.len
+

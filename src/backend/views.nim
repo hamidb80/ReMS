@@ -1,6 +1,6 @@
 ## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 
-import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1, times]
+import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1, times, htmlparser]
 
 import mummy, mummy/multipart
 import webby
@@ -11,7 +11,8 @@ import waterpark/sqlite
 import questionable
 
 import ../common/[types, path, datastructures, conventions]
-import ./utils/web, ./routes
+import ./utils/[web, github, link_preview]
+import ./routes
 import ./database/[models, queries]
 
 include ./database/jsony_fix
@@ -227,41 +228,6 @@ proc listTags*(req: Request) =
   !!respJson toJson db.listTags
 
 
-proc download(url: string): string =
-  var client = newHttpClient()
-  client.get(url).body
-
-func htmlUnescape(str: string): string =
-  str.multiReplace ("\\\"", "\""), ("\\n", "\n"), ("\\/", "/")
-
-func parseGhFile(content: string): GithubCodeEmbed =
-  ## as of 2023/10/22 the Github embed `script.js` is in pattern of:
-  ##
-  ## LINE_NUMBER| TEXT
-  ## 1| document.write('<link rel="stylesheet" href="<CSS_FILE_URL">')
-  ## 2| document.write('escaped string of HTML content')
-  ## 3|
-
-  const
-    linkStamps = "href=\"" .. "\">')"
-    codeStamps = "document.write('" .. "')"
-
-  let
-    parts = splitlines content
-    cssLinkStart = parts[0].find linkStamps.a
-    cssLinkEnd = parts[0].rfind linkStamps.b
-    htmlCodeEnd = parts[1].rfind codeStamps.b
-
-  result.styleLink = parts[0][(cssLinkStart + linkStamps.a.len) ..< cssLinkEnd]
-  result.htmlCode = htmlUnescape parts[1][codeStamps.a.len ..< htmlCodeEnd]
-
-proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
-  respJson toJson parseGhFile download url
-
-proc getPalette*(req: Request) {.qparams: {name: string}.} =
-  !!respJson toJson db.getPalette(name).colorThemes
-
-
 proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreNotes(data)
 
@@ -273,3 +239,15 @@ proc exploreAssets*(req: Request) {.jbody: ExploreQuery.} =
 
 proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.exploreUser(name)
+
+
+proc getPalette*(req: Request) {.qparams: {name: string}.} =
+  !!respJson toJson db.getPalette(name).colorThemes
+
+
+proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
+  respJson toJson parseGithubJsFile download url
+
+proc fetchLinkPreivewData*(req: Request) {.qparams: {url: string}.} =
+  respJson toJson linkPreviewData parseHtml cropHead download url
+

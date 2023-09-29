@@ -1,6 +1,11 @@
-import std/[macros, uri, strutils, sequtils, tables]
+import std/[macros, uri, strutils, sequtils, tables, httpclient]
 
 import macroplus
+
+
+proc download*(url: string): string =
+  var client = newHttpClient()
+  client.get(url).body
 
 
 func safeUrl*(i: SomeNumber or bool): string {.inline.} =
