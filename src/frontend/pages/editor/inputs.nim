@@ -4,6 +4,7 @@ import core
 
 proc textInput*(input: JsObject, cb: CallBack): VNode =
   buildHtml input(
+    class = "form-control",
     value = (input.to cstring),
     dir = "auto"):
     proc oninput(e: Event, n: VNode) =
@@ -11,6 +12,7 @@ proc textInput*(input: JsObject, cb: CallBack): VNode =
 
 proc rawTextEditor*(input: JsObject, cb: CallBack): VNode =
   buildHtml textarea(
+    class = "form-control h40v",
     value = (input.to cstring),
     dir = "auto"):
     proc oninput(e: Event, n: VNode) =
@@ -18,7 +20,7 @@ proc rawTextEditor*(input: JsObject, cb: CallBack): VNode =
 
 proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml input(
-    class = "form-check-input bw-checkbox",
+    class = "form-check-input bw-checkbox form-control",
     `type` = "checkbox",
     checked = input.to bool):
     proc onchange(e: Event, n: VNode) =
@@ -30,7 +32,7 @@ proc optionItem(val, txt: cstring, selected: bool): VNode =
       text txt
 
 proc selectEditor*(input: JsObject, cb: CallBack): VNode =
-  result = buildHtml select(class = "form-select"):
+  result = buildHtml select(class = "form-select form-control"):
     for item in input["data"]:
       optionItem(
         item[0].to cstring,

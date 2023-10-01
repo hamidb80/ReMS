@@ -222,7 +222,7 @@ type # view models
     desc*: Str
     image*: Str
     # timestamp*: string # TODO
-                       # cardType twitter:card
+      # cardType twitter:card
 
 
 func isAdmin*(u: User): bool =
@@ -298,7 +298,7 @@ when not defined js:
 
   # ----- basic operations
 
-  proc defaultPalette(db: DbConn) =
+  proc defaultPalette*(db: DbConn) =
     db.insert Palette(
       name: "default",
       colorThemes: @[
@@ -329,11 +329,6 @@ when not defined js:
 
   proc createTables*(db: DbConn) =
     db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
-    try:
-      db.addAdminUser()
-      db.defaultPalette()
-    except:
-      discard
 
 # ----- ...
 

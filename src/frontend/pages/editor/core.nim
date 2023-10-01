@@ -45,7 +45,6 @@ type
     self*: proc(): TwNode                ## the node cotaining this
 
     role*: proc(child: Index): string    ## name of the node made by himself
-    mark*: proc(child: Index)
 
     status*: proc(): TwNodeStatus        ## internal status of the node e.g. error
 
@@ -96,7 +95,6 @@ proc mounted*(t: TwNode, by: MountedBy,
 proc die*(t: TwNode) = t.data.hooks.die()
 proc status*(t: TwNode): auto = t.data.hooks.status()
 proc role*(t: TwNode, child: Index): auto = t.data.hooks.role(child)
-proc mark*(t: TwNode, child: Index): auto = t.data.hooks.mark(child)
 proc focus*(t: TwNode) = t.data.hooks.focus()
 proc blur*(t: TwNode) = t.data.hooks.blur()
 proc hover*(t: TwNode) = t.data.hooks.hover()

@@ -38,6 +38,9 @@ task prepare, "creates the directory ./dist used for final output":
   mkdir "./resources"
   mkdir "./dist"
 
+task db, "init db":
+  exec "nim r src/backend/utils/db_init.nim"
+
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"

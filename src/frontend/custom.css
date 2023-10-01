@@ -29,6 +29,14 @@ body {
 
 /* specific */
 
+.h40v {
+  height: 40vh;
+}
+
+.tw-more-summary .tw-paragraph {
+  display: inline-block;
+}
+
 .side-bar {
   right: 0;
   top: 0;
@@ -185,7 +193,7 @@ body {
   border-width: 1px;
 }
 
-.app-footer .card-footer{
+.app-footer .card-footer {
   box-shadow: inset 0 0 0 20px #00000045;
 }
 

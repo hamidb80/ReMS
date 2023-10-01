@@ -29,7 +29,6 @@ template defHooks(body): untyped {.dirty.} =
     dom = errProc(Element, "hooks.dom() is not set yet")
     status = () => (tsNothing, "")
     role = (i: Index) => ""
-    mark = proc(i: Index) = discard
     die = noop
     focus = addFocusClass hooks
     blur = removeFocusClass hooks
@@ -213,7 +212,7 @@ let
 
 proc initParagraph: Hooks =
   let
-    el = createElement("span", {"class": "tw-paragraph"})
+    el = createElement("div", {"class": "tw-paragraph"})
     (dir, setDir) = genState c"auto"
 
   defHooks:
@@ -222,16 +221,13 @@ proc initParagraph: Hooks =
     capture = () => tojs dir()
     restore = (j: JsObject) => setDir j.to cstring
     render = genRender:
-      console.log "Hey", dir()
       case $dir()
       of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
       of "rtl": el.setAttr "dir", "rtl"
       else: discard
-      console.log "Bye", dir()
 
     mounted = genMounted:
-      # XXX hooks.render()
       if mode == tmInteractive and by == mbUser:
         let ct = hooks.componentsTable()
         attachInstance ct["raw-text"], hooks, ct
@@ -330,7 +326,7 @@ proc initImage: Hooks =
   let
     hooks = Hooks()
     wrapper = createElement("figure", {"class": "tw-image-wrapper"})
-    img = createElement "img"
+    img = createElement("img") # TODO add optional "rounded" class
     caption = createElement "figcaption"
     (url, setUrl) = genState c""
     (width, setWidth) = genState c""
@@ -531,6 +527,10 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
+# TODO remove markdown compoenent and replace it with a action
+# (convert md to tw-nodes) and a reverse one (convert paragraph to md)
+# I think that would be a lot better
+
 # TODO replace raw-text with custom MarkDown
 proc initMd: Hooks =
   let
@@ -715,10 +715,12 @@ proc initLinkPreivew: Hooks =
           input: toJs url(),
           updateCallback: mutState(uset, cstring)))]
 
+# TODO show something when loading or failing or empty fields from server
+# TODO only the details is editable ??
 proc initMoreCollapse: Hooks =
   let
     wrapperEl = createElement("details", {"class": "tw-more"})
-    summaryEl = createElement("summary", {"class": "tw-more-summary"})
+    summaryEl = createElement("summary", {"class": "tw-more-summary text-center"})
     mainEl = createElement("main", {"class": "tw-more-body"})
 
   # TODO add option to center the summary element

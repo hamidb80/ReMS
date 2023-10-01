@@ -133,9 +133,9 @@ proc createDom: VNode =
           recursiveList app.tree
 
       elif app.state == asSetting:
-        tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center"):
+        tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
           for s in app.focusedNode.settings():
-            tdiv:
+            tdiv(class="w-100"):
               tdiv(class="d-flex mx-2"):
                 italic(class= s.icon)
                 span(class="mx-2"): text s.field
@@ -275,10 +275,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## go to the last pathTree state
     
     of "m": # mark
-      if (n =? app.focusedNode):
-        if not isRoot n:
-          let i = n.father.children.find(n)
-          n.father.mark i
+      discard
 
     of "a":
       ## show actions of focused element
@@ -338,8 +335,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         if document.activeElement == document.body:
             app.state = asTreeView
         else:
-          document.activeElement.blur()
-    
+          blur document.activeElement
+
     else: discard
 
   of asSelectComponent:
@@ -384,8 +381,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   redraw()
 
   if lastFocus != app.focusedNode:
-    lastFocus.blur
-    app.focusedNode.focus
+    blur lastFocus
+    focus app.focusedNode
 
     let
       t = el pathId app.focusedPath

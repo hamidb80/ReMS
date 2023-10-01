@@ -7,41 +7,15 @@ import webby
 import quickjwt
 import cookiejar
 import jsony
-import waterpark/sqlite
 import questionable
 
 import ../common/[types, path, datastructures, conventions]
 import ./utils/[web, github, link_preview]
 import ./routes
-import ./database/[models, queries]
+import ./database/[models, queries, dbconn]
 
 include ./database/jsony_fix
 
-
-# ------- Database stuff
-
-let pool = newSqlitePool(10, "./play.db")
-
-template withConn(db, body): untyped =
-  pool.withConnnection db:
-    body
-
-template `!!`*(dbworks): untyped {.dirty.} =
-  withConn db:
-    dbworks
-
-template `!!<`*(dbworks): untyped {.dirty.} =
-  block:
-    proc test(db: DbConn): auto =
-      dbworks
-
-    var t: typeof test(default DbConn)
-    withConn db:
-      t = dbworks
-    t
-
-block db_init:
-  !!createTables db
 
 # ------- Static pages
 
@@ -144,7 +118,7 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
         storePath = fmt"./resources/{oid}{ext}"
 
       writeFile storePath, content
-      return !!<db.addAsset(name, mime, storePath.Path, Bytes len start..last)
+      return !!<db.addAsset(name, mime, Path storePath, Bytes len start..last)
 
   raise newException(ValueError, "no files found")
 
