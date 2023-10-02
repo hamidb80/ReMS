@@ -1,4 +1,4 @@
-import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables]
+import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables, math]
 import std/[dom, jsconsole, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -180,7 +180,7 @@ proc createDom: VNode =
             # setCursor ccresizex
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              sidebarWidth = max(0, e.x - el(settingsAreaId).offsetLeft)
+              sidebarWidth = clamp(e.x - el(settingsAreaId).offsetLeft, 10 .. window.innerWidth - 300)
               redraw()
 
             winel.onmouseup = proc(e: Event) =

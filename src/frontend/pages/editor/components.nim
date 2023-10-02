@@ -186,30 +186,31 @@ proc attachInstance(comp: Component, hooks: Hooks, ct: ComponentsTable) =
   n.mounted mbUser, tmInteractive
 
 
-proc wrapperTextElement(tag: string): () -> Hooks =
+proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
   proc: Hooks =
     let el = createElement tag
     defHooks:
       dom = () => el
-      acceptsAsChild = onlyInlines
+      acceptsAsChild = aac
       mounted = genMounted:
         if mode == tmInteractive and by == mbUser:
           let ct = hooks.componentsTable()
           attachInstance ct["raw-text"], hooks, ct
 
 let
-  initBold = wrapperTextElement "b"
-  initItalic = wrapperTextElement "i"
-  initUnderline = wrapperTextElement "u"
-  initStrikethrough = wrapperTextElement "s"
-  initTitleH1 = wrapperTextElement "h1"
-  initTitleH2 = wrapperTextElement "h2"
-  initTitleH3 = wrapperTextElement "h3"
-  initTitleH4 = wrapperTextElement "h4"
-  initTitleH5 = wrapperTextElement "h5"
-  initTitleH6 = wrapperTextElement "h6"
+  initBold = wrapperTextElement( "b", onlyInlines)
+  initItalic = wrapperTextElement("i", onlyInlines)
+  initUnderline = wrapperTextElement("u", onlyInlines)
+  initStrikethrough = wrapperTextElement( "s", onlyInlines)
+  initTitleH1 = wrapperTextElement("h1", anyTag)
+  initTitleH2 = wrapperTextElement("h2", anyTag)
+  initTitleH3 = wrapperTextElement("h3", anyTag)
+  initTitleH4 = wrapperTextElement("h4", anyTag)
+  initTitleH5 = wrapperTextElement("h5", anyTag)
+  initTitleH6 = wrapperTextElement("h6", anyTag)
 
 
+# TODO add text align
 proc initParagraph: Hooks =
   let
     el = createElement("div", {"class": "tw-paragraph"})
@@ -732,29 +733,20 @@ proc initMoreCollapse: Hooks =
     role = proc(i: Index): string =
       case i
       of 0: "summary"
-      of 1: "body"
-      else: ""
+      else: "body"
 
-    acceptsAsChild = proc(): seq[cstring] =
-      if hooks.self().children.len < 2: @[c"global"]
-      else: @[]
-
+    acceptsAsChild = anyTag
     attachNode = proc(child: TwNode, at: Index) =
       case at
       of 0:
         attachNodeDefault hooks.self(), child, summaryEl, child.dom, at
-      of 1:
+      else:
         attachNodeDefault hooks.self(), child, mainEl, child.dom, at
-      else: discard
 
     detachNode = proc(at: Index) =
       # FIXME i probably need to set the father of children to null
-      case at
-      of 0, 1: 
-        purge [summaryEl, mainEl][at]
-        dettachNodeDefault hooks.self(), at, false
-      else: 
-        discard
+      purge [summaryEl, mainEl][at]
+      dettachNodeDefault hooks.self(), at, false
 
 # TODO
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]

@@ -72,22 +72,23 @@ type # database models
     tcSystem ## created by system
 
   TagLabel* = enum
-    tlOrdinary        ## can be removed :: if it's not ordinary then its special
+    tlOrdinary         ## can be removed :: if it's not ordinary then its special
 
-    tlOwner           ## owner
-    tlTimestamp       ## creation time
-    tlSize            ## size in bytes
-    tlName            ## name
-    tlMime            ## mime type of a file
-    tlBoardScreenShot ## screenshots that are taken from boards
-    tlTextContent     ## raw text
-    tlLike            ## default like tag
-    tlNoteComment     ## a note (as comment) that refers to main note (ival)
+    tlOwner            ## owner
+    tlTimestamp        ## creation time
+    tlSize             ## size in bytes
+    tlName             ## name
+    tlMime             ## mime type of a file
+    tlBoardScreenShot  ## screenshots that are taken from boards
+    tlTextContent      ## raw text
+    tlLike             ## default like tag
+    tlNoteComment      ## a note (as comment) that refers to main note (ival)
+    tlNoteCommentReply ## reply to another comment
 
-    tlPrivate         ## everything is public except when it has private tag
-    tlHasAccess       ## tag with username of the person as value - is used with private
+    tlPrivate          ## everything is public except when it has private tag
+    tlHasAccess        ## tag with username of the person as value - is used with private
 
-    tlFollows         ## user => ival (user.id)
+    tlFollows          ## user => ival (user.id)
 
     tlReserved1
     tlReserved2
