@@ -128,62 +128,68 @@ proc createDom: VNode =
   buildHtml tdiv:
     snackbar()
 
-    tdiv(class = "d-flex flex-row justify-content-between h-100 w-100"):
+    tdiv(class = "h-100 w-100"):
+      tdiv(id="left-container"):
+        aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 float-start "):
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-solid fa-save fa-xl"
+          
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-solid fa-tag fa-xl"
 
-      aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1"):
-        for _ in 1..4:
-          button(class="btn btn-outline-primary my-1 rounded"):
-            icon "fa-solid fa-play"
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-solid fa-close fa-xl"
 
-      tdiv(id = settingsAreaId, class="overflow-hidden", 
-        style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
-        if app.state == asTreeView:
-          tdiv(id = treeViewId, class="overflow-y-scroll h-100"):
-            recursiveList app.tree
+        tdiv(id = settingsAreaId, class="overflow-hidden float-start d-inline-block", 
+          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
+          if app.state == asTreeView:
+            tdiv(id = treeViewId, class="overflow-y-scroll h-100"):
+              recursiveList app.tree
 
-        elif app.state == asSetting:
-          tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
-            for s in app.focusedNode.settings():
-              tdiv(class="w-100"):
-                tdiv(class="d-flex mx-2"):
-                  italic(class= s.icon)
-                  span(class="mx-2"): text s.field
-                tdiv:
-                  let 
-                    data = s.editorData()
-                    editor = app.editors[data.name](data.input, data.updateCallback)
+          elif app.state == asSetting:
+            tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
+              for s in app.focusedNode.settings():
+                tdiv(class="w-100"):
+                  tdiv(class="d-flex mx-2"):
+                    italic(class= s.icon)
+                    span(class="mx-2"): text s.field
+                  tdiv:
+                    let 
+                      data = s.editorData()
+                      editor = app.editors[data.name](data.input, data.updateCallback)
 
-                  editor
+                    editor
 
-        elif app.state == asSelectComponent:
-          tdiv(class="d-flex flex-column h-100"):
-            ul(class="list-group rounded-0 overflow-y-scroll h-100"):
-              for i, c in app.filteredComponents:
-                li(class="list-group-item d-flex justify-content-between align-items-center " & iff(app.listIndex == i, "active")):
-                  span: text c.name
-                  italic(class = c.icon)
+          elif app.state == asSelectComponent:
+            tdiv(class="d-flex flex-column h-100"):
+              ul(class="list-group rounded-0 overflow-y-scroll h-100"):
+                for i, c in app.filteredComponents:
+                  li(class="list-group-item d-flex justify-content-between align-items-center " & iff(app.listIndex == i, "active")):
+                    span: text c.name
+                    italic(class = c.icon)
 
-            tdiv:
-              input(id=searchComponentInputId, `type`="text", class="form-control w-100", autocomplete="off"):
-                proc oninput(e: Event, v: VNode) = 
-                  app.listIndex = 0
-                  app.filterString = e.target.value.toLower
-                  app.filteredComponents = app.availableComponents.filter(c => c.name.toLower.startsWith app.filterString)
+              tdiv:
+                input(id=searchComponentInputId, `type`="text", class="form-control w-100", autocomplete="off"):
+                  proc oninput(e: Event, v: VNode) = 
+                    app.listIndex = 0
+                    app.filterString = e.target.value.toLower
+                    app.filteredComponents = app.availableComponents.filter(c => c.name.toLower.startsWith app.filterString)
 
-      tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0"):
-        proc onMouseDown =
-          # setCursor ccresizex
+        tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 float-start d-inline-block"):
+          proc onMouseDown =
+            # setCursor ccresizex
 
-          winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-            sidebarWidth = e.x - el(settingsAreaId).offsetLeft
-            redraw()
+            winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
+              sidebarWidth = max(0, e.x - el(settingsAreaId).offsetLeft)
+              redraw()
 
-          winel.onmouseup = proc(e: Event) =
-            # setCursor ccNone
-            reset winel.onmousemove
-            reset winel.onmouseup
-            
-      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3"):
+            winel.onmouseup = proc(e: Event) =
+              # setCursor ccNone
+              reset winel.onmousemove
+              reset winel.onmouseup
+              
+      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 d-inline-block",
+          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 60}px""")):
         verbatim fmt"<div id='{editRootElementId}'></div>"
 
 
@@ -252,7 +258,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       if app.focusedNode.isLeaf or not app.focusedNode.data.visibleChildren:
         discard
       else:
-        app.focusedPath.add 0
+        add app.focusedPath, 0
         app.focusedNode = app.focusedNode.children[0]
 
     of "PageDown":

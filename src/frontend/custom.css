@@ -73,6 +73,10 @@ body {
   cursor: e-resize;
 }
 
+#tw-side-bar{
+  width: 50px;
+}
+
 .regions {
   height: 40px;
   border-top-width: 2px !important;
