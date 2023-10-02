@@ -1079,7 +1079,7 @@ proc createDom*(data: RouterData): VNode =
               redraw()
 
             winel.onmouseup = proc(e: Event) =
-              window.document.body.style.cursor = ""
+              setCursor ccNone
               reset winel.onmousemove
               reset winel.onmouseup
 

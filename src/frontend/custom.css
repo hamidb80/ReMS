@@ -147,11 +147,6 @@ body {
   max-width: 100%;
 }
 
-#tw-render {
-  width: 50vw;
-  height: 100vh;
-}
-
 .tw-image-wrapper {
   text-align: center;
 }
@@ -195,12 +190,6 @@ body {
 
 .app-footer .card-footer {
   box-shadow: inset 0 0 0 20px #00000045;
-}
-
-#tw-side-bar {
-  overflow-y: scroll;
-  height: 100vh;
-  width: 46vw;
 }
 
 .tw-pointer {
