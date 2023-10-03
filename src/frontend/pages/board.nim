@@ -111,7 +111,7 @@ type
     shape: KonvaShape
     line: Line
 
-
+# TODO start with whole network view?
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]

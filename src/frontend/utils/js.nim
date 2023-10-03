@@ -60,6 +60,9 @@ func `[]`*(str: cstring, rng: Slice[int]): cstring =
 func isKeyOf(key: cstring, t: JsAssoc): bool 
   {.importjs: "(# in #)".}
 
+func contains*(str, sub: cstring): bool 
+  {.importjs: "(#.indexOf(#) !== -1)".}
+
 func contains*[T](t: JsAssoc[cstring, T], key: cstring): bool = 
   isKeyOf key, t
 

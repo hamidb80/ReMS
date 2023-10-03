@@ -173,7 +173,7 @@ proc createDom: VNode =
                   proc oninput(e: Event, v: VNode) = 
                     app.listIndex = 0
                     app.filterString = e.target.value.toLower
-                    app.filteredComponents = app.availableComponents.filter(c => c.name.toLower.startsWith app.filterString)
+                    app.filteredComponents = app.availableComponents.filter(c => app.filterString in c.name.toLower.cstring)
 
         tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 float-start d-inline-block"):
           proc onMouseDown =

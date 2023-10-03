@@ -198,10 +198,10 @@ proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
           attachInstance ct["raw-text"], hooks, ct
 
 let
-  initBold = wrapperTextElement( "b", onlyInlines)
+  initBold = wrapperTextElement("b", onlyInlines)
   initItalic = wrapperTextElement("i", onlyInlines)
   initUnderline = wrapperTextElement("u", onlyInlines)
-  initStrikethrough = wrapperTextElement( "s", onlyInlines)
+  initStrikethrough = wrapperTextElement("s", onlyInlines)
   initTitleH1 = wrapperTextElement("h1", anyTag)
   initTitleH2 = wrapperTextElement("h2", anyTag)
   initTitleH3 = wrapperTextElement("h3", anyTag)
@@ -558,7 +558,7 @@ proc initMd: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-# TODO declarative schema check & assignment in restore hook
+# TODO declarative schema check & assignment in restore hook | dont use 'to' event 'cast' is better
 
 proc initGithubCode: Hooks =
   let
@@ -721,7 +721,8 @@ proc initLinkPreivew: Hooks =
 proc initMoreCollapse: Hooks =
   let
     wrapperEl = createElement("details", {"class": "tw-more"})
-    summaryEl = createElement("summary", {"class": "tw-more-summary text-center"})
+    summaryEl = createElement("summary", {
+        "class": "tw-more-summary text-center"})
     mainEl = createElement("main", {"class": "tw-more-body"})
 
   # TODO add option to center the summary element
@@ -737,15 +738,28 @@ proc initMoreCollapse: Hooks =
 
     acceptsAsChild = anyTag
     attachNode = proc(child: TwNode, at: Index) =
+      let self = hooks.self()
       case at
       of 0:
-        attachNodeDefault hooks.self(), child, summaryEl, child.dom, at
+        if 0 < self.children.len:
+          prepend mainEl, self.children[0].dom
+
+        attachNodeDefault self, child, summaryEl, child.dom, at
+
       else:
-        attachNodeDefault hooks.self(), child, mainEl, child.dom, at
+        attachNodeDefault self, child, mainEl, child.dom, at
+
 
     detachNode = proc(at: Index) =
-      # FIXME i probably need to set the father of children to null
-      purge [summaryEl, mainEl][at]
+      let self = hooks.self()
+      case at
+      of 0:
+        purge summaryEl
+        if self.children.len > 1:
+          append summaryEl, self.children[1].dom
+      else:
+        discard
+
       dettachNodeDefault hooks.self(), at, false
 
 # TODO
