@@ -341,6 +341,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## undo
 
     of "o":
+      # TODO import to a specific node not replace the whole tree!
       selectFile proc(c: cstring) = 
         purge app.tree.dom
 

@@ -19,13 +19,13 @@ dispatch router, ../views:
   get "/login/", loadDist"login.html" {.html.}
   post "/api/login/", login {.ok.}
   get "/api/logout/", logout {.ok.}
-  # TODO
   # get "/me/", usersPage {.html.}
   get "/api/me/", getMe {.json: User.}
   # get "/user/id/"?(id: int), usersPage {.html.}
   # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
-  # get "/asset/preview/"?(id: int), assetPreview {.html.}
+  # TODO add annonations for assets
+  # TODO get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
@@ -65,8 +65,13 @@ dispatch router, ../views:
 
 
   get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
-  get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} ## to aviod CORS
-  get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.} ## to aviod CORS
+  # post "/api/new/palette/"?(name: string), 
+  # put "/api/update/palette/"?(name: string), 
+  # delete "/api/palette/"?(name: string), 
+
+  # to aviod CORS
+  get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} 
+  get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.}
 
 
 func get_asset_short_hand_url*(asset_id: Id): string =
