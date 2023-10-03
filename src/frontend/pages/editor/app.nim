@@ -136,6 +136,7 @@ proc createDom: VNode =
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-save fa-xl"
           
+          # TODO ability to add/remove tags here
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-tag fa-xl"
 

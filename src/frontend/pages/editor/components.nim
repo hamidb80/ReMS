@@ -690,6 +690,7 @@ proc initIncluder: Hooks =
           input: toJs inline(),
           updateCallback: mutState(inlineSet, bool)))]
 
+# TODO set max height for image
 proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let

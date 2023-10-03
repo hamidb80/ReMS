@@ -87,7 +87,7 @@ type
     pressedKeys: set[KeyCode]
 
     # board data
-    # TODO pallete: seq[ColorTheme]
+    # TODO selectedPalletes: seq[string]
     objects: Table[Oid, VisualNode]
     edgeGraph: Graph[Oid]
     edgeInfo: Table[Slice[Oid], Edge]
@@ -111,7 +111,7 @@ type
     shape: KonvaShape
     line: Line
 
-# TODO start with whole network view?
+# TODO ability to reset the center
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]

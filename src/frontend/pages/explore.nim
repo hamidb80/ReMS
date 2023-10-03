@@ -15,6 +15,9 @@ import ./editor/[core, components]
 
 
 # TODO hide admin buttons for normal users
+# TODO pagination
+# TODO sort by specific tag with value
+# TODO tag with enums values [only choosing from some options]
 
 type
   UploadStatus = enum
