@@ -6,6 +6,10 @@ import ../../common/conventions
 type
   JsSet = ref object of JsObject
 
+
+func isObject*(j: JsObject): bool
+  {.importjs: "(typeof # === 'object')".}
+
 func parseInt*(s: cstring): int
   {.importjs: "parseInt(@)".}
 
@@ -18,7 +22,7 @@ func cleanStr*(n: float): cstring
 func cstr*(n: int): cstring
   {.importjs: "(#).toString()".}
 
-# func del*[T](s: var JsAssoc[cstring, T], key: cstring) 
+# func del*[T](s: var JsAssoc[cstring, T], key: cstring)
 #   {.importJs: "delete #[#]".}
 
 func toLower*(s: cstring): cstring
@@ -57,22 +61,25 @@ func substr(str: cstring, start, ende: int): cstring
 func `[]`*(str: cstring, rng: Slice[int]): cstring =
   str.substr rng.a, rng.b+1
 
-func isKeyOf(key: cstring, t: JsAssoc): bool 
+func isKeyOf(key: cstring, t: JsAssoc): bool
   {.importjs: "(# in #)".}
 
-func contains*(str, sub: cstring): bool 
+func getDefault*[T](o: JsObject, k: cstring, default: T): T
+  {.importjs: "(#[#] || #)".}
+
+func contains*(str, sub: cstring): bool
   {.importjs: "(#.indexOf(#) !== -1)".}
 
-func contains*[T](t: JsAssoc[cstring, T], key: cstring): bool = 
+func contains*[T](t: JsAssoc[cstring, T], key: cstring): bool =
   isKeyOf key, t
 
-proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop) 
+proc waitAll*(promises: openArray[Future], cb: proc(), fail: proc() = noop)
   {.importjs: "Promise.all(#).then(#).catch(#)".}
 
-func newJsSet*(): JsSet 
+func newJsSet*(): JsSet
   {.importjs: "new Set(@)".}
 
-func incl*(j: JsSet, c: cstring) 
+func incl*(j: JsSet, c: cstring)
   {.importjs: "#.add(@)".}
 
 iterator items*(obj: JsSet): cstring =
@@ -82,10 +89,10 @@ iterator items*(obj: JsSet): cstring =
   {.emit: "}".}
 
 
-template c*(str): untyped = 
+template c*(str): untyped =
   cstring str
 
-func forceJsObject*(t: auto): JsObject 
+func forceJsObject*(t: auto): JsObject
   {.importjs: "(@)".}
 
 template set*(container, value): untyped =
@@ -97,13 +104,13 @@ proc setTimeout*(delay: Natural, action: proc): TimeOut {.discardable.} =
 proc newPromise*(action: proc(
   resovle: proc(),
   reject: proc(),
-)): Future[void] 
+)): Future[void]
   {.importjs: "new Promise(@)".}
 
 proc newPromise*[T, E](action: proc(
   resovle: proc(t: T);
   reject: proc(e: E)
-)): Future[T] 
+)): Future[T]
   {.importjs: "new Promise(@)".}
 
 

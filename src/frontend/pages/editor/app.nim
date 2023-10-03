@@ -128,9 +128,11 @@ proc createDom: VNode =
   buildHtml tdiv:
     snackbar()
 
-    tdiv(class = "h-100 w-100"):
-      tdiv(id="left-container"):
-        aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 float-start "):
+    tdiv(class = "w-100 h-screen-100"):
+      tdiv(id="left-container", class="float-start h-100 d-flex flex-row",
+          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
+
+        aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 "):
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-save fa-xl"
           
@@ -140,8 +142,7 @@ proc createDom: VNode =
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-close fa-xl"
 
-        tdiv(id = settingsAreaId, class="overflow-hidden float-start d-inline-block", 
-          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
+        tdiv(id = settingsAreaId, class="overflow-hidden d-inline-block w-100"):
           if app.state == asTreeView:
             tdiv(id = treeViewId, class="overflow-y-scroll h-100"):
               recursiveList app.tree
@@ -175,12 +176,12 @@ proc createDom: VNode =
                     app.filterString = e.target.value.toLower
                     app.filteredComponents = app.availableComponents.filter(c => app.filterString in c.name.toLower.cstring)
 
-        tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 float-start d-inline-block"):
+        tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 d-inline-block"):
           proc onMouseDown =
             # setCursor ccresizex
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              sidebarWidth = clamp(e.x - el(settingsAreaId).offsetLeft, 10 .. window.innerWidth - 300)
+              sidebarWidth = clamp(e.x, 100 .. window.innerWidth - 200)
               redraw()
 
             winel.onmouseup = proc(e: Event) =
@@ -188,8 +189,8 @@ proc createDom: VNode =
               reset winel.onmousemove
               reset winel.onmouseup
               
-      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 d-inline-block",
-          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 60}px""")):
+      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block",
+          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 10}px""")):
         verbatim fmt"<div id='{editRootElementId}'></div>"
 
 
@@ -313,7 +314,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## show actions of focused element
     
     of "k":
-      downloadFile "data.json", "application/json", stringify forceJsObject serialize app
+      downloadFile "data.json", "application/json", 
+        stringify forceJsObject serialize app
     
     of "s":
       let id = parseInt getWindowQueryParam("id")
@@ -340,12 +342,13 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of "o":
       selectFile proc(c: cstring) = 
         purge app.tree.dom
+
+        let data = cast[TreeNodeRaw[JsObject]](parseJs c)
         
         proc done(t: TwNode) = 
           resetApp t
           redraw()
 
-        let data = cast[TreeNodeRaw[JsObject]](c.parseJs)
         deserizalize(app.components, data, some app.tree.dom)
         .then(done)
         .dcatch () => notify "could not load the file"
@@ -387,6 +390,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       
     of "Enter":
       var newNode = instantiate(app.filteredComponents[app.listIndex], app.components)
+      discard render newNode
       
       template i: untyped = app.focusedPath[^1]
 

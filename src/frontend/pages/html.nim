@@ -40,7 +40,6 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extJs "https://unpkg.com/konva@9/konva.min.js"
     extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
     extJs "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
-    extJs "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
     extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
 
     # UI libraries
@@ -160,10 +159,13 @@ proc index: VNode =
 
 # -----
 
+template `$$`(s): untyped {.dirty.} =
+  "<!DOCTYPE html>\n" & $s
+
 when isMainModule:
-  writeFile "./dist/index.html", $index()
-  writeFile "./dist/login.html", $login()
-  writeFile "./dist/tags.html", $tags()
-  writeFile "./dist/explore.html", $explore()
-  writeFile "./dist/board.html", $boardEditor()
-  writeFile "./dist/editor.html", $noteEditor()
+  writeFile "./dist/index.html", $$index()
+  writeFile "./dist/login.html", $$login()
+  writeFile "./dist/tags.html", $$tags()
+  writeFile "./dist/explore.html", $$explore()
+  writeFile "./dist/board.html", $$boardEditor()
+  writeFile "./dist/editor.html", $$noteEditor()

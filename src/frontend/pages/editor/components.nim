@@ -3,11 +3,20 @@ import std/[with, options, sequtils, tables, sugar]
 
 import ./core
 import ../../utils/[browser, js, api]
-import ../../jslib/[katex, marked, axios]
+import ../../jslib/[katex, axios]
 import ../../../common/[conventions, types, datastructures]
 import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
+# TODO make restore hook to get values optionally
+
+# TODO remove markdown compoenent and replace it with a action
+# (convert md to tw-nodes) and a reverse one (convert paragraph to md)
+# I think that would be a lot better | OR a custom markdown component ?
+
+# TODO declarative schema check & assignment in restore hook | dont use 'to' event 'cast' is better
+
+# TODO ability to add classes to the nodes manually
 
 # ----- Utils -----------
 
@@ -210,23 +219,40 @@ let
   initTitleH6 = wrapperTextElement("h6", anyTag)
 
 
-# TODO add text align
 proc initParagraph: Hooks =
   let
     el = createElement("div", {"class": "tw-paragraph"})
     (dir, setDir) = genState c"auto"
+    (align, setAlgn) = genState c"auto"
 
   defHooks:
     dom = () => el
     acceptsAsChild = onlyInlines
-    capture = () => tojs dir()
-    restore = (j: JsObject) => setDir j.to cstring
+
+    capture = () => <*{
+      "dir": dir(),
+      "align": align()}
+
+    restore = proc(j: JsObject) =
+      if isObject j:
+        setDir getDefault(j, c"dir", c"auto") ~~ cstring
+        setAlgn getDefault(j, c"align", c"auto") ~~ cstring
+
     render = genRender:
       case $dir()
       of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
       of "rtl": el.setAttr "dir", "rtl"
       else: discard
+
+      el.className = "tw-paragraph"
+
+      case $align()
+      of "center": el.classList.add "text-center"
+      of "left": el.classList.add "text-start"
+      of "right": el.classList.add "text-end"
+      else: discard
+
 
     mounted = genMounted:
       if mode == tmInteractive and by == mbUser:
@@ -236,7 +262,7 @@ proc initParagraph: Hooks =
     settings = () => @[
       SettingsPart(
         field: "text direction",
-        icon: "bi bi-signpost-fill",
+        icon: "bi bi-paragraph",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -245,10 +271,64 @@ proc initParagraph: Hooks =
               ["auto", "auto"],
               ["ltr", "ltr"],
               ["rtl", "rtl"]]},
-          updateCallback: mutState(setDir, cstring)))]
+          updateCallback: mutState(setDir, cstring))),
+
+      SettingsPart(
+        field: "text align",
+        icon: "bi bi-signpost-fill",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": align(),
+            "data": [
+              ["auto", "auto"],
+              ["center", "center"],
+              ["left", "left"],
+              ["right", "right"]]},
+          updateCallback: mutState(setAlgn, cstring)))
+        ]
 
 proc initVerticalSpace: Hooks =
-  let el = createElement("hr", {"class": "tw-vertical-space"})
+  let
+    el = createElement("div", {"class": "tw-vertical-space"})
+    (dir, setDir) = genState c"auto"
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = noTags
+
+    capture = () => <*{
+      "dir": dir(), }
+
+    restore = proc(input: JsObject) =
+      setDir input["dir"].to cstring
+
+    render = genRender:
+      el.className = "tw-vertical-space " & dir()
+
+    settings = () => @[
+      SettingsPart(
+        field: "space from top",
+        icon: "bi bi-signpost-fill",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": dir(),
+            "data": [
+              ["my-1", "1"],
+              ["my-2", "2"],
+              ["my-3", "3"],
+              ["my-4", "4"],
+              ["my-5", "5"],
+              ["my-6", "6"],
+              ["my-7", "7"],
+              ["my-8", "8"],
+              ["my-9", "9"]]},
+          updateCallback: mutState(setDir, cstring)))]
+
+# TODO add options to set length
+proc initHorizontalLine: Hooks =
+  let el = createElement("hr", {"class": "tw-horizontal-line"})
 
   defHooks:
     dom = () => el
@@ -282,7 +362,6 @@ proc initLink: Hooks =
           name: "raw-text-editor",
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring)))]
-
 
 proc initLatex: Hooks =
   let
@@ -321,7 +400,6 @@ proc initLatex: Hooks =
           name: "checkbox-editor",
           input: toJs inline(),
           updateCallback: mutState(iset, bool)))]
-
 
 proc initImage: Hooks =
   let
@@ -423,8 +501,6 @@ proc initVideo: Hooks =
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring)))]
 
-# TODO make restore hook to get values optionally
-
 proc initList: Hooks =
   let
     ul = createElement "ui"
@@ -502,10 +578,9 @@ proc initTable: Hooks =
     dom = () => el
     acceptsAsChild = genAllowedTags @[c"table-row"]
 
-# TODO add max height, height, width, max width OR USE [GRID component]
 proc initCustomHtml: Hooks =
   let
-    el = createElement "div"
+    el = createElement("div", {"class": "tw-custom-html"})
     (content, cset) = genState c""
 
   defHooks:
@@ -527,38 +602,6 @@ proc initCustomHtml: Hooks =
           name: "raw-text-editor",
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
-
-# TODO remove markdown compoenent and replace it with a action
-# (convert md to tw-nodes) and a reverse one (convert paragraph to md)
-# I think that would be a lot better
-
-# TODO replace raw-text with custom MarkDown
-proc initMd: Hooks =
-  let
-    el = createElement("div", {"class": "tw-md " & displayInlineClass})
-    (content, cset) = genState c""
-    # TODO add dir="auto"
-
-  defHooks:
-    dom = () => el
-    acceptsAsChild = noTags
-    capture = () => <*{"content": content()}
-    restore = proc(input: JsObject) =
-      cset input["content"].to cstring
-
-    render = genRender:
-      el.innerHTML = mdparse content()
-
-    settings = () => @[
-      SettingsPart(
-        field: "markdown code",
-        icon: "bi bi-markdown",
-        editorData: () => EditorInitData(
-          name: "raw-text-editor",
-          input: toJs content(),
-          updateCallback: mutState(cset, cstring)))]
-
-# TODO declarative schema check & assignment in restore hook | dont use 'to' event 'cast' is better
 
 proc initGithubCode: Hooks =
   let
@@ -716,8 +759,6 @@ proc initLinkPreivew: Hooks =
           input: toJs url(),
           updateCallback: mutState(uset, cstring)))]
 
-# TODO show something when loading or failing or empty fields from server
-# TODO only the details is editable ??
 proc initMoreCollapse: Hooks =
   let
     wrapperEl = createElement("details", {"class": "tw-more"})
@@ -764,7 +805,6 @@ proc initMoreCollapse: Hooks =
 
 # TODO
 # ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]
-# ----- Table Of Contents
 
 proc initConfig: Hooks =
   let
@@ -881,12 +921,6 @@ defComponent latexComponent,
   @["global", "inline", "block"],
   initLatex
 
-defComponent mdComponent,
-  "markdown",
-  "bi bi-markdown",
-  @["global", "inline", "block"],
-  initMd
-
 defComponent verticalSpaceComponent,
   "vertical-space",
   "bi bi-distribute-vertical",
@@ -959,10 +993,16 @@ defComponent moreCollapseComponent,
   @["global", "block"],
   initMoreCollapse
 
+defComponent horizontalLineComponent,
+  "break line",
+  "bi bi-dash-lg",
+  @["global", "block"],
+  initHorizontalLine
+
 
 proc defaultComponents*: ComponentsTable =
   new result
-  result.add [
+  add result, [
     rootComponent,
     configComponent,
     rawTextComponent,
@@ -978,7 +1018,6 @@ proc defaultComponents*: ComponentsTable =
     h5Component,
     h6Component,
     latexComponent,
-    mdComponent,
     verticalSpaceComponent,
     imageComponent,
     videoComponent,
@@ -989,4 +1028,5 @@ proc defaultComponents*: ComponentsTable =
     includeCodeComponent,
     linkPreviewComponent,
     moreCollapseComponent,
+    horizontalLineComponent,
     customHtmlComponent]

@@ -1422,6 +1422,10 @@ proc init* =
       addHotkey "n", proc =
         discard createNode()
 
+      addHotkey "k", proc =
+        # echo getClientRect app.mainGroup
+        discard
+
       addHotkey "c", proc = # go to center
         let s = ||app.stage.scale
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s

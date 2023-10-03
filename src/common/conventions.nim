@@ -34,3 +34,6 @@ func findlen*(a, b: string): int =
   if i == -1: -1
   else: i + b.len
 
+
+template `~~`*(val, typ): untyped =
+  cast[typ](val)
