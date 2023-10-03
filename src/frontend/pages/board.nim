@@ -67,7 +67,7 @@ type
     hoverVisualNode: NOption[VisualNode]
     selectedVisualNodes: seq[VisualNode]
     # TODO cache connections for speed when draging
-    selectedEdge: NOption[Edge]
+    selectedEdges: seq[Edge]
 
     font: FontConfig
     edge: EdgeConfig
@@ -111,7 +111,7 @@ type
     shape: KonvaShape
     line: Line
 
-# TODO ability to reset the center
+# TODO ability to set the center
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
@@ -125,14 +125,13 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
-# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
-# TODO multiselect for edges
 # TODO shadow node when creating node, make it opaque after placing it
+# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
 # TODO area selection
 # TODO select custom color palletes
-# FIXME image node border radius is depend on font size
 # TODO customize border radius for nodes
 # TODO add beizier curve
+# FIXME image node border radius is depend on font size
 
 var
   app = AppData()
@@ -229,6 +228,12 @@ proc highlight(vn: VisualNode) =
 proc removeHighlight(vn: VisualNode) =
   vn.konva.wrapper.opacity = 1
 
+proc highlight(vn: Edge) =
+  vn.konva.wrapper.opacity = 0.5
+
+proc removeHighlight(vn: Edge) =
+  vn.konva.wrapper.opacity = 1
+
 proc unselect(vn: VisualNode) =
   removeHighlight vn
   app.selectedVisualNodes.remove vn
@@ -236,18 +241,23 @@ proc unselect(vn: VisualNode) =
 proc unselect =
   for v in app.selectedVisualNodes:
     removeHighlight v
-  reset app.selectedVisualNodes
 
-  if e =? app.selectedEdge:
-    reset app.selectedEdge
+  for e in app.selectedEdges:
+    removeHighlight e
+
+  reset app.selectedVisualNodes
+  reset app.selectedEdges
 
 proc select(vn: VisualNode) =
   add app.selectedVisualNodes, vn
   highlight vn
 
 proc select(e: Edge) =
-  unselect()
-  app.selectedEdge = some e
+  if app.selectedVisualNodes.len != 0:
+    unselect()
+
+  highlight e
+  add app.selectedEdges, e
 
 
 func onBorder(axis: Axis; limit: float; θ: Degree): Vector =
@@ -350,9 +360,6 @@ proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
     on "mouseleave", proc =
       setCursor ccNone
 
-    on "click", proc =
-      echo "Hey!"
-
   with k.wrapper:
     add k.line
     add k.shape
@@ -365,10 +372,11 @@ proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
 
 proc addEdgeClick(e: Edge) =
   with e.konva.shape:
-    off "click"
     on "click", proc =
-      unselect()
-      app.selectedEdge = some e
+      if kcShift notin app.pressedKeys:
+        unselect()
+
+      select e
       redraw()
 
 proc cloneEdge(id1, id2: Oid; e: Edge): Edge =
@@ -496,29 +504,39 @@ proc setFocusedFontSize(s: int) =
       redrawConnectionsTo v.config.id
 
 proc setFocusedEdgeWidth(w: Tenth) =
-  if e =? app.selectedEdge:
-    updateEdgeWidth e, w
-  else:
+  case app.selectedEdges.len:
+  of 0:
     app.edge.width = w
+  else:
+    for e in app.selectedEdges:
+      updateEdgeWidth e, w
+    
 
 proc getFocusedEdgeWidth: Tenth =
-  if e =? app.selectedEdge:
-    e.data.config.width
-  else:
+  case app.selectedEdges.len
+  of 0:
     app.edge.width
+  else:
+    app.selectedEdges[0].data.config.width
+
 
 proc getFocusedTheme: ColorTheme =
   if app.selectedVisualNodes.len == 1: app.selectedVisualNodes[0].config.theme
-  elif e =? app.selectedEdge: e.data.config.theme
+  elif app.selectedEdges.len == 1: app.selectedEdges[0].data.config.theme
   else: app.theme
 
 proc setFocusedTheme(theme: ColorTheme) =
+  var done = false
   for v in app.selectedVisualNodes:
     v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
-  if e =? app.selectedEdge:
+    done =true
+
+  for e in app.selectedEdges:
     updateEdgeTheme e, theme
-  else:
+    done =true
+  
+  if not done:
     app.theme = theme
 
 
@@ -912,7 +930,7 @@ proc loadFonts(fontsFamilies: seq[string]): Future[void] =
 
 proc loadPalette(palette: string): Future[void] =
   newPromise proc(resolve, reject: proc()) =
-     apiGetPalette palette, proc(ct: seq[ColorTheme]) =
+    apiGetPalette palette, proc(ct: seq[ColorTheme]) =
       colorThemes = ct
       resolve()
 
@@ -944,7 +962,7 @@ proc createDom*(data: RouterData): VNode =
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
             if app.selectedVisualNodes.len != 0:
               icon "fa-crosshairs"
-            elif ?app.selectedEdge:
+            elif app.selectedEdges.len != 0:
               icon "fa-grip-lines"
             else:
               icon "fa-earth-asia"
@@ -963,7 +981,7 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsColor
                 redraw()
 
-            if not ?app.selectedEdge:
+            if app.selectedEdges.len == 0:
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
                 bold(class = "me-2"): text "Font: "
@@ -1397,14 +1415,16 @@ proc init* =
           unselect()
           redraw()
 
-        elif ed =? app.selectedEdge:
-          let
-            p = ed.data.points
-            conn = sorted p[cpkHead]..p[cpkTail]
+        
+        elif  app.selectedEdges.len > 0:
+          for ed in app.selectedEdges:
+            let
+              p = ed.data.points
+              conn = sorted p[cpkHead]..p[cpkTail]
 
-          destroy app.edgeInfo[conn].konva.wrapper
-          del app.edgeInfo, conn
-          removeConn app.edgeGraph, conn
+            destroy app.edgeInfo[conn].konva.wrapper
+            del app.edgeInfo, conn
+            removeConn app.edgeGraph, conn
 
           unselect()
           redraw()
