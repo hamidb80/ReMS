@@ -1,6 +1,7 @@
 import std/[asyncdispatch, options, os, tables]
 import bale
 
+# XXX save tokens in sqlite database
 
 let
     token = getEnv "BALE_BOT_TOKEN"

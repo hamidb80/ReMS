@@ -209,7 +209,7 @@ proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
           span: text "apply"
           icon "fa-check ms-2"
 
-proc userItemC(u: User): VNode = 
+proc userItemC(u: User): VNode =
   buildHTML:
     tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
       bold(class = "mx-2"):
@@ -431,12 +431,8 @@ proc boardItemViewC(b: BoardItemView): VNode =
           img(src = get_asset_short_hand_url b.screenshot.get)
 
       tdiv(class = "card-body"):
-        h3:
+        h3(dir = "auto"):
           text b.title
-
-        span:
-          text "time:"
-          # text $b.timestamp
 
       tdiv(class = "card-footer d-flex justify-content-center"):
         a(class = "btn mx-1 btn-compact btn-outline-warning",

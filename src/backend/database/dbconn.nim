@@ -1,7 +1,6 @@
 import waterpark/sqlite
 import std/db_sqlite
 
-export DbConn
 
 let pool = newSqlitePool(10, "./play.db")
 

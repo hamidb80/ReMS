@@ -175,12 +175,16 @@ proc newBoard*(req: Request) {.adminOnly.} =
   let id = !!<db.newBoard()
   redirect get_board_editor_url id
 
-proc updateBoard*(req: Request) {.qparams: {id: int}, jbody: BoardData, adminOnly.} =
-  !!db.updateBoard(id, data)
+proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, adminOnly.} =
+  !!db.updateBoardContent(id, data)
   resp OK
 
 proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, adminOnly.} =
-  !!db.setScreenShot(id, saveAsset req)
+  !!db.setBoardScreenShot(id, saveAsset req)
+  resp OK
+
+proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminOnly.} =
+  !!db.updateBoardTitle(id, name)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =

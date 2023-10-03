@@ -152,11 +152,13 @@ proc newBoard*(db: DbConn): Id =
     board: some result,
     active_rels_values: RelValuesByTagId())
 
-
-proc updateBoard*(db: DbConn, id: Id, data: BoardData) =
+proc updateBoardContent*(db: DbConn, id: Id, data: BoardData) =
   db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
 
-proc setScreenShot*(db: DbConn, boardId, assetId: Id) =
+proc updateBoardTitle*(db: DbConn, id: Id, title: string) =
+  db.exec sql"UPDATE Board SET title = ? WHERE id = ?", title, id
+
+proc setBoardScreenShot*(db: DbConn, boardId, assetId: Id) =
   db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
 
 proc getBoard*(db: DbConn, id: Id): Board =

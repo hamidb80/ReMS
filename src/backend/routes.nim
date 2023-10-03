@@ -47,8 +47,9 @@ dispatch router, ../views:
   get "/boards/new/", newBoard {.Id.}
   get "/board/editor/"?(id: Id), loadDist"board.html" {.html.}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
-  put "/api/board/update/"?(id: Id), updateBoard {.ok.}
-  put "/api/board/screen-shot/"?(id: Id), updateBoardScreenShot {.ok.}
+  put "/api/board/title/"?(id: Id, title: string), updateBoardTitle {.ok.}
+  put "/api/board/content/"?(id: Id), updateBoardContent {.ok.}
+  put "/api/board/screenshot/"?(id: Id), updateBoardScreenShot {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}

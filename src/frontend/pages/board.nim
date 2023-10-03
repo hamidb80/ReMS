@@ -23,6 +23,8 @@ type
   SideBarState = enum
     ssMessagesView
     ssPropertiesView
+    # TODO update board title with apiUpdateBoardTitle
+    # ssBoardSettingsView 
 
   BoardState = enum
     bsFree

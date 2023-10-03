@@ -65,6 +65,17 @@ proc apiDeleteBoard*(
     .catch(fail)
 
 
+proc apiUpdateBoardTitle*(
+    id: Id,
+    title: string,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard put_api_board_title_url(id, title)
+    .putApi()
+    .then(success)
+    .catch(fail)
+
 proc apiUpdateBoardScrenshot*(
     id: Id,
     form: FormData, ## form cantaining picture
@@ -82,7 +93,7 @@ proc apiUpdateBoardContent*(
     success: proc(),
     fail: proc() = noop
 ) =
-    discard put_api_board_update_url(id)
+    discard put_api_board_content_url(id)
     .putApi(data)
     .then(success)
     .catch(fail)

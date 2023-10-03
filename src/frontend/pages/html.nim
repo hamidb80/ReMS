@@ -73,8 +73,8 @@ proc tags: VNode =
   commonPage "tag manager", [
       extJs("./script-tags.js", true)]
 
-proc boardEditor: VNode =
-  commonPage "Board", [
+proc graphEditor: VNode =
+  commonPage "Graph", [
       extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
       extJs("./script-board.js", true)]
 
@@ -133,7 +133,7 @@ proc index: VNode =
         blockk "Files", "inbox-archive.svg", ""
         blockk "Tags", "tag.svg", get_tags_url()
         blockk "Notes", "pen-writing-on-paper.svg", ""
-        blockk "Boards", "share-circle.svg", ""
+        blockk "Graphs", "share-circle.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
 
       h3(class = "mt-4 mb-2 text-center w-100"):
@@ -167,5 +167,5 @@ when isMainModule:
   writeFile "./dist/login.html", $$login()
   writeFile "./dist/tags.html", $$tags()
   writeFile "./dist/explore.html", $$explore()
-  writeFile "./dist/board.html", $$boardEditor()
+  writeFile "./dist/board.html", $$graphEditor()
   writeFile "./dist/editor.html", $$noteEditor()
