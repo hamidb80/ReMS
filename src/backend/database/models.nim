@@ -4,7 +4,7 @@ import ../../common/[types, datastructures]
 when defined js: import ponairi/pragmas
 else: import ponairi
 
-# TODO change name 'board' to 'graph'
+# TODO change name 'board' to 'board'
 
 type # database models
   UserRole* = enum
@@ -84,7 +84,7 @@ type # database models
     tlTextContent      ## raw text
     tlLike             ## default like tag
 
-    tlNoteOfNode       ## notes [id@ival] that are connected to nodes[uuid@sval] of graph
+    tlNoteOfNode       ## notes [id@ival] that are connected to nodes[uuid@sval] of board
     tlNoteHighlight    ##
     tlNoteComment      ## a note (as comment) that refers to main note (ival)
     tlNoteCommentReply ## reply to another comment
@@ -138,17 +138,22 @@ type # database models
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    tag* {.references: Tag.id, index.}: Id
-    user* {.references: User.id.}: Option[Id]
+    tag* {.references: Tag.id, index.}: Id            ## originates from
+    user* {.references: User.id.}: Option[Id]         ## owner
+
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
+    node* {.references: Relation.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
+
     fval*: Option[float]
     ival*: Option[int]
     sval*: Option[Str]
+    refers*: Option[Id]                               ## arbitrary row id
+
     state*: RelationState
     created_due_to*: RelationCreationReason
-    timestamp*: UnixTime
+    timestamp*: UnixTime                              ## creation time
 
   RelValuesByTagId* = NTable[Str, seq[Str]]
 
@@ -173,8 +178,10 @@ type # view models
     ecBoard
 
   QueryOperator* = enum
+    # prefix
     qoExists    ## ?? EXISTS
     qoNotExists ## ?! NOT EXISTS
+    # infix
     qoLess      ## <
     qoLessEq    ## <=
     qoEq        ## ==

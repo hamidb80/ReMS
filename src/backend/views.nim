@@ -184,7 +184,7 @@ proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, adminOnly.} =
   resp OK
 
 proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminOnly.} =
-  !!db.updateBoardTitle(id, name)
+  !!db.updateBoardTitle(id, title)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
