@@ -5,9 +5,9 @@
 
 
 ## Know
-- what good is learning if I don't remember it?
+- [what good is learning if I don't remember it?](https://files.eric.ed.gov/fulltext/EJ1055665.pdf)
 - active learning vs passing learning / scout young
-- spatial web browsing
+- [spatial web browsing](https://maggieappleton.com/spatial-web)
 - [OrgPad](https://orgpad.com/) -- [tech stack](https://orgpad.com/o/Cx0toaAblKpKUSZasDxsxK?token=DtN36_XBJGqKhdJk2pwl1Z)
 
 ## Helpful contents
