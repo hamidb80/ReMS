@@ -1,7 +1,9 @@
+import std/json
+
 import ponairi
 
 import ../../common/[types, datastructures]
-import ../database/[models, dbconn]
+import ../database/[models]
 
 
 proc defaultPalette*(db: DbConn) =
@@ -34,10 +36,12 @@ proc addAdminUser*(db: DbConn) =
         role: urAdmin)
 
 proc createTables*(db: DbConn) =
-    db.create(User, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
+    db.create(User, Invitation, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
 
 
 when isMainModule:
+    import ../database/dbconn
+
     !! db.createTables()
     !! db.addAdminUser()
     !! db.defaultPalette()

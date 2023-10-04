@@ -1,6 +1,7 @@
 ## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 
-import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1, times, htmlparser]
+import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1,
+    times, htmlparser]
 
 import mummy, mummy/multipart
 import webby
@@ -8,6 +9,7 @@ import quickjwt
 import cookiejar
 import jsony
 import questionable
+import bale
 
 import ../common/[types, path, datastructures, conventions]
 import ./utils/[web, github, link_preview]
@@ -51,13 +53,13 @@ proc loadDist*(path: string): RequestHandler =
 # ------- Dynamic ones
 
 proc download*(url: string): string =
-    var client = newHttpClient()
-    client.get(url).body
+  var client = newHttpClient()
+  client.get(url).body
 
 const jwtKey = "auth"
 let jwtSecret = "TODO" # getEnv "JWT_KEY"
 
-proc toUserJwt(u: User, expire: int64): JsonNode =
+proc toUserJwt(u: models.User, expire: int64): JsonNode =
   %*{
     "exp": expire,
     "user": {
@@ -66,7 +68,7 @@ proc toUserJwt(u: User, expire: int64): JsonNode =
       "nickname": u.nickname,
       "role": u.role.ord}}
 
-proc toJwt(u: User): string =
+proc toJwt(u: models.User): string =
   sign(
     header = %*{
       "typ": "JWT",
@@ -80,13 +82,9 @@ proc jwtCookieSet(token: string): webby.HttpHeaders =
 proc logoutCookieSet: webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
-proc login*(req: Request) {.gcsafe, jbody: LoginForm.} =
+proc login*(req: Request, u: models.User) {.gcsafe, jbody: LoginForm.} =
   {.cast(gcsafe).}:
-    if data.pass == "111":
-      let u = !!<db.getFirstUser()
-      respond req, 200, jwtCookieSet toJwt u
-    else:
-      raise newException(ValueError, "invalid password")
+    respond req, 200, jwtCookieSet toJwt u
 
 proc logout*(req: Request) =
   respond req, 200, logoutCookieSet()
@@ -97,11 +95,32 @@ proc jwt(req: Request): options.Option[string] =
       let ck = initCookie req.headers["Cookie"]
       if ck.name == jwtKey:
         return some ck.value
-  except: 
+  except:
     discard
 
 proc getMe*(req: Request) {.adminOnly.} =
   respJson toJson user
+
+proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
+  let inv = !!<db.getInvitation(secret, 60, toUnixTime now())
+
+  if i =? inv:
+    let
+      baleUser = bale.User i.data
+      maybeAuth = !!<db.getAuth(baleUser.id)
+      uid =
+        if a =? maybeAuth: a.user
+        else:
+          newUser(
+            baleUser.username,
+            baleUser.firstName & baleUser.lastname)
+      usr = !!<db.getUser(uid)
+
+    login usr
+    
+  else:
+    resp 404
+
 
 proc saveAsset(req: Request): Id {.adminOnly.} =
   # FIXME add extension of file
@@ -232,4 +251,3 @@ proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
 
 proc fetchLinkPreivewData*(req: Request) {.qparams: {url: string}.} =
   respJson toJson linkPreviewData parseHtml cropHead download url
-

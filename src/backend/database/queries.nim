@@ -26,6 +26,35 @@ func tagIds(data: RelValuesByTagId): seq[Id] =
 proc getFirstUser*(db: DbConn): User = 
   db.find R, sql"SELECT * FROM USER"
 
+proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfter: Positive): options.Option[Invitation] =
+  db.find R, sql"""
+    SELECT *
+    FROM Invitation i 
+    WHERE 
+      ? - i.timestamp <= ? AND
+      secret = ?
+    """, time, expiresAfter, secret
+
+proc getAuth*(db: DbConn, baleUserId: Id): options.Option[Auth] =
+  db.find R, sql"""
+    SELECT *
+    FROM Auth a
+    WHERE id = ?
+    """, baleUserId
+
+proc getUser*(db: DbConn, userid: Id): options.Option[User] =
+  db.find R, sql"""
+    SELECT *
+    FROM User u
+    WHERE id = ?
+    """, userid
+
+proc newUser*(db: DbConn, id: Id, uname, nname: string): Id =
+  db.insertID User(
+    username: uname,
+    nickname: nname,
+    role: urUser)
+
 # TODO add show_name tag
 proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
@@ -168,9 +197,6 @@ proc deleteBoard*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Board WHERE id = ?", id
 
 
-proc getPalette*(db: DbConn, name: string): Palette =
-  db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
-
 
 func toSubQuery(c: TagCriteria, entityIdVar: string): string =
   let
@@ -254,3 +280,7 @@ proc exploreUser*(db: DbConn, str: string): seq[User] =
       instr(u.username, ?) > 0 OR
       instr(u.nickname, ?) > 0
   """, str, str
+
+
+proc getPalette*(db: DbConn, name: string): Palette =
+  db.find R, sql"SELECT * FROM Palette WHERE name = ?", name

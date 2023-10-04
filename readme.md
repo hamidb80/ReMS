@@ -1,5 +1,9 @@
 # ReMS :: Remembering Management System
 
+> [!IMPORTANT]  
+> This project is still in development stage, I've open sourced it for collabration purposes. I will soon write a readme and Docker file to test
+
+
 ## Know
 - what good is learning if I don't remember it?
 - active learning vs passing learning / scout young

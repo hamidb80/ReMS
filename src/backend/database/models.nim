@@ -4,7 +4,6 @@ import ../../common/[types, datastructures]
 when defined js: import ponairi/pragmas
 else: import ponairi
 
-# TODO change name 'board' to 'board'
 
 type # database models
   UserRole* = enum
@@ -17,25 +16,16 @@ type # database models
     nickname*: Str
     role*: UserRole
 
-  AuthPlatform* = enum
-    apNone
-    apBaleBot
-    apEmail
-
-  Auth* = object
-    id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
-    platform*: AuthPlatform
-    data*: Str ## additional data like chat_id or username in that platform
-    timestamp*: UnixTime
-
-  InvitationSecret* = object
+  Invitation* = object
     ## must be deleted after usage
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Option[Id] # wanna create new user? or use existing one?
-    secret* {.uniqueIndex.}: Str
-    expiration*: UnixTime
-    creation*: UnixTime
+    secret*: Str # TODO hash it
+    data*: JsonNode
+    timestamp*: UnixTime
+
+  Auth* = object
+    id* {.primary.}: Id ## platform user id
+    user* {.references: User.id.}: Id
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
@@ -58,7 +48,7 @@ type # database models
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Option[Id]         ## owner
     name* {.uniqueIndex.}: Str
-    colorThemes*: seq[ColorTheme]
+    color_themes*: seq[ColorTheme]
 
   TagValueType* = enum
     tvtNone
@@ -84,7 +74,8 @@ type # database models
     tlTextContent      ## raw text
     tlLike             ## default like tag
 
-    tlNoteOfNode       ## notes [id@ival] that are connected to nodes[uuid@sval] of board
+    tlBoardNode
+    tlNodeNote         ## note list of node
     tlNoteHighlight    ##
     tlNoteComment      ## a note (as comment) that refers to main note (ival)
     tlNoteCommentReply ## reply to another comment
