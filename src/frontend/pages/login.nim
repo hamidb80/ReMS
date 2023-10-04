@@ -1,6 +1,7 @@
-import std/[dom]
+import std/[dom, options]
 
 import karax/[karax, karaxdsl, vdom]
+import questionable
 
 import ../components/[snackbar]
 import ../utils/[ui, api]
@@ -8,18 +9,9 @@ import ../../common/[conventions]
 import ../../backend/database/models
 
 
-type
-  AppState = enum
-    asAdmin = "admin"
-    asUser = "user"
-
 var 
-  state = asUser
   pass: string
-
-proc stateSetter(i: AppState): proc() = 
-  proc = 
-    state = i
+  user: Option[User]
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
@@ -32,42 +24,58 @@ proc createDom: Vnode =
           text "Login"
 
     tdiv(class = "card border-secondary mb-3"):
-      tdiv(class = "card-header"):
-        text "Login Form"
+      if u =? user: 
+        tdiv(class = "card-header"):
+          text u.nickname
 
-      tdiv(class = "card-body p-2"):
-        tdiv(class = "form-group d-inline-block"):
-          label(class = "form-check-label"):
-            text "pass: "
+        button(class = "btn btn-danger w-100 mt-2 mb-4"):
+          text "logout"
+          icon "mx-2 fa-sign-out"
 
-          input(`type` = "password", class = "form-control tag-input",
-              value = pass):
-            proc oninput(e: Event, v: Vnode) =
-              pass = $e.target.value
+          proc onclick =
+            logoutApi proc =
+              notify "logged out"
+              reset user
+              redraw()
 
-          button(class = "btn btn-success w-100 mt-2 mb-4"):
-            text "login"
-            icon "mx-2 fa-sign-in"
+      else:
+          tdiv(class = "card-header"):
+            text "Login Form"
 
-            proc onclick =
-              proc success =
-                notify "logged in :)"
+          tdiv(class = "card-body p-2"):
+            tdiv(class = "form-group d-inline-block"):
+              label(class = "form-check-label"):
+                text "pass: "
 
-              proc fail =
-                notify "pass wrong :("
+              input(`type` = "text", class = "form-control tag-input",
+                  value = pass):
+                proc oninput(e: Event, v: Vnode) =
+                  pass = $e.target.value
 
-              loginApi pass, success, fail
+              button(class = "btn btn-success w-100 mt-2 mb-4"):
+                text "login"
+                icon "mx-2 fa-sign-in"
 
-          button(class = "btn btn-danger w-100 mt-2 mb-4"):
-            text "logout"
-            icon "mx-2 fa-sign-out"
+                proc onclick =
+                  proc success =
+                    notify "logged in :)"
 
-            proc onclick =
-              logoutApi proc =
-                notify "logged out"
+                    meApi proc(u: User) = 
+                      user = some u
+                      redraw()
+
+                  proc fail =
+                    notify "pass wrong :("
+
+                  loginApi pass, success, fail
+
+        
 
 
 proc init* =
   setRenderer createDom
+  meApi proc(u: User) = 
+    user = some u
+    redraw()
 
 when isMainModule: init()
