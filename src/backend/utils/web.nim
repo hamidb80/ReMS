@@ -181,7 +181,7 @@ macro adminOnly*(procdef): untyped =
       if verified:
         let 
           s = tk.claim["user"]
-          `user` {.used.} = fromJson($s, User)
+          `user` {.used.} = fromJson($s, models.User)
         `body`
       else:
         raise newException(ValueError, "Permission Denied")  

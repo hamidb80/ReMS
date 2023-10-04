@@ -26,14 +26,14 @@ func tagIds(data: RelValuesByTagId): seq[Id] =
 proc getFirstUser*(db: DbConn): User = 
   db.find R, sql"SELECT * FROM USER"
 
-proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfter: Positive): options.Option[Invitation] =
+proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfterSec: Positive): options.Option[Invitation] =
   db.find R, sql"""
     SELECT *
     FROM Invitation i 
     WHERE 
       ? - i.timestamp <= ? AND
       secret = ?
-    """, time, expiresAfter, secret
+    """, time, expiresAfterSec, secret
 
 proc getAuth*(db: DbConn, baleUserId: Id): options.Option[Auth] =
   db.find R, sql"""
@@ -42,6 +42,11 @@ proc getAuth*(db: DbConn, baleUserId: Id): options.Option[Auth] =
     WHERE id = ?
     """, baleUserId
 
+proc newAuth*(db: DbConn, baleUserId, userId: Id): Id =
+  db.insert Auth(
+    id: baleUserId,
+    user: userId)
+
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, sql"""
     SELECT *
@@ -49,7 +54,7 @@ proc getUser*(db: DbConn, userid: Id): options.Option[User] =
     WHERE id = ?
     """, userid
 
-proc newUser*(db: DbConn, id: Id, uname, nname: string): Id =
+proc newUser*(db: DbConn, uname, nname: string): Id =
   db.insertID User(
     username: uname,
     nickname: nname,

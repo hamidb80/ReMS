@@ -217,9 +217,6 @@ type # view models
     styleLink*: Str
     htmlCode*: Str
 
-  LoginForm* = object
-    pass*: Str
-
   LinkPreviewData* = object
     title*: Str
     desc*: Str

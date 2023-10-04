@@ -16,12 +16,12 @@ template wrapResp(body): untyped {.dirty.} =
 
 
 proc loginApi*(
-    pass: cstring,
+    code: string,
     success: proc(),
     fail: proc() = noop
 ) =
-    discard post_api_login_url()
-    .postApi(forceJsObject LoginForm(pass: pass))
+    discard get_api_login_url(code)
+    .getApi()
     .then(success)
     .catch(fail)
 

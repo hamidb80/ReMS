@@ -82,7 +82,7 @@ proc jwtCookieSet(token: string): webby.HttpHeaders =
 proc logoutCookieSet: webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
-proc login*(req: Request, u: models.User) {.gcsafe, jbody: LoginForm.} =
+proc login*(req: Request, u: models.User) =
   {.cast(gcsafe).}:
     respond req, 200, jwtCookieSet toJwt u
 
@@ -102,7 +102,7 @@ proc getMe*(req: Request) {.adminOnly.} =
   respJson toJson user
 
 proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
-  let inv = !!<db.getInvitation(secret, 60, toUnixTime now())
+  let inv = !!<db.getInvitation(secret, toUnixTime now(), 60)
 
   if i =? inv:
     let
@@ -111,12 +111,15 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
       uid =
         if a =? maybeAuth: a.user
         else:
-          newUser(
+          let u = !!<db.newUser(
             baleUser.username,
             baleUser.firstName & baleUser.lastname)
-      usr = !!<db.getUser(uid)
+          discard !!<db.newAuth(baleUser.id, u)
+          u
 
-    login usr
+      maybeUsr = !!<db.getUser(uid)
+
+    login req, get maybeUsr
     
   else:
     resp 404
