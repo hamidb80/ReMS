@@ -732,7 +732,6 @@ proc createNode: VisualNode =
   let vn = createnode currentVisualNodeConfig(uid)
 
   app.objects[uid] = vn
-  app.mainGroup.getLayer.add vn.konva.wrapper
   app.sidebarState = ssPropertiesView
 
   select vn
@@ -1332,22 +1331,23 @@ proc init* =
       on "mousedown", proc =
         app.leftClicked = true
 
-        case app.boardState
-        of bsAddNode:
-          app.boardState = bsFree
-          app.objects[app.tempNode.config.id] = app.tempNode
-          app.mainGroup.add app.tempNode.konva.wrapper
-          app.tempNode = nil
-          unselect()
-        else:
-          discard
-
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
         if app.leftClicked and (kcSpace in app.pressedKeys):
           moveStage movement e
 
       on "mouseup", proc =
         app.leftClicked = false
+
+        case app.boardState
+        of bsAddNode:
+          if app.state == asNormal:
+            app.boardState = bsFree
+            app.objects[app.tempNode.config.id] = app.tempNode
+            app.mainGroup.add app.tempNode.konva.wrapper
+            app.tempNode = nil
+            unselect()
+        else:
+          discard
 
 
     block global_events:
@@ -1469,9 +1469,14 @@ proc init* =
           notify "nothing to delete"
 
       addHotkey "Escape", proc =
+    
+        if app.boardState == bsAddNode:
+          destroy app.tempNode.konva.wrapper
+
         app.boardState = bsFree
         app.footerState = fsOverview
         hide app.tempEdge.konva.wrapper
+    
         unselect()
         redraw()
 
