@@ -25,6 +25,7 @@ app.components = defaultComponents()
 app.regiterComponents
 
 # TODO add side bar on the left for more options like save, load from disk, ...
+# TODO app ability to copy node path
 
 # ----- UI ------------------------------
 

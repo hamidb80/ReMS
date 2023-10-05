@@ -738,6 +738,14 @@ proc createNode: VisualNode =
   redraw()
   vn
 
+proc startPuttingNode =
+  app.boardState = bsAddNode
+  app.tempNode = createNode()
+
+  app.hoverGroup.add app.tempNode.konva.wrapper
+  select app.tempNode
+
+
 proc toJson(app: AppData): BoardData =
   result.objects = initNTable[Str, VisualNodeConfig]()
 
@@ -1085,12 +1093,7 @@ proc createDom*(data: RouterData): VNode =
             icon "fa-plus fa-lg"
 
             proc onclick =
-              app.boardState = bsAddNode
-              app.tempNode = createNode()
-
-              app.hoverGroup.add app.tempNode.konva.wrapper
-              select app.tempNode
-
+              startPuttingNode()
 
           # TODO show shortcut and name via a tooltip
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -1507,7 +1510,7 @@ proc init* =
         redraw()
 
       addHotkey "n", proc =
-        discard createNode()
+        startPuttingNode()
 
       addHotkey "k", proc =
         # echo getClientRect app.mainGroup

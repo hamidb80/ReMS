@@ -340,6 +340,11 @@ proc deleteBoard(id: Id) =
   apiDeleteBoard id, proc =
     discard fetchBoards()
 
+proc fetchUsers: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiExploreUsers userSearchStr, proc(us: seq[User]) =
+      users = us
+      resolve()
 
 # TODO write a note laod manager component in a different file
 proc loadMsg(n: NoteItemView) =
@@ -662,9 +667,7 @@ proc createDom: Vnode =
                   redraw()
 
               of scUsers:
-                apiExploreUsers userSearchStr, proc(us: seq[User]) =
-                  users = us
-                  redraw()
+                discard fetchUsers()
 
           case selectedClass
           of scUsers:
@@ -701,7 +704,7 @@ proc createDom: Vnode =
 when isMainModule:
   setRenderer createDom
 
-  waitAll [fetchTags(), fetchNotes(), fetchBoards()], proc =
+  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers()], proc =
     redraw()
 
   document.body.addEventListener "paste":
