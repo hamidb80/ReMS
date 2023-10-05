@@ -107,22 +107,45 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
   if i =? inv:
     let
       baleUser = bale.User i.data
-      maybeAuth = !!<db.getAuth(baleUser.id)
+      maybeAuth = !!<db.getAuthBale(baleUser.id)
       uid =
         if a =? maybeAuth: a.user
         else:
           let u = !!<db.newUser(
             baleUser.username,
             baleUser.firstName & baleUser.lastname)
-          discard !!<db.newAuth(baleUser.id, u)
+          discard !!<db.newAuth(u, baleUser.id)
           u
 
       maybeUsr = !!<db.getUser(uid)
 
     login req, get maybeUsr
-    
+
   else:
     resp 404
+
+
+proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
+  let maybeUser = !!<db.getUser(data.username)
+
+  if u =? maybeUser:
+    let a = get !!<db.getAuthUser(u.id)
+    if hash =? a.hashedPass:
+      if hash == secureHash data.password:
+        login req, u
+      else:
+        raise newException(ValueError, "password is not valid")
+    else:
+      raise newException(ValueError, "the user does not set login with password")
+
+  else:
+    let
+      u = !!<db.newUser(data.username, data.username)
+      a = !!<db.newAuth(u, secureHash data.password)
+      usr = get !!<db.getUser(u)
+
+    login req, usr
+
 
 
 proc saveAsset(req: Request): Id {.adminOnly.} =

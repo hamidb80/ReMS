@@ -66,7 +66,7 @@ proc main =
                         discard
 
         except:
-            echo "error"
+            echo "error: " & getCurrentExceptionMsg()
 
 when isMainModule: 
     main()

@@ -1,6 +1,6 @@
 ## https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
 
-import std/[times, json, options, strutils, strformat, sequtils, tables]
+import std/[times, json, options, strutils, strformat, sequtils, tables, sha1]
 
 import ponairi
 include jsony_fix
@@ -22,9 +22,7 @@ func sqlize[T](items: seq[T]): string =
 func tagIds(data: RelValuesByTagId): seq[Id] =
   data.keys.toseq.mapIt(Id parseInt it)
 
-
-proc getFirstUser*(db: DbConn): User = 
-  db.find R, sql"SELECT * FROM USER"
+# ------------------------------------
 
 proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfterSec: Positive): options.Option[Invitation] =
   db.find R, sql"""
@@ -35,17 +33,31 @@ proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfterSec:
       secret = ?
     """, time, expiresAfterSec, secret
 
-proc getAuth*(db: DbConn, baleUserId: Id): options.Option[Auth] =
+
+proc getAuthBale*(db: DbConn, baleUserId: Id): options.Option[Auth] =
   db.find R, sql"""
     SELECT *
     FROM Auth a
-    WHERE id = ?
+    WHERE bale = ?
     """, baleUserId
 
-proc newAuth*(db: DbConn, baleUserId, userId: Id): Id =
+proc getAuthUser*(db: DbConn, user: Id): options.Option[Auth] =
+  db.find R, sql"""
+    SELECT *
+    FROM Auth a
+    WHERE user = ?
+    """, user
+
+proc newAuth*(db: DbConn, userId, baleUserId: Id): Id =
   db.insert Auth(
-    id: baleUserId,
-    user: userId)
+    user: userId,
+    bale: some baleUserId)
+
+proc newAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
+  db.insert Auth(
+    user: userId,
+    hashed_pass: some pass)
+
 
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, sql"""
@@ -54,11 +66,19 @@ proc getUser*(db: DbConn, userid: Id): options.Option[User] =
     WHERE id = ?
     """, userid
 
+proc getUser*(db: DbConn, username: string): options.Option[User] =
+  db.find R, sql"""
+    SELECT *
+    FROM User u
+    WHERE u.username = ?
+    """, username
+
 proc newUser*(db: DbConn, uname, nname: string): Id =
   db.insertID User(
     username: uname,
     nickname: nname,
     role: urUser)
+
 
 # TODO add show_name tag
 proc newTag*(db: DbConn, t: Tag): Id =

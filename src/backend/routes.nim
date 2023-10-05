@@ -17,7 +17,8 @@ dispatch router, ../views:
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
   get "/login/", loadDist"login.html" {.html.}
-  get "/api/login/"?(secret: string), loginWithInvitationCode {.ok.}
+  get "/api/login/bale/"?(secret: string), loginWithInvitationCode {.ok.}
+  post "/api/login/form/", loginWithForm {.ok.}
   get "/api/logout/", logout {.ok.}
   # get "/me/", usersPage {.html.}
   get "/api/me/", getMe {.json: User.}

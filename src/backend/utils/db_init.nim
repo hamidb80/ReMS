@@ -1,4 +1,4 @@
-import std/json
+import std/[json, sha1]
 
 import ponairi
 

@@ -1,8 +1,14 @@
 import std/[json, parseutils]
+
 import ../../common/[types, datastructures]
 
-when defined js: import ponairi/pragmas
-else: import ponairi
+when defined js:
+  import ponairi/pragmas
+  type SecureHash = string
+  func parseSecureHash(s: string): SecureHash = s
+else:
+  import std/sha1
+  import ponairi
 
 
 type # database models
@@ -24,8 +30,14 @@ type # database models
     timestamp*: UnixTime
 
   Auth* = object
-    id* {.primary.}: Id ## platform user id
+    ## there are 2 ways of login:
+    ## 1. by Bale bot
+    ## 2. by username & pass
+    id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
+    bale* {.references: User.id.}: Option[Id] # bale chat id
+    email*: Option[Str]
+    hashed_pass*: Option[SecureHash]
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
@@ -213,6 +225,10 @@ type # view models
     screenshot*: Option[Id]
     activeRelsValues*: RelValuesByTagId
 
+  LoginForm* = object
+    username*: Str
+    password*: Str
+
   GithubCodeEmbed* = object
     styleLink*: Str
     htmlCode*: Str
@@ -290,6 +306,11 @@ when not defined js:
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
   proc to*(src: DbValue, dest: var Path) =
     dest = src.s.Path
+
+  proc sqlType*(t: typedesc[SecureHash]): string = "TEXT"
+  proc dbValue*(p: SecureHash): DbValue = DbValue(kind: dvkString, s: $p)
+  proc to*(src: DbValue, dest: var SecureHash) =
+    dest = parseSecureHash src.s
 
   proc sqlType*(t: typedesc[UnixTime]): string = "INT"
   proc dbValue*(p: UnixTime): DbValue = DbValue(kind: dvkInt, i: p.Id)

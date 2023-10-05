@@ -20,8 +20,20 @@ proc loginApi*(
     success: proc(),
     fail: proc() = noop
 ) =
-    discard get_api_login_url(code)
+    discard get_api_login_bale_url(code)
     .getApi()
+    .then(success)
+    .catch(fail)
+
+proc loginApi*(
+    user, pass: string,
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard post_api_login_form_url()
+    .postApi(forceJsObject LoginForm(
+            username: user, 
+            password: pass))
     .then(success)
     .catch(fail)
 
