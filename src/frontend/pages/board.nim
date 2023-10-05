@@ -34,8 +34,7 @@ type
   SideBarState = enum
     ssMessagesView
     ssPropertiesView
-    # TODO update board title with apiUpdateBoardTitle
-    # ssBoardSettingsView
+    ssBoardProperties
 
   BoardState = enum
     bsFree
@@ -56,6 +55,7 @@ type
 
   AppData = object
     id: Id ## current board id that is editing
+    title: cstring
 
     # konva states
     stage: Stage
@@ -129,13 +129,12 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
-# TODO ability to set the center
-# TODO shadow node when creating node, make it opaque after placing it
-# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
-# TODO area selection
 # TODO select custom color palletes
+# TODO ability to set the center
+# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
 # TODO customize border radius for nodes
 # TODO add beizier curve
+# TODO add custom shape for connections
 # FIXME image node border radius is depend on font size
 
 var
@@ -946,6 +945,7 @@ proc loadPalette(palette: string): Future[void] =
 proc fetchBoard(id: Id) =
   apiGetBoard id, proc(b: Board) =
     app.restore b.data
+    app.title = b.title
 
 proc fetchTags(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -1136,6 +1136,13 @@ proc createDom*(data: RouterData): VNode =
                     text "Properties "
                   icon "fa-circle-info"
 
+              tdiv(class = "nav-item", onclick = sidebarStateMutator ssBoardProperties):
+                span(class = "nav-link px-3 pointer" &
+                  iff(app.sidebarState == ssBoardProperties, " active")):
+                  span(class = "caption"):
+                    text "board "
+                  icon "fa-play"
+
             tdiv(class = "nav-item d-flex flex-row px-2"):
               span(class = "nav-link px-1 pointer", onclick = maximize):
                 invisibleText()
@@ -1219,10 +1226,28 @@ proc createDom*(data: RouterData): VNode =
                       let s = e.target.value
                       scaleImage vn, parseFloat s
 
+            of ssBoardProperties:
+              label(class = "form-label"):
+                text "Title"
+
+              input(`type` = "text", class = "form-control",
+                    placeholder = "title", value = app.title):
+
+                proc oninput(e: Event; v: Vnode) =
+                  let s = e.target.value
+                  app.title = s
+
+              button(class = "btn btn-primary m-2"):
+                text "update"
+                icon "fa-sync ms-2"
+
+                proc onclick =
+                  apiUpdateBoardTitle app.id, $app.title, proc =
+                    notify "title updated!"
+
 
           footer(class = "mt-2"):
             case app.sidebarState
-            of ssPropertiesView: discard
             of ssMessagesView:
               if app.selectedVisualNodes.len > 0:
                 tdiv(class = "input-group"):
@@ -1236,6 +1261,7 @@ proc createDom*(data: RouterData): VNode =
                         id = parseInt inp.value
                       addToMessages id
                       inp.value = c""
+            else: discard
 
 
       snackbar()
@@ -1469,14 +1495,14 @@ proc init* =
           notify "nothing to delete"
 
       addHotkey "Escape", proc =
-    
+
         if app.boardState == bsAddNode:
           destroy app.tempNode.konva.wrapper
 
         app.boardState = bsFree
         app.footerState = fsOverview
         hide app.tempEdge.konva.wrapper
-    
+
         unselect()
         redraw()
 
