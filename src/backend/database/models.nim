@@ -5,7 +5,6 @@ import ../../common/[types, datastructures]
 when defined js:
   import ponairi/pragmas
   type SecureHash = string
-  func parseSecureHash(s: string): SecureHash = s
 else:
   import std/sha1
   import ponairi

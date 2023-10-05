@@ -20,15 +20,27 @@ import ../../backend/database/[models]
 randomize()
 
 type
+  Oid = cstring
+
+  Region = range[1..4]
+
+  Axis = enum
+    aVertical
+    aHorizontal
+
+  NOption[T] = options.Option[T]
+
+type
   SideBarState = enum
     ssMessagesView
     ssPropertiesView
     # TODO update board title with apiUpdateBoardTitle
-    # ssBoardSettingsView 
+    # ssBoardSettingsView
 
   BoardState = enum
     bsFree
     bsMakeConnection
+    bsAddNode
 
   FooterState = enum
     fsOverview
@@ -38,22 +50,12 @@ type
     fsBorderWidth
     fsBorderShape
 
-  Oid = cstring
-
-  Region = range[1..4]
-
-  Axis = enum
-    aVertical
-    aHorizontal
-
   AppState = enum
     asNormal
     asPan
 
-  NOption[T] = options.Option[T]
-
   AppData = object
-    id: Id
+    id: Id ## current board id that is editing
 
     # konva states
     stage: Stage
@@ -62,6 +64,7 @@ type
     bottomGroup: Group
 
     tempEdge: Edge
+    tempNode: VisualNode
     # transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
@@ -113,7 +116,6 @@ type
     shape: KonvaShape
     line: Line
 
-# TODO ability to set the center
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
@@ -127,6 +129,7 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO ability to set the center
 # TODO shadow node when creating node, make it opaque after placing it
 # TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
 # TODO area selection
@@ -512,7 +515,7 @@ proc setFocusedEdgeWidth(w: Tenth) =
   else:
     for e in app.selectedEdges:
       updateEdgeWidth e, w
-    
+
 
 proc getFocusedEdgeWidth: Tenth =
   case app.selectedEdges.len
@@ -532,12 +535,12 @@ proc setFocusedTheme(theme: ColorTheme) =
   for v in app.selectedVisualNodes:
     v.config.theme = theme
     applyTheme v.konva.txt, v.konva.box, theme
-    done =true
+    done = true
 
   for e in app.selectedEdges:
     updateEdgeTheme e, theme
-    done =true
-  
+    done = true
+
   if not done:
     app.theme = theme
 
@@ -666,6 +669,9 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
             hide app.tempEdge.konva.wrapper
             removeHighlight sv
 
+      else:
+        discard
+
       redraw()
 
   with wrapper:
@@ -682,7 +688,8 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
         setCursor ccMove
 
     on "dragend", proc =
-      vn.config.position = wrapper.position
+      for v in app.selectedVisualNodes:
+        v.config.position = v.konva.wrapper.position # sync data
       setCursor ccPointer
 
     on "dragmove", proc =
@@ -710,18 +717,19 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     loadImageGen u, vn, false
   vn
 
+proc currentVisualNodeConfig(uid: cstring = c""): VisualNodeConfig =
+  VisualNodeConfig(
+    id: uid,
+    position: app.lastAbsoluteMousePos,
+    font: app.font,
+    theme: app.theme,
+    data: VisualNodeData(
+      kind: vndkText,
+      text: ""))
+
 proc createNode: VisualNode =
-  let
-    uid = cstring $uuid4()
-    cfg = VisualNodeConfig(
-      id: $uid,
-      position: app.lastAbsoluteMousePos,
-      font: app.font,
-      theme: app.theme,
-      data: VisualNodeData(
-        kind: vndkText,
-        text: ""))
-    vn = createnode cfg
+  let uid = cstring $uuid4()
+  let vn = createnode currentVisualNodeConfig(uid)
 
   app.objects[uid] = vn
   app.mainGroup.getLayer.add vn.konva.wrapper
@@ -1077,6 +1085,14 @@ proc createDom*(data: RouterData): VNode =
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-plus fa-lg"
 
+            proc onclick =
+              app.boardState = bsAddNode
+              app.tempNode = createNode()
+
+              app.hoverGroup.add app.tempNode.konva.wrapper
+              select app.tempNode
+
+
           # TODO show shortcut and name via a tooltip
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-expand fa-lg"
@@ -1248,6 +1264,7 @@ proc init* =
       mainGroup = newGroup()
       bottomGroup = newGroup()
       tempEdge = newEdge("[temp]", "[temp]", EdgeConfig())
+      # tempNode: VisualNode
 
     with app.stage:
       width = window.innerWidth
@@ -1279,7 +1296,8 @@ proc init* =
               changeScale mm, s′, false
               app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
 
-          elif app.boardState == bsMakeConnection:
+          case app.boardState
+          of bsMakeConnection:
             let
               v = app.hoverVisualNode
               n1 = app.selectedVisualNodes[0]
@@ -1291,6 +1309,12 @@ proc init* =
               let t = newPoint currentMousePos
               updateEdgePos app.tempEdge, n1.area, n1.center, t.area, t.position
 
+          of bsAddNode:
+            app.tempNode.konva.wrapper.position = currentMousePos
+            app.tempNode.config.position = currentMousePos
+
+          else:
+            discard
 
           app.lastAbsoluteMousePos = currentMousePos
           app.lastClientMousePos = m
@@ -1300,13 +1324,23 @@ proc init* =
       add app.bottomGroup
       add app.tempEdge.konva.wrapper
       add app.mainGroup
-      add app.hoverGroup # FIXME move it to another layer
+      add app.hoverGroup
 
     with app.stage:
       add layer
 
       on "mousedown", proc =
         app.leftClicked = true
+
+        case app.boardState
+        of bsAddNode:
+          app.boardState = bsFree
+          app.objects[app.tempNode.config.id] = app.tempNode
+          app.mainGroup.add app.tempNode.konva.wrapper
+          app.tempNode = nil
+          unselect()
+        else:
+          discard
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
         if app.leftClicked and (kcSpace in app.pressedKeys):
@@ -1417,8 +1451,8 @@ proc init* =
           unselect()
           redraw()
 
-        
-        elif  app.selectedEdges.len > 0:
+
+        elif app.selectedEdges.len > 0:
           for ed in app.selectedEdges:
             let
               p = ed.data.points
