@@ -19,6 +19,7 @@ dispatch router, ../views:
   get "/login/", loadDist"login.html" {.html.}
   get "/api/login/bale/"?(secret: string), loginWithInvitationCode {.ok.}
   post "/api/login/form/", loginWithForm {.ok.}
+  post "/api/signup/form/", signupWithForm {.ok.}
   get "/api/logout/", logout {.ok.}
   # get "/me/", usersPage {.html.}
   get "/api/me/", getMe {.json: User.}

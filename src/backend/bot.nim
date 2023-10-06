@@ -1,4 +1,4 @@
-import std/[options, os, tables, random, times, json, sequtils, strutils, httpclient]
+import std/[options, os, tables, random, times, json, sequtils, strutils, httpclient, macros]
 
 import ponairi, questionable
 import bale, bale/helper/stdhttpclient
@@ -51,6 +51,11 @@ proc main =
     skip = -1
     hc = newHttpClient()
 
+  macro `>>`(action): untyped =
+    action.insert 1, ident"api"
+    quote:
+      hc.req `action`
+
   while true:
     let
       notifs = !!<db.getActiveNotifs()
@@ -59,15 +64,14 @@ proc main =
     for n in notifs:
       if bid =? n.bale_chat_id:
         tryN 3:
-          discard hc.req api.sendMessage(int bid, "You've logged In!")
+          discard >>sendMessage(int bid, "You've logged In as: \n" & n.nickname)
         do:
-          echo "wtf"
-
+          echo "WTF"
 
     !!db.markNotifsAsStale(ids)
 
     try:
-      let updates = hc.req api.getUpdates(offset = skip+1)
+      let updates = >>getUpdates(offset = skip+1)
 
       for u in \updates:
         skip = u.id
@@ -77,16 +81,16 @@ proc main =
           case text
           of loginD:
             let lcode = genLoginCode msg.frm
-            discard hc.req api.sendMessage(chid, lcode)
-            discard hc.req api.sendMessage(chid, "enter this code in the site login page")
+            discard >>sendMessage(chid, lcode)
+            discard >>sendMessage(chid, "enter this code in the site login page")
 
           of startD:
-            discard hc.req api.sendMessage(chid,
+            discard >>sendMessage(chid,
                 "Hey Choose from keyboard",
                 reply_markup = botKeyBoard)
 
           else:
-            discard hc.req api.sendMessage(chid,
+            discard >>sendMessage(chid,
                 "invalid message: ",
                 reply_markup = botKeyBoard)
 

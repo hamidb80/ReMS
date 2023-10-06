@@ -24,8 +24,9 @@ app.register "option-selector", selectEditor
 app.components = defaultComponents()
 app.regiterComponents
 
-# TODO add side bar on the left for more options like save, load from disk, ...
 # TODO app ability to copy node path
+# TODO ability to add/remove tags here
+# TODO import to a specific node not replace the whole tree!
 
 # ----- UI ------------------------------
 
@@ -137,7 +138,6 @@ proc createDom: VNode =
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-save fa-xl"
           
-          # TODO ability to add/remove tags here
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-solid fa-tag fa-xl"
 
@@ -342,7 +342,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       ## undo
 
     of "o":
-      # TODO import to a specific node not replace the whole tree!
       selectFile proc(c: cstring) = 
         purge app.tree.dom
 
