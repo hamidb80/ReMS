@@ -1,4 +1,5 @@
-import std/[options, os, tables, random, times, json, sequtils, strutils, httpclient, macros]
+import std/[options, os, tables, random, times, json, sequtils, strutils,
+    httpclient, macros]
 
 import ponairi, questionable
 import bale, bale/helper/stdhttpclient
@@ -79,19 +80,19 @@ proc main =
           let chid = msg.chat.id
 
           case text
+          of startD:
+            discard >>sendMessage(chid,
+                "Welcome! choose from keyboard",
+                reply_markup = botKeyBoard)
+
           of loginD:
             let lcode = genLoginCode msg.frm
             discard >>sendMessage(chid, lcode)
-            discard >>sendMessage(chid, "enter this code in the site login page")
-
-          of startD:
-            discard >>sendMessage(chid,
-                "Hey Choose from keyboard",
-                reply_markup = botKeyBoard)
+            discard >>sendMessage(chid, "Enter this code in the login page")
 
           else:
             discard >>sendMessage(chid,
-                "invalid message: ",
+                "invalid message, choose from keyboard",
                 reply_markup = botKeyBoard)
 
     except:

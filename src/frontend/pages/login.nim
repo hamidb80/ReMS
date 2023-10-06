@@ -9,17 +9,18 @@ import ../../common/[conventions]
 import ../../backend/database/models
 
 
-type LoginMethod = enum
-  lmBaleBot = "bale bot"
-  lmForm = "form"
+type AppAction = enum
+  aaBaleBot = "bale bot"
+  aaLoginForm = "login form"
+  aaSignupForm = "signup form"
 
 var
   username: string
   pass: string
-  state = lmBaleBot
+  state = aaBaleBot
   user: Option[User]
 
-proc genSetState(i: LoginMethod): proc() = 
+proc genSetState(i: AppAction): proc() = 
   proc = 
     state = i
 
@@ -36,7 +37,7 @@ proc createDom: Vnode =
 
 
     ul(class = "pagination pagination-lg"):
-      for i in LoginMethod:
+      for i in AppAction:
         li(class = "page-item " & iff(i == state, "active")):
           a(class = "page-link", href = "#", onclick = genSetState i):
             text $i
@@ -63,8 +64,8 @@ proc createDom: Vnode =
         tdiv(class = "card-body p-2"):
           tdiv(class = "form-group d-inline-block"):
             case state
-            of lmBaleBot: discard
-            of lmForm:
+            of aaBaleBot: discard
+            of aaLoginForm, aaSignupForm:
               label(class = "form-check-label"):
                 text "username: "
 
@@ -96,10 +97,12 @@ proc createDom: Vnode =
                   notify "pass wrong :("
 
                 case state
-                of lmBaleBot:
+                of aaBaleBot:
                   loginApi pass, success, fail
-                of lmForm:
+                of aaLoginForm:
                   loginApi username, pass, success, fail
+                of aaSignupForm:
+                  signupApi username, pass, success, fail
 
 
 
