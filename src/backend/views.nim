@@ -113,7 +113,7 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
         else:
           let u = !!<db.newUser(
             baleUser.username,
-            baleUser.firstName & baleUser.lastname)
+            baleUser.firstName & baleUser.lastname.get "")
           discard !!<db.newAuth(u, baleUser.id)
           u
 

@@ -24,7 +24,7 @@ requires "ponairi" # 0.3.2
 requires "waterpark" # 0.1.3
 requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
-# requires "bale"
+requires "bale >= 0.0.2" 
 
 requires "karax" # 1.3.0
 # requires "urlon"

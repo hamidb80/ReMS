@@ -63,7 +63,9 @@ proc main =
                             reply_markup = botKeyBoard)
 
                     else:
-                        discard
+                        discard waitFor bot.sendMessage(chid,
+                            "invalid message: ",
+                            reply_markup = botKeyBoard)
 
         except:
             echo "error: " & getCurrentExceptionMsg()

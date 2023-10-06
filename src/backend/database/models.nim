@@ -68,6 +68,8 @@ type # database models
     tvtInt
     tvtDate
     tvtJson
+    # TODO tag with enums values [only choosing from some options]
+
 
   TagCreator* = enum
     tcUser   ## created by user
@@ -95,21 +97,8 @@ type # database models
     tlHasAccess        ## tag with username of the person as value - is used with private
 
     tlFollows          ## user => ival (user.id)
+    tlNotification     ##
 
-    tlReserved1
-    tlReserved2
-    tlReserved3
-    tlReserved4
-    tlReserved5
-    tlReserved6
-    tlReserved7
-    tlReserved8
-    tlReserved9
-    tlReserved10
-    tlReserved11
-    tlReserved12
-
-    # -- Remembering System
     tlRememberIn
     tlRemembered
 
@@ -132,15 +121,17 @@ type # database models
 
   RelationState* = enum
     rsFresh
-    rsStale ## to mark as `processed` by system
+    rsStale ## to mark as processed or expired by the system
 
   RelationCreationReason* = enum
     rcrUserInteraction
-    rcrSystamAutomation
+    rcrSystemAutomation
+    rcrExternalEvent
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
     tag* {.references: Tag.id, index.}: Id            ## originates from
+    kind*: Option[int]                                ## sub label according to tag
     user* {.references: User.id.}: Option[Id]         ## owner
 
     asset* {.references: Asset.id, index.}: Option[Id]
@@ -153,6 +144,7 @@ type # database models
     sval*: Option[Str]
     refers*: Option[Id]                               ## arbitrary row id
 
+    info*: Option[Str]                                ## additional information
     state*: RelationState
     created_due_to*: RelationCreationReason
     timestamp*: UnixTime                              ## creation time
@@ -166,12 +158,6 @@ type # database models
     board* {.references: Board.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
     active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
-
-  Notification* = object
-    id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
-    content*: Str
-    timestamp*: UnixTime # set after sending
 
 type # view models
   EntityClass* = enum
