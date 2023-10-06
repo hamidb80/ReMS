@@ -1,74 +1,98 @@
-import std/[asyncdispatch, options, os, tables, random, times, json]
+import std/[options, os, tables, random, times, json, sequtils, strutils, httpclient]
 
-import ./database/[dbconn, models]
+import ponairi, questionable
+import bale, bale/helper/stdhttpclient
+
+import ./database/[dbconn, models, queries]
 import ../common/[types]
-import ponairi
 
-import bale
-import questionable
-
-# XXX save tokens in sqlite database
 
 randomize()
 
-let
-    token = getEnv "BALE_BOT_TOKEN"
-    bot = newBaleBot token
 
-template forever(body): untyped =
-    while true:
-        body
+let
+  token = getEnv "BALE_BOT_TOKEN"
+  api = baleBotBaseApi token
 
 const
-    loginD = "/login"
-    startD = "/start"
+  loginD = "/login"
+  startD = "/start"
 
 let botKeyBoard = some ReplyKeyboardMarkup(
     keyboard: some @[@[
     KeyboardButton(text: loginD)]])
 
-proc randCode(size: Positive): string = 
-    for _ in 1..size:
-        add result, rand '0'..'9'
+proc randCode(size: Positive): string =
+  for _ in 1..size:
+    add result, rand '0'..'9'
 
-proc genLoginCode(u: bale.User): string = 
-    result = randCode 6
-    !!db.insert Invitation(
-        secret: result, 
-        timestamp: toUnixtime now(), 
-        data: JsonNode u)
+proc genLoginCode(u: bale.User): string =
+  # TODO move to queries
+  result = randCode rand 4..6
+  !!db.insert Invitation(
+      secret: result,
+      timestamp: toUnixtime now(),
+      data: JsonNode u)
+
+template tryN(n: Positive, body, otherwise: untyped): untyped =
+  try:
+    for i in 1..n:
+      try:
+        body
+        break
+      except:
+        if i == n:
+          raise
+  except:
+    otherwise
 
 proc main =
-    var skip = -1
+  var
+    skip = -1
+    hc = newHttpClient()
 
-    forever:
-        try:
-            let updates = waitFor bot.getUpdates(offset = skip+1)
-            echo (updates.len, skip)
+  while true:
+    let
+      notifs = !!<db.getActiveNotifs()
+      ids = notifs.mapIt(it.row_id)
 
-            for u in updates:
-                skip = u.id
-                if msg =? u.msg and text =? msg.text:
-                    let chid = msg.chat.id
+    for n in notifs:
+      if bid =? n.bale_chat_id:
+        tryN 3:
+          discard hc.req api.sendMessage(int bid, "You've logged In!")
+        do:
+          echo "wtf"
 
-                    case text
-                    of loginD:
-                        let lcode = genLoginCode msg.frm
-                        discard waitFor bot.sendMessage(chid, lcode)
-                        discard waitFor bot.sendMessage(chid, "enter this code in the site login page")
 
-                    of startD:
-                        discard waitFor bot.sendMessage(chid,
-                            "Hey Choose from keyboard",
-                            reply_markup = botKeyBoard)
+    !!db.markNotifsAsStale(ids)
 
-                    else:
-                        discard waitFor bot.sendMessage(chid,
-                            "invalid message: ",
-                            reply_markup = botKeyBoard)
+    try:
+      let updates = hc.req api.getUpdates(offset = skip+1)
 
-        except:
-            echo "error: " & getCurrentExceptionMsg()
+      for u in \updates:
+        skip = u.id
+        if msg =? u.msg and text =? msg.text:
+          let chid = msg.chat.id
 
-when isMainModule: 
-    main()
+          case text
+          of loginD:
+            let lcode = genLoginCode msg.frm
+            discard hc.req api.sendMessage(chid, lcode)
+            discard hc.req api.sendMessage(chid, "enter this code in the site login page")
+
+          of startD:
+            discard hc.req api.sendMessage(chid,
+                "Hey Choose from keyboard",
+                reply_markup = botKeyBoard)
+
+          else:
+            discard hc.req api.sendMessage(chid,
+                "invalid message: ",
+                reply_markup = botKeyBoard)
+
+    except:
+      echo "error: " & getCurrentExceptionMsg()
+
+
+when isMainModule:
+  main()

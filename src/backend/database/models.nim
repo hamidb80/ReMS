@@ -102,7 +102,6 @@ type # database models
     tlRememberIn
     tlRemembered
 
-
   Tag* = object
     ## most of the tags are primarily made for searching
     ## purposes and have redundent data
@@ -119,6 +118,9 @@ type # database models
     theme*: ColorTheme
     value_type*: TagValueType
 
+  NotificationKind* = enum
+    nkLoginBale
+
   RelationState* = enum
     rsFresh
     rsStale ## to mark as processed or expired by the system
@@ -131,7 +133,7 @@ type # database models
   Relation* = object
     id* {.primary, autoIncrement.}: Id
     tag* {.references: Tag.id, index.}: Id            ## originates from
-    kind*: Option[int]                                ## sub label according to tag
+    kind* {.index.}: Option[int]                      ## sub label according to tag
     user* {.references: User.id.}: Option[Id]         ## owner
 
     asset* {.references: Asset.id, index.}: Option[Id]
@@ -181,7 +183,7 @@ type # view models
   TagCriteria* = object
     label*: TagLabel
     tagId*: Id
-    valueType*: TagValueType
+    value_type*: TagValueType
 
     operator*: QueryOperator
     value*: Str
@@ -197,26 +199,33 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    activeRelsValues*: RelValuesByTagId
+    active_rels_values*: RelValuesByTagId
 
   NoteItemView* = object
     id*: Id
     data*: TreeNodeRaw[NativeJson]
-    activeRelsValues*: RelValuesByTagId
+    active_rels_values*: RelValuesByTagId
 
   BoardItemView* = object
     id*: Id
     title*: Str
     screenshot*: Option[Id]
-    activeRelsValues*: RelValuesByTagId
+    active_rels_values*: RelValuesByTagId
 
   LoginForm* = object
     username*: Str
     password*: Str
 
+  Notification* = object
+    row_id*: Id
+    uid*: Id
+    nickname*: Str
+    kind*: NotificationKind
+    bale_chat_id*:  Option[Id]
+
   GithubCodeEmbed* = object
-    styleLink*: Str
-    htmlCode*: Str
+    style_link*: Str
+    html_code*: Str
 
   LinkPreviewData* = object
     title*: Str

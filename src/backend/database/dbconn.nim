@@ -1,9 +1,9 @@
 import waterpark/sqlite
 import std/db_sqlite
 
-export sqlite.DbConn
 
 let pool = newSqlitePool(10, "./play.db")
+type DBC* = db_sqlite.DbConn
 
 template withConn*(db, body): untyped =
   pool.withConnnection db:
@@ -15,10 +15,10 @@ template `!!`*(dbworks): untyped {.dirty.} =
 
 template `!!<`*(dbworks): untyped {.dirty.} =
   block:
-    proc test(db: DbConn): auto =
+    proc test(db: DBC): auto =
       dbworks
 
-    var t: typeof test(default DbConn)
+    var t: typeof test(default DBC)
     withConn db:
       t = dbworks
     t

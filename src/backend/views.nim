@@ -120,6 +120,8 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
       maybeUsr = !!<db.getUser(uid)
 
     login req, get maybeUsr
+    !!db.loginNotif(uid)
+    
 
   else:
     resp 404

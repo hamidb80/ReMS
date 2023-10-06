@@ -24,7 +24,8 @@ func tagIds(data: RelValuesByTagId): seq[Id] =
 
 # ------------------------------------
 
-proc getInvitation*(db: DbConn, secret: string, time: Unixtime, expiresAfterSec: Positive): options.Option[Invitation] =
+proc getInvitation*(db: DbConn, secret: string, time: Unixtime,
+    expiresAfterSec: Positive): options.Option[Invitation] =
   db.find R, sql"""
     SELECT *
     FROM Invitation i 
@@ -309,3 +310,32 @@ proc exploreUser*(db: DbConn, str: string): seq[User] =
 
 proc getPalette*(db: DbConn, name: string): Palette =
   db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
+
+
+proc loginNotif*(db: DbConn, usr: Id) =
+  db.insert Relation(
+    user: some usr,
+    kind: some ord nkLoginBale,
+    timestamp: toUnixtime now())
+
+proc getActiveNotifs*(db: DbConn): seq[Notification] =
+  db.find R, sql"""
+    SELECT r.id, u.id, u.nickname, r.kind, a.bale
+    FROM Relation r
+    
+    JOIN User u
+    ON r.user = u.id
+
+    JOIN Auth a
+    ON a.user = r.user
+    
+    WHERE r.state = ?
+    ORDER BY r.id ASC
+  """, rsFresh
+
+proc markNotifsAsStale*(db: DbConn, ids: seq[Id]) =
+  db.exec sql fmt"""
+    UPDATE Relation
+    SET state = ?
+    WHERE id in {sqlize ids}
+  """, rsStale
