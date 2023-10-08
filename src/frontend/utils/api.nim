@@ -7,6 +7,8 @@ import ../../common/[types, datastructures, conventions]
 import ../jslib/axios
 import ./js
 
+## XXX know if an error accurs in the promise, 
+## it executes the `reject` function without stack trace ...
 
 let formCfg = AxiosConfig[FormData]()
 
@@ -308,4 +310,3 @@ proc apiGetLinkPreviewData*(
     .getApi
     .then(wrapResp success cast[LinkPreviewData](r.data))
     .catch(fail)
-

@@ -127,10 +127,10 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
     resp 404
 
 proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
-  let 
-    u = get !!<db.getUser(data.username) 
+  let
+    u = get !!<db.getUser(data.username)
     a = get !!<db.getAuthUser(u.id)
-  
+
   if hash =? a.hashedPass:
     if hash == secureHash data.password:
       login req, u
@@ -271,6 +271,9 @@ proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
 proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
+
+proc proxyDownload*(req: Request) {.qparams: {url: string}.} =
+  req.respond(200, body = download url)
 
 proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGithubJsFile download url

@@ -130,7 +130,7 @@ proc createDom: VNode =
   buildHtml tdiv:
     snackbar()
 
-    tdiv(class = "w-100 h-screen-100"):
+    tdiv(class = "w-100 h-screen-100 overflow-hidden"):
       tdiv(id="left-container", class="float-start h-100 d-flex flex-row",
           style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
 
@@ -192,7 +192,7 @@ proc createDom: VNode =
               reset winel.onmouseup
               
       tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block",
-          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 10}px""")):
+          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 16}px""")):
         verbatim fmt"<div id='{editRootElementId}'></div>"
 
 
@@ -431,21 +431,21 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # ----- Init ------------------------------
 
-template after(time, action): untyped = 
-  setTimeout time, () => action
-
-template fn(body): untyped = 
-  proc = 
-    body
-
 # FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) = 
-  apiGetNote id, proc(n: NoteItemView) = 
+  proc done(tw: TwNode) = 
+    echo "what"
+    resetApp tw
+    redraw()
+
+  proc whenGet(n: NoteItemView) = 
     deserizalize(app.components, n.data, some app.tree.dom, wait = false)
-    .then(resetApp)
-    .then(fn after(100, redraw()))
+    .then(done)
     .dcatch proc = 
       notify "failed to fetch note data"
+
+  apiGetNote id, whenGet, proc = 
+    echo "whaaat", getcurrentExceptionmsg()
 
 proc init* = 
   let root = instantiate(rootComponent, nil)

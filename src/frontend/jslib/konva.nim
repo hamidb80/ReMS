@@ -416,8 +416,8 @@ proc moveToBottom*(k: KonvaObject) {.konva.}
 proc moveUp*(k: KonvaObject) {.konva.}
 proc moveToTop*(k: KonvaObject) {.konva.}
 
-proc draw*(l: Layer or Stage) {.konva.}
-proc batchDraw*(l: Layer or Stage) {.konva.}
+proc draw*(l: KonvaObject) {.konva.}
+proc batchDraw*(l: KonvaObject) {.konva.}
 
 proc add*(k, o: KonvaObject) {.konva.}
 proc destroy*(k: KonvaObject) {.konva.}

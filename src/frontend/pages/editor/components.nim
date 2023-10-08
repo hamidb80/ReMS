@@ -603,7 +603,7 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-proc initGithubCode: Hooks =
+proc initGithubGist: Hooks =
   let
     wrapperEl = createElement("div", {"class": "tw-gh-code"})
     cssLinkEl = createElement("link", {"rel": "stylesheet", "href": ""})
@@ -621,10 +621,17 @@ proc initGithubCode: Hooks =
 
     render = genRender:
       some newPromise proc(resolve, fail: proc()) =
-        apiGetGithubCode $url(), proc(a: GithubCodeEmbed) =
+        
+        proc done(a: GithubCodeEmbed) =
           cssLinkEl.setAttr "href", a.styleLink
           codeEl.innerHTML = a.htmlCode
           resolve()
+
+        proc noo = 
+          codeEl.innerText = "fail to fetch gist in url: " & url()
+          resolve()
+        
+        apiGetGithubCode $url(), done, noo
 
     settings = () => @[
       SettingsPart(
@@ -970,11 +977,11 @@ defComponent configComponent,
   @[],
   initConfig
 
-defComponent githubCodeComponent,
+defComponent githubGistComponent,
   "github",
   "bi bi-github",
   @["global", "block"],
-  initGithubCode
+  initGithubGist
 
 defComponent includeCodeComponent,
   "includer",
@@ -1025,7 +1032,7 @@ proc defaultComponents*: ComponentsTable =
     listComponent,
     tableComponent,
     tableRowComponent,
-    githubCodeComponent,
+    githubGistComponent,
     includeCodeComponent,
     linkPreviewComponent,
     moreCollapseComponent,

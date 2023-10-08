@@ -129,6 +129,7 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO if a node was selected and clicked on new node, the styles of last node is copied
 # TODO select custom color palletes
 # TODO ability to set the center
 # TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
@@ -1436,6 +1437,7 @@ proc init* =
           if s.startswith "/": # paste by link
             let vn = createNode()
             loadImageGen s, vn, true
+            add app.mainGroup, vn.konva.wrapper
 
           elif files.len == 1: # paste by image
             let f = files[0]
@@ -1448,6 +1450,7 @@ proc init* =
                   url: assetUrl)
 
                 loadImageGen assetUrl, vn, true
+                add app.mainGroup, vn.konva.wrapper
 
     block prepare:
       app.sidebarWidth = 0

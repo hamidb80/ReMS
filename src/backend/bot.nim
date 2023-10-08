@@ -18,10 +18,12 @@ let
 const
   loginD = "/login"
   startD = "/start"
+  mychatidtD = "/my_chat_id"
 
 let botKeyBoard = some ReplyKeyboardMarkup(
     keyboard: some @[@[
-    KeyboardButton(text: loginD)]])
+    KeyboardButton(text: loginD),
+    KeyboardButton(text: mychatidtD)]])
 
 proc randCode(size: Positive): string =
   for _ in 1..size:
@@ -35,19 +37,22 @@ proc genLoginCode(u: bale.User): string =
       timestamp: toUnixtime now(),
       data: JsonNode u)
 
-template tryN(n: Positive, body, otherwise: untyped): untyped =
+template tryN(wait, n: Positive, body, otherwise: untyped): untyped =
   try:
     for i in 1..n:
       try:
         body
         break
       except:
+        sleep wait
         if i == n:
           raise
   except:
     otherwise
 
-proc main =
+# TODO push messages on a queue and try sending them
+
+proc main = # {.raises: [].} =
   var
     skip = -1
     hc = newHttpClient()
@@ -64,7 +69,7 @@ proc main =
 
     for n in notifs:
       if bid =? n.bale_chat_id:
-        tryN 3:
+        tryN 100, 3:
           discard >>sendMessage(int bid, "You've logged In as: \n" & n.nickname)
         do:
           echo "WTF"
@@ -89,6 +94,9 @@ proc main =
             let lcode = genLoginCode msg.frm
             discard >>sendMessage(chid, lcode)
             discard >>sendMessage(chid, "Enter this code in the login page")
+
+          of mychatidtD:
+            discard >>sendMessage(chid, "your chat id in Bale is: " & $chid)
 
           else:
             discard >>sendMessage(chid,

@@ -1,4 +1,4 @@
-import std/[sets, tables, strutils, sequtils, options, sugar, enumerate]
+import std/[sets, tables, strutils, sequtils, options, sugar, enumerate, strformat]
 import std/[jsffi, dom, asyncjs, jsconsole]
 
 import karax/[vdom], questionable
@@ -228,8 +228,8 @@ proc deserizalize*(
   wait = true,
   wrap = true,
 ): Future[TwNode] =
-  var
-    futures: seq[Future[void]]
+  var futures: seq[Future[void]]
+  let
     el =
       if t =? elem: t
       else: createElement("div", {"class": "tw-content"})

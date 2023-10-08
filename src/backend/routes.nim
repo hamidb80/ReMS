@@ -73,6 +73,7 @@ dispatch router, ../views:
   # delete "/api/palette/"?(name: string), 
 
   # to aviod CORS
+  get "/proxy/download/"?(url: string), proxyDownload {.file.} 
   get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} 
   get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.}
 
