@@ -8,6 +8,7 @@ include jsony_fix
 import ./models
 import ../../common/[types, datastructures]
 
+# TODO add auto generated tags
 
 template R: untyped {.dirty.} =
   typeof result
@@ -128,7 +129,6 @@ proc newUser*(db: DbConn, uname, nname: string): Id =
     role: urUser)
 
 
-# TODO add show_name tag
 proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
     owner: 0,
