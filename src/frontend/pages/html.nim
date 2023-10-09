@@ -73,10 +73,14 @@ proc tags: VNode =
   commonPage "tag manager", [
       extJs("./script-tags.js", true)]
 
-proc graphEditor: VNode =
-  commonPage "Graph", [
+proc boardEdit: VNode =
+  commonPage "Board", [
       extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
       extJs("./script-board.js", true)]
+
+proc notePreview: VNode =
+  commonPage "Note preview", [
+      extJs("./note-preview.js", true)]
 
 proc noteEditor: VNode =
   commonPage "editor", [
@@ -167,5 +171,6 @@ when isMainModule:
   writeFile "./dist/login.html", $$login()
   writeFile "./dist/tags.html", $$tags()
   writeFile "./dist/explore.html", $$explore()
-  writeFile "./dist/board.html", $$graphEditor()
+  writeFile "./dist/board.html", $$boardEdit()
+  writeFile "./dist/note-preview.html", $$notePreview()
   writeFile "./dist/editor.html", $$noteEditor()

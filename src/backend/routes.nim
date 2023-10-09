@@ -26,7 +26,7 @@ dispatch router, ../views:
   # post "/api/profile/new/", getMe {.json: User.}
   # put "/api/profile/update/"?(id: int), getMe {.json: User.}
 
-  get "/asset/preview/"?(id: int), assetPreview {.html.}
+  # get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
@@ -35,7 +35,7 @@ dispatch router, ../views:
 
   get "/notes/new/", newNote {.Id.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
-  # get "/note/preview/"?(id: int), notePreview {.html.}
+  get "/note/preview/"?(id: int), loadDist"note-preview.html" {.html.}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}

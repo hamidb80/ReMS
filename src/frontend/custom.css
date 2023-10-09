@@ -53,6 +53,31 @@ body {
 
 /* specific */
 
+@media only screen and (max-width: 480px) {
+  .note-preview {
+    padding: 10px;
+  }
+}
+
+@media only screen and (min-width: 480px) and (max-width: 780px) {
+  .note-preview>div {
+    width: 90%;
+  }
+}
+
+@media only screen and (min-width: 780px) and (max-width: 1000px) {
+  .note-preview>div {
+    width: 80%;
+  }
+}
+
+@media only screen and (min-width: 1000px) {
+  .note-preview>div {
+    width: 800px;
+  }
+}
+
+
 .h40v {
   height: 40vh;
 }

@@ -219,7 +219,7 @@ proc deleteNote*(req: Request) {.qparams: {id: int}, adminOnly.} =
 
 proc newBoard*(req: Request) {.adminOnly.} =
   let id = !!<db.newBoard()
-  redirect get_board_editor_url id
+  redirect get_board_edit_url id
 
 proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, adminOnly.} =
   !!db.updateBoardContent(id, data)
