@@ -1,5 +1,5 @@
 import std/[jsffi, dom, asyncjs, jsconsole]
-import std/[with, options, sequtils, tables, sugar]
+import std/[with, options, sequtils, tables, sugar, strformat]
 
 import ./core
 import ../../utils/[browser, js, api]
@@ -140,6 +140,12 @@ template genRender(body): untyped {.dirty.} =
 
 # ----- Definition -----------
 
+proc attachInstance(comp: Component, hooks: Hooks, ct: ComponentsTable) =
+  let n = instantiate(comp, ct)
+  hooks.self().attach n, 0
+  n.mounted mbUser, tmInteractive
+
+
 proc initRoot: Hooks =
   defHooks:
     dom = errProc(Element, "this hooks should be set by app manually")
@@ -189,12 +195,6 @@ proc initRawText: Hooks =
           input: spaceAround().toJs,
           updateCallback: mutState(spSet, bool)))]
 
-proc attachInstance(comp: Component, hooks: Hooks, ct: ComponentsTable) =
-  let n = instantiate(comp, ct)
-  hooks.self().attach n, 0
-  n.mounted mbUser, tmInteractive
-
-
 proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
   proc: Hooks =
     let el = createElement tag
@@ -217,7 +217,6 @@ let
   initTitleH4 = wrapperTextElement("h4", anyTag)
   initTitleH5 = wrapperTextElement("h5", anyTag)
   initTitleH6 = wrapperTextElement("h6", anyTag)
-
 
 proc initParagraph: Hooks =
   let
@@ -326,7 +325,6 @@ proc initVerticalSpace: Hooks =
               ["my-9", "9"]]},
           updateCallback: mutState(setDir, cstring)))]
 
-# TODO add options to set length
 proc initHorizontalLine: Hooks =
   let el = createElement("hr", {"class": "tw-horizontal-line"})
 
@@ -439,8 +437,9 @@ proc initImage: Hooks =
 
     render = genRender:
       img.setAttr "src", url()
-      img.setAttr "style", toInlineCss {"max-width": width(),
-          "max-height": height()}
+      img.setAttr "style", toInlineCss {
+        "width": width(),
+        "height": height()}
 
     mounted = genMounted:
       wrapper.append img, caption
@@ -621,16 +620,16 @@ proc initGithubGist: Hooks =
 
     render = genRender:
       some newPromise proc(resolve, fail: proc()) =
-        
+
         proc done(a: GithubCodeEmbed) =
           cssLinkEl.setAttr "href", a.styleLink
           codeEl.innerHTML = a.htmlCode
           resolve()
 
-        proc noo = 
+        proc noo =
           codeEl.innerText = "fail to fetch gist in url: " & url()
           resolve()
-        
+
         apiGetGithubCode $url(), done, noo
 
     settings = () => @[
@@ -702,7 +701,6 @@ proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let
     mainEl = createElement("div", {"class": "tw-link-preview card my-3 bg-light border-primary"})
-
     titleEl = createElement("div", {"class": "tw-link-preview-title card-header",
         "dir": "auto"})
     titleTextEl = createElement("a", {
@@ -811,8 +809,65 @@ proc initMoreCollapse: Hooks =
 
       dettachNodeDefault hooks.self(), at, false
 
-# TODO
-# ----- Grid [margin/padding/center/left/right/flex+justify+alignment/height/max-height/width/max-width]
+proc initGrid: Hooks =
+  # TODO /flex+justify+alignment
+  let
+    el = createElement("div", {"class": "tw-latex"})
+    (margin, setm) = genState c""
+    (padding, setp) = genState c""
+    (width, setw) = genState c""
+    (height, seth) = genState c""
+    (maxWidth, setmw) = genState c""
+    (maxHeight, setmh) = genState c""
+
+  template sss(namee, icone: string, refVal, setter): untyped =
+    SettingsPart(
+      field: namee,
+      icon: icone,
+      editorData: () => EditorInitData(
+        name: "linear-text-editor",
+        input: toJs refVal(),
+        updateCallback: mutState(setter, cstring)))
+
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = anyTag
+    capture = () => <*{
+      "margin": margin(),
+      "padding": padding(),
+      "width": width(),
+      "height": height(),
+      "maxWidth": maxWidth(),
+      "maxHeight": maxHeight(),
+      }
+
+    restore = proc(input: JsObject) =
+      setm input["margin"].to cstring
+      setp input["padding"].to cstring
+      setw input["width"].to cstring
+      seth input["height"].to cstring
+      setmw input["maxWidth"].to cstring
+      setmh input["maxHeight"].to cstring
+
+    render = genRender:
+      el.setAttr "style", fmt"""
+        margin: {margin()};
+        padding: {padding()};
+        width: {width()};
+        height: {height()};
+        max-width: {maxWidth()};
+        max-height: {maxHeight()};
+      """
+
+    settings = () => @[
+      sss("margin", "bi bi-border-inner", margin, setm),
+      sss("padding", "bi bi-border-outer", padding, setp),
+      sss("width", "bi bi-arrows", width, setw),
+      sss("height", "bi bi-arrows-vertical", height, seth),
+      sss("max width", "bi bi-arrows", maxWidth, setmw),
+      sss("max height", "bi bi-arrows-vertical", maxHeight, setmh),
+    ]
 
 proc initConfig: Hooks =
   let
@@ -1007,6 +1062,11 @@ defComponent horizontalLineComponent,
   @["global", "block"],
   initHorizontalLine
 
+defComponent gridComponent,
+  "grid",
+  "bi bi-columns-gap",
+  @["global", "block"],
+  initGrid
 
 proc defaultComponents*: ComponentsTable =
   new result
@@ -1037,4 +1097,5 @@ proc defaultComponents*: ComponentsTable =
     linkPreviewComponent,
     moreCollapseComponent,
     horizontalLineComponent,
+    gridComponent,
     customHtmlComponent]

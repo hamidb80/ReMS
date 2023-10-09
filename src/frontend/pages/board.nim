@@ -129,6 +129,7 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
 # TODO if a node was selected and clicked on new node, the styles of last node is copied
 # TODO select custom color palletes
 # TODO ability to set the center
@@ -682,6 +683,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
       if app.state != asNormal or vn notin app.selectedVisualNodes:
+        echo "stopped"
         stopDrag wrapper
       else:
         lastpos = wrapper.position
@@ -1441,6 +1443,8 @@ proc init* =
 
           elif files.len == 1: # paste by image
             let f = files[0]
+            ## TODO change name of image to something with 
+            ## proper name & extension
             if f.`type`.startswith "image/":
               apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
                 let vn = createNode()
