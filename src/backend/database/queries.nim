@@ -274,6 +274,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       JOIN RelationsCache rc
       ON rc.note = thing.id
       WHERE {repl}
+      ORDER BY thing.id DESC
     """
 
   of ecBoard: sql fmt"""
@@ -282,11 +283,13 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       JOIN RelationsCache rc
       ON rc.board = thing.id
       WHERE {repl}
+      ORDER BY thing.id DESC
     """
 
   of ecAsset: sql """
       SELECT thing.id, thing.name, thing.mime, thing.size, "{}"
       FROM Asset thing
+      ORDER BY thing.id DESC
     """
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =

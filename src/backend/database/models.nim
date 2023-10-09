@@ -1,4 +1,4 @@
-import std/[json, parseutils]
+import std/[json, parseutils, algorithm]
 
 import ../../common/[types, datastructures]
 
@@ -188,8 +188,13 @@ type # view models
     operator*: QueryOperator
     value*: Str
 
+  Sorting* = object
+    tagid*: Option[Id] ## if not present we sort by note.`id`
+    order*: SortOrder
+
   ExploreQuery* = object
     criterias*: seq[TagCriteria]
+    sorting*: Sorting
     limit*: Natural
     skip*: int
 
@@ -221,7 +226,7 @@ type # view models
     uid*: Id
     nickname*: Str
     kind*: NotificationKind
-    bale_chat_id*:  Option[Id]
+    bale_chat_id*: Option[Id]
 
   GithubCodeEmbed* = object
     style_link*: Str

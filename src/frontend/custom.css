@@ -261,8 +261,14 @@ body {
   opacity: 0.5;
 }
 
+.tw-link-preview.tw-focus-hover {
+  opacity: 0.5;
+}
+
 .tw-include-external.tw-focus-hover>*,
-.tw-include-external.tw-mouse-hover>* {
+.tw-grid.tw-focus-hover>*,
+.tw-include-external.tw-mouse-hover>*,
+.tw-grid.tw-mouse-hover>* {
   opacity: 0.7;
 }
 

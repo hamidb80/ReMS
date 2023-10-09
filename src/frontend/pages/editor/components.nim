@@ -697,7 +697,6 @@ proc initIncluder: Hooks =
           input: toJs inline(),
           updateCallback: mutState(inlineSet, bool)))]
 
-# TODO highlight
 proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let
@@ -870,6 +869,7 @@ proc initGrid: Hooks =
       sss("max height", "bi bi-arrows-vertical", maxHeight, setmh),
     ]
 
+# TODO
 proc initConfig: Hooks =
   let
     el = createElement "div"
@@ -892,6 +892,9 @@ proc initConfig: Hooks =
           name: "raw-text-editor",
           input: toJs status(),
           updateCallback: mutState(setStatus, cstring)))]
+
+# TODO quote
+# TODO raw code block/inline 
 
 # ----- Export ------------------------
 

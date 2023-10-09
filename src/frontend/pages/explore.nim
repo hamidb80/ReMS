@@ -401,14 +401,14 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
 
       tdiv(class = "card-footer d-flex justify-content-center"):
 
-        tdiv(class = "btn mx-1 btn-compact btn-outline-primary"):
+        a(class = "btn mx-1 btn-compact btn-outline-info", target = "_blank",
+            href = get_note_preview_url(n.id)):
+          icon "fa-glasses"
+
+        button(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-copy"
           proc onclick =
             copyToClipboard $n.id
-
-        a(class = "btn mx-1 btn-compact btn-outline-dark",
-            href = get_note_editor_url(n.id)):
-          icon "fa-link"
 
         button(class = "btn mx-1 btn-compact btn-outline-success"):
           icon "fa-tags"

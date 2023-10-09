@@ -35,7 +35,7 @@ dispatch router, ../views:
 
   get "/notes/new/", newNote {.Id.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
-  get "/note/preview/"?(id: int), loadDist"note-preview.html" {.html.}
+  get "/note/preview/"?(id: Id), loadDist"note-preview.html" {.html.}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
