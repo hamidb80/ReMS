@@ -602,6 +602,7 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
+# TODO highlight
 proc initGithubGist: Hooks =
   let
     wrapperEl = createElement("div", {"class": "tw-gh-code"})
@@ -696,7 +697,7 @@ proc initIncluder: Hooks =
           input: toJs inline(),
           updateCallback: mutState(inlineSet, bool)))]
 
-# TODO set max height for image
+# TODO highlight
 proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let
@@ -809,10 +810,10 @@ proc initMoreCollapse: Hooks =
 
       dettachNodeDefault hooks.self(), at, false
 
+# TODO /flex+justify+alignment + margin between each element
 proc initGrid: Hooks =
-  # TODO /flex+justify+alignment
   let
-    el = createElement("div", {"class": "tw-latex"})
+    el = createElement("div", {"class": "tw-grid"})
     (margin, setm) = genState c""
     (padding, setp) = genState c""
     (width, setw) = genState c""

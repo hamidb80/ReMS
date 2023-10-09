@@ -19,22 +19,23 @@ dispatch router, ../views:
   get "/login/", loadDist"login.html" {.html.}
   get "/api/login/bale/"?(secret: string), loginWithInvitationCode {.ok.}
   post "/api/login/form/", loginWithForm {.ok.}
-  post "/api/signup/form/", signupWithForm {.ok.}
   get "/api/logout/", logout {.ok.}
-  # get "/me/", usersPage {.html.}
-  get "/api/me/", getMe {.json: User.}
-  # get "/user/id/"?(id: int), usersPage {.html.}
-  # get "/api/gen-invite-code/"?(user_id: int), usersPage {.string.}
 
-  # TODO add annonations for assets
-  # TODO get "/asset/preview/"?(id: int), assetPreview {.html.}
+  get "/api/profile/me/", getMe {.json: User.}
+  # get "/api/profile/"?(id: int), getMe {.json: User.}
+  # post "/api/profile/new/", getMe {.json: User.}
+  # put "/api/profile/update/"?(id: int), getMe {.json: User.}
+
+  get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
+  # put "/api/asset/update/tags/"?(id: Id), updateAssetsRelTags {.ok.}
   delete "/api/asset/"?(id: Id), deleteAsset {.json.}
 
   get "/notes/new/", newNote {.Id.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
+  # get "/note/preview/"?(id: int), notePreview {.html.}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
@@ -47,11 +48,12 @@ dispatch router, ../views:
   # get "/api/page/"?(page: string, start: Id, limit: int), page {.json: seq[Note].}
 
   get "/boards/new/", newBoard {.Id.}
-  get "/board/editor/"?(id: Id), loadDist"board.html" {.html.}
+  get "/board/edit/"?(id: Id), loadDist"board.html" {.html.}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
   put "/api/board/title/"?(id: Id, title: string), updateBoardTitle {.ok.}
   put "/api/board/content/"?(id: Id), updateBoardContent {.ok.}
   put "/api/board/screenshot/"?(id: Id), updateBoardScreenShot {.ok.}
+  # put "/api/board/update/tags/"?(id: Id), updateBoardRelTags {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}
@@ -60,17 +62,16 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
+  get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
+  # post "/api/palette/new/"?(name: string), 
+  # put "/api/palette/update/"?(name: string), 
+  # delete "/api/palette/"?(name: string), 
+
   get "/explore/", loadDist"explore.html" {.html.}
   post "/api/explore/notes/", exploreNotes {.json.}
   post "/api/explore/boards/", exploreBoards {.json.}
   post "/api/explore/assets/", exploreAssets {.json.}
   get "/api/explore/users/"?(name: string), exploreUsers {.json.}
-
-
-  get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
-  # post "/api/new/palette/"?(name: string), 
-  # put "/api/update/palette/"?(name: string), 
-  # delete "/api/palette/"?(name: string), 
 
   # to aviod CORS
   get "/proxy/download/"?(url: string), proxyDownload {.file.} 

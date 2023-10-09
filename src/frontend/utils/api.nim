@@ -39,18 +39,6 @@ proc loginApi*(
     .then(success)
     .catch(fail)
 
-proc signupApi*(
-    user, pass: string,
-    success: proc(),
-    fail: proc() = noop
-) =
-    discard post_api_signup_form_url()
-    .postApi(forceJsObject LoginForm(
-            username: user, 
-            password: pass))
-    .then(success)
-    .catch(fail)
-
 proc logoutApi*(
     success: proc(),
     fail: proc() = noop
@@ -64,7 +52,7 @@ proc meApi*(
     success: proc(u: User),
     fail: proc() = noop
 ) =
-    discard get_api_me_url()
+    discard get_api_profile_me_url()
     .getApi()
     .then(wrapResp success cast[User](r.data))
     .catch(fail)

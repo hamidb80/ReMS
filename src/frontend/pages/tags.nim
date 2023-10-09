@@ -83,7 +83,7 @@ proc createDom: Vnode =
         icon "fa-bars-staggered me-2"
         text "All Tags"
 
-      tdiv(class = "d-flex flex-row"):
+      tdiv(class = "d-flex flex-row flex-wrap"):
         for i, t in tags:
           tagViewC t, "val", genChangeSelectedTagi i
 

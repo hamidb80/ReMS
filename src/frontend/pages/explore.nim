@@ -442,7 +442,7 @@ proc boardItemViewC(b: BoardItemView): VNode =
 
       tdiv(class = "card-footer d-flex justify-content-center"):
         a(class = "btn mx-1 btn-compact btn-outline-warning",
-            href = get_board_editor_url b.id):
+            href = get_board_edit_url b.id):
           icon "fa-pen"
 
         a(class = "btn mx-1 btn-compact btn-outline-danger"):

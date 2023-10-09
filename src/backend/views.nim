@@ -127,6 +127,7 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
     resp 404
 
 proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
+  ## sign up with form is not possible, only from bale and enabeling password later
   let
     u = get !!<db.getUser(data.username)
     a = get !!<db.getAuthUser(u.id)

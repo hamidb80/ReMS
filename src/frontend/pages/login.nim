@@ -8,11 +8,11 @@ import ../utils/[ui, api]
 import ../../common/[conventions]
 import ../../backend/database/models
 
+# TODO merge tag manager and user manager and login & profile and pallete in one page
 
 type AppAction = enum
   aaBaleBot = "bale bot"
   aaLoginForm = "login form"
-  aaSignupForm = "signup form"
 
 var
   username: string
@@ -65,7 +65,7 @@ proc createDom: Vnode =
           tdiv(class = "form-group d-inline-block"):
             case state
             of aaBaleBot: discard
-            of aaLoginForm, aaSignupForm:
+            of aaLoginForm:
               label(class = "form-check-label"):
                 text "username: "
 
@@ -101,8 +101,6 @@ proc createDom: Vnode =
                   loginApi pass, success, fail
                 of aaLoginForm:
                   loginApi username, pass, success, fail
-                of aaSignupForm:
-                  signupApi username, pass, success, fail
 
 
 

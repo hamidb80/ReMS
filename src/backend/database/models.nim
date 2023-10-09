@@ -68,7 +68,6 @@ type # database models
     tvtInt
     tvtDate
     tvtJson
-    # TODO tag with enums values [only choosing from some options]
 
 
   TagCreator* = enum
@@ -117,6 +116,7 @@ type # database models
     can_be_repeated*: bool
     theme*: ColorTheme
     value_type*: TagValueType
+    # TODO tag with "open/closed enums" values [only choosing from some options]
 
   NotificationKind* = enum
     nkLoginBale
