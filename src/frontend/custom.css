@@ -86,6 +86,10 @@ body {
   display: inline-block;
 }
 
+.tw-raw-code{
+  font-family: "Ubuntu Mono";
+}
+
 .side-bar {
   right: 0;
   top: 0;

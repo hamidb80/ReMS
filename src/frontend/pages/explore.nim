@@ -188,6 +188,9 @@ proc uploadStatusBtn(u: Upload): VNode =
     # TODO show error message as a tooltip
 
 
+# TODO add delete
+# TODO add tag manager
+# TODO add change name
 proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
   buildHtml:
     tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
@@ -544,6 +547,7 @@ proc genSelectCriteria(i: int): proc() =
   proc =
     selectedCriteriaI = i
 
+# TODO add sorting API
 proc searchTagManager(): Vnode =
   buildHTML:
     tdiv:

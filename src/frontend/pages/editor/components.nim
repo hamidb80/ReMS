@@ -893,8 +893,51 @@ proc initConfig: Hooks =
           input: toJs status(),
           updateCallback: mutState(setStatus, cstring)))]
 
-# TODO quote
-# TODO raw code block/inline 
+proc initQuote: Hooks =
+  let
+    el = createElement("div", {"class": "tw-quote"})
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = anyTag
+
+proc initRawCode: Hooks =
+  let
+    el = createElement("pre", {"class": "tw-raw-code"})
+    (content, cset) = genState c""
+    (inline, iset) = genState false
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = noTags
+    capture = () => <*{
+      "content": content(),
+      "inline": inline()}
+
+    restore = proc(input: JsObject) =
+      cset input["content"].to cstring
+      iset input["inline"].to bool
+
+    render = genRender:
+      el.ctrlClass displayInlineClass, inline()
+      el.innerText = content()
+
+    settings = () => @[
+      SettingsPart(
+        field: "code",
+        icon: "bi bi-code-slash",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs content(),
+          updateCallback: mutState(cset, cstring))),
+
+      SettingsPart(
+        field: "inline",
+        icon: "bi bi-displayport",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: toJs inline(),
+          updateCallback: mutState(iset, bool)))]
 
 # ----- Export ------------------------
 
@@ -1072,6 +1115,19 @@ defComponent gridComponent,
   @["global", "block"],
   initGrid
 
+defComponent rawCodeComponent,
+  "raw code",
+  "bi bi-code-slash",
+  @["global", "block"],
+  initRawCode
+
+defComponent quoteComponent,
+  "quote",
+  "bi bi-quote",
+  @["global", "block"],
+  initQuote
+
+
 proc defaultComponents*: ComponentsTable =
   new result
   add result, [
@@ -1102,4 +1158,6 @@ proc defaultComponents*: ComponentsTable =
     moreCollapseComponent,
     horizontalLineComponent,
     gridComponent,
+    rawCodeComponent,
+    quoteComponent,
     customHtmlComponent]
