@@ -122,7 +122,6 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
     login req, get maybeUsr
     !!db.loginNotif(uid)
 
-
   else:
     resp 404
 
@@ -136,6 +135,7 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
     if hash == secureHash data.password:
       login req, u
     else:
+      # TODO add syntax sugar for errors
       raise newException(ValueError, "password is not valid")
   else:
     raise newException(ValueError, "the user does not set login with password")
@@ -149,8 +149,18 @@ proc signupWithForm*(req: Request) {.jbody: LoginForm.} =
   login req, usr
 
 
+proc getAsset*(req: Request) {.qparams: {id: int}.} =
+  !!respJson toJson db.getAsset(id)
+
+proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, adminOnly.} =
+  !! db.updateAssetName(id, name)
+  resp OK
+
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
+  !! db.updateAssetRelTags(id, data)
+  resp OK
+
 proc saveAsset(req: Request): Id {.adminOnly.} =
-  # FIXME add extension of file
   let multip = req.decodeMultipart()
 
   for entry in multip:
@@ -159,12 +169,13 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
         (start, last) = entry.data.get
         content = req.body[start..last]
         (_, name, ext) = splitFile entry.filename.get
+        fname = name & ext
         mime = mimetype ext
         oid = genOid()
         storePath = fmt"./resources/{oid}{ext}"
 
       writeFile storePath, content
-      return !!<db.addAsset(name, mime, Path storePath, Bytes len start..last)
+      return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)
 
   raise newException(ValueError, "no files found")
 
@@ -231,6 +242,10 @@ proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, adminOnly.} =
 
 proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminOnly.} =
   !!db.updateBoardTitle(id, title)
+  resp OK
+
+# TODO
+proc updateBoardRelTags*(req: Request) {.qparams: {id: int}, adminOnly.} =
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =

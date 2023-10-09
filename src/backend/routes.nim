@@ -26,12 +26,14 @@ dispatch router, ../views:
   # post "/api/profile/new/", getMe {.json: User.}
   # put "/api/profile/update/"?(id: int), getMe {.json: User.}
 
-  # get "/asset/preview/"?(id: int), assetPreview {.html.}
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
-  # put "/api/asset/update/tags/"?(id: Id), updateAssetsRelTags {.ok.}
-  delete "/api/asset/"?(id: Id), deleteAsset {.json.}
+  get "/asset/preview/"?(id: Id), loadDist"asset-preview.html" {.html.}
+  get "/api/asset/"?(id: Id), getAsset {.json.}
+  get "/api/asset/update/name/"?(id: Id, name: string), updateAssetName {.ok.}
+  put "/api/asset/update/tags/"?(id: Id), updateAssetRelTags {.ok.}
+  delete "/api/asset/"?(id: Id), deleteAsset {.ok.}
 
   get "/notes/new/", newNote {.Id.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
@@ -53,7 +55,7 @@ dispatch router, ../views:
   put "/api/board/title/"?(id: Id, title: string), updateBoardTitle {.ok.}
   put "/api/board/content/"?(id: Id), updateBoardContent {.ok.}
   put "/api/board/screenshot/"?(id: Id), updateBoardScreenShot {.ok.}
-  # put "/api/board/update/tags/"?(id: Id), updateBoardRelTags {.ok.}
+  put "/api/board/update/tags/"?(id: Id), updateBoardRelTags {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
   get "/tags/", loadDist"tags.html" {.html.}

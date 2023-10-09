@@ -186,6 +186,32 @@ proc apiUploadAsset*(
     .then(wrapResp success get_asset_short_hand_url cast[Id](r.data))
     .catch(fail)
 
+proc apiDeleteAsset(
+    id: Id,
+    success: proc(),
+    fail: proc() = noop
+) = 
+    discard delete_api_asset_url(id)
+    .deleteApi
+    .then(success)
+    .catch(fail)
+
+# proc apiUpdateAsset(
+#     id: Id,
+#     success: proc(),
+#     fail: proc() = noop
+# ) = 
+
+# proc apiUpdateAssetTags(
+#     id: Id,
+#     success: proc(),
+#     fail: proc() = noop
+# ) = 
+#     discard delete_api_asset_url(id)
+#     .deleteApi
+#     .then(success)
+#     .catch(fail)
+
 
 proc apiGetTagsList*(
     success: proc(ts: seq[Tag]),

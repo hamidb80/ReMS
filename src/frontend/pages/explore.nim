@@ -131,7 +131,7 @@ proc dropHandler(ev: Event as DragEvent) {.caster.} =
 proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
   pushUploads e.clipboardData.filesArray
 
-proc genCopyBtn(url: cstring): proc =
+proc genCopy(url: cstring): proc =
   proc =
     copyToClipboard url
 
@@ -188,30 +188,52 @@ proc uploadStatusBtn(u: Upload): VNode =
     # TODO show error message as a tooltip
 
 
-# TODO add delete
-# TODO add tag manager
-# TODO add change name
+proc genAssetDelete(assetId: Id): proc() =
+  proc =
+    discard
+
+proc genAssetTags(assetId: Id): proc() =
+  proc =
+    discard
+
+proc genAssetApplyBtn(assetId: Id): proc() =
+  proc =
+    discard
+
+
 proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
   buildHtml:
     tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
       tdiv(class = "d-flex flex-column"):
         input(`type` = "text", class = "form-control", value = a.name)
 
-      tdiv(class = "d-flex flex-column justify-content-start"):
-        button(class = "mx-2 my-1 btn btn-outline-dark"):
-          icon "fa-chevron-up"
-          proc onclick =
-            selectedAssetIndex = -1
+      tdiv(class = "d-flex flex-row"):
+        tdiv(class = "d-flex flex-column justify-content-start"):
+          button(class = "mx-2 my-1 btn btn-outline-success",
+              onclick = genAssetTags(a.id)):
+            span: text "tags"
+            icon "fa-tags ms-2"
 
-        button(class = "mx-2 my-1 btn btn-outline-dark",
-            onclick = genCopyBtn(previewLink)):
-          span: text "copy link"
-          icon "fa-copy ms-2"
+          button(class = "mx-2 my-1 btn btn-outline-danger",
+              onclick = genAssetDelete(a.id)):
+            span: text "delete"
+            icon "fa-close ms-2"
 
-        button(class = "mx-2 my-1 btn btn-outline-primary",
-            onclick = genCopyBtn(previewLink)):
-          span: text "apply"
-          icon "fa-check ms-2"
+        tdiv(class = "d-flex flex-column justify-content-start"):
+          button(class = "mx-2 my-1 btn btn-outline-dark"):
+            icon "fa-chevron-up"
+            proc onclick =
+              selectedAssetIndex = -1
+
+          button(class = "mx-2 my-1 btn btn-outline-dark",
+              onclick = genCopy(previewLink)):
+            span: text "copy link"
+            icon "fa-copy ms-2"
+
+          button(class = "mx-2 my-1 btn btn-outline-primary",
+              onclick = genAssetApplyBtn(a.id)):
+            span: text "apply"
+            icon "fa-check ms-2"
 
 proc userItemC(u: User): VNode =
   buildHTML:

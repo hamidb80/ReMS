@@ -24,6 +24,53 @@ func tagIds(data: RelValuesByTagId): seq[Id] =
 
 # ------------------------------------
 
+
+func setRelValue(rel: var Relation, value_type: TagValueType, value: string) =
+  case value_type
+  of tvtNone: discard
+  of tvtStr, tvtJson:
+    rel.sval = some value
+  of tvtFloat:
+    rel.fval = some parseFloat value
+  of tvtInt, tvtDate:
+    rel.ival = some parseInt value
+
+template updateRelTagsGeneric*(
+  db: DbConn,
+  field: untyped,
+  fieldStr: string,
+  entityId: Id,
+  data: RelValuesByTagId
+) =
+  transaction db:
+    # remove existing rels
+    db.exec sql "DELETE FROM Relation WHERE " & fieldStr & " = ?", entityId
+    # remove rel cache
+    db.exec sql "DELETE FROM RelationsCache WHERE " & fieldStr & " = ?", entityId
+
+    # insert new rel cache
+    db.insert RelationsCache(
+      field: some entityId,
+      active_rels_values: data)
+
+    # insert all rels again
+    let tags = db.findTags tagIds data
+    for key, values in data:
+      let
+        tagid = Id parseInt key
+        t = tags[tagid]
+
+      for v in values:
+        var r = Relation(
+          field: some entityId,
+          tag: tagid,
+          #TODO timestamp: now(),
+        )
+
+        setRelValue r, t.value_type, v
+        db.insert r
+
+
 proc getInvitation*(db: DbConn, secret: string, time: Unixtime,
     expiresAfterSec: Positive): options.Option[Invitation] =
   db.find R, sql"""
@@ -123,6 +170,7 @@ proc findTags*(db: DbConn, ids: seq[Id]): Table[Id, Tag] =
   for t in db.find(seq[Tag], sql "SELECT * FROM Tag WHERE id IN " & sqlize ids):
     result[t.id] = t
 
+
 proc addAsset*(db: DbConn, n: string, m: string, p: Path, s: Bytes): int64 =
   db.insertID Asset(
       name: n,
@@ -132,6 +180,25 @@ proc addAsset*(db: DbConn, n: string, m: string, p: Path, s: Bytes): int64 =
 
 proc findAsset*(db: DbConn, id: Id): Asset =
   db.find R, sql"SELECT * FROM Asset WHERE id=?", id
+
+proc getAsset*(db: DbConn, id: Id): AssetItemView =
+  db.find R, sql"""
+    SELECT a.id, a.name, a.mime, a.size, rc.active_rels_values
+    FROM Asset a
+    JOIN RelationsCache rc
+    ON rc.asset = a.id
+    WHERE a.id = ?
+  """, id
+
+proc updateAssetName*(db: DbConn, id: Id, name: string) =
+  db.exec sql"""
+    UPDATE Asset
+    SET name = ?
+    WHERE id = ?
+  """, name, id
+
+proc updateAssetRelTags*(db: DbConn, id: Id, data: RelValuesByTagId) =
+  updateRelTagsGeneric db, asset, "asset", id, data
 
 proc deleteAsset*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Asset WHERE id = ?", id
@@ -153,43 +220,8 @@ proc newNote*(db: DbConn): Id =
 proc updateNoteContent*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
   db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
 
-# TODO make it generic for notes/assets
 proc updateNoteRelTags*(db: DbConn, noteid: Id, data: RelValuesByTagId) =
-  transaction db:
-    # remove existing rels
-    db.exec sql"DELETE FROM Relation WHERE note = ?", noteid
-    # remove rel cache
-    db.exec sql"DELETE FROM RelationsCache WHERE note = ?", noteid
-
-    # insert new rel cache
-    db.insert RelationsCache(
-      note: some noteid,
-      active_rels_values: data)
-
-    # insert all rels again
-    let tags = db.findTags tagIds data
-    for key, values in data:
-      let
-        tagid = Id parseInt key
-        t = tags[tagid]
-
-      for v in values:
-        var r = Relation(
-          note: some noteid,
-          tag: tagid,
-          #TODO timestamp: now(),
-        )
-
-        case t.value_type
-        of tvtNone: discard
-        of tvtStr, tvtJson:
-          r.sval = some v
-        of tvtFloat:
-          r.fval = some parseFloat v
-        of tvtInt, tvtDate:
-          r.ival = some parseInt v
-
-        db.insert r
+  updateRelTagsGeneric db, note, "note", noteid, data
 
 proc deleteNote*(db: DbConn, id: Id) =
   transaction db:
@@ -215,6 +247,9 @@ proc updateBoardTitle*(db: DbConn, id: Id, title: string) =
 
 proc setBoardScreenShot*(db: DbConn, boardId, assetId: Id) =
   db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
+
+proc updateBoardRelTags*(db: DbConn, id: Id, data: RelValuesByTagId) =
+  updateRelTagsGeneric db, board, "board", id, data
 
 proc getBoard*(db: DbConn, id: Id): Board =
   db.find R, sql"SELECT * FROM Board WHERE id = ?", id
