@@ -172,11 +172,14 @@ proc findTags*(db: DbConn, ids: seq[Id]): Table[Id, Tag] =
 
 
 proc addAsset*(db: DbConn, n: string, m: string, p: Path, s: Bytes): int64 =
-  db.insertID Asset(
+  result = db.insertID Asset(
       name: n,
       path: p,
       mime: m,
       size: s)
+
+  db.insert RelationsCache(
+    asset: some result)
 
 proc findAsset*(db: DbConn, id: Id): Asset =
   db.find R, sql"SELECT * FROM Asset WHERE id=?", id
@@ -218,16 +221,22 @@ proc newNote*(db: DbConn): Id =
   db.insert RelationsCache(note: some result)
 
 proc updateNoteContent*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
-  db.exec sql"UPDATE Note SET data = ? WHERE id = ?", data, id
+  db.exec sql"""
+    UPDATE Note 
+    SET data = ? 
+    WHERE id = ?
+  """, data, id
 
 proc updateNoteRelTags*(db: DbConn, noteid: Id, data: RelValuesByTagId) =
   updateRelTagsGeneric db, note, "note", noteid, data
 
 proc deleteNote*(db: DbConn, id: Id) =
   transaction db:
-    db.exec sql"DELETE FROM Note WHERE id = ?", id
-    db.exec sql"DELETE FROM RelationsCache WHERE note = ?", id
-    db.exec sql"DELETE FROM Relation WHERE note = ?", id
+    db.exec sql"""
+      DELETE FROM Note           WHERE id   = ?;
+      DELETE FROM RelationsCache WHERE note = ?;
+      DELETE FROM Relation       WHERE note = ?;
+    """, id, id, id
 
 
 proc newBoard*(db: DbConn): Id =
@@ -240,13 +249,25 @@ proc newBoard*(db: DbConn): Id =
     active_rels_values: RelValuesByTagId())
 
 proc updateBoardContent*(db: DbConn, id: Id, data: BoardData) =
-  db.exec sql"UPDATE Board SET data = ? WHERE id = ?", data, id
+  db.exec sql"""
+    UPDATE Board 
+    SET data = ? 
+    WHERE id = ?
+  """, data, id
 
 proc updateBoardTitle*(db: DbConn, id: Id, title: string) =
-  db.exec sql"UPDATE Board SET title = ? WHERE id = ?", title, id
+  db.exec sql"""
+    UPDATE Board 
+    SET title = ? 
+    WHERE id = ?
+  """, title, id
 
 proc setBoardScreenShot*(db: DbConn, boardId, assetId: Id) =
-  db.exec sql"UPDATE Board SET screenshot = ? WHERE id = ?", assetId, boardId
+  db.exec sql"""
+    UPDATE Board 
+    SET screenshot = ? 
+    WHERE id = ?
+  """, assetId, boardId
 
 proc updateBoardRelTags*(db: DbConn, id: Id, data: RelValuesByTagId) =
   updateRelTagsGeneric db, board, "board", id, data
@@ -258,8 +279,7 @@ proc deleteBoard*(db: DbConn, id: Id) =
   db.exec sql"DELETE FROM Board WHERE id = ?", id
 
 
-
-func toSubQuery(c: TagCriteria, entityIdVar: string): string =
+func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
   let
     introCond =
       case c.operator
@@ -286,21 +306,22 @@ func toSubQuery(c: TagCriteria, entityIdVar: string): string =
     SELECT *
     FROM Relation rel
     WHERE 
-        rel.note = {entityIdVar} AND
+        rel.{entity} = {entityIdVar} AND
         {candidateCond} AND
         {primaryCond}
   )
   """
 
-func exploreSqlConds(xqdata: ExploreQuery, ident: string): string =
+func exploreSqlConds(field: string, xqdata: ExploreQuery,
+    ident: string): string =
   if xqdata.criterias.len == 0: "1"
   else:
     xqdata.criterias
-    .mapIt(toSubQuery(it, ident))
+    .mapIt(toSubQuery(field, it, ident))
     .join " AND "
 
 func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
-  let repl = exploreSqlConds(xqdata, "thing.id")
+  let repl = exploreSqlConds($entity, xqdata, "thing.id")
 
   case entity
   of ecNote: sql fmt"""
@@ -321,9 +342,12 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       ORDER BY thing.id DESC
     """
 
-  of ecAsset: sql """
-      SELECT thing.id, thing.name, thing.mime, thing.size, "{}"
+  of ecAsset: sql fmt"""
+      SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
       FROM Asset thing
+      JOIN RelationsCache rc
+      ON rc.asset = thing.id
+      WHERE {repl}
       ORDER BY thing.id DESC
     """
 

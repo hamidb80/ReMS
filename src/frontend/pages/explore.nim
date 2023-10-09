@@ -68,12 +68,20 @@ var
   assets: seq[AssetItemView]
   uploads: seq[Upload]
   selectedAssetIndex: int = -1 # noIndex
+  assetNameTemp = c""
 
 
 
 
+func toJson(s: Table[Id, seq[cstring]]): JsObject =
+  result = newJsObject()
+  for k, v in s:
+    result[cstr int k] = v
 
-
+func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
+  for k, v in s:
+    let id = Id parseInt k
+    result[id] = v
 
 
 
@@ -135,9 +143,10 @@ proc genCopy(url: cstring): proc =
   proc =
     copyToClipboard url
 
-proc genSelectAsset(i: int): proc =
+proc genSelectAsset(a: AssetItemView, i: int): proc =
   proc =
     selectedAssetIndex = i
+    assetNameTemp = a.name
 
 
 # ----- UI
@@ -188,34 +197,42 @@ proc uploadStatusBtn(u: Upload): VNode =
     # TODO show error message as a tooltip
 
 
-proc genAssetDelete(assetId: Id): proc() =
+proc genAssetDelete(id: Id, index: int): proc() =
   proc =
-    discard
+    apiDeleteAsset id, proc =
+      notify "asset deleted!"
+      delete assets, index
 
-proc genAssetTags(assetId: Id): proc() =
+proc genAssetEditTags(a: AssetItemView, i: int): proc() =
   proc =
-    discard
+    currentRelTags = fromJson a.activeRelsValues
+    appState = asTagManager
 
-proc genAssetApplyBtn(assetId: Id): proc() =
+proc genAssetApplyBtn(id: Id, index: int): proc() =
   proc =
-    discard
+    apiUpdateAssetName id, $assetNameTemp, proc =
+      assets[index].name = assetNameTemp
+      notify "name updated"
 
 
-proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
+proc assetFocusedComponent(a: AssetItemView, previewLink: string,
+    index: int): VNode =
   buildHtml:
     tdiv(class = "px-3 py-2 d-flex justify-content-between border"):
       tdiv(class = "d-flex flex-column"):
-        input(`type` = "text", class = "form-control", value = a.name)
+        input(`type` = "text", class = "form-control", value = assetNameTemp):
+          proc oninput(e: Event, v: Vnode) =
+            assetNameTemp = e.target.value
 
       tdiv(class = "d-flex flex-row"):
         tdiv(class = "d-flex flex-column justify-content-start"):
           button(class = "mx-2 my-1 btn btn-outline-success",
-              onclick = genAssetTags(a.id)):
+              onclick = genAssetEditTags(a, index)):
             span: text "tags"
             icon "fa-tags ms-2"
 
           button(class = "mx-2 my-1 btn btn-outline-danger",
-              onclick = genAssetDelete(a.id)):
+              onclick = genAssetDelete(a.id, index)):
             span: text "delete"
             icon "fa-close ms-2"
 
@@ -231,7 +248,7 @@ proc assetFocusedComponent(a: AssetItemView, previewLink: string): VNode =
             icon "fa-copy ms-2"
 
           button(class = "mx-2 my-1 btn btn-outline-primary",
-              onclick = genAssetApplyBtn(a.id)):
+              onclick = genAssetApplyBtn(a.id, index)):
             span: text "apply"
             icon "fa-check ms-2"
 
@@ -265,20 +282,15 @@ proc assetItemComponent(index: int, a: AssetItemView,
           text " B)"
 
       tdiv(class = "d-flex flex-row align-items-center"):
-        span(class = "text-muted"):
-          # text $a.timestamp.toDateTime.format("yyyy-MM-dd HH:mm:ss")
-
-          iconr "fa-clock mx-1"
+        tdiv:
+          for k, values in a.activeRelsValues:
+            for v in values:
+              let id = Id parseInt k
+              tagViewC tags[id], v, noop
 
         button(class = "mx-2 btn btn-outline-dark",
-            onclick = genSelectAsset(index)):
+            onclick = genSelectAsset(a, index)):
           icon "fa-chevron-down"
-
-        # TODO
-        # file type logo like image or video or ...
-        # timestamp
-        # size
-
 
 proc assetUploader: VNode =
   buildHTML:
@@ -343,16 +355,6 @@ proc assetUploader: VNode =
 
 
 
-func toJson(s: Table[Id, seq[cstring]]): JsObject =
-  result = newJsObject()
-  for k, v in s:
-    result[cstr int k] = v
-
-func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
-  for k, v in s:
-    let id = Id parseInt k
-    result[id] = v
-
 proc getExploreQuery: ExploreQuery =
   ExploreQuery(criterias: searchCriterias)
 
@@ -395,7 +397,7 @@ proc fetchTags(): Future[void] =
 
 proc deleteNote(id: Id) =
   apiDeleteNote id, proc =
-    notes.deleteIt it.id == id
+    deleteIt notes, it.id == id
     redraw()
 
 # ----- UI
@@ -479,7 +481,7 @@ proc boardItemViewC(b: BoardItemView): VNode =
 
 proc genAddTagToList(id: Id): proc() =
   proc =
-    currentRelTags.add id, c""
+    add currentRelTags, id, c""
 
 proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
@@ -537,9 +539,22 @@ proc relTagManager(): Vnode =
 
         proc onclick =
           let d = toJson currentRelTags
-          apiUpdateNoteTags selectedNoteId, d, proc =
-            notify "changes applied"
-            notes[selectedNoteIndex].activeRelsValues = cast[RelValuesByTagId](d)
+
+          case selectedClass
+          of scUsers: discard
+          of scNotes:
+            apiUpdateNoteTags selectedNoteId, d, proc =
+              notify "changes applied"
+              notes[selectedNoteIndex].activeRelsValues = cast[
+                  RelValuesByTagId](d)
+
+          of scBoards: discard
+          of scAssets:
+            apiUpdateAssetTags assets[selectedAssetIndex].id, d, proc =
+              notify "changes applied"
+              assets[selectedAssetIndex].activeRelsValues = cast[
+                  RelValuesByTagId](d)
+
 
       button(class = "btn btn-warning w-100 mt-2 mb-4"):
         text "cancel"
@@ -556,7 +571,7 @@ proc genRoundOperator(i: int, vt: TagValueType): proc() =
 
 proc genAddSearchCriteria(t: Tag): proc() =
   proc =
-    searchCriterias.add TagCriteria(
+    add searchCriterias, TagCriteria(
       tagid: t.id,
       label: t.label,
       valuetype: t.valuetype,
@@ -718,7 +733,7 @@ proc createDom: Vnode =
                 let u = get_asset_short_hand_url a.id
 
                 if i == selectedAssetIndex:
-                  assetFocusedComponent a, u
+                  assetFocusedComponent a, u, i
                 else:
                   assetItemComponent i, a, u
 
@@ -742,4 +757,3 @@ when isMainModule:
         redraw()
       else:
         discard
-

@@ -163,9 +163,9 @@ type # database models
 
 type # view models
   EntityClass* = enum
-    ecNote
-    ecAsset
-    ecBoard
+    ecNote = "note"
+    ecAsset = "asset"
+    ecBoard = "board"
 
   QueryOperator* = enum
     # prefix

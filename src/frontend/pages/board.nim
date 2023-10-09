@@ -470,30 +470,36 @@ proc scaleImage(v: VisualNode; scale: float) =
   el"scale-range".value = "1"
 
 proc loadImageGen(url: cstring; vn: VisualNode; newSize: bool) =
-  newImageFromUrl url:
-    proc(imgNode: konva.Image) =
-      let
-        wi = imgNode.width             # width of image
-        hi = imgNode.height            # height of image
-        fr =                           # final ratio
-          if newSize:
-            let
-              sc = ||app.stage.scale   # scale
-              ws = app.stage.width/sc  # width of screnn
-              hs = app.stage.height/sc # height of screen
+  proc success(imgNode: konva.Image) =
+    let
+      wi = imgNode.width             # width of image
+      hi = imgNode.height            # height of image
+      fr =                           # final ratio
+        if newSize:
+          let
+            sc = ||app.stage.scale   # scale
+            ws = app.stage.width/sc  # width of screnn
+            hs = app.stage.height/sc # height of screen
 
-              wr = min(wi, ws) / wi    # width ratio
-              hr = min(hi, hs) / hi    # height ratio
-            min(wr, hr)
-          else:
-            vn.config.data.width / wi
+            wr = min(wi, ws) / wi    # width ratio
+            hr = min(hi, hs) / hi    # height ratio
+          min(wr, hr)
+        else:
+          vn.config.data.width / wi
 
-      vn.konva.img.remove
-      vn.konva.img = imgNode
-      imgNode.listening = false
-      vn.konva.wrapper.add imgNode
-      scaleImage vn, fr
+    vn.konva.img.remove
+    vn.konva.img = imgNode
+    imgNode.listening = false
+    vn.konva.wrapper.add imgNode
+    scaleImage vn, fr
 
+  proc fail = 
+    # TODO set a text node named "[image]" and add a error list and 
+    # show it in the properties of board
+    discard
+
+  newImageFromUrl url, success, fail
+  
 proc setImageUrl(v: VisualNode; u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
@@ -683,7 +689,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
       if app.state != asNormal or vn notin app.selectedVisualNodes:
-        echo "stopped"
+        echo "stopped ", app.state
         stopDrag wrapper
       else:
         lastpos = wrapper.position
@@ -710,6 +716,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
         redrawConnectionsTo vn.config.id
 
   applyTheme txt, box, vn.config.theme
+
 
   case vn.config.data.kind
   of vndkText:

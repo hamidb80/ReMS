@@ -57,7 +57,7 @@ proc download*(url: string): string =
   client.get(url).body
 
 const jwtKey = "auth"
-let jwtSecret = "TODO" # getEnv "JWT_KEY"
+let jwtSecret = "TODO" # FIXME getEnv "JWT_KEY"
 
 proc toUserJwt(u: models.User, expire: int64): JsonNode =
   %*{
@@ -139,15 +139,6 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
       raise newException(ValueError, "password is not valid")
   else:
     raise newException(ValueError, "the user does not set login with password")
-
-proc signupWithForm*(req: Request) {.jbody: LoginForm.} =
-  let
-    u = !!<db.newUser(data.username, data.username)
-    a = !!<db.newAuth(u, secureHash data.password)
-    usr = get !!<db.getUser(u)
-
-  login req, usr
-
 
 proc getAsset*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)
@@ -244,8 +235,8 @@ proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminO
   !!db.updateBoardTitle(id, title)
   resp OK
 
-# TODO
-proc updateBoardRelTags*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc updateBoardRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
+  !!db.updateBoardRelTags(id, data)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
