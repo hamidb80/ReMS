@@ -1,5 +1,5 @@
 import std/[with, strutils, sequtils, options, random]
-import std/[dom, jsconsole, jsffi]
+import std/[dom, jsconsole, jsffi, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster
@@ -41,10 +41,19 @@ proc dummyTag: Tag =
     value_type: tvtNone,
     name: "name")
 
-proc fetchTags =
-  apiGetTagsList proc (ts: seq[Tag]) =
-    tags = ts
-    redraw()
+proc fetchDefaultPalette: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetPalette "default", proc(cs: seq[ColorTheme]) =
+      colors = cs
+      currentTag.theme = cs[0]
+      currentTag = dummyTag()
+      resolve()
+
+proc fetchTags: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetTagsList proc (ts: seq[Tag]) =
+      tags = ts
+      resolve()
 
 proc onIconSelected(icon: string) =
   currentTag.icon = icon
@@ -190,8 +199,8 @@ proc createDom: Vnode =
 
             proc onclick =
               apiCreateNewTag currentTag, proc =
-                fetchTags()
                 notify "tag created"
+                waitAll [fetchTags()], proc = redraw()
 
         else:
           button(class = "btn btn-primary w-100 mt-2"):
@@ -200,8 +209,8 @@ proc createDom: Vnode =
 
             proc onclick =
               apiUpdateTag currentTag, proc =
-                fetchTags()
                 notify "tag updated"
+                waitAll [fetchTags()], proc = redraw()
 
           button(class = "btn btn-danger w-100 mt-2 mb-4"):
             text "delete"
@@ -209,17 +218,13 @@ proc createDom: Vnode =
 
             proc onclick =
               apiDeleteTag currentTag.id, proc =
-                fetchTags()
                 notify "tag deleted"
+                waitAll [fetchTags()], proc = redraw()
 
 
 proc init* =
-  setRenderer createDom
+  waitAll [fetchDefaultPalette(), fetchTags()], proc =
+    setRenderer createDom
 
-  apiGetPalette "default", proc(cs: seq[ColorTheme]) =
-    colors = cs
-    currentTag.theme = cs[0]
-    currentTag = dummyTag()
-    fetchTags()
 
 when isMainModule: init()
