@@ -14,4 +14,5 @@ COPY . /app/
 
 RUN nimble prepare
 RUN nimble make
-CMD ["nimble", "go"]
+RUN nimble done
+CMD ["./main.exe"]
