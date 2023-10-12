@@ -223,8 +223,10 @@ proc createDom: Vnode =
 
 
 proc init* =
+  setRenderer createDom
+
   waitAll [fetchDefaultPalette(), fetchTags()], proc =
-    setRenderer createDom
+    redraw()
 
 
 when isMainModule: init()
