@@ -148,7 +148,8 @@ proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, adminOnl
   !! db.updateAssetName(id, name)
   resp OK
 
-proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int},
+    jbody: RelValuesByTagId, adminOnly.} =
   !! db.updateAssetRelTags(id, data)
   resp OK
 
@@ -165,10 +166,11 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
         mime = mimetype ext
         oid = genOid()
         timestamp = toUnix getTime()
-        storePath = fmt"./resources/{oid}-{timestamp}{ext}"
 
-      writeFile storePath, content
-      return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)
+      {.cast(gcsafe).}:
+        let storePath = appSaveDir / fmt"resources/{oid}-{timestamp}{ext}"
+        writeFile storePath, content
+        return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)
 
   raise newException(ValueError, "no files found")
 
@@ -238,7 +240,8 @@ proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminO
   !!db.updateBoardTitle(id, title)
   resp OK
 
-proc updateBoardRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, adminOnly.} =
+proc updateBoardRelTags*(req: Request) {.qparams: {id: int},
+    jbody: RelValuesByTagId, adminOnly.} =
   !!db.updateBoardRelTags(id, data)
   resp OK
 
