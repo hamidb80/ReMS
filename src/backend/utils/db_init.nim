@@ -41,7 +41,7 @@ proc createTables*(db: DbConn) =
 
 proc initDb*  = 
     let 
-        isNew = fileExists appDbPath
+        isNew = not fileExists appDbPath
         db = open(appDbPath, "", "", "")
 
     if isNew:
