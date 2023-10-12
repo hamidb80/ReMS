@@ -37,13 +37,21 @@ proc addAdminUser*(db: DbConn) =
         role: urAdmin)
 
 proc createTables*(db: DbConn) =
-    db.create(User, Invitation, Auth, Asset, Note, Board, Tag, Relation,
-            RelationsCache, Palette)
+    db.create(
+        User,
+        Invitation,
+        Auth,
+        Asset,
+        Note,
+        Board,
+        Tag,
+        Relation,
+        RelationsCache,
+        Palette)
 
 proc initDb* =
-    let isNew = not fileExists appDbPath
-
-    if isNew:
+    if not fileExists appDbPath:
+        echo "created new DB"
         let db = open(appDbPath, "", "", "")
         createTables db
         addAdminUser db
