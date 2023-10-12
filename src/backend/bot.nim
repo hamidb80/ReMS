@@ -1,14 +1,19 @@
-import std/[options, os, tables, random, times, json, sequtils, strutils, lists,
-    httpclient, macros]
+import std/[options, os, json, sequtils, strutils,
+    deques, httpclient]
 
-import ponairi, questionable
+import questionable
 import bale, bale/helper/stdhttpclient
 
 import ./database/[dbconn, models, queries]
 import ../common/[types]
+import ./utils/[random]
 
 
-randomize()
+type
+  Msg = object
+    chid: Id
+    content: string
+
 
 const
   loginD = "/login"
@@ -23,93 +28,79 @@ let
     KeyboardButton(text: loginD),
     KeyboardButton(text: mychatidtD)]])
 
-
-proc randCode(size: Positive): string =
-  for _ in 1..size:
-    add result, rand '0'..'9'
-
-proc genLoginCode(u: bale.User): string =
-  # TODO move to queries
-  result = randCode rand 4..6
-  !!db.insert Invitation(
-      secret: result,
-      timestamp: toUnixtime now(),
-      data: JsonNode u)
+var
+  httpc = newHttpClient()
+  msgQueue = initDeque[Msg](100)
 
 
-template tryN(wait, n: Positive, body, otherwise: untyped): untyped =
-  try:
-    for i in 1..n:
-      try:
-        body
-        break
-      except:
-        sleep wait
-        if i == n:
-          raise
-  except:
-    otherwise
+proc registerLoginCode(code: string, u: bale.User) =
+  !!db.newInviteCode(code, JsonNode u)
 
-type
-  Msg = object
-    uid: Id
-    content: string
-
-var msgQueue = initDoublyLinkedList[Msg]()
-
-template m(i, c): untyped =
-  add msgQueue, Msg(uid: i, content: c)
+template qTextMsg(i, c): untyped =
+  addLast msgQueue, Msg(chid: i, content: c)
 
 
-proc =
+proc dbCheck =
   let
     notifs = !!<db.getActiveNotifs()
     ids = notifs.mapIt(it.row_id)
 
   for n in notifs:
     if bid =? n.bale_chat_id:
-      tryN 100, 3:
-        m bid, "You've logged In as: \n" & n.nickname
-      do:
-        echo "WTF"
+      qTextMsg bid, "You've logged In as: \n" & n.nickname
 
   !!db.markNotifsAsStale(ids)
 
-proc = # {.raises: [].} =
-  var
-    skip = -1
-    hc = newHttpClient()
+proc sendMessages(n: Positive) =
+  for i in 1..n:
+    if msgQueue.len != 0:
+      let m = popFirst msgQueue
+      try:
+        discard httpc.req api.sendMessage(int m.chid, m.content,
+            reply_markup = botKeyBoard)
+      except:
+        addLast msgQueue, m
+
+proc checkUpdates(skip: Natural): Natural =
+  result = skip
+  try:
+    let updates = httpc.req api.getUpdates(offset = skip)
+
+    for u in \updates:
+      result = u.id + 1
+      if msg =? u.msg and text =? msg.text:
+        let chid = msg.chat.id
+
+        case text
+        of startD:
+          qTextMsg chid, "Welcome! choose from keyboard"
+
+        of loginD:
+          let code = randCode 4..6
+          registerLoginCode code, msg.frm
+          qTextMsg chid, code
+          qTextMsg chid, "Enter this code in the login page"
+
+        of mychatidtD:
+          qTextMsg chid, "your chat id in Bale is: " & $chid
+
+        else:
+          qTextMsg chid, "invalid message, choose from keyboard"
+
+  except:
+    echo "error: " & getCurrentExceptionMsg()
+
+
+proc startBaleBot* {.raises: [].} =
+  var skip = 0
 
   while true:
     try:
-      let updates = hc.req api.getUpdates(offset = skip+1)
-
-      for u in \updates:
-        skip = u.id
-        if msg =? u.msg and text =? msg.text:
-          let chid = msg.chat.id
-
-          case text
-          of startD:
-            m(chid, "Welcome! choose from keyboard")
-
-          of loginD:
-            m(chid, genLoginCode msg.frm)
-            m(chid, "Enter this code in the login page")
-
-          of mychatidtD:
-            m(chid, "your chat id in Bale is: " & $chid)
-
-          else:
-            m(chid, "invalid message, choose from keyboard")
-
+      sendMessages(20)
+      skip = checkUpdates(skip)
+      dbCheck()
     except:
-      echo "error: " & getCurrentExceptionMsg()
-
-
-proc main* =
-  discard
-
+      discard
 
 when isMainModule:
   main()

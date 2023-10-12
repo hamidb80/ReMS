@@ -107,6 +107,12 @@ proc newAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
     user: userId,
     hashed_pass: some pass)
 
+proc newInviteCode*(db: DbConn, code: string, info: JsonNode) =
+  db.insert Invitation(
+      secret: code,
+      data: info,
+      timestamp: toUnixtime now())
+
 
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, sql"""
