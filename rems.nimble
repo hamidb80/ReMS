@@ -37,10 +37,6 @@ task testdefs, "define envorment vars only for test":
   putEnv "APP_DIR", "./"
   putEnv "JWT_KEY", "1111"
 
-task prepare, "define envorment vars only for test":
-  mkdir "./dist"
-  mkdir "./bin"
-
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
@@ -73,6 +69,11 @@ task html, "generate index.html ./dist":
   cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 
+
+task prepare, "define envorment vars only for test":
+  mkdir "./dist"
+  mkdir getEnv("APP_DIR") / "resources"
+  mkdir "./bin"
 
 task db, "init db":
   exec "nim r src/backend/utils/db_init.nim"

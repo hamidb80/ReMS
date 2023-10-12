@@ -51,8 +51,10 @@ proc createTables*(db: DbConn) =
 
 proc initDb* =
     if not fileExists appDbPath:
-        echo "created new DB"
         let db = open(appDbPath, "", "", "")
         createTables db
         addAdminUser db
         defaultPalette db
+
+when isMainModule:
+    initDb()

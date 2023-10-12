@@ -57,7 +57,7 @@ var
   boards: seq[BoardItemView]
   searchCriterias: seq[TagCriteria]
   selectedCriteriaI = noIndex
-  columnsCount = 3
+  columnsCount = 1
   selectedClass = scUsers
   currentRelTags: Table[Id, seq[cstring]]
   selectedNoteId: Id
@@ -745,6 +745,11 @@ proc createDom: Vnode =
 
 when isMainModule:
   setRenderer createDom
+
+  columnsCount = 
+    case screenOrientation()
+    of soPortrait: 2
+    of soLandscape: 3
 
   waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers()], proc =
     redraw()

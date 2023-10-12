@@ -1,18 +1,10 @@
-import std/[nativesockets, threadpool, os]
+import std/[nativesockets, threadpool]
 
 import ./[server, bot, config]
-import utils/db_init
 
 
 when isMainModule:
-    echo "started ..."
-    
-    discard existsOrCreateDir appSaveDir
-    initDb()
-
-    echo "initilization completed ..."
-    echo "GO ..."
-
+    echo "Run on port: ", webServerPort
     spawn runBaleBot baleBotToken
     runWebServer Port webServerPort
 

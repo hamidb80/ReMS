@@ -130,7 +130,6 @@ const
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
 # TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
-# TODO if a node was selected and clicked on new node, the styles of last node is copied
 # TODO select custom color palletes
 # TODO ability to set the center
 # TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
@@ -1526,9 +1525,23 @@ proc init* =
       addHotkey "n", proc =
         startPuttingNode()
 
-      addHotkey "k", proc =
-        # echo getClientRect app.mainGroup
-        discard
+      addHotkey "k", proc = # copy style
+        if app.selectedVisualNodes.len == 1:
+          let v = app.selectedVisualNodes[0]
+
+          app.theme = v.config.theme
+          app.font = v.config.font
+
+        elif app.selectedEdges.len == 1:
+          let e = app.selectedEdges[0]
+          
+          app.theme = e.config.theme
+          app.edge.width = e.config.width
+
+        else:
+          discard
+
+        redraw()
 
       addHotkey "c", proc = # go to center
         let s = ||app.stage.scale
