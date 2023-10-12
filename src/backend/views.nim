@@ -184,6 +184,7 @@ proc assetShorthand*(req: Request) =
     redirect get_assets_download_url parseInt assetid
 
 proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
+  # TODO return a default image if not exists
   let
     asset = !!<db.findAsset(id)
     content = readfile asset.path

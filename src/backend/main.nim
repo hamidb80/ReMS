@@ -5,9 +5,13 @@ import utils/db_init
 
 
 when isMainModule:
-    discard existsOrCreateDir appDir
+    echo "started ..."
+    
     discard existsOrCreateDir appSaveDir
     initDb()
+
+    echo "initilization completed ..."
+    echo "GO ..."
 
     spawn runBaleBot baleBotToken
     runWebServer Port webServerPort
