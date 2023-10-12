@@ -7,7 +7,7 @@ RUN cp /usr/share/zoneinfo/Iran  /etc/localtime
 
 # install ssl library
 RUN apk add libressl-dev 
-RUN apk add openssl-dev 
+# RUN apk add openssl-dev 
 
 # prepare app
 WORKDIR /app
