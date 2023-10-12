@@ -50,11 +50,13 @@ proc createTables*(db: DbConn) =
         Palette)
 
 proc initDb* =
-    if not fileExists appDbPath:
-        let db = open(appDbPath, "", "", "")
-        createTables db
+    let db = open(appDbPath, "", "", "")
+    createTables db
+    try:
         addAdminUser db
         defaultPalette db
+    except:
+        discard
 
 when isMainModule:
     initDb()
