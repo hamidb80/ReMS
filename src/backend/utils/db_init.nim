@@ -1,4 +1,4 @@
-import std/[json, sha1]
+import std/[json, sha1, os]
 
 import ponairi
 
@@ -41,7 +41,12 @@ proc createTables*(db: DbConn) =
 
 
 when isMainModule:
-    let db = open(appDbPath, "", "", "")
+    let 
+        isNew = fileExists appDbPath
+        db = open(appDbPath, "", "", "")
+
     db.createTables()
-    db.addAdminUser()
-    db.defaultPalette()
+
+    if isNew:
+        db.addAdminUser()
+        db.defaultPalette()

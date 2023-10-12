@@ -1,0 +1,17 @@
+kind: ExternalService
+name: ReMS
+spec:
+  image: rems:0.0.1
+  
+  resources:
+    memory: 200Mi
+
+  env:
+  - name: BALE_BOT_TOKEN
+    secret: bale-bot-token
+
+  - name: JWT_KEY
+    secret: jwt-key
+
+  - name: APP_DIR
+    value: "/mnt/shared-volume/rems/"

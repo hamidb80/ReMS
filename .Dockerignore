@@ -1,9 +1,9 @@
+.git/
 .vscode/
 dist/
 resources/
 
-*.token
 play.*
-*.exe
 *.db
+*.token
 *.sqlite3
