@@ -242,12 +242,9 @@ proc updateNoteRelTags*(db: DbConn, noteid: Id, data: RelValuesByTagId) =
 
 proc deleteNote*(db: DbConn, id: Id) =
   transaction db:
-    db.exec sql"""
-      DELETE FROM Note           WHERE id   = ?;
-      DELETE FROM RelationsCache WHERE note = ?;
-      DELETE FROM Relation       WHERE note = ?;
-    """, id, id, id
-
+    db.exec sql"DELETE FROM Note           WHERE id   = ?;", id
+    db.exec sql"DELETE FROM RelationsCache WHERE note = ?;", id
+    db.exec sql"DELETE FROM Relation       WHERE note = ?;", id
 
 proc newBoard*(db: DbConn): Id =
   result = db.insertID Board(
