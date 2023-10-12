@@ -297,7 +297,7 @@ p p {
   direction: ltr;
 }
 
-.tw-content .content-list {
+.tw-content .tw-content-list {
   display: table;
   padding-left: 1em;
   list-style-position: inside;
@@ -305,10 +305,6 @@ p p {
 
 .tw-content p {
   display: block;
-}
-
-.tw-content .content-list p {
-  margin-bottom: 0;
 }
 
 .tw-content .list-persian-number {

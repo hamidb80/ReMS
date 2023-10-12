@@ -223,12 +223,14 @@ proc initParagraph: Hooks =
     el = createElement("div", {"class": "tw-paragraph"})
     (dir, setDir) = genState c"auto"
     (align, setAlgn) = genState c"auto"
+    (inline, iset) = genState false
 
   defHooks:
     dom = () => el
     acceptsAsChild = onlyInlines
 
     capture = () => <*{
+      "inline": inline(),
       "dir": dir(),
       "align": align()}
 
@@ -236,6 +238,7 @@ proc initParagraph: Hooks =
       if isObject j:
         setDir getDefault(j, c"dir", c"auto") ~~ cstring
         setAlgn getDefault(j, c"align", c"auto") ~~ cstring
+        iset getDefault(j, c"inline", false) ~~ bool
 
     render = genRender:
       case $dir()
@@ -251,6 +254,9 @@ proc initParagraph: Hooks =
       of "left": el.classList.add "text-start"
       of "right": el.classList.add "text-end"
       else: discard
+
+      if inline():
+        el.classList.add displayInlineClass
 
 
     mounted = genMounted:
@@ -284,7 +290,15 @@ proc initParagraph: Hooks =
               ["center", "center"],
               ["left", "left"],
               ["right", "right"]]},
-          updateCallback: mutState(setAlgn, cstring)))
+          updateCallback: mutState(setAlgn, cstring))),
+
+      SettingsPart(
+        field: "inline?",
+        icon: "bi bi-backspace-fill",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: inline().toJs,
+          updateCallback: mutState(iset, bool))),
         ]
 
 proc initVerticalSpace: Hooks =
@@ -509,11 +523,12 @@ proc initList: Hooks =
     dom = () => ul
     acceptsAsChild = anyTag
 
-    # capture = () => tojs url()
-    # restore = (j: JsObject) => setUrl(j.to cstring)
+    capture = () => <*{ 
+      "style": style()}
 
-    refresh = proc =
-      ul.class = "content-list"
+    restore = proc(j: JsObject) =
+      if isObject j:
+        setStyle getDefault(j, c"style", c"list-disc") ~~ cstring
 
     render = genRender:
       let c =
@@ -524,10 +539,8 @@ proc initList: Hooks =
         of "decimal": "list-decimal"
         else: "list-disc"
 
+      ul.className = "tw-content-list"
       ul.classList.add c
-
-    mounted = genMounted:
-      hooks.refresh()
 
     attachNode = proc(child: TwNode, at: Index) =
       let li = createElement "li"
@@ -539,7 +552,7 @@ proc initList: Hooks =
 
     settings = () => @[
       SettingsPart(
-        field: "text direction",
+        field: "style",
         icon: "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
@@ -552,7 +565,8 @@ proc initList: Hooks =
              ["roman", "roman"],
              ["latin", "latin"]]},
 
-          updateCallback: mutState(setStyle, cstring)))]
+          updateCallback: mutState(setStyle, cstring))),
+    ]
 
 proc initTableRow: Hooks =
   let el = createElement "tr"
