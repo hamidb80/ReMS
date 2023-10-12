@@ -247,3 +247,5 @@ proc text*(e: ClipboardEvent): cstring {.importjs: """
 
 proc redirect*(url: cstring) 
   {.importjs: "location.href = #;".}
+
+# TODO https://developer.mozilla.org/en-US/docs/Web/API/Screen/orientation

@@ -117,7 +117,7 @@ proc newInviteCode*(db: DbConn, code: string, info: JsonNode) =
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, sql"""
     SELECT *
-    FROM User u
+    FROM User
     WHERE id = ?
     """, userid
 
@@ -128,11 +128,15 @@ proc getUser*(db: DbConn, username: string): options.Option[User] =
     WHERE u.username = ?
     """, username
 
-proc newUser*(db: DbConn, uname, nname: string): Id =
+proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
+  let r =
+    if isAdmin: urAdmin
+    else: urUser
+
   db.insertID User(
     username: uname,
     nickname: nname,
-    role: urUser)
+    role: r)
 
 
 proc newTag*(db: DbConn, t: Tag): Id =

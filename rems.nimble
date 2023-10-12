@@ -34,13 +34,6 @@ requires "karax" # 1.3.0
 import std/[os, strutils, strformat]
 
 
-task prepare, "creates the directory ./dist used for final output":
-  mkdir "./resources"
-  mkdir "./dist"
-
-task db, "init db":
-  exec "nim r src/backend/utils/db_init.nim"
-
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
@@ -68,15 +61,33 @@ task gentg, "":
 task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
 
+
+
+proc defs = 
+  putEnv "BALE_BOT_TOKEN", readfile "bot.token"
+  putEnv "APP_DIR", "./"
+  putEnv "JWT_KEY", "1111"
+
+task prepare, "creates the directory ./dist used for final output":
+  mkdir "./resources"
+  mkdir "./dist"
+
+task db, "init db":
+  defs()
+  exec "nim r src/backend/utils/db_init.nim"
+
 task html, "generate index.html ./dist":
   cpfile "./src/frontend/custom.css", "./dist/custom.css"
   cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 
 task bot, "bale box":
-  putEnv "BALE_BOT_TOKEN", readfile "bot.token"
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task serv, "run server":
   # sudo apt-get install libssl-dev
-  exec fmt"""nim --d:ssl --passL:"-lcrypto"  --mm:arc --threads:on -d:ssl r ./src/backend/server.nim"""
+  exec fmt"""nim -d:ssl --passL:"-lcrypto" --mm:arc --threads:on r ./src/backend/server.nim"""
+
+task go, "runs server + bot":
+  defs()
+  exec """nim --showAllMismatches:on -d:ssl --passL:"-lcrypto" --mm:arc --threads:on r ./src/backend/main.nim"""

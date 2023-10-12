@@ -4,6 +4,7 @@ import ponairi
 
 import ../../common/[types, datastructures]
 import ../database/[models]
+import ../config
 
 
 proc defaultPalette*(db: DbConn) =
@@ -31,8 +32,8 @@ proc defaultPalette*(db: DbConn) =
 
 proc addAdminUser*(db: DbConn) =
     db.insert User(
-        username: "os_shahed_1402_TA",
-        nickname: "استاد یار های درس سیستم عامل",
+        username: "admin",
+        nickname: "admin",
         role: urAdmin)
 
 proc createTables*(db: DbConn) =
@@ -40,8 +41,7 @@ proc createTables*(db: DbConn) =
 
 
 when isMainModule:
-    import ../database/dbconn
-
-    !! db.createTables()
-    !! db.addAdminUser()
-    !! db.defaultPalette()
+    let db = open(appDbPath, "", "", "")
+    db.createTables()
+    db.addAdminUser()
+    db.defaultPalette()

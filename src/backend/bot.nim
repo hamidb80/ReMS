@@ -1,5 +1,4 @@
-import std/[options, os, json, sequtils, strutils,
-    deques, httpclient]
+import std/[options, json, sequtils, httpclient, deques]
 
 import questionable
 import bale, bale/helper/stdhttpclient
@@ -21,8 +20,6 @@ const
   mychatidtD = "/my_chat_id"
 
 let
-  token = getEnv "BALE_BOT_TOKEN"
-  api = baleBotBaseApi token
   botKeyBoard = some ReplyKeyboardMarkup(
     keyboard: some @[@[
     KeyboardButton(text: loginD),
@@ -51,9 +48,9 @@ proc dbCheck =
 
   !!db.markNotifsAsStale(ids)
 
-proc sendMessages(n: Positive) =
-  for i in 1..n:
-    if msgQueue.len != 0:
+proc genSendMessages(api: string): proc() =
+  proc =
+    while 0 < msgQueue.len:
       let m = popFirst msgQueue
       try:
         discard httpc.req api.sendMessage(int m.chid, m.content,
@@ -61,46 +58,54 @@ proc sendMessages(n: Positive) =
       except:
         addLast msgQueue, m
 
-proc checkUpdates(skip: Natural): Natural =
-  result = skip
-  try:
-    let updates = httpc.req api.getUpdates(offset = skip)
-
-    for u in \updates:
-      result = u.id + 1
-      if msg =? u.msg and text =? msg.text:
-        let chid = msg.chat.id
-
-        case text
-        of startD:
-          qTextMsg chid, "Welcome! choose from keyboard"
-
-        of loginD:
-          let code = randCode 4..6
-          registerLoginCode code, msg.frm
-          qTextMsg chid, code
-          qTextMsg chid, "Enter this code in the login page"
-
-        of mychatidtD:
-          qTextMsg chid, "your chat id in Bale is: " & $chid
-
-        else:
-          qTextMsg chid, "invalid message, choose from keyboard"
-
-  except:
-    echo "error: " & getCurrentExceptionMsg()
-
-
-proc startBaleBot* {.raises: [].} =
+proc genCheckUpdates(api: string): proc() =
   var skip = 0
 
-  while true:
+  proc =
     try:
-      sendMessages(20)
-      skip = checkUpdates(skip)
-      dbCheck()
+      let updates = httpc.req api.getUpdates(offset = skip)
+
+      for u in \updates:
+        skip = max(skip, u.id+1)
+
+        if msg =? u.msg and text =? msg.text:
+          let chid = msg.chat.id
+
+          case text
+          of startD:
+            qTextMsg chid, "Welcome! choose from keyboard"
+
+          of loginD:
+            let code = randCode 4..6
+            registerLoginCode code, msg.frm
+            qTextMsg chid, code
+            qTextMsg chid, "Enter this code in the login page"
+
+          of mychatidtD:
+            qTextMsg chid, "your chat id in Bale is: " & $chid
+
+          else:
+            qTextMsg chid, "invalid message, choose from keyboard"
+
     except:
-      discard
+      echo "error: " & getCurrentExceptionMsg()
+
+
+proc runBaleBot*(token: string) {.raises: [], noreturn.} =
+  {.cast(gcsafe).}:
+
+    let
+      api = baleBotBaseApi token
+      msgSender = genSendMessages api
+      updateChecker = genCheckUpdates api
+
+    while true:
+      try:
+        msgSender()
+        updateChecker()
+        dbCheck()
+      except:
+        discard
 
 when isMainModule:
-  main()
+  runBaleBot readfile "./bot.token"

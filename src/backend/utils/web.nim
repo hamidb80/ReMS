@@ -179,14 +179,18 @@ macro adminOnly*(procdef): untyped =
         {.cast(gcsafe).}:
           verify(tk, jwtSecret)
       if verified:
-        let 
+        let
           s = tk.claim["user"]
           `user` {.used.} = fromJson($s, models.User)
-        `body`
+
+        if `user`.role == urAdmin:
+          `body`
+        else:
+          raise newException(ValueError, "Permission Denied")
       else:
-        raise newException(ValueError, "Permission Denied")  
+        raise newException(ValueError, "Invalid JWT token")
     else:
-      raise newException(ValueError, "Permission Denied")
+      raise newException(ValueError, "Not logged in")
 
   procdef
 

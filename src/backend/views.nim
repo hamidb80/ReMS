@@ -15,6 +15,7 @@ import ../common/[types, path, datastructures, conventions]
 import ./utils/[web, github, link_preview]
 import ./routes
 import ./database/[models, queries, dbconn]
+import ./config
 
 include ./database/jsony_fix
 
@@ -57,7 +58,6 @@ proc download*(url: string): string =
   client.get(url).body
 
 const jwtKey = "auth"
-let jwtSecret = "TODO" # FIXME getEnv "JWT_KEY"
 
 proc toUserJwt(u: models.User, expire: int64): JsonNode =
   %*{
@@ -113,7 +113,8 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
         else:
           let u = !!<db.newUser(
             "bale_" & $baleUser.id,
-            baleUser.firstName & baleUser.lastname.get "")
+            baleUser.firstName & baleUser.lastname.get "",
+            baleUser.id in adminBaleIds)
           discard !!<db.newAuth(u, baleUser.id)
           u
 
@@ -163,7 +164,8 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
         fname = name & ext
         mime = mimetype ext
         oid = genOid()
-        storePath = fmt"./resources/{oid}{ext}"
+        timestamp = toUnix getTime()
+        storePath = fmt"./resources/{oid}-{timestamp}{ext}"
 
       writeFile storePath, content
       return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)

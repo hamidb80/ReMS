@@ -1,0 +1,21 @@
+import std/[os, strutils]
+
+
+proc getEnvSafe(varname: string): string = 
+    result = getEnv varname
+    if isEmptyOrWhitespace result:
+        raise newException(ValueError, "the enviroment variable '" & varname & "' is not set")
+
+let
+    appDir* = getEnvSafe "APP_DIR"
+    appSaveDir* = appDir / "resources"
+    appDbPath* = appDir / "db.sqlite3"
+
+    jwtSecret* = getEnvSafe "JWT_KEY"
+    webServerPort* = 3000
+
+    baleBotToken* = getEnvSafe "BALE_BOT_TOKEN"
+    adminBaleIds* = [
+        1939572971,
+        1395715069
+    ]

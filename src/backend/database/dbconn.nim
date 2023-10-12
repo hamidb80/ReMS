@@ -1,9 +1,12 @@
-import waterpark/sqlite
 import std/db_sqlite
+import waterpark/sqlite
+import ../config
 
 
-let pool = newSqlitePool(10, "./play.db")
 type DBC* = db_sqlite.DbConn
+
+let pool = newSqlitePool(10, appDbPath)
+
 
 template withConn*(db, body): untyped =
   pool.withConnnection db:

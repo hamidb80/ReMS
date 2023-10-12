@@ -1,9 +1,12 @@
+import std/nativesockets
+
 import mummy
-import routes
+
+import ./routes
 import ../common/types
 
 
-when isMainModule:
-  var server = newServer(router, maxBodyLen = 5.Mb)
-  echo "Serving on http://localhost:8080"
-  server.serve 8080.Port
+proc runWebServer*(port: Port) {.noreturn.} =
+  {.cast(gcsafe).}:
+    var server = newServer(router, maxBodyLen = 5.Mb)
+    serve server, port
