@@ -1,4 +1,4 @@
-FROM nimlang/nim:1.6.12-alpine-onbuild
+FROM nimlang/nim:1.6.14-alpine-onbuild
 
 # install timezones database
 RUN apk add tzdata
