@@ -39,14 +39,12 @@ proc addAdminUser*(db: DbConn) =
 proc createTables*(db: DbConn) =
     db.create(User, Invitation, Auth, Asset, Note, Board, Tag, Relation, RelationsCache, Palette)
 
-
-when isMainModule:
+proc initDb*  = 
     let 
         isNew = fileExists appDbPath
         db = open(appDbPath, "", "", "")
 
-    db.createTables()
-
     if isNew:
+        db.createTables()
         db.addAdminUser()
         db.defaultPalette()

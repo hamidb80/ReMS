@@ -83,4 +83,4 @@ task bot, "bale box":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task go, "runs server + bot":
-  exec """nim -d:ssl --passL:"-lcrypto" r ./src/backend/rems.nim"""
+  exec """nim -d:ssl --passL:"-lcrypto" r ./src/backend/main.nim"""
