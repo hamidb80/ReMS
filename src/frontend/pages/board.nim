@@ -492,13 +492,13 @@ proc loadImageGen(url: cstring; vn: VisualNode; newSize: bool) =
     vn.konva.wrapper.add imgNode
     scaleImage vn, fr
 
-  proc fail = 
-    # TODO set a text node named "[image]" and add a error list and 
+  proc fail =
+    # TODO set a text node named "[image]" and add a error list and
     # show it in the properties of board
     discard
 
   newImageFromUrl url, success, fail
-  
+
 proc setImageUrl(v: VisualNode; u: cstring) =
   assert v.config.data.kind == vndkImage
   v.config.data.url = $u
@@ -1449,7 +1449,7 @@ proc init* =
 
           elif files.len == 1: # paste by image
             let f = files[0]
-            ## TODO change name of image to something with 
+            ## TODO change name of image to something with
             ## proper name & extension
             if f.`type`.startswith "image/":
               apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
@@ -1534,9 +1534,9 @@ proc init* =
 
         elif app.selectedEdges.len == 1:
           let e = app.selectedEdges[0]
-          
-          app.theme = e.config.theme
-          app.edge.width = e.config.width
+
+          app.theme = e.data.config.theme
+          app.edge.width = e.data.config.width
 
         else:
           discard
