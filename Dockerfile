@@ -15,4 +15,4 @@ COPY . /app/
 RUN nimble prepare
 RUN nimble make
 RUN nimble done
-CMD ["./main.exe"]
+CMD ["./bin/main.exe"]

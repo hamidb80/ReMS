@@ -37,11 +37,9 @@ task testdefs, "define envorment vars only for test":
   putEnv "APP_DIR", "./"
   putEnv "JWT_KEY", "1111"
 
-task prepare, "creates the directory ./dist used for final output":
-  let appdir = getEnv "APP_DIR"
-  mkdir appdir / "resources"
-  mkdir "dist"
-
+task prepare, "define envorment vars only for test":
+  mkdir "./dist"
+  mkdir "./bin"
 
 task make, "make all":
   exec "nimble html"
@@ -83,7 +81,7 @@ task bot, "bale box":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task done, "runs server + bot":
-  exec """nim -d:ssl --passL:"-lcrypto" -o:./main.exe c ./src/backend/main.nim"""
+  exec """nim -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
 
 task go, "runs server + bot":
   exec """nim -d:ssl --passL:"-lcrypto" r ./src/backend/main.nim"""
