@@ -168,7 +168,7 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
         timestamp = toUnix getTime()
 
       {.cast(gcsafe).}:
-        let storePath = appSaveDir / fmt"resources/{oid}-{timestamp}{ext}"
+        let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"
         writeFile storePath, content
         return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)
 
