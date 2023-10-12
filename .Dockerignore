@@ -6,3 +6,4 @@ play.*
 *.token
 *.db
 *.sqlite3
+rems

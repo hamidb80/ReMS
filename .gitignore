@@ -7,3 +7,4 @@ play.*
 *.exe
 *.db
 *.sqlite3
+rems

@@ -26,8 +26,7 @@ requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
 requires "bale" # 1.0.0
 
-when defined dev:
-  requires "karax" # 1.3.0
+requires "karax" # 1.3.0
 
 
 # Tasks
@@ -84,4 +83,4 @@ task bot, "bale box":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task go, "runs server + bot":
-  exec """nim -d:ssl --passL:"-lcrypto" r ./src/backend/main.nim"""
+  exec """nim -d:ssl --passL:"-lcrypto" r ./src/backend/rems.nim"""

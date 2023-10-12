@@ -14,6 +14,6 @@ WORKDIR /app
 COPY . /app/
 
 RUN nimble prepare
-# RUN nimble make
+RUN nimble make
 RUN nimble db
 CMD ["nimble", "go"]
