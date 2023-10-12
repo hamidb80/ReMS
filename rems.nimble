@@ -32,13 +32,14 @@ requires "karax" # 1.3.0
 # Tasks
 import std/[os, strutils, strformat]
 
-task testdefs, "define envorment vars only for test" =
+task testdefs, "define envorment vars only for test":
   putEnv "BALE_BOT_TOKEN", readfile "bot.token"
   putEnv "APP_DIR", "./"
   putEnv "JWT_KEY", "1111"
 
 task prepare, "creates the directory ./dist used for final output":
-  mkdir "resources"
+  let appdir = getEnv "APP_DIR"
+  mkdir appdir / "resources"
   mkdir "dist"
 
 
