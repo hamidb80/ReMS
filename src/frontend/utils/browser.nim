@@ -248,4 +248,13 @@ proc text*(e: ClipboardEvent): cstring {.importjs: """
 proc redirect*(url: cstring) 
   {.importjs: "location.href = #;".}
 
-# TODO https://developer.mozilla.org/en-US/docs/Web/API/Screen/orientation
+  # # TODO https://developer.mozilla.org/en-US/docs/Web/API/Screen/orientation
+  # case screen.orientation.type:
+  # of "landscape-primary":
+  #     "That looks good."
+  # of "landscape-secondary":
+  #     "Mmmh… the screen is upside down!"
+  # of "portrait-secondary", "portrait-primary":
+  #     "Mmmh… you should rotate your device to landscape"
+  # else:
+  #     "The orientation API isn't supported in this browser :("

@@ -26,7 +26,8 @@ requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
 requires "bale" # 1.0.0
 
-requires "karax" # 1.3.0
+when defined dev:
+  requires "karax" # 1.3.0
 
 
 # Tasks
