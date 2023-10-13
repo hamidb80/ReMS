@@ -132,7 +132,7 @@ const
 # TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
 # TODO select custom color palletes
 # TODO ability to set the center
-# TODO add "exploratory mode" where user starts with some nodes and progressively sees all the graph
+# TODO add "exploratory mode" where all nodes' content are hidden when you click they show up
 # TODO customize border radius for nodes
 # TODO add beizier curve
 # TODO add custom shape for connections

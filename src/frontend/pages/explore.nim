@@ -1,4 +1,4 @@
-import std/[options, sequtils, tables]
+import std/[options, sequtils, tables, algorithm]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -56,6 +56,8 @@ var
   notes: seq[NoteItemView]
   boards: seq[BoardItemView]
   searchCriterias: seq[TagCriteria]
+  selectedSortCriteriaI = noIndex
+  sortOrder = Descending
   selectedCriteriaI = noIndex
   columnsCount = 1
   selectedClass = scUsers
@@ -129,7 +131,7 @@ proc pushUploads(files: seq[DFile]) =
       file: f)
 
     startUpload u
-    uploads.add u
+    add uploads, u
 
 # ----- Events
 
@@ -356,7 +358,12 @@ proc assetUploader: VNode =
 
 
 proc getExploreQuery: ExploreQuery =
-  ExploreQuery(criterias: searchCriterias)
+  result = ExploreQuery(
+    searchCriterias: searchCriterias,
+    order: sortOrder)
+
+  if selectedCriteriaI != noIndex:
+    result.sortCriteria = somec searchCriterias[selectedCriteriaI]
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -582,9 +589,20 @@ proc genAddSearchCriteria(t: Tag): proc() =
 
 proc genSelectCriteria(i: int): proc() =
   proc =
-    selectedCriteriaI = i
+    if selectedCriteriaI == i:
+      if selectedSortCriteriaI == i:
+        case sortOrder
+        of Descending:
+          sortOrder = Ascending
+        of Ascending:
+          sortOrder = Descending
+          selectedSortCriteriaI = noIndex
+          selectedCriteriaI = noIndex
+      else:
+        selectedSortCriteriaI = i
+    else:
+      selectedCriteriaI = i
 
-# TODO add sorting API
 proc searchTagManager(): Vnode =
   buildHTML:
     tdiv:
@@ -607,7 +625,12 @@ proc searchTagManager(): Vnode =
               span(onclick = genRoundOperator(i, tags[cr.tagid].valueType)):
                 text $cr.operator
               tagViewC tags[cr.tagid], cr.value, genSelectCriteria i
-
+              if selectedSortCriteriaI == i:
+                case sortOrder
+                of Descending:
+                  icon "fa-arrow-up-short-wide"
+                of Ascending:
+                  icon "fa-arrow-down-short-wide"
 
       if selectedCriteriaI != noIndex:
         let
@@ -737,8 +760,6 @@ proc createDom: Vnode =
                 else:
                   assetItemComponent i, a, u
 
-
-
       of asTagManager:
         relTagManager()
 
@@ -746,7 +767,7 @@ proc createDom: Vnode =
 when isMainModule:
   setRenderer createDom
 
-  columnsCount = 
+  columnsCount =
     case screenOrientation()
     of soPortrait: 2
     of soLandscape: 3

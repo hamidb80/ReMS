@@ -48,6 +48,7 @@ type
     ccsTriangle
     ccsDoubleTriangle
 
+  # FIXME you can divide konva module into 2 parts: types & procs and simply import these types
   FontVariant* = enum
     fvVormal = "normal"
     fvSmallCaps = "small-caps"
@@ -210,8 +211,7 @@ when defined js:
   func initNTable*[K: cstring, V](): NTable[K, V] =
     newJsAssoc[K, V]()
 
-  func somec*[T](j: T): Option[T] =
-    cast[JsObject](j)
+  func somec*[T](j: T): Option[T] {.importjs: "(@)".}
 
   func issome*[T](j: Option[T]): bool =
     cast[JsObject](j) != nil

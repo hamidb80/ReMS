@@ -3,6 +3,7 @@
 import std/[times, json, options, strutils, strformat, sequtils, tables, sha1]
 
 import ponairi
+import questionable
 include jsony_fix
 
 import ./models
@@ -300,7 +301,7 @@ func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
       else:
         fmt"rel.label = {c.label.ord}"
 
-    # FIXME security issue when oeprator is qoLike: "LIKE"
+    # FIXME security issue when oeprator is qoSubStr: "LIKE"
     # FIXME not covering "" in string
     primaryCond =
       if isInfix c.operator:
@@ -321,41 +322,61 @@ func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
 
 func exploreSqlConds(field: string, xqdata: ExploreQuery,
     ident: string): string =
-  if xqdata.criterias.len == 0: "1"
+  if xqdata.searchCriterias.len == 0: "1"
   else:
-    xqdata.criterias
+    xqdata.searchCriterias
     .mapIt(toSubQuery(field, it, ident))
     .join " AND "
 
+func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
+    xqdata: ExploreQuery): tuple[joinq, sortIdent: string] =
+  if sc =? xqdata.sortCriteria and hasValue sc.valueType:
+    (
+      fmt"""
+      JOIN Relation r
+      ON 
+        r.{entity} = {fieldIdVar} AND
+        r.tag      = {sc.tagId}
+      """,
+      fmt"r.{columnName sc.valueType}"
+    )
+  else:
+    ("", fieldIdVar)
+
 func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
-  let repl = exploreSqlConds($entity, xqdata, "thing.id")
+  let
+    repl = exploreSqlConds($entity, xqdata, "thing.id")
+    (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
 
   case entity
   of ecNote: sql fmt"""
       SELECT thing.id, thing.data, rc.active_rels_values
       FROM Note thing
       JOIN RelationsCache rc
-      ON rc.note = thing.id
+      ON rc.{entity} = thing.id
+      {joinq}
       WHERE {repl}
-      ORDER BY thing.id DESC
+      ORDER BY {field} {xqdata.order}
     """
 
   of ecBoard: sql fmt"""
       SELECT thing.id, thing.title, thing.screenshot, rc.active_rels_values
       FROM Board thing
       JOIN RelationsCache rc
-      ON rc.board = thing.id
+      ON rc.{entity} = thing.id
+      {joinq}
       WHERE {repl}
-      ORDER BY thing.id DESC
+      ORDER BY {field} {xqdata.order}
     """
 
   of ecAsset: sql fmt"""
       SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
       FROM Asset thing
       JOIN RelationsCache rc
-      ON rc.asset = thing.id
+      ON rc.{entity} = thing.id
+      {joinq}
       WHERE {repl}
-      ORDER BY thing.id DESC
+      ORDER BY {field} {xqdata.order}
     """
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =

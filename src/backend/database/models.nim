@@ -79,21 +79,28 @@ type # database models
 
     tlOwner            ## owner
     tlTimestamp        ## creation time
-    tlSize             ## size in bytes
-    tlName             ## name
-    tlMime             ## mime type of a file
-    tlBoardScreenShot  ## screenshots that are taken from boards
-    tlTextContent      ## raw text
-    tlLike             ## default like tag
 
-    tlBoardNode
-    tlNodeNote         ## note list of node
+    tlSize             ## size in bytes
+    tlFileName         ##
+    tlMime             ## mime type of a file
+
+    tlBoardScreenShot  ## screenshots that are taken from boards
+
+    tlTextContent      ## raw text
+    tlForwarded        ## a note that is forwarded from another user
     tlNoteHighlight    ##
     tlNoteComment      ## a note (as comment) that refers to main note (ival)
     tlNoteCommentReply ## reply to another comment
 
     tlPrivate          ## everything is public except when it has private tag
     tlHasAccess        ## tag with username of the person as value - is used with private
+
+    tlLike
+    tlImportant
+    tlSeeLater
+
+    tlBoardNode
+    tlNodeNote         ## note list of node
 
     tlFollows          ## user => ival (user.id)
     tlNotification     ##
@@ -178,25 +185,25 @@ type # view models
     qoNotEq     ## !=
     qoMoreEq    ## =>
     qoMore      ## >
-    qoLike      ## ~ LIKE string pattern
+    qoSubStr    ## ~ substring check
+
+  TagKind* = enum
+    tkGlobal
+    tkUserSpecific
 
   TagCriteria* = object
     label*: TagLabel
     tagId*: Id
     value_type*: TagValueType
-
     operator*: QueryOperator
     value*: Str
 
-  Sorting* = object
-    tagid*: Option[Id] ## if not present we sort by note.`id`
-    order*: SortOrder
-
   ExploreQuery* = object
-    criterias*: seq[TagCriteria]
-    sorting*: Sorting
+    searchCriterias*: seq[TagCriteria]
+    sortCriteria*: Option[TagCriteria]
+    order*: SortOrder
     limit*: Natural
-    skip*: int
+    skip*: Natural
 
 
   AssetItemView* = object
@@ -246,21 +253,29 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     children: @[],
     data: newJNull())
 
+func hasValue*(tv: TagValueType): bool =
+  tv != tvtNone
+
 func hasValue*(t: Tag): bool =
-  t.value_type != tvtNone
+  hasValue t.value_type
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin
 
+func criteriaKind*(tc: TagCriteria): TagKind =
+  case tc.label
+  of tlOrdinary: tkUserSpecific
+  else: tkGlobal
+
 func columnName*(vt: TagValueType): string =
   case vt
-  of tvtNone: ""
+  of tvtNone: raise newException(ValueError, "'tvtNone' does not have column")
   of tvtFloat: "fval"
   of tvtInt, tvtDate: "ival"
   of tvtJson, tvtStr: "sval"
 
 func isInfix*(qo: QueryOperator): bool =
-  qo in qoLess..qoLike
+  qo in qoLess..qoSubStr
 
 func `$`*(qo: QueryOperator): string =
   case qo
@@ -272,7 +287,7 @@ func `$`*(qo: QueryOperator): string =
   of qoNotEq: "!="
   of qoMoreEq: ">="
   of qoMore: ">"
-  of qoLike: "LIKE" # FIXME security issue
+  of qoSubStr: "LIKE" # FIXME security issue
 
 func `$`*(tvt: TagValueType): string =
   case tvt
@@ -283,6 +298,10 @@ func `$`*(tvt: TagValueType): string =
   of tvtDate: "date"
   of tvtJson: "JSON"
 
+func `$`*(so: SortOrder): string =
+  case so
+  of Descending: "DESC"
+  of Ascending: "ASC"
 
 when not defined js:
   import jsony
