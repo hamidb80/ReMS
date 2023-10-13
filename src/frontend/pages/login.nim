@@ -24,6 +24,11 @@ proc genSetState(i: AppAction): proc() =
   proc = 
     state = i
 
+# TODO form to change username/nickname
+# TODO see bale chat id
+# TODO enable login by password
+# TODO link to tag manager
+# TODO link to palette manager
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
@@ -56,6 +61,7 @@ proc createDom: Vnode =
               notify "logged out"
               reset user
               redraw()
+
 
       else:
         tdiv(class = "card-header"):
@@ -101,8 +107,6 @@ proc createDom: Vnode =
                   loginApi pass, success, fail
                 of aaLoginForm:
                   loginApi username, pass, success, fail
-
-
 
 
 proc init* =

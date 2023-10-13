@@ -1543,6 +1543,10 @@ proc init* =
 
         redraw()
 
+      addHotkey "q", proc = # start connection
+        if app.selectedVisualNodes.len == 1:
+          startAddConn app.selectedVisualNodes[0]
+
       addHotkey "c", proc = # go to center
         let s = ||app.stage.scale
         app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s

@@ -29,6 +29,7 @@ proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
+# TODO add cache
 proc staticFileHandler*(req: Request) {.qparams.} =
   if "file" in q:
     let
