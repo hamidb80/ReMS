@@ -347,36 +347,30 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
   let
     repl = exploreSqlConds($entity, xqdata, "thing.id")
     (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
+    common = fmt"""
+      JOIN RelationsCache rc
+      ON rc.{entity} = thing.id
+      {joinq}
+      WHERE {repl}
+      ORDER BY {field} {xqdata.order}"""
 
   case entity
   of ecNote: sql fmt"""
       SELECT thing.id, thing.data, rc.active_rels_values
       FROM Note thing
-      JOIN RelationsCache rc
-      ON rc.{entity} = thing.id
-      {joinq}
-      WHERE {repl}
-      ORDER BY {field} {xqdata.order}
+      {common}
     """
 
   of ecBoard: sql fmt"""
       SELECT thing.id, thing.title, thing.screenshot, rc.active_rels_values
       FROM Board thing
-      JOIN RelationsCache rc
-      ON rc.{entity} = thing.id
-      {joinq}
-      WHERE {repl}
-      ORDER BY {field} {xqdata.order}
+      {common}
     """
 
   of ecAsset: sql fmt"""
       SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
       FROM Asset thing
-      JOIN RelationsCache rc
-      ON rc.{entity} = thing.id
-      {joinq}
-      WHERE {repl}
-      ORDER BY {field} {xqdata.order}
+      {common}
     """
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =
