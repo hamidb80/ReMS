@@ -287,7 +287,7 @@ func `$`*(qo: QueryOperator): string =
   of qoNotEq: "!="
   of qoMoreEq: ">="
   of qoMore: ">"
-  of qoSubStr: "LIKE" # FIXME security issue
+  of qoSubStr: "LIKE" 
 
 func `$`*(tvt: TagValueType): string =
   case tvt

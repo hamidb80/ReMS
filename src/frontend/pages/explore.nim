@@ -15,9 +15,8 @@ import ./editor/[core, components]
 
 
 # TODO hide admin buttons for normal users
-# TODO add order by in search
 # TODO add pagination
-# TODO add confirmation for deletation
+# TODO add confirmation for deletation | the icon of delete button changes to check
 # TODO sort by specific tag with value
 
 type
@@ -493,8 +492,6 @@ proc genAddTagToList(id: Id): proc() =
 proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
     activeRelTag = some (tagid, index)
-
-# TODO search tag component
 
 # TODO make it globally available
 

@@ -301,11 +301,9 @@ func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
       else:
         fmt"rel.label = {c.label.ord}"
 
-    # FIXME security issue when oeprator is qoSubStr: "LIKE"
-    # FIXME not covering "" in string
     primaryCond =
       if isInfix c.operator:
-        fmt"rel.{columnName c.valueType} {c.operator} {c.value}"
+        fmt"rel.{columnName c.valueType} {c.operator} {dbvalue c.value}"
       else:
         "1"
 

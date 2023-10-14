@@ -137,6 +137,7 @@ const
 # TODO add beizier curve
 # TODO add custom shape for connections
 # FIXME image node border radius is depend on font size
+# TODO ability to save as file and import all parts of app
 
 var
   app = AppData()
