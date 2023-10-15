@@ -264,13 +264,17 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         add app.focusedPath, 0
         app.focusedNode = app.focusedNode.children[0]
 
-    of "PageDown": ## 10 more down
+    of "PageDown": # 10 more down
+      discard
 
-    of "PageUp": ## 10 more up
+    of "PageUp": # 10 more up
+      discard
 
-    of "Home": discard
+    of "Home":
+      discard
     
-    of "End": discard
+    of "End":
+      discard
 
     of "n": # insert inside
       setState asSelectComponent
@@ -300,14 +304,17 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       
     of "t": negate app.focusedNode.data.visibleChildren
 
-    of "q": ## to query children of focued node like XPath like VIM editor
+    of "q": # to query children of focued node like XPath like VIM editor
+      discard
     
-    of "y": ## go to the last pathTree state
+    of "y": # go to the last pathTree state
+      discard
     
     of "m": # mark
       discard
 
-    of "a": ## show actions of focused element
+    of "a": # show actions of focused element
+      discard
     
     of "k": # download as JSON
       downloadFile "data.json", "application/json", 
@@ -326,11 +333,14 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       deserizalize(app.components, serialize app)
       .dthen(afterLoad)
 
-    of "c": ## cut
+    of "c": # cut
+      discard
 
-    of "p": ## cut
+    of "p": # cut
+      discard
 
-    of "u": ## undo
+    of "u": # undo
+      discard
 
     of "o": # opens file
       selectFile proc(c: cstring) = 
@@ -346,8 +356,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         .then(done)
         .dcatch () => notify "could not load the file"
 
-    of "r":
-      ## redo
+    of "r": # redo
+      discard
 
     of "Enter":
       if app.state == asTreeView:
