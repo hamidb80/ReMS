@@ -232,7 +232,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   case app.state
   of asTreeView:
     case $e.key
-    of "ArrowUp":
+    of "ArrowUp": # goes up
       e.preventDefault
 
       if app.focusedPath.len > 0:
@@ -242,7 +242,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
           dec app.focusedPath[^1]
           app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
-    of "ArrowDown":
+    of "ArrowDown": # goes down
       e.preventDefault
 
       if app.focusedPath.len > 0:
@@ -252,44 +252,42 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
           app.focusedPath[^1].inc
           app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
-    of "ArrowLeft":
+    of "ArrowLeft": # goes inside
       if app.focusedPath.len > 0:
         app.focusedPath.npop
         app.focusedNode = app.focusedNode.father
 
-    of "ArrowRight":
+    of "ArrowRight": # goes outside
       if app.focusedNode.isLeaf or not app.focusedNode.data.visibleChildren:
         discard
       else:
         add app.focusedPath, 0
         app.focusedNode = app.focusedNode.children[0]
 
-    of "PageDown":
-      ## 10 more down
+    of "PageDown": ## 10 more down
 
-    of "PageUp":
-      ## 10 more up
+    of "PageUp": ## 10 more up
 
     of "Home": discard
     
     of "End": discard
 
-    of "n":
+    of "n": # insert inside
       setState asSelectComponent
       app.insertionMode = imAppend
       prepareComponentSelection app.focusedNode
 
-    of "[": 
+    of "[": # insert before
       setState asSelectComponent
       app.insertionMode = imBefore
       prepareComponentSelection app.focusedNode.father
       
-    of "]": 
+    of "]": # insert after
       setState asSelectComponent
       app.insertionMode = imAfter
       prepareComponentSelection app.focusedNode.father
 
-    of "Delete": 
+    of "Delete": # delete node
       if not isRoot app.focusedNode:
         let 
           n = app.focusedNode
@@ -300,31 +298,27 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         detachNode f, i
         app.focusedNode = f
       
-    of "t":
-      negate app.focusedNode.data.visibleChildren
+    of "t": negate app.focusedNode.data.visibleChildren
 
-    of "q":
-      ## to query children of focued node like XPath like VIM editor
+    of "q": ## to query children of focued node like XPath like VIM editor
     
-    of "y":
-      ## go to the last pathTree state
+    of "y": ## go to the last pathTree state
     
     of "m": # mark
       discard
 
-    of "a":
-      ## show actions of focused element
+    of "a": ## show actions of focused element
     
-    of "k":
+    of "k": # download as JSON
       downloadFile "data.json", "application/json", 
         stringify forceJsObject serialize app
     
-    of "s":
+    of "s": # save
       let id = parseInt getWindowQueryParam("id")
       apiUpdateNoteContent id, serialize app, proc = 
         notify "note updated!"
 
-    of "h": 
+    of "h": # download as HTML
       proc afterLoad(t: TwNode) = 
         downloadFile "data.html", "text/html", t.dom.innerHTML
 
@@ -332,16 +326,13 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       deserizalize(app.components, serialize app)
       .dthen(afterLoad)
 
-    of "c":
-      ## cut
+    of "c": ## cut
 
-    of "p":
-      ## cut
+    of "p": ## cut
 
-    of "u":
-      ## undo
+    of "u": ## undo
 
-    of "o":
+    of "o": # opens file
       selectFile proc(c: cstring) = 
         purge app.tree.dom
 

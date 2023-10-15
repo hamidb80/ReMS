@@ -129,6 +129,10 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# FIXME the mouseup event after creating node causes selection bug
+# TODO escape button should blur the text input
+# TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level
+# TODO add more size + logarithmic sizes
 # TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
 # TODO select custom color palletes
 # TODO ability to set the center

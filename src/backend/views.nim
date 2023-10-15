@@ -29,7 +29,6 @@ proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
-# TODO add cache
 proc staticFileHandler*(req: Request) {.qparams.} =
   if "file" in q:
     let
@@ -286,6 +285,7 @@ proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
 
+# FIXME do not download files more than 5 MB
 proc proxyDownload*(req: Request) {.qparams: {url: string}.} =
   req.respond(200, body = download url)
 
