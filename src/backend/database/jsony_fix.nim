@@ -1,3 +1,5 @@
+## https://github.com/treeform/jsony/issues/77
+
 import std/parseutils
 
 proc parseHook*[T: enum](s: string, i: var int, v: var T) =

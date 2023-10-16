@@ -1,4 +1,4 @@
-import std/[json, sha1, os]
+import std/[json, sha1, os, options]
 
 import ponairi
 
@@ -31,10 +31,14 @@ proc defaultPalette*(db: DbConn) =
     ])
 
 proc addAdminUser*(db: DbConn) =
-    db.insert User(
+    let uid = db.insertID User(
         username: "admin",
         nickname: "admin",
         role: urAdmin)
+
+    db.insert Auth(
+        user: uid,
+        hashed_pass: some secureHash "admin")
 
 proc createTables*(db: DbConn) =
     db.create(

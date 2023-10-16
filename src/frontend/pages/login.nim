@@ -12,7 +12,7 @@ import ../../backend/database/models
 
 type AppAction = enum
   aaBaleBot = "bale bot"
-  aaLoginForm = "login form"
+  aaLoginForm = "form"
 
 var
   username: string

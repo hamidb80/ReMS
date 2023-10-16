@@ -243,10 +243,9 @@ proc initParagraph: Hooks =
 
     render = genRender:
       case $dir()
-      of "auto": el.setAttr "dir", "auto"
       of "ltr": el.setAttr "dir", "ltr"
       of "rtl": el.setAttr "dir", "rtl"
-      else: discard
+      else: el.setAttr "dir", "auto"
 
       el.className = "tw-paragraph"
 
@@ -520,28 +519,37 @@ proc initList: Hooks =
   let
     ul = createElement "ui"
     (style, setStyle) = genState c""
+    (dir, setdir) = genState c""
 
   defHooks:
     dom = () => ul
     acceptsAsChild = anyTag
 
     capture = () => <*{ 
-      "style": style()}
+      "style": style(),
+      "dir": dir()}
 
     restore = proc(j: JsObject) =
       if isObject j:
         setStyle getDefault(j, c"style", c"list-disc") ~~ cstring
+        setdir getDefault(j, c"dir", c"ltr") ~~ cstring
 
     render = genRender:
+      case $dir()
+      of "ltr": ul.setAttr "dir", "ltr"
+      of "rtl": ul.setAttr "dir", "rtl"
+      else: ul.setAttr "dir", "auto"
+
       let c =
         case $style()
         of "persian": "list-persian-number"
+        of "abjad": "list-abjad"
         of "roman": "list-roman"
         of "latin": "list-latin"
         of "decimal": "list-decimal"
         else: "list-disc"
 
-      ul.className = "tw-content-list"
+      ul.className = "tw-content-list w-100"
       ul.classList.add c
 
     attachNode = proc(child: TwNode, at: Index) =
@@ -564,10 +572,24 @@ proc initList: Hooks =
              ["disc", "disc"],
              ["decimal", "decimal"],
              ["persian", "persian"],
+             ["abjad", "abjad"],
              ["roman", "roman"],
              ["latin", "latin"]]},
 
           updateCallback: mutState(setStyle, cstring))),
+
+      SettingsPart(
+        field: "text direction",
+        icon: "bi bi-paragraph",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": dir(),
+            "data": [
+              ["auto", "auto"],
+              ["ltr", "ltr"],
+              ["rtl", "rtl"]]},
+          updateCallback: mutState(setDir, cstring))),
     ]
 
 proc initTableRow: Hooks =
