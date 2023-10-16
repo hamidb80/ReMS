@@ -129,6 +129,12 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO make it SPA
+# TODO add palette studio
+# TODO search graph by tags of messages of nodes
+# TODO do not use uuid, use simple int
+# TODO add material design palette
+# TODO ability to take backup from everything and import it later
 # FIXME the mouseup event after creating node causes selection bug
 # TODO escape button should blur the text input
 # TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level

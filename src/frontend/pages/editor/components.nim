@@ -8,6 +8,7 @@ import ../../../common/[conventions, types, datastructures]
 import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
+
 # TODO make restore hook to get values optionally
 
 # TODO remove markdown compoenent and replace it with a action
@@ -514,6 +515,7 @@ proc initVideo: Hooks =
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring)))]
 
+# TODO add ltr and rtl for list
 proc initList: Hooks =
   let
     ul = createElement "ui"
