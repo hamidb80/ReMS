@@ -1156,7 +1156,7 @@ defComponent gridComponent,
 defComponent rawCodeComponent,
   "raw code",
   "bi bi-code-slash",
-  @["global", "block"],
+  @["global", "block", "inline"],
   initRawCode
 
 defComponent quoteComponent,
