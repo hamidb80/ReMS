@@ -393,6 +393,15 @@ proc exploreUser*(db: DbConn, str: string): seq[User] =
 proc getPalette*(db: DbConn, name: string): Palette =
   db.find R, sql"SELECT * FROM Palette WHERE name = ?", name
 
+proc listPalettes*(db: DbConn): seq[Palette] =
+  db.find R, sql"SELECT * FROM Palette"
+
+proc updatePalette*(db: DbConn, name: string, p: Palette) =
+  db.exec sql"""
+    UPDATE Palette 
+    SET color_themes = ?
+    WHERE name = ?
+    """, p.color_themes, name
 
 proc loginNotif*(db: DbConn, usr: Id) =
   db.insert Relation(

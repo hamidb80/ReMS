@@ -170,7 +170,8 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
       {.cast(gcsafe).}:
         let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"
         writeFile storePath, content
-        return !!<db.addAsset(fname, mime, Path storePath, Bytes len start..last)
+        return !!<db.addAsset(fname, mime, Path storePath,
+            Bytes len start..last)
 
   raise newException(ValueError, "no files found")
 
@@ -283,6 +284,13 @@ proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
 
 proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
+
+proc updatePalette*(req: Request) {.qparams: {name: string}, jbody: Palette, adminOnly.} =
+  !!db.updatePalette(name, data)
+  resp OK
+
+proc listPalettes*(req: Request) =
+  !!respJson toJson db.listPalettes()
 
 
 # FIXME do not download files more than 5 MB

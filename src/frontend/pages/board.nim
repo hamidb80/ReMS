@@ -43,6 +43,7 @@ type
 
   FooterState = enum
     fsOverview
+    fsPalette
     fsColor
     fsFontFamily
     fsFontSize
@@ -130,7 +131,7 @@ const
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
 # TODO make it SPA
-# TODO add palette studio
+# TODO add palette studio https://materialui.co/colors/
 # TODO search graph by tags of messages of nodes
 # TODO do not use uuid, use simple int
 # TODO add material design palette
@@ -151,7 +152,8 @@ const
 
 var
   app = AppData()
-  colorThemes: seq[ColorTheme]
+  palettes: seq[Palette]
+  selectedPalleteI = 0
 
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
@@ -889,6 +891,11 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             v.config.messageIdList.delete i
             redraw()
 
+proc genSelectPalette(i: int): proc() =
+  proc = 
+    selectedPalleteI = i
+    app.footerState = fsColor
+
 
 proc addToMessages(id: Id) =
   if app.selectedVisualNodes.len == 1:
@@ -964,10 +971,10 @@ proc loadFonts(fontsFamilies: seq[string]): Future[void] =
 
     waitAll loadEvents, resolve
 
-proc loadPalette(palette: string): Future[void] =
+proc loadPalettes(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiGetPalette palette, proc(ct: seq[ColorTheme]) =
-      colorThemes = ct
+    apiListPalettes proc(ps: seq[Palette]) =
+      palettes = ps
       resolve()
 
 proc fetchBoard(id: Id) =
@@ -1067,8 +1074,22 @@ proc createDom*(data: RouterData): VNode =
                 setFocusedEdgeWidth w.Tenth
                 app.footerState = fsOverview)
 
+          of fsPalette:
+            for i, p in palettes:
+              # TODO active class should highlight
+              span(class = "mx-1 " & iff(i == selectedPalleteI, "active"),
+                  onclick = genSelectPalette i):
+                text p.name
+
+
           of fsColor:
-            for i, ct in colorThemes:
+            span(class = "mx-1"):
+              text palettes[selectedPalleteI].name
+
+              proc onclick =
+                app.footerState = fsPalette
+
+            for i, ct in palettes[selectedPalleteI].colorThemes:
               span(class = "mx-1"):
                 colorSelectBtn(getFocusedTheme(), ct, true)
 
@@ -1590,9 +1611,9 @@ proc init* =
 
     app.id = parseInt getWindowQueryParam "id"
 
-    waitAll [loadPalette "default", loadFonts fontFamilies, fetchTags()], proc =
+    waitAll [loadPalettes(), loadFonts fontFamilies, fetchTags()], proc =
       fetchBoard app.id
-      setFocusedTheme sample colorThemes
+      setFocusedTheme sample (sample palettes).colorThemes
       redraw()
 
 when isMainModule: init()

@@ -310,6 +310,26 @@ proc apiGetPalette*(
     .then(wrapResp success cast[seq[ColorTheme]](r.data))
     .catch(fail)
 
+proc apiListPalettes*(
+    success: proc(cts: seq[Palette]),
+    fail: proc() = noop
+) =
+    discard get_api_palettes_url()
+    .getApi
+    .then(wrapResp success cast[seq[Palette]](r.data))
+    .catch(fail)
+
+proc apiUpdatePalette*(
+    p: Palette,    
+    success: proc(),
+    fail: proc() = noop
+) =
+    discard put_api_update_palette_url($p.name)
+    .putApi(forceJsObject p)
+    .then(success)
+    .catch(fail)
+
+
 proc apiGetGithubCode*(
     url: string,
     success: proc(cts: GithubCodeEmbed),
@@ -319,7 +339,6 @@ proc apiGetGithubCode*(
     .getApi
     .then(wrapResp success cast[GithubCodeEmbed](r.data))
     .catch(fail)
-
 
 proc apiGetLinkPreviewData*(
     url: string,

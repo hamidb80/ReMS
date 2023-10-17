@@ -94,6 +94,10 @@ proc login*: VNode =
   commonPage "login", [
       extJs("./script-login.js", true)]
 
+proc palette*: VNode =
+  commonPage "login", [
+      extJs("./palette-studio.js", true)]
+
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
     buildHtml:
@@ -137,6 +141,7 @@ proc index: VNode =
         blockk "Files", "inbox-archive.svg", ""
         blockk "Tags", "tag.svg", get_tags_url()
         blockk "Notes", "pen-writing-on-paper.svg", ""
+        blockk "change colors", "palette.svg", get_palette_studio_url()
         blockk "Graphs", "share-circle.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
 
@@ -174,3 +179,4 @@ when isMainModule:
   writeFile "./dist/board.html", $$boardEdit()
   writeFile "./dist/note-preview.html", $$notePreview()
   writeFile "./dist/editor.html", $$noteEditor()
+  writeFile "./dist/palette.html", $$palette()

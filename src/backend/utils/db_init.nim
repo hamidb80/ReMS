@@ -6,6 +6,30 @@ import ../../common/[types, datastructures]
 import ../database/[models]
 import ../config
 
+type
+  Theme = object
+    bg, fg: string
+
+  Palette1 = object
+    name: string
+    colors: seq[Theme]
+
+
+proc loadColors(jsonFilePath: string): seq[ColorTheme] = 
+    let j = parseJson readfile jsonFilePath
+    let palettes = j.to(seq[Palette1])
+
+    var allColors: seq[Theme]
+
+    for p in palettes:
+        add allColors, p.colors
+
+    for c in allColors:
+        let 
+            b = parseHexColorPack c.bg
+            f = parseHexColorPack c.fg
+    
+        add result, ColorTheme(bg: b, fg: f, st: f)
 
 proc defaultPalette*(db: DbConn) =
     db.insert Palette(
@@ -29,6 +53,10 @@ proc defaultPalette*(db: DbConn) =
         c(0xe6f8a0, 0x617900, 0xa5cc08), # lemon
         c(0x424242, 0xececec, 0x919191), # dark
     ])
+
+    db.insert Palette(
+        name: "Material",
+        color_themes: loadColors "src/frontend/material_colors.json")
 
 proc addAdminUser*(db: DbConn) =
     let uid = db.insertID User(

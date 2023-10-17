@@ -8,7 +8,7 @@ when not (defined(js) or defined(frontend)):
   import mummy/routers
   var router*: Router
 
-dispatch router, ../views:
+dispatch router, ../controller:
   config "[not found]", notFoundHandler {.depends.}
   config "[method not allowed]", notFoundHandler {.depends.}
   config "[error]", errorHandler {.depends.}
@@ -64,10 +64,13 @@ dispatch router, ../views:
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
+  get "/palette/studio/", loadDist"palette.html" {.html.}
   get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
+  get "/api/palettes/", listPalettes {.json: seq[Palette].}
+  put "/api/update/palette/"?(name: string), updatePalette {.json: Palette.}
   # post "/api/palette/new/"?(name: string), 
   # put "/api/palette/update/"?(name: string), 
-  # delete "/api/palette/"?(name: string), 
+  # delete "/api/palette/"?(name: string)
 
   get "/explore/", loadDist"explore.html" {.html.}
   post "/api/explore/notes/", exploreNotes {.json.}
