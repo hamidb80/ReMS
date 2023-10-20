@@ -11,6 +11,8 @@ let
     appSaveDir* = appDir / "resources"
     appDbPath* = appDir / "db.sqlite3"
 
+    defaultAdminPass* = getEnvSafe "DEFAULT_ADMIN_PASS"
+
     jwtSecret* = getEnvSafe "JWT_KEY"
     webServerPort* = 3000
 

@@ -7,11 +7,14 @@ import ./utils/db_init
 when isMainModule:
     echo "init directories"
     discard existsOrCreateDir appSaveDir
-    
+
     echo "init DB"
     initDb()
 
-    echo "Run on port: ", webServerPort
-    spawn runBaleBot baleBotToken
-    runWebServer Port webServerPort
+    let params = commandLineParams()
 
+    if "--bale" in params:
+        spawn runBaleBot baleBotToken
+
+    echo "Run on port: ", webServerPort
+    runWebServer Port webServerPort

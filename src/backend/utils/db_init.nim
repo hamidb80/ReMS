@@ -66,7 +66,7 @@ proc addAdminUser*(db: DbConn) =
 
     db.insert Auth(
         user: uid,
-        hashed_pass: some secureHash "admin")
+        hashed_pass: some secureHash defaultAdminPass)
 
 proc createTables*(db: DbConn) =
     db.create(

@@ -16,4 +16,4 @@ RUN nimble prepare
 # RUN nimble db
 RUN nimble make
 RUN nimble done
-CMD ["./bin/main.exe"]
+CMD ["./bin/main.exe", "--bale"]

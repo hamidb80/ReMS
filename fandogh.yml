@@ -15,3 +15,6 @@ spec:
 
   - name: APP_DIR
     value: "/mnt/shared-volume/rems/"
+
+  - name: DEFAULT_ADMIN_PASS
+    value: default-admin-pass

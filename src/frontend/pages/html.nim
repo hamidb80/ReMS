@@ -38,7 +38,6 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
 
     # JS libraries
     extJs "https://unpkg.com/konva@9/konva.min.js"
-    extJs "https://unpkg.com/hotkeys-js/dist/hotkeys.min.js"
     extJs "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
     extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
 

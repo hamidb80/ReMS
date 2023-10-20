@@ -8,7 +8,7 @@ import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 import karax/[karax, karaxdsl, vdom, vstyles]
 import caster, uuid4, questionable, prettyvec
 
-import ../jslib/[konva, hotkeys, fontfaceobserver]
+import ../jslib/[konva, fontfaceobserver]
 import ./editor/[components, core]
 import ../components/[snackbar]
 import ../utils/[ui, browser, js, api]
@@ -134,13 +134,11 @@ const
 # FIXME sometimes the fontobserver does not work and texts does not fit in the box
 # TODO add loading... before content loads
 # TODO make it SPA
-# TODO add palette studio https://materialui.co/colors/
 # TODO search graph by tags of messages of nodes
 # TODO do not use uuid, use simple int
 # TODO add material design palette
 # TODO ability to take backup from everything and import it later
 # FIXME the mouseup event after creating node causes selection bug
-# TODO escape button should blur the text input
 # TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level
 # TODO add more size + logarithmic sizes
 # TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
@@ -704,7 +702,6 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
       if app.state != asNormal or vn notin app.selectedVisualNodes:
-        echo "stopped ", app.state
         stopDrag wrapper
       else:
         lastpos = wrapper.position
@@ -1511,106 +1508,121 @@ proc init* =
       redraw()
 
     block shortcuts:
-      addHotkey "delete", proc =
-        if app.selectedVisualNodes.len > 0:
-          for vn in app.selectedVisualNodes:
-            let oid = vn.config.id
 
-            for n in app.edgeGraph.getOrDefault(oid):
-              let key = sorted oid..n
-              destroy app.edgeInfo[key].konva.wrapper
-              del app.edgeInfo, key
+      proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
+        case $e.key
+        of "delete":
+          if app.selectedVisualNodes.len > 0:
+            for vn in app.selectedVisualNodes:
+              let oid = vn.config.id
 
-            destroy vn.konva.wrapper
-            del app.objects, oid
-            removeNode app.edgeGraph, oid
+              for n in app.edgeGraph.getOrDefault(oid):
+                let key = sorted oid..n
+                destroy app.edgeInfo[key].konva.wrapper
+                del app.edgeInfo, key
 
-          unselect()
+              destroy vn.konva.wrapper
+              del app.objects, oid
+              removeNode app.edgeGraph, oid
+
+            unselect()
+            redraw()
+
+
+          elif app.selectedEdges.len > 0:
+            for ed in app.selectedEdges:
+              let
+                p = ed.data.points
+                conn = sorted p[cpkHead]..p[cpkTail]
+
+              destroy app.edgeInfo[conn].konva.wrapper
+              del app.edgeInfo, conn
+              removeConn app.edgeGraph, conn
+
+            unselect()
+            redraw()
+
+          else:
+            notify "nothing to delete"
+
+        of "Escape":
+          echo "hey"
+          if document.activeElement == document.body:
+            discard
+          else:
+            blur document.activeElement
+
+            if app.boardState == bsAddNode:
+              destroy app.tempNode.konva.wrapper
+
+            app.boardState = bsFree
+            app.footerState = fsOverview
+            app.state = asNormal
+            hide app.tempEdge.konva.wrapper
+
+            unselect()
+            redraw()
+
+        of "n":
+          startPuttingNode()
+
+        of "k": # copy style
+          if app.selectedVisualNodes.len == 1:
+            let v = app.selectedVisualNodes[0]
+
+            app.theme = v.config.theme
+            app.font = v.config.font
+
+          elif app.selectedEdges.len == 1:
+            let e = app.selectedEdges[0]
+
+            app.theme = e.data.config.theme
+            app.edge.width = e.data.config.width
+
+          else:
+            discard
+
           redraw()
 
+        of "q": # start connection
+          if app.selectedVisualNodes.len == 1:
+            startAddConn app.selectedVisualNodes[0]
 
-        elif app.selectedEdges.len > 0:
-          for ed in app.selectedEdges:
-            let
-              p = ed.data.points
-              conn = sorted p[cpkHead]..p[cpkTail]
+        of "c": # go to center
+          let s = ||app.stage.scale
+          app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
-            destroy app.edgeInfo[conn].konva.wrapper
-            del app.edgeInfo, conn
-            removeConn app.edgeGraph, conn
+        of "s": # save
+          apiUpdateBoardContent app.id, forceJsObject toJson app, proc =
+            notify "saved!"
 
-          unselect()
+        of "z": # reset zoom
+          let c = app.stage.center
+          changeScale c, 1, false
+          app.stage.center = c
+
+        of "f": # focus
+          if app.selectedVisualNodes.len == 1:
+            let v = app.selectedVisualNodes[0]
+            app.stage.center = v.center
+            app.stage.x = app.stage.x - app.sidebarWidth/2
+
+        of "t": # show/hide side bar
+          app.sidebarWidth =
+            if app.sidebarWidth <= 10: defaultWidth
+            else: 0
           redraw()
 
-        else:
-          notify "nothing to delete"
-
-      addHotkey "Escape", proc =
-
-        if app.boardState == bsAddNode:
-          destroy app.tempNode.konva.wrapper
-
-        app.boardState = bsFree
-        app.footerState = fsOverview
-        hide app.tempEdge.konva.wrapper
-
-        unselect()
-        redraw()
-
-      addHotkey "n", proc =
-        startPuttingNode()
-
-      addHotkey "k", proc = # copy style
-        if app.selectedVisualNodes.len == 1:
-          let v = app.selectedVisualNodes[0]
-
-          app.theme = v.config.theme
-          app.font = v.config.font
-
-        elif app.selectedEdges.len == 1:
-          let e = app.selectedEdges[0]
-
-          app.theme = e.data.config.theme
-          app.edge.width = e.data.config.width
+        of "p": # scrennshot
+          app.stage.toBlob(1/2).dthen proc(b: Blob) =
+            apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
+              notify "screenshot updated!"
 
         else:
           discard
 
-        redraw()
-
-      addHotkey "q", proc = # start connection
-        if app.selectedVisualNodes.len == 1:
-          startAddConn app.selectedVisualNodes[0]
-
-      addHotkey "c", proc = # go to center
-        let s = ||app.stage.scale
-        app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
-
-      addHotkey "s", proc = # save
-        apiUpdateBoardContent app.id, forceJsObject toJson app, proc =
-          notify "saved!"
-
-      addHotkey "z", proc = # reset zoom
-        let c = app.stage.center
-        changeScale c, 1, false
-        app.stage.center = c
-
-      addHotkey "f", proc = # focus
-        if app.selectedVisualNodes.len == 1:
-          let v = app.selectedVisualNodes[0]
-          app.stage.center = v.center
-          app.stage.x = app.stage.x - app.sidebarWidth/2
-
-      addHotkey "t", proc = # show/hide side bar
-        app.sidebarWidth =
-          if app.sidebarWidth <= 10: defaultWidth
-          else: 0
-        redraw()
-
-      addHotkey "p", proc = # scrennshot
-        app.stage.toBlob(1/2).dthen proc(b: Blob) =
-          apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
-            notify "screenshot updated!"
+      with document.documentElement:
+        addEventListener "keydown", keyboardListener
 
     app.id = parseInt getWindowQueryParam "id"
 
