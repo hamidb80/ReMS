@@ -72,7 +72,7 @@ type
     # app states
     hoverVisualNode: NOption[VisualNode]
     selectedVisualNodes: seq[VisualNode]
-    # TODO cache connections for speed when draging
+    # TODO cache connections for speed up when draging
     selectedEdges: seq[Edge]
 
     font: FontConfig
@@ -130,6 +130,9 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# FIXME do not make 2 types of nodes. only 1 type with optional image url
+# FIXME sometimes the fontobserver does not work and texts does not fit in the box
+# TODO add loading... before content loads
 # TODO make it SPA
 # TODO add palette studio https://materialui.co/colors/
 # TODO search graph by tags of messages of nodes

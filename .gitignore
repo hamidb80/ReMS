@@ -4,6 +4,7 @@ resources/
 
 *.token
 play.*
+play
 *.exe
 *.db
 *.sqlite3
