@@ -1549,22 +1549,20 @@ proc init* =
             notify "nothing to delete"
 
         of "Escape":
-          echo "hey"
           if document.activeElement == document.body:
-            discard
-          else:
-            blur document.activeElement
-
             if app.boardState == bsAddNode:
               destroy app.tempNode.konva.wrapper
 
             app.boardState = bsFree
             app.footerState = fsOverview
             app.state = asNormal
-            hide app.tempEdge.konva.wrapper
 
+            hide app.tempEdge.konva.wrapper
             unselect()
             redraw()
+
+          else:
+            blur document.activeElement
 
         of "n":
           startPuttingNode()
