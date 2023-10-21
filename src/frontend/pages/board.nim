@@ -1607,10 +1607,11 @@ proc init* =
             app.stage.x = app.stage.x - app.sidebarWidth/2
 
         of "t": # show/hide side bar
-          app.sidebarWidth =
-            if app.sidebarWidth <= 10: defaultWidth
-            else: 0
-          redraw()
+          if document.activeElement == document.body:
+            app.sidebarWidth =
+              if app.sidebarWidth <= 10: defaultWidth
+              else: 0
+            redraw()
 
         of "p": # scrennshot
           app.stage.toBlob(1/2).dthen proc(b: Blob) =
