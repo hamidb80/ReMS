@@ -1212,6 +1212,9 @@ proc createDom*(data: RouterData): VNode =
                   text "no messages!"
                 else:
                   for i, mid in sv.config.messageIdList:
+                    text $i
+                    text " => "
+                    text $mid
                     msgComp sv, i, mid
 
             of ssPropertiesView:
