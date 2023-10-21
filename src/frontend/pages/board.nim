@@ -82,6 +82,9 @@ type
     boardState: BoardState
     footerState: FooterState
 
+    palettes: seq[Palette]
+    selectedPalleteI: int
+
     theme: ColorTheme
     sidebarWidth: Natural
 
@@ -151,11 +154,9 @@ const
 # FIXME image node border radius is depend on font size
 # TODO ability to save as file and import all parts of app
 
-var
+var 
   app = AppData()
-  palettes: seq[Palette]
-  selectedPalleteI = 0
-
+  
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
@@ -845,7 +846,8 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
           case msgState mid
-          of msReady: verbatim get noteHtmlContent[mid]
+          of msReady: 
+            verbatim get noteHtmlContent[mid]
           of msQueue:
             text "Loading ..."
           of msOut:
@@ -893,7 +895,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
 
 proc genSelectPalette(i: int): proc() =
   proc = 
-    selectedPalleteI = i
+    app.selectedPalleteI = i
     app.footerState = fsColor
 
 
@@ -974,7 +976,7 @@ proc loadFonts(fontsFamilies: seq[string]): Future[void] =
 proc loadPalettes(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
     apiListPalettes proc(ps: seq[Palette]) =
-      palettes = ps
+      app.palettes = ps
       resolve()
 
 proc fetchBoard(id: Id) =
@@ -1075,21 +1077,21 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsOverview)
 
           of fsPalette:
-            for i, p in palettes:
+            for i, p in app.palettes:
               # TODO active class should highlight
-              span(class = "mx-1 " & iff(i == selectedPalleteI, "active"),
+              span(class = "mx-1 " & iff(i == app.selectedPalleteI, "active"),
                   onclick = genSelectPalette i):
                 text p.name
 
 
           of fsColor:
             span(class = "mx-1"):
-              text palettes[selectedPalleteI].name
+              text app.palettes[app.selectedPalleteI].name
 
               proc onclick =
                 app.footerState = fsPalette
 
-            for i, ct in palettes[selectedPalleteI].colorThemes:
+            for i, ct in app.palettes[app.selectedPalleteI].colorThemes:
               span(class = "mx-1"):
                 colorSelectBtn(getFocusedTheme(), ct, true)
 
@@ -1625,7 +1627,7 @@ proc init* =
 
     waitAll [loadPalettes(), loadFonts fontFamilies, fetchTags()], proc =
       fetchBoard app.id
-      setFocusedTheme sample (sample palettes).colorThemes
+      setFocusedTheme sample (sample app.palettes).colorThemes
       redraw()
 
 when isMainModule: init()
