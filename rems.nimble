@@ -11,7 +11,7 @@ bin           = @["rems"]
 # Dependencies
 
 requires "nim >= 1.6.14"
-
+# requires "db_connector == 0.1.0" # for Nim 2
 requires "macroplus >= 0.2.5"
 requires "caster"
 requires "uuid4"

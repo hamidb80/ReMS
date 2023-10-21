@@ -14,3 +14,4 @@
 - [icons](https://www.svgrepo.com/collection/solar-bold-duotone-icons/)
 - [Karax Bug](https://github.com/karaxnim/karax/issues/267)
 - [Theme](https://bootswatch.com/litera)
+- [Nim 2 bug](https://github.com/nim-lang/Nim/issues/22510)

@@ -1,7 +1,7 @@
 import std/[jsffi, asyncjs]
 
 type
-    FontFaceObserver* = object {.nodecl, importjs.}
+    FontFaceObserver* {.nodecl, importjs.} = object
 
 
 func newFontFaceObserver*(ff: cstring): FontFaceObserver
