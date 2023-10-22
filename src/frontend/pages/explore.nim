@@ -14,10 +14,10 @@ import ../../backend/database/[models]
 import ./editor/[core, components]
 
 
+# TODO add tags for boards
 # TODO hide admin buttons for normal users
 # TODO add pagination
 # TODO add confirmation for deletation | the icon of delete button changes to check
-# TODO sort by specific tag with value
 
 type
   UploadStatus = enum
@@ -73,7 +73,6 @@ var
 
 
 
-
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
   result = newJsObject()
   for k, v in s:
@@ -83,8 +82,6 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
   for k, v in s:
     let id = Id parseInt k
     result[id] = v
-
-
 
 
 
@@ -115,7 +112,6 @@ proc startUpload(u: Upload) =
 
   u.status = usInProgress
   redraw()
-
 
 proc cancelUpload(u: Upload) =
   # https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
@@ -148,7 +144,6 @@ proc genSelectAsset(a: AssetItemView, i: int): proc =
   proc =
     selectedAssetIndex = i
     assetNameTemp = a.name
-
 
 # ----- UI
 
@@ -568,9 +563,14 @@ proc relTagManager(): Vnode =
           reset activeRelTag
           appState = asNormal
 
+proc incRound[E: enum](i: var E) =
+  i =
+    if i == E.high: E.low
+    else: succ i
+
 proc genRoundOperator(i: int, vt: TagValueType): proc() =
   proc =
-    searchCriterias[i].operator.inc
+    incRound searchCriterias[i].operator
 
 
 proc genAddSearchCriteria(t: Tag): proc() =
@@ -647,6 +647,9 @@ proc searchTagManager(): Vnode =
           icon "mx-2 fa-close"
 
           proc onclick =
+            if selectedCriteriaI == selectedSortCriteriaI:
+              selectedCriteriaI = noIndex
+
             delete searchCriterias, selectedCriteriaI
             selectedCriteriaI = noIndex
 

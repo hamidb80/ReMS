@@ -1,5 +1,3 @@
-## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
-
 import std/[strformat, tables, strutils, os, oids, json, httpclient,
     times, htmlparser, sha1]
 
@@ -52,14 +50,14 @@ proc loadDist*(path: string): RequestHandler =
   proc(req: Request) =
     respFile mime, readfile p
 
-# ------- Dynamic ones
+# ------- utility
 
 proc download*(url: string): string =
   var client = newHttpClient()
   client.get(url).body
 
+## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 const jwtKey = "auth"
-
 proc toUserJwt(u: models.User, expire: int64): JsonNode =
   %*{
     "exp": expire,
@@ -80,16 +78,6 @@ proc toJwt(u: models.User): string =
 proc jwtCookieSet(token: string): webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, token, now() + 30.days, path = "/")
 
-proc logoutCookieSet: webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
-
-proc login*(req: Request, u: models.User) =
-  {.cast(gcsafe).}:
-    respond req, 200, jwtCookieSet toJwt u
-
-proc logout*(req: Request) =
-  respond req, 200, logoutCookieSet()
-
 proc jwt(req: Request): options.Option[string] =
   try:
     if "Cookie" in req.headers:
@@ -99,8 +87,20 @@ proc jwt(req: Request): options.Option[string] =
   except:
     discard
 
+proc login*(req: Request, u: models.User) =
+  {.cast(gcsafe).}:
+    respond req, 200, jwtCookieSet toJwt u
+
+# ------- main
+
 proc getMe*(req: Request) {.adminOnly.} =
   respJson toJson user
+
+proc logoutCookieSet: webby.HttpHeaders =
+  result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
+
+proc logout*(req: Request) =
+  respond req, 200, logoutCookieSet()
 
 proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
   let inv = !!<db.getInvitation(secret, toUnixTime now(), 60)
@@ -201,12 +201,11 @@ proc deleteAsset*(req: Request) {.qparams: {id: int}, adminOnly.} =
 
 
 proc newNote*(req: Request) {.adminOnly.} =
-  forceSafety:
-    let id = !!<db.newNote()
-    redirect get_note_editor_url id
+  let id = forceSafety !!<db.newNote()
+  redirect get_note_editor_url id
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
-  forceSafety !!respJson toJson db.getNote(id)
+  !!respJson forceSafety toJson db.getNote(id)
 
 proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
   forceSafety:
@@ -215,7 +214,7 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
 
 proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {id: int}, jbody: TreeNodeRaw[
     JsonNode], adminOnly.} =
-  
+
   forceSafety:
     !!db.updateNoteContent(id, data)
     resp OK
@@ -275,8 +274,7 @@ proc listTags*(req: Request) =
 
 
 proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
-  forceSafety:
-    !!respJson toJson db.exploreNotes(data)
+  !!respJson forceSafety toJson db.exploreNotes(data)
 
 proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreBoards(data)
