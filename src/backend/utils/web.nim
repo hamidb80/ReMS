@@ -1,4 +1,5 @@
 import std/[macros, uri, strutils, sequtils, tables]
+import ../../common/conventions
 
 import macroplus
 
@@ -162,7 +163,7 @@ macro jbody*(desttype, procdef): untyped =
     data = ident"data"
 
   procdef.body.insert 0, quote do:
-    let `data` = fromJson(`req`.body, `desttype`)
+    let `data` = forceSafety fromJson(`req`.body, `desttype`)
 
   procdef
 
@@ -175,12 +176,10 @@ macro adminOnly*(procdef): untyped =
 
   procdef.body = quote:
     if tk =? `req`.jwt:
-      let verified = block:
-        {.cast(gcsafe).}:
-          verify(tk, jwtSecret)
+      let verified = forceSafety verify(tk, jwtSecret)
       if verified:
         let
-          s = tk.claim["user"]
+          s = forceSafety tk.claim["user"]
           `user` {.used.} = fromJson($s, models.User)
 
         if `user`.role == urAdmin:

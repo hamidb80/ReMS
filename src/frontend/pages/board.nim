@@ -1065,7 +1065,7 @@ proc createDom*(data: RouterData): VNode =
               fontFamilySelectBtn(f, true)
 
           of fsFontSize:
-            for s in countup(10, 200, 10):
+            for s in countup(10, 300, 10):
               fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc =
                 setFocusedFontSize s
                 app.footerState = fsOverview)

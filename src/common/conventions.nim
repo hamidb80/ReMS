@@ -37,3 +37,8 @@ func findlen*(a, b: string): int =
 
 template `~~`*(val, typ): untyped =
   cast[typ](val)
+
+template forceSafety*(code): untyped =
+  {.cast(gcsafe).}:
+    {.cast(nosideeffect).}:
+      code

@@ -158,7 +158,7 @@ proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
   """.}
 
 proc prepend*(container, child: Node) {.importjs: "#.prepend(#)".}
-proc after*(adjacent, newNode: Node) {.importjs: "#.after(#)".}
+# proc after*(adjacent, newNode: Node) {.importjs: "#.after(#)".}
 proc before*(adjacent, newNode: Node) {.importjs: "#.before(#)".}
 proc result*(f: FileReader): cstring {.importjs: "#.result".}
 proc newBlob(content, mimeType: cstring): Blob {.importjs: "new Blob([#], {type: #})".}

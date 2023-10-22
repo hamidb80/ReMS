@@ -110,7 +110,7 @@ proc attachNodeDefault(father, child: TwNode, wrapper, what: Element, at: Index)
     wrapper.prepend what
   else: # 1..children.high
     father.children.insert child, at
-    wrapper.children[at-1].after what
+    discard wrapper.children[at-1].after what
 
 proc dettachNodeDefault(self: TwNode, at: Index, basedOnDom: bool) =
   remove:

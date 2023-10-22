@@ -145,7 +145,7 @@ proc index: VNode =
         blockk "Save your Time", "clock-square.svg", ""
         blockk "It's Open Source", "hand-heart.svg", "https://github.com/hamidb80/rems"
         blockk "Login", "user.svg", get_login_url()
-        blockk "Built-in Remembering Utils", "repeat.svg", ""
+        blockk "Remembering Utils", "repeat.svg", ""
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):

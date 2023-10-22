@@ -7,7 +7,7 @@ import questionable
 include jsony_fix
 
 import ./models
-import ../../common/[types, datastructures]
+import ../../common/[types, datastructures, conventions]
 
 # TODO add auto generated tags
 
@@ -227,8 +227,8 @@ proc getNote*(db: DbConn, id: Id): NoteItemView =
     WHERE n.id = ?
     """, id
 
-proc newNote*(db: DbConn): Id =
-  result = db.insertID initEmptyNote()
+proc newNote*(db: DbConn): Id {.gcsafe.} =
+  result = forceSafety db.insertID initEmptyNote()
   db.insert RelationsCache(note: some result)
 
 proc updateNoteContent*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =

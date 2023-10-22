@@ -1,8 +1,9 @@
 ## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 
-import std/[strformat, tables, strutils, os, oids, json, httpclient, sha1,
-    times, htmlparser]
+import std/[strformat, tables, strutils, os, oids, json, httpclient,
+    times, htmlparser, sha1]
 
+# import checksums/sha1
 import mummy, mummy/multipart
 import webby
 import quickjwt
@@ -200,20 +201,24 @@ proc deleteAsset*(req: Request) {.qparams: {id: int}, adminOnly.} =
 
 
 proc newNote*(req: Request) {.adminOnly.} =
-  let id = !!<db.newNote()
-  redirect get_note_editor_url id
+  forceSafety:
+    let id = !!<db.newNote()
+    redirect get_note_editor_url id
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
-  !!respJson toJson db.getNote(id)
+  forceSafety !!respJson toJson db.getNote(id)
 
 proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
-  let node = !!<db.getNote(id).data
-  respJson toJson node.follow path
+  forceSafety:
+    let node = !!<db.getNote(id).data
+    respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.qparams: {id: int}, jbody: TreeNodeRaw[
+proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {id: int}, jbody: TreeNodeRaw[
     JsonNode], adminOnly.} =
-  !!db.updateNoteContent(id, data)
-  resp OK
+  
+  forceSafety:
+    !!db.updateNoteContent(id, data)
+    resp OK
 
 proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
     jbody: RelValuesByTagId, adminOnly.} =
@@ -270,7 +275,8 @@ proc listTags*(req: Request) =
 
 
 proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreNotes(data)
+  forceSafety:
+    !!respJson toJson db.exploreNotes(data)
 
 proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
   !!respJson toJson db.exploreBoards(data)
