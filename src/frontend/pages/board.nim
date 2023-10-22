@@ -1511,8 +1511,8 @@ proc init* =
     block shortcuts:
 
       proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
-        case $e.key
-        of "delete":
+        case e.keyCode.KeyCode
+        of kcDelete:
           if app.selectedVisualNodes.len > 0:
             for vn in app.selectedVisualNodes:
               let oid = vn.config.id
@@ -1546,7 +1546,7 @@ proc init* =
           else:
             notify "nothing to delete"
 
-        of "Escape":
+        of kcEscape:
           if document.activeElement == document.body:
             if app.boardState == bsAddNode:
               destroy app.tempNode.konva.wrapper
@@ -1562,10 +1562,10 @@ proc init* =
           else:
             blur document.activeElement
 
-        of "n":
+        of kcN:
           startPuttingNode()
 
-        of "k": # copy style
+        of kcK: # copy style
           if app.selectedVisualNodes.len == 1:
             let v = app.selectedVisualNodes[0]
 
@@ -1583,37 +1583,37 @@ proc init* =
 
           redraw()
 
-        of "q": # start connection
+        of kcQ: # start connection
           if app.selectedVisualNodes.len == 1:
             startAddConn app.selectedVisualNodes[0]
 
-        of "c": # go to center
+        of kcC: # go to center
           let s = ||app.stage.scale
           app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
-        of "s": # save
+        of kcS: # save
           apiUpdateBoardContent app.id, forceJsObject toJson app, proc =
             notify "saved!"
 
-        of "z": # reset zoom
+        of kcZ: # reset zoom
           let c = app.stage.center
           changeScale c, 1, false
           app.stage.center = c
 
-        of "f": # focus
+        of kcF: # focus
           if app.selectedVisualNodes.len == 1:
             let v = app.selectedVisualNodes[0]
             app.stage.center = v.center
             app.stage.x = app.stage.x - app.sidebarWidth/2
 
-        of "t": # show/hide side bar
+        of kcT: # show/hide side bar
           if document.activeElement == document.body:
             app.sidebarWidth =
               if app.sidebarWidth <= 10: defaultWidth
               else: 0
             redraw()
 
-        of "p": # scrennshot
+        of kcP: # scrennshot
           app.stage.toBlob(1/2).dthen proc(b: Blob) =
             apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
               notify "screenshot updated!"

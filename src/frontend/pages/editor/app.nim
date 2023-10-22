@@ -231,8 +231,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
   case app.state
   of asTreeView:
-    case $e.key
-    of "ArrowUp": # goes up
+    case e.keyCode.KeyCode
+    of kcArrowUp: # goes up
       e.preventDefault
 
       if app.focusedPath.len > 0:
@@ -242,7 +242,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
           dec app.focusedPath[^1]
           app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
-    of "ArrowDown": # goes down
+    of kcArrowDown: # goes down
       e.preventDefault
 
       if app.focusedPath.len > 0:
@@ -252,46 +252,46 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
           app.focusedPath[^1].inc
           app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
-    of "ArrowLeft": # goes inside
+    of kcArrowLeft: # goes inside
       if app.focusedPath.len > 0:
         app.focusedPath.npop
         app.focusedNode = app.focusedNode.father
 
-    of "ArrowRight": # goes outside
+    of kcArrowRight: # goes outside
       if app.focusedNode.isLeaf or not app.focusedNode.data.visibleChildren:
         discard
       else:
         add app.focusedPath, 0
         app.focusedNode = app.focusedNode.children[0]
 
-    of "PageDown": # 10 more down
+    of kcPageDown: # 10 more down
       discard
 
-    of "PageUp": # 10 more up
+    of kcPageUp: # 10 more up
       discard
 
-    of "Home":
+    of kcHome:
       discard
     
-    of "End":
+    of kcEnd:
       discard
 
-    of "n": # insert inside
+    of kcn: # insert inside
       setState asSelectComponent
       app.insertionMode = imAppend
       prepareComponentSelection app.focusedNode
 
-    of "[": # insert before
+    of kcOpenbracket:# insert before
       setState asSelectComponent
       app.insertionMode = imBefore
       prepareComponentSelection app.focusedNode.father
       
-    of "]": # insert after
+    of kcCloseBraket:# insert after
       setState asSelectComponent
       app.insertionMode = imAfter
       prepareComponentSelection app.focusedNode.father
 
-    of "Delete": # delete node
+    of kcDelete: # delete node
       if not isRoot app.focusedNode:
         let 
           n = app.focusedNode
@@ -302,30 +302,30 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         detachNode f, i
         app.focusedNode = f
       
-    of "t": negate app.focusedNode.data.visibleChildren
+    of kcT: negate app.focusedNode.data.visibleChildren
 
-    of "q": # to query children of focued node like XPath like VIM editor
+    of kcQ: # to query children of focued node like XPath like VIM editor
       discard
     
-    of "y": # go to the last pathTree state
+    of kcY: # go to the last pathTree state
       discard
     
-    of "m": # mark
+    of kcM: # mark
       discard
 
-    of "a": # show actions of focused element
+    of kcA: # show actions of focused element
       discard
     
-    of "k": # download as JSON
+    of kcK: # download as JSON
       downloadFile "data.json", "application/json", 
         stringify forceJsObject serialize app
     
-    of "s": # save
+    of kcS: # save
       let id = parseInt getWindowQueryParam("id")
       apiUpdateNoteContent id, serialize app, proc = 
         notify "note updated!"
 
-    of "h": # download as HTML
+    of kcH: # download as HTML
       proc afterLoad(t: TwNode) = 
         downloadFile "data.html", "text/html", t.dom.innerHTML
 
@@ -333,16 +333,16 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       deserizalize(app.components, serialize app)
       .dthen(afterLoad)
 
-    of "c": # cut
+    of kcC: # cut
       discard
 
-    of "p": # cut
+    of kcP: # cut
       discard
 
-    of "u": # undo
+    of kcU: # undo
       discard
 
-    of "o": # opens file
+    of kcO: # opens file
       selectFile proc(c: cstring) = 
         purge app.tree.dom
 
@@ -356,10 +356,10 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         .then(done)
         .dcatch () => notify "could not load the file"
 
-    of "r": # redo
+    of kcR: # redo
       discard
 
-    of "Enter":
+    of kcEnter:
       if app.state == asTreeView:
         app.state = asSetting
 
@@ -367,8 +367,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
   of asSetting:
 
-    case $e.key
-    of "Escape": 
+    case e.keyCode.KeyCode
+    of kcEscape: 
       if app.state == asSetting:
         if document.activeElement == document.body:
             app.state = asTreeView
@@ -378,20 +378,20 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     else: discard
 
   of asSelectComponent:
-    case $e.key
-    of "ArrowLeft", "ArrowRight":
+    case e.keycode.KeyCode
+    of kcArrowLeft, kcArrowRight:
       e.preventDefault
 
-    of "ArrowUp":
+    of kcArrowUp:
       app.listIndex = max(0, app.listIndex-1)
   
-    of "ArrowDown":
+    of kcArrowDown:
       app.listIndex = min(app.availableComponents.high, app.listIndex+1)
 
-    of "Escape":
+    of kcEscape:
       app.state = asTreeView
       
-    of "Enter":
+    of kcEnter:
       var newNode = instantiate(app.filteredComponents[app.listIndex], app.components)
       discard render newNode
       
