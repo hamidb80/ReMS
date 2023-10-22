@@ -143,14 +143,9 @@ proc index: VNode =
         blockk "change colors", "palette.svg", get_palette_studio_url()
         blockk "Graphs", "share-circle.svg", ""
         blockk "Save your Time", "clock-square.svg", ""
-
-      h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Coming Soon ..."
-      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
+        blockk "It's Open Source", "hand-heart.svg", "https://github.com/hamidb80/rems"
         blockk "Login", "user.svg", get_login_url()
         blockk "Built-in Remembering Utils", "repeat.svg", ""
-        blockk "It's Open Source", "hand-heart.svg", ""
-
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
