@@ -1643,15 +1643,8 @@ proc init* =
 
         of kcS: # save
           let data = forceJsObject toJson app
-          console.log data
-
-          proc fail =
-            echo "heyyyy"
-
           proc success =
             notify "saved!"
-
-          echo "ww"
           apiUpdateBoardContent app.id, data, success, fail
 
         of kcZ: # reset zoom
