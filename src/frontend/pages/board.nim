@@ -1002,6 +1002,20 @@ func distance(ts: seq[Touch]): float =
   assert 2 == len ts
   len (clientPos ts[0]) - (clientPos ts[1])
 
+proc zoom(s, Δy: float) = 
+  let
+    ⋊s = exp(-Δy / 400)
+    s′ = clamp(s * ⋊s, minScale .. maxScale)
+    Δs = s′ - s
+    mm = app.stage.center
+
+  if Δs.abs > 0.001:
+    changeScale mm, s′, false
+    let sw =
+      if app.sidebarvisible: app.sidebarWidth
+      else: 0
+    app.stage.center = mm - v(sw/2, 0) * (1/s - 1/s′)
+
 
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
@@ -1362,18 +1376,7 @@ proc init* =
             Δy = m.y - app.lastClientMousePos.y
 
           if kcJ in app.pressedKeys:
-            let
-              ⋊s = exp(-Δy / 400)
-              s′ = clamp(s * ⋊s, minScale .. maxScale)
-              Δs = s′ - s
-              mm = app.stage.center
-
-            if Δs.abs > 0.001:
-              changeScale mm, s′, false
-              let sw =
-                if app.sidebarvisible: app.sidebarWidth
-                else: 0
-              app.stage.center = mm - v(sw/2, 0) * (1/s - 1/s′)
+            zoom s, Δy
 
           case app.boardState
           of bsMakeConnection:
@@ -1398,15 +1401,6 @@ proc init* =
           app.lastAbsoluteMousePos = currentMousePos
           app.lastClientMousePos = m
 
-    with layer:
-      add centerCircle
-      add app.bottomGroup
-      add app.tempEdge.konva.wrapper
-      add app.mainGroup
-      add app.hoverGroup
-
-    with app.stage:
-      add layer
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         discard
@@ -1425,21 +1419,10 @@ proc init* =
 
         of 2:
           if app.lastTouches.len == 2: # to prevent unwanted situation
-            let
-              diff = (distance app.lastTouches) - (distance currentTouches)
+            let diff = (distance app.lastTouches) - (distance currentTouches)
 
             if diff != 0.0:
-              let
-                s = ||app.stage.scale
-                ⋊s = exp(-diff / 400)
-                s′ = clamp(s * ⋊s, minScale .. maxScale)
-                Δs = s′ - s
-                mm = app.stage.center
-
-              if Δs.abs > 0.001:
-                changeScale mm, s′, false
-                app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
-
+              zoom ||app.stage.scale, diff
         else:
           discard
 
@@ -1469,7 +1452,12 @@ proc init* =
         else:
           discard
 
-
+    with layer:
+      add centerCircle
+      add app.bottomGroup
+      add app.tempEdge.konva.wrapper
+      add app.mainGroup
+      add app.hoverGroup
 
     block global_events:
       addEventListener app.stage.container, "wheel", nonPassive:
@@ -1645,7 +1633,7 @@ proc init* =
           let data = forceJsObject toJson app
           proc success =
             notify "saved!"
-          apiUpdateBoardContent app.id, data, success, fail
+          apiUpdateBoardContent app.id, data, success
 
         of kcZ: # reset zoom
           let c = app.stage.center
