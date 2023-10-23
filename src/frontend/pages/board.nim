@@ -1157,6 +1157,9 @@ proc createDom*(data: RouterData): VNode =
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-message"
 
+            span(class="ms-1"):
+              text $vn.config.messageIdList.len
+
             proc onclick =
               app.sidebarVisible = true
               app.sidebarState = ssMessagesView
