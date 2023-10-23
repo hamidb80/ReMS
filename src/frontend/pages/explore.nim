@@ -72,6 +72,12 @@ var
   assetNameTemp = c""
 
 
+func iconClass(sc: SearchableClass): string =
+  case sc
+  of scUsers: "fa-users"
+  of scNotes: "fa-note-sticky"
+  of scBoards: "fa-diagram-project"
+  of scAssets: "fa-file"
 
 func toJson(s: Table[Id, seq[cstring]]): JsObject =
   result = newJsObject()
@@ -676,7 +682,10 @@ proc createDom: Vnode =
               li(class = "page-item " & iff(i == selectedClass, "active"),
                   onclick = searchClassSetter i):
                 a(class = "page-link", href = "#"):
-                  text $i
+                  icon iconClass i
+                  if window.innerHeight < window.innerWidth:
+                    span(class = "ms-2"):
+                      text $i
 
           ul(class = "pagination pagination-lg"):
             for i in 1..4:
