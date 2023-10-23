@@ -10,6 +10,7 @@ when defined js:
     NativeJson* = JsObject
     NTable*[S: Str, T] = JsAssoc[S, T] ## native table
     Option*[T] = distinct JsObject
+    Id* = int
 
 else:
   import std/json
@@ -18,11 +19,11 @@ else:
     NativeJson* = JsonNode
     NTable*[A, B] = Table[A, B]
     Option*[T] = options.Option[T]
+    Id* = int64
 
 type
   SomeString* = string or cstring
 
-  Id* = int64
   UnixTime* = distinct int64
   Path* = distinct string
   Mb* = distinct int

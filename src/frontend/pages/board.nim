@@ -900,6 +900,7 @@ proc genSelectPalette(i: int): proc() =
     app.selectedPalleteI = i
     app.footerState = fsColor
 
+# FIXME save button not work after adding message to node
 
 proc addToMessages(id: Id) =
   if app.selectedVisualNodes.len == 1:
@@ -1129,19 +1130,8 @@ proc createDom*(data: RouterData): VNode =
             icon "fa-message"
 
             proc onclick =
-              if app.sidebarWidth <= 100:
-                app.sidebarWidth = defaultWidth
-                app.sidebarVisible = true
-                app.sidebarState = ssMessagesView
-
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
-            icon "fa-info"
-
-            proc onclick =
-              if app.sidebarWidth <= 10:
-                app.sidebarWidth = defaultWidth
-                app.sidebarVisible = true
-                app.sidebarState = ssPropertiesView
+              app.sidebarVisible = true
+              app.sidebarState = ssMessagesView
 
         else:
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -1219,7 +1209,7 @@ proc createDom*(data: RouterData): VNode =
                   icon "fa-close"
 
                   proc onclick =
-                    app.sidebarWidth = 0
+                    app.sidebarVisible = false
 
             main(class = "p-2 content-wrapper h-100"):
               case app.sidebarState
@@ -1380,7 +1370,10 @@ proc init* =
 
             if Δs.abs > 0.001:
               changeScale mm, s′, false
-              app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
+              let sw =
+                if app.sidebarvisible: app.sidebarWidth
+                else: 0
+              app.stage.center = mm - v(sw/2, 0) * (1/s - 1/s′)
 
           case app.boardState
           of bsMakeConnection:
@@ -1417,19 +1410,19 @@ proc init* =
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         discard
-        
+
       on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         let currentTouches = e.evt.touches
         preventDefault e.evt
-        
+
         case currentTouches.len
         of 1:
           if app.lastTouches.len == 1: # to prevent unwanted situation
-            let 
+            let
               e = clientPos currentTouches[0]
               r = clientPos app.lastTouches[0]
             moveStage e - r
-          
+
         of 2:
           if app.lastTouches.len == 2: # to prevent unwanted situation
             let
@@ -1446,14 +1439,14 @@ proc init* =
               if Δs.abs > 0.001:
                 changeScale mm, s′, false
                 app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
-            
+
         else:
           discard
-        
+
         app.lastTouches = currentTouches
 
       on "touchend", proc =
-        reset app.lastTouches 
+        reset app.lastTouches
 
       on "mousedown", proc =
         app.leftClicked = true
@@ -1553,7 +1546,7 @@ proc init* =
                 add app.mainGroup, vn.konva.wrapper
 
     block prepare:
-      app.sidebarWidth = 0
+      app.sidebarWidth = defaultWidth
       app.font.family = fontFamilies[1]
       app.font.size = 20
       app.theme = nonExistsTheme
@@ -1649,8 +1642,17 @@ proc init* =
           app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
         of kcS: # save
-          apiUpdateBoardContent app.id, forceJsObject toJson app, proc =
+          let data = forceJsObject toJson app
+          console.log data
+
+          proc fail =
+            echo "heyyyy"
+
+          proc success =
             notify "saved!"
+
+          echo "ww"
+          apiUpdateBoardContent app.id, data, success, fail
 
         of kcZ: # reset zoom
           let c = app.stage.center
@@ -1665,9 +1667,7 @@ proc init* =
 
         of kcT: # show/hide side bar
           if document.activeElement == document.body:
-            app.sidebarWidth =
-              if app.sidebarWidth <= 10: defaultWidth
-              else: 0
+            negate app.sidebarVisible
             redraw()
 
         of kcP: # scrennshot

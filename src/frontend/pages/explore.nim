@@ -769,8 +769,8 @@ when isMainModule:
 
   columnsCount =
     case screenOrientation()
-    of soPortrait: 2
-    of soLandscape: 3
+    of soPortrait: 1
+    of soLandscape: 2
 
   waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers()], proc =
     redraw()
