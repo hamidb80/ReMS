@@ -69,6 +69,8 @@ type
     # transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
+    ableToDrag: bool
+
     # app states
     hoverVisualNode: NOption[VisualNode]
     selectedVisualNodes: seq[VisualNode]
@@ -713,8 +715,11 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     add box
     add txt
 
-    on "dragstart", proc = # FIXME sometimes cannot drag no matter selected or not
-      if app.state != asNormal or vn notin app.selectedVisualNodes:
+    on "dragstart", proc =
+      if
+        not app.ableToDrag or
+        app.state != asNormal or
+        vn notin app.selectedVisualNodes:
         stopDrag wrapper
       else:
         lastpos = wrapper.position
@@ -1140,21 +1145,31 @@ proc createDom*(data: RouterData): VNode =
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         let n = app.selectedVisualNodes.len
 
+        button(class = "btn btn-outline-primary border-0 px-3 py-3"):
+          let c =
+            if app.ableToDrag: "fa-lock-open"
+            else: "fa-lock"
+
+          icon c
+
+          proc onclick =
+            negate app.ableToDrag
+
         if n > 1:
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             span:
               text $n
 
         elif n == 1:
           let vn = app.selectedVisualNodes[0]
 
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-circle-nodes"
 
             proc onclick =
               startAddConn vn
 
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-message"
 
             span(class = "ms-1"):
@@ -1165,17 +1180,17 @@ proc createDom*(data: RouterData): VNode =
               app.sidebarState = ssMessagesView
 
         else:
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-plus fa-lg"
 
             proc onclick =
               startPuttingNode()
 
           # TODO show shortcut and name via a tooltip
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-expand fa-lg"
 
-          button(class = "btn btn-outline-primary border-0 px-3 py-4"):
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-download fa-lg"
 
       if app.sidebarVisible:
