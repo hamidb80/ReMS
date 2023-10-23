@@ -120,8 +120,8 @@ let nonPassive* = AddEventListenerOptions(passive: false)
 
 proc addEventListener*(el: Element, event: cstring,
     options: AddEventListenerOptions, action: proc(e: Event)
-  ) = 
-    el.addEventListener event, action, options
+  ) =
+  el.addEventListener event, action, options
 
 func add*(self: FormData; name: cstring;
     value: Blob) {.importjs: "#.append(#, #)".}
@@ -207,7 +207,7 @@ proc appendTemp(el: Element; action: proc()) =
   action()
   remove el
 
-proc addEventListener*(et: EventTarget; ev: cstring; cb: proc()) 
+proc addEventListener*(et: EventTarget; ev: cstring; cb: proc())
   {.importjs: "#.addEventListener(@)".}
 
 proc downloadFile*(fileName, mimeType, content: cstring) =
@@ -245,7 +245,7 @@ proc text*(e: ClipboardEvent): cstring {.importjs: """
   #.clipboardData.getData('text/plain')
 """.}
 
-proc redirect*(url: cstring) 
+proc redirect*(url: cstring)
   {.importjs: "location.href = #;".}
 
 type
@@ -253,12 +253,6 @@ type
     soPortrait
     soLandscape
 
-var screenOrientationRaw {.importjs: "(screen.orientation.type)".}: cstring
-
 proc screenOrientation*: ScreenOrient =
-  ## https://developer.mozilla.org/en-US/docs/Web/API/Screen/orientation
-
-  case $screenOrientationRaw
-  of "landscape-primary", "landscape-secondary": soLandscape
-  of "portrait-primary", "portrait-secondary": soPortrait
-  else: soLandscape
+  if window.innerWidth > window.innerHeight: soLandscape
+  else: soPortrait

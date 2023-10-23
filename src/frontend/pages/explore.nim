@@ -683,7 +683,7 @@ proc createDom: Vnode =
                   onclick = searchClassSetter i):
                 a(class = "page-link", href = "#"):
                   icon iconClass i
-                  if window.innerHeight < window.innerWidth:
+                  if soLandscape == screenOrientation():
                     span(class = "ms-2"):
                       text $i
 
