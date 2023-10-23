@@ -84,9 +84,12 @@ type
 
     palettes: seq[Palette]
     selectedPalleteI: int
-
     theme: ColorTheme
+
     sidebarWidth: Natural
+    sidebarVisible: bool
+
+    lastTouches: seq[Touch]
 
     lastAbsoluteMousePos: Vector
     lastClientMousePos: Vector
@@ -538,14 +541,12 @@ proc setFocusedEdgeWidth(w: Tenth) =
     for e in app.selectedEdges:
       updateEdgeWidth e, w
 
-
 proc getFocusedEdgeWidth: Tenth =
   case app.selectedEdges.len
   of 0:
     app.edge.width
   else:
     app.selectedEdges[0].data.config.width
-
 
 proc getFocusedTheme: ColorTheme =
   if app.selectedVisualNodes.len == 1: app.selectedVisualNodes[0].config.theme
@@ -992,8 +993,14 @@ proc fetchTags(): Future[void] =
         tags[t.id] = t
       resolve()
 
-func touchClientPos(t: Touch): Vector =
+
+func clientPos(t: Touch): Vector =
   v(t.clientX, t.clientY)
+
+func distance(ts: seq[Touch]): float =
+  assert 2 == len ts
+  len (clientPos ts[0]) - (clientPos ts[1])
+
 
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
@@ -1122,8 +1129,9 @@ proc createDom*(data: RouterData): VNode =
             icon "fa-message"
 
             proc onclick =
-              if app.sidebarWidth <= 10:
+              if app.sidebarWidth <= 100:
                 app.sidebarWidth = defaultWidth
+                app.sidebarVisible = true
                 app.sidebarState = ssMessagesView
 
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
@@ -1132,6 +1140,7 @@ proc createDom*(data: RouterData): VNode =
             proc onclick =
               if app.sidebarWidth <= 10:
                 app.sidebarWidth = defaultWidth
+                app.sidebarVisible = true
                 app.sidebarState = ssPropertiesView
 
         else:
@@ -1148,173 +1157,174 @@ proc createDom*(data: RouterData): VNode =
           button(class = "btn btn-outline-primary border-0 px-3 py-4"):
             icon "fa-download fa-lg"
 
-      aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
-          iff(freeze, "user-select-none ") &
-          iff(app.sidebarWidth < ciriticalWidth, "icons-only "),
-          style = style(
-            (StyleAttr.width, c fmt"{app.sidebarWidth}px"),
-            (StyleAttr.display, iff(app.sidebarWidth < 100, c"none", c"block")),
-          )):
+      if app.sidebarVisible:
+        aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
+            iff(freeze, "user-select-none ") &
+            iff(app.sidebarWidth < ciriticalWidth, "icons-only "),
+            style = style(
+              StyleAttr.width, c fmt"{app.sidebarWidth}px")):
 
-        tdiv(class = "extender h-100 btn btn-light p-0"):
-          proc onMouseDown =
-            setCursor ccresizex
+          tdiv(class = "extender h-100 btn btn-light p-0"):
+            proc onMouseDown =
+              setCursor ccresizex
 
-            winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              let w = window.innerWidth - e.x
-              app.sidebarWidth = max(w, minimizeWidth)
-              redraw()
+              winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
+                let w = window.innerWidth - e.x
+                app.sidebarWidth = max(w, minimizeWidth)
+                redraw()
 
-            winel.onmouseup = proc(e: Event) =
-              setCursor ccNone
-              reset winel.onmousemove
-              reset winel.onmouseup
+              winel.onmouseup = proc(e: Event) =
+                setCursor ccNone
+                reset winel.onmousemove
+                reset winel.onmouseup
 
-        tdiv(class = "d-flex flex-column w-100"):
-          header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
+          tdiv(class = "d-flex flex-column w-100"):
+            header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
 
-            tdiv(class = "d-flex flex-row"):
-              tdiv(class = "nav-item", onclick = sidebarStateMutator ssMessagesView):
-                span(class = "nav-link px-3 pointer" &
-                    iff(app.sidebarState == ssMessagesView, " active")):
-                  span(class = "caption"):
-                    text "Messages "
-                  icon "fa-message"
+              tdiv(class = "d-flex flex-row"):
+                tdiv(class = "nav-item",
+                    onclick = sidebarStateMutator ssMessagesView):
+                  span(class = "nav-link px-3 pointer" &
+                      iff(app.sidebarState == ssMessagesView, " active")):
+                    span(class = "caption"):
+                      text "Messages "
+                    icon "fa-message"
 
-              tdiv(class = "nav-item", onclick = sidebarStateMutator ssPropertiesView):
-                span(class = "nav-link px-3 pointer" &
-                  iff(app.sidebarState == ssPropertiesView, " active")):
-                  span(class = "caption"):
-                    text "Properties "
-                  icon "fa-circle-info"
+                tdiv(class = "nav-item",
+                    onclick = sidebarStateMutator ssPropertiesView):
+                  span(class = "nav-link px-3 pointer" &
+                    iff(app.sidebarState == ssPropertiesView, " active")):
+                    span(class = "caption"):
+                      text "Properties "
+                    icon "fa-circle-info"
 
-              tdiv(class = "nav-item", onclick = sidebarStateMutator ssBoardProperties):
-                span(class = "nav-link px-3 pointer" &
-                  iff(app.sidebarState == ssBoardProperties, " active")):
-                  span(class = "caption"):
-                    text "board "
-                  icon "fa-play"
+                tdiv(class = "nav-item",
+                    onclick = sidebarStateMutator ssBoardProperties):
+                  span(class = "nav-link px-3 pointer" &
+                    iff(app.sidebarState == ssBoardProperties, " active")):
+                    span(class = "caption"):
+                      text "board "
+                    icon "fa-play"
 
-            tdiv(class = "nav-item d-flex flex-row px-2"):
-              span(class = "nav-link px-1 pointer", onclick = maximize):
-                invisibleText()
+              tdiv(class = "nav-item d-flex flex-row px-2"):
+                span(class = "nav-link px-1 pointer", onclick = maximize):
+                  invisibleText()
 
-                icon(
-                    if isMaximized(): "fa-window-minimize"
-                    else: "fa-window-maximize")
+                  icon(
+                      if isMaximized(): "fa-window-minimize"
+                      else: "fa-window-maximize")
 
-              span(class = "nav-link px-1 pointer"):
-                invisibleText()
-                icon "fa-close"
+                span(class = "nav-link px-1 pointer"):
+                  invisibleText()
+                  icon "fa-close"
 
-                proc onclick =
-                  app.sidebarWidth = 0
+                  proc onclick =
+                    app.sidebarWidth = 0
 
-          main(class = "p-2 content-wrapper h-100"):
-            case app.sidebarState
-            of ssMessagesView:
-              if app.selectedVisualNodes.len == 1:
-                let sv = app.selectedVisualNodes[0]
+            main(class = "p-2 content-wrapper h-100"):
+              case app.sidebarState
+              of ssMessagesView:
+                if app.selectedVisualNodes.len == 1:
+                  let sv = app.selectedVisualNodes[0]
 
-                if sv.config.messageIdList.len == 0:
-                  text "no messages!"
-                else:
-                  for i, mid in sv.config.messageIdList:
-                    msgComp sv, i, mid
+                  if sv.config.messageIdList.len == 0:
+                    text "no messages!"
+                  else:
+                    for i, mid in sv.config.messageIdList:
+                      msgComp sv, i, mid
 
-            of ssPropertiesView:
-              if app.selectedVisualNodes.len == 1:
-                let vn = app.selectedVisualNodes[0]
-                tdiv(class = "form-group"):
-                  fieldset(class = "form-group"):
-                    legend(class = "mt-4"):
-                      text "Type Of Node"
+              of ssPropertiesView:
+                if app.selectedVisualNodes.len == 1:
+                  let vn = app.selectedVisualNodes[0]
+                  tdiv(class = "form-group"):
+                    fieldset(class = "form-group"):
+                      legend(class = "mt-4"):
+                        text "Type Of Node"
 
-                    tdiv(class = "form-check"):
-                      input(`type` = "radio",
-                          class = "form-check-input",
-                          value = "option1",
-                          onclick = setDataText,
-                          checked = vn.config.data.kind == vndkText,
-                          name = "kindOfData")
+                      tdiv(class = "form-check"):
+                        input(`type` = "radio",
+                            class = "form-check-input",
+                            value = "option1",
+                            onclick = setDataText,
+                            checked = vn.config.data.kind == vndkText,
+                            name = "kindOfData")
 
-                      label(class = "form-check-label"):
-                        text "Text Node"
+                        label(class = "form-check-label"):
+                          text "Text Node"
 
-                    tdiv(class = "form-check"):
-                      input(`type` = "radio",
-                          class = "form-check-input",
-                          value = "option2",
-                          onclick = setDataImage,
-                          checked = vn.config.data.kind == vndkImage,
-                          name = "kindOfData")
+                      tdiv(class = "form-check"):
+                        input(`type` = "radio",
+                            class = "form-check-input",
+                            value = "option2",
+                            onclick = setDataImage,
+                            checked = vn.config.data.kind == vndkImage,
+                            name = "kindOfData")
 
-                      label(class = "form-check-label"):
-                        text "Image Node"
+                        label(class = "form-check-label"):
+                          text "Image Node"
 
-                case vn.config.data.kind
-                of vndkText:
-                  input(`type` = "text", class = "form-control",
-                      placeholder = "text ...", value = vn.config.data.text):
+                  case vn.config.data.kind
+                  of vndkText:
+                    input(`type` = "text", class = "form-control",
+                        placeholder = "text ...", value = vn.config.data.text):
 
-                    proc oninput(e: Event; v: Vnode) =
-                      let s = e.target.value
-                      setText vn, s
+                      proc oninput(e: Event; v: Vnode) =
+                        let s = e.target.value
+                        setText vn, s
 
-                of vndkImage:
-                  input(`type` = "text", class = "form-control",
-                      placeholder = "URL", value = vn.config.data.url, name = "url"):
+                  of vndkImage:
+                    input(`type` = "text", class = "form-control",
+                        placeholder = "URL", value = vn.config.data.url, name = "url"):
 
-                    proc oninput(e: Event; v: Vnode) =
-                      let s = e.target.value
-                      setImageUrl vn, s
+                      proc oninput(e: Event; v: Vnode) =
+                        let s = e.target.value
+                        setImageUrl vn, s
 
-                  label(class = "form-label"):
-                    text "scale"
-                  input(`type` = "range", id = "scale-range",
-                      class = "form-range", value = "1.0", min = "0.01",
-                          max = "3.0", step = "0.01"):
-                    proc onchange(e: Event; v: Vnode) =
-                      let s = e.target.value
-                      scaleImage vn, parseFloat s
+                    label(class = "form-label"):
+                      text "scale"
+                    input(`type` = "range", id = "scale-range",
+                        class = "form-range", value = "1.0", min = "0.01",
+                            max = "3.0", step = "0.01"):
+                      proc onchange(e: Event; v: Vnode) =
+                        let s = e.target.value
+                        scaleImage vn, parseFloat s
 
-            of ssBoardProperties:
-              label(class = "form-label"):
-                text "Title"
+              of ssBoardProperties:
+                label(class = "form-label"):
+                  text "Title"
 
-              input(`type` = "text", class = "form-control",
-                    placeholder = "title", value = app.title):
+                input(`type` = "text", class = "form-control",
+                      placeholder = "title", value = app.title):
 
-                proc oninput(e: Event; v: Vnode) =
-                  let s = e.target.value
-                  app.title = s
+                  proc oninput(e: Event; v: Vnode) =
+                    let s = e.target.value
+                    app.title = s
 
-              button(class = "btn btn-primary m-2"):
-                text "update"
-                icon "fa-sync ms-2"
+                button(class = "btn btn-primary m-2"):
+                  text "update"
+                  icon "fa-sync ms-2"
 
-                proc onclick =
-                  apiUpdateBoardTitle app.id, $app.title, proc =
-                    notify "title updated!"
+                  proc onclick =
+                    apiUpdateBoardTitle app.id, $app.title, proc =
+                      notify "title updated!"
 
 
-          footer(class = "mt-2"):
-            case app.sidebarState
-            of ssMessagesView:
-              if app.selectedVisualNodes.len > 0:
-                tdiv(class = "input-group"):
-                  input(`type` = "text", id = "new-message-input",
-                      class = "form-control form-control-sm")
-                  button(class = "input-group-text btn btn-primary"):
-                    icon "fa-add"
-                    proc onClick =
-                      let
-                        inp = el"new-message-input"
-                        id = parseInt inp.value
-                      addToMessages id
-                      inp.value = c""
-            else: discard
-
+            footer(class = "mt-2"):
+              case app.sidebarState
+              of ssMessagesView:
+                if app.selectedVisualNodes.len > 0:
+                  tdiv(class = "input-group"):
+                    input(`type` = "text", id = "new-message-input",
+                        class = "form-control form-control-sm")
+                    button(class = "input-group-text btn btn-primary"):
+                      icon "fa-add"
+                      proc onClick =
+                        let
+                          inp = el"new-message-input"
+                          id = parseInt inp.value
+                        addToMessages id
+                        inp.value = c""
+              else: discard
 
       snackbar()
 
@@ -1406,28 +1416,51 @@ proc init* =
       add layer
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
-        app.lastClientMousePos = touchClientPos e.evt.touches[0]
-        notify "touch len: " & $len e.evt.touches
+        discard
+        
+      on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
+        let currentTouches = e.evt.touches
+        preventDefault e.evt
+        
+        case currentTouches.len
+        of 1:
+          if app.lastTouches.len == 1: # to prevent unwanted situation
+            let 
+              e = clientPos currentTouches[0]
+              r = clientPos app.lastTouches[0]
+            moveStage e - r
+          
+        of 2:
+          if app.lastTouches.len == 2: # to prevent unwanted situation
+            let
+              diff = (distance app.lastTouches) - (distance currentTouches)
+
+            if diff != 0.0:
+              let
+                s = ||app.stage.scale
+                ⋊s = exp(-diff / 400)
+                s′ = clamp(s * ⋊s, minScale .. maxScale)
+                Δs = s′ - s
+                mm = app.stage.center
+
+              if Δs.abs > 0.001:
+                changeScale mm, s′, false
+                app.stage.center = mm - v(app.sidebarWidth/2, 0) * (1/s - 1/s′)
+            
+        else:
+          discard
+        
+        app.lastTouches = currentTouches
+
+      on "touchend", proc =
+        reset app.lastTouches 
 
       on "mousedown", proc =
         app.leftClicked = true
 
-      on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
-        case e.evt.touches.len
-        of 1:
-          let e = touchClientPos e.evt.touches[0]
-          moveStage e - app.lastClientMousePos
-          app.lastClientMousePos = e
-
-        else:
-          discard
-
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
         if app.leftClicked and (kcSpace in app.pressedKeys):
           moveStage movement e
-
-      on "touchend", proc =
-        echo "done"
 
       on "mouseup", proc =
         app.leftClicked = false
