@@ -128,7 +128,6 @@ const
   # TODO define maximum map [boarders to not go further if not nessesarry]
   minScale = 0.10 # minimum amount of scale
   maxScale = 20.0
-  defaultWidth = 500
   ciriticalWidth = 400
   minimizeWidth = 360
 
@@ -639,6 +638,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     img = newImage()
     vn = VisualNode(config: cfg)
     lastPos = v(0, 0)
+    touchMoved = false
 
   with vn.konva:
     wrapper = wrapper
@@ -652,6 +652,42 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     align = $hzCenter
     listening = false
 
+  proc boxClick =
+    case app.boardState
+    of bsFree:
+      if vn in app.selectedVisualNodes:
+        unselect vn
+      elif kcShift in app.pressedKeys:
+        select vn
+      else:
+        unselect()
+        select vn
+
+    of bsMakeConnection:
+      let sv = app.selectedVisualNodes[0]
+      if sv == vn: discard
+      else:
+        let
+          id1 = cfg.id
+          id2 = cstring sv.config.id
+          conn = sorted id1..id2
+
+        var ei = cloneEdge(id1, id2, app.tempEdge)
+
+        if conn notin app.edgeInfo:
+          app.bottomGroup.add ei.konva.wrapper
+          app.edgeGraph.addConn conn
+          app.edgeInfo[conn] = ei
+          app.boardState = bsFree
+          select ei
+          hide app.tempEdge.konva.wrapper
+          removeHighlight sv
+
+    else:
+      discard
+
+    redraw()
+
   with box:
     on "mouseover", proc =
       hover vn
@@ -661,41 +697,15 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       unhover vn
       setCursor ccNone
 
-    on "click", proc =
-      case app.boardState
-      of bsFree:
-        if vn in app.selectedVisualNodes:
-          unselect vn
-        elif kcShift in app.pressedKeys:
-          select vn
-        else:
-          unselect()
-          select vn
+    on "click", boxClick
 
-      of bsMakeConnection:
-        let sv = app.selectedVisualNodes[0]
-        if sv == vn: discard
-        else:
-          let
-            id1 = cfg.id
-            id2 = cstring sv.config.id
-            conn = sorted id1..id2
+    on "touchstart", boxClick
 
-          var ei = cloneEdge(id1, id2, app.tempEdge)
+    on "touchmove", proc =
+      touchMoved = true
 
-          if conn notin app.edgeInfo:
-            app.bottomGroup.add ei.konva.wrapper
-            app.edgeGraph.addConn conn
-            app.edgeInfo[conn] = ei
-            app.boardState = bsFree
-            select ei
-            hide app.tempEdge.konva.wrapper
-            removeHighlight sv
-
-      else:
-        discard
-
-      redraw()
+    on "touchend", proc =
+      reset touchMoved
 
   with wrapper:
     position = cfg.position
@@ -815,6 +825,7 @@ proc newPoint(pos: Vector; r = 1.0): Circle =
 # ----- UI
 let compTable = defaultComponents()
 var
+  defaultWidth = min(500, window.innerwidth)
   noteHtmlContent: Table[Id, Option[cstring]]
   noteRelTags: Table[Id, RelValuesByTagId]
   tags: Table[Id, Tag]
@@ -1002,7 +1013,7 @@ func distance(ts: seq[Touch]): float =
   assert 2 == len ts
   len (clientPos ts[0]) - (clientPos ts[1])
 
-proc zoom(s, Δy: float) = 
+proc zoom(s, Δy: float) =
   let
     ⋊s = exp(-Δy / 400)
     s′ = clamp(s * ⋊s, minScale .. maxScale)
@@ -1028,7 +1039,10 @@ proc createDom*(data: RouterData): VNode =
 
       footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
-            StyleAttr.width, cstring $(window.innerWidth - app.sidebarWidth))):
+            StyleAttr.width, cstring $iff(
+              app.sidebarvisible,
+              window.innerWidth - app.sidebarWidth,
+              window.innerWidth))):
 
           tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
             if app.selectedVisualNodes.len != 0:
