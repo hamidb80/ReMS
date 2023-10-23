@@ -64,6 +64,8 @@ type
   KonvaMouseEvent* = ref object of KonvaEvent[MouseEvent]
     pointerId*: int
 
+  KonvaTouchEvent* = ref object of KonvaEvent[TouchEvent]
+
   KonvakeyboardEvent* = ref object of KonvaEvent[KeyboardEvent]
 
   KonvaCallback* = proc(ke: JsObject)
@@ -373,6 +375,7 @@ proc getAbsoluteScale*(k: KonvaObject): Vector {.konva.}
 proc getAbsoluteTransform*(k: KonvaObject): Transformer {.konva.}
 proc getAbsoluteZIndex*(k: KonvaObject): Natural {.konva.}
 proc getAbsolutePosition*(k: KonvaObject): Vector {.konva.}
+proc getPointerPosition*(k: KonvaObject): Vector {.konva.}
 proc getAbsolutePosition*(k: KonvaObject, o: KonvaObject): Vector {.konva.}
 proc getClassName*(k: KonvaObject): Str {.konva.}
 proc getClientRect*(k: KonvaObject): RectData {.konva.}

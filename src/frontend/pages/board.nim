@@ -133,6 +133,7 @@ const
   fontFamilies = @[
     "Vazirmatn", "Mooli", "Ubuntu Mono"]
 
+# TODO add touch events
 # FIXME do not make 2 types of nodes. only 1 type with optional image url
 # FIXME sometimes the fontobserver does not work and texts does not fit in the box
 # TODO add loading... before content loads
@@ -154,9 +155,9 @@ const
 # FIXME image node border radius is depend on font size
 # TODO ability to save as file and import all parts of app
 
-var 
+var
   app = AppData()
-  
+
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
@@ -846,7 +847,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
       tdiv(class = "card-body"):
         tdiv(class = "tw-content"):
           case msgState mid
-          of msReady: 
+          of msReady:
             verbatim get noteHtmlContent[mid]
           of msQueue:
             text "Loading ..."
@@ -894,7 +895,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             redraw()
 
 proc genSelectPalette(i: int): proc() =
-  proc = 
+  proc =
     app.selectedPalleteI = i
     app.footerState = fsColor
 
@@ -991,6 +992,8 @@ proc fetchTags(): Future[void] =
         tags[t.id] = t
       resolve()
 
+func touchClientPos(t: Touch): Vector =
+  v(t.clientX, t.clientY)
 
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
@@ -1148,7 +1151,10 @@ proc createDom*(data: RouterData): VNode =
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
           iff(freeze, "user-select-none ") &
           iff(app.sidebarWidth < ciriticalWidth, "icons-only "),
-          style = style(StyleAttr.width, fmt"{app.sidebarWidth}px")):
+          style = style(
+            (StyleAttr.width, c fmt"{app.sidebarWidth}px"),
+            (StyleAttr.display, iff(app.sidebarWidth < 100, c"none", c"block")),
+          )):
 
         tdiv(class = "extender h-100 btn btn-light p-0"):
           proc onMouseDown =
@@ -1399,12 +1405,29 @@ proc init* =
     with app.stage:
       add layer
 
+      on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
+        app.lastClientMousePos = touchClientPos e.evt.touches[0]
+        notify "touch len: " & $len e.evt.touches
+
       on "mousedown", proc =
         app.leftClicked = true
+
+      on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
+        case e.evt.touches.len
+        of 1:
+          let e = touchClientPos e.evt.touches[0]
+          moveStage e - app.lastClientMousePos
+          app.lastClientMousePos = e
+
+        else:
+          discard
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
         if app.leftClicked and (kcSpace in app.pressedKeys):
           moveStage movement e
+
+      on "touchend", proc =
+        echo "done"
 
       on "mouseup", proc =
         app.leftClicked = false
@@ -1419,6 +1442,7 @@ proc init* =
             unselect()
         else:
           discard
+
 
 
     block global_events:

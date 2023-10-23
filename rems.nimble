@@ -12,7 +12,7 @@ bin           = @["rems"]
 
 requires "nim >= 2.0.0"
 requires "checksums" # for Nim 2
-requires "db_connector == 0.1.0" # for Nim 2
+requires "db_connector >= 0.1.0" # for Nim 2
 
 requires "macroplus >= 0.2.5"
 requires "caster"
@@ -23,8 +23,7 @@ requires "prettyvec"
 requires "mummy" # 0.3.2
 requires "jsony" # 1.1.5
 requires "ponairi" # 0.3.2
-# requires "waterpark" # 0.1.3
-requires "https://github.com/hamidb80/waterpark"
+requires "waterpark >= 0.1.5"
 requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
 requires "bale" # 1.0.0
