@@ -1581,43 +1581,44 @@ proc init* =
     block shortcuts:
 
       proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
-        case e.keyCode.KeyCode
-        of kcDelete:
-          if app.selectedVisualNodes.len > 0:
-            for vn in app.selectedVisualNodes:
-              let oid = vn.config.id
+        let kc = e.keyCode.KeyCode
 
-              for n in app.edgeGraph.getOrDefault(oid):
-                let key = sorted oid..n
-                destroy app.edgeInfo[key].konva.wrapper
-                del app.edgeInfo, key
+        if document.activeElement == document.body:
+          case kc
+          of kcDelete:
+            if app.selectedVisualNodes.len > 0:
+              for vn in app.selectedVisualNodes:
+                let oid = vn.config.id
 
-              destroy vn.konva.wrapper
-              del app.objects, oid
-              removeNode app.edgeGraph, oid
+                for n in app.edgeGraph.getOrDefault(oid):
+                  let key = sorted oid..n
+                  destroy app.edgeInfo[key].konva.wrapper
+                  del app.edgeInfo, key
 
-            unselect()
-            redraw()
+                destroy vn.konva.wrapper
+                del app.objects, oid
+                removeNode app.edgeGraph, oid
 
+              unselect()
+              redraw()
 
-          elif app.selectedEdges.len > 0:
-            for ed in app.selectedEdges:
-              let
-                p = ed.data.points
-                conn = sorted p[cpkHead]..p[cpkTail]
+            elif app.selectedEdges.len > 0:
+              for ed in app.selectedEdges:
+                let
+                  p = ed.data.points
+                  conn = sorted p[cpkHead]..p[cpkTail]
 
-              destroy app.edgeInfo[conn].konva.wrapper
-              del app.edgeInfo, conn
-              removeConn app.edgeGraph, conn
+                destroy app.edgeInfo[conn].konva.wrapper
+                del app.edgeInfo, conn
+                removeConn app.edgeGraph, conn
 
-            unselect()
-            redraw()
+              unselect()
+              redraw()
 
-          else:
-            notify "nothing to delete"
+            else:
+              notify "nothing to delete"
 
-        of kcEscape:
-          if document.activeElement == document.body:
+          of kcEscape:
             if app.boardState == bsAddNode:
               destroy app.tempNode.konva.wrapper
 
@@ -1629,67 +1630,71 @@ proc init* =
             unselect()
             redraw()
 
-          else:
-            blur document.activeElement
+          of kcN:
+            startPuttingNode()
 
-        of kcN:
-          startPuttingNode()
+          of kcK: # copy style
+            if app.selectedVisualNodes.len == 1:
+              let v = app.selectedVisualNodes[0]
 
-        of kcK: # copy style
-          if app.selectedVisualNodes.len == 1:
-            let v = app.selectedVisualNodes[0]
+              app.theme = v.config.theme
+              app.font = v.config.font
 
-            app.theme = v.config.theme
-            app.font = v.config.font
+            elif app.selectedEdges.len == 1:
+              let e = app.selectedEdges[0]
 
-          elif app.selectedEdges.len == 1:
-            let e = app.selectedEdges[0]
+              app.theme = e.data.config.theme
+              app.edge.width = e.data.config.width
 
-            app.theme = e.data.config.theme
-            app.edge.width = e.data.config.width
+            else:
+              discard
 
-          else:
-            discard
-
-          redraw()
-
-        of kcQ: # start connection
-          if app.selectedVisualNodes.len == 1:
-            startAddConn app.selectedVisualNodes[0]
-
-        of kcC: # go to center
-          let s = ||app.stage.scale
-          app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
-
-        of kcS: # save
-          let data = forceJsObject toJson app
-          proc success =
-            notify "saved!"
-          apiUpdateBoardContent app.id, data, success
-
-        of kcZ: # reset zoom
-          let c = app.stage.center
-          changeScale c, 1, false
-          app.stage.center = c
-
-        of kcF: # focus
-          if app.selectedVisualNodes.len == 1:
-            let v = app.selectedVisualNodes[0]
-            app.stage.center = v.center
-            app.stage.x = app.stage.x - app.sidebarWidth/2
-
-        of kcT: # show/hide side bar
-          if document.activeElement == document.body:
-            negate app.sidebarVisible
             redraw()
 
-        of kcP: # scrennshot
-          app.stage.toBlob(1/2).dthen proc(b: Blob) =
-            apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
-              notify "screenshot updated!"
+          of kcQ: # start connection
+            if app.selectedVisualNodes.len == 1:
+              startAddConn app.selectedVisualNodes[0]
 
-        else:
-          discard
+          of kcC: # go to center
+            let s = ||app.stage.scale
+            app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
+
+          of kcS: # save
+            let data = forceJsObject toJson app
+            proc success =
+              notify "saved!"
+            apiUpdateBoardContent app.id, data, success
+
+          of kcZ: # reset zoom
+            let c = app.stage.center
+            changeScale c, 1, false
+            app.stage.center = c
+
+          of kcF: # focus
+            if app.selectedVisualNodes.len == 1:
+              let v = app.selectedVisualNodes[0]
+              app.stage.center = v.center
+              app.stage.x = app.stage.x - app.sidebarWidth/2
+
+          of kcT: # show/hide side bar
+            if document.activeElement == document.body:
+              negate app.sidebarVisible
+              redraw()
+
+          of kcP: # scrennshot
+            app.stage.toBlob(1/2).dthen proc(b: Blob) =
+              apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
+                notify "screenshot updated!"
+
+          else: discard
+
+        else: # if typing in input
+          case kc
+          of kcEscape:
+            blur document.activeElement
+
+          else: discard
+
 
       with document.documentElement:
         addEventListener "keydown", keyboardListener
