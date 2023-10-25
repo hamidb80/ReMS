@@ -16,10 +16,6 @@ body {
   cursor: pointer;
 }
 
-.w-40 {
-  width: 42%;
-}
-
 .h-screen-100 {
   height: 100vh;
 }

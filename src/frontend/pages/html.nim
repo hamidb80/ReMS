@@ -103,9 +103,9 @@ proc index: VNode =
       a(class = "btn btn-primary", href = link):
         text "Open"
 
-  func blockk(title, icon, link: string): VNode =
+  func blockk(title, desc, icon, link: string): VNode =
     buildHtml:
-      tdiv(class = "p-3 my-4 w-40 card"):
+      tdiv(class = "p-3 my-4 card"):
         tdiv(class = "card-body d-flex flex-row justify-content-between"):
           tdiv(class = "d-flex flex-column align-items-center justify-content-evenly me-3 minw-30"):
             h3(class = "text-center"):
@@ -117,11 +117,7 @@ proc index: VNode =
                 tryBtnLink link
 
           tdiv:
-            text """
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                 incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-            """
+            text desc
 
   buildHtml html:
     commonHead "intro", []
@@ -136,16 +132,16 @@ proc index: VNode =
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Explore", "planet.svg", get_explore_url()
-        blockk "Files", "inbox-archive.svg", ""
-        blockk "Tags", "tag.svg", get_tags_url()
-        blockk "Notes", "pen-writing-on-paper.svg", ""
-        blockk "change colors", "palette.svg", get_palette_studio_url()
-        blockk "Graphs", "share-circle.svg", ""
-        blockk "Save your Time", "clock-square.svg", ""
-        blockk "It's Open Source", "hand-heart.svg", "https://github.com/hamidb80/rems"
-        blockk "Login", "user.svg", get_login_url()
-        blockk "Remembering Utils", "repeat.svg", ""
+        blockk "Explore", "", "planet.svg", get_explore_url()
+        blockk "Files", "", "inbox-archive.svg", ""
+        blockk "Tags", "", "tag.svg", get_tags_url()
+        blockk "Notes", "", "pen-writing-on-paper.svg", ""
+        blockk "change colors", "", "palette.svg", get_palette_studio_url()
+        blockk "Graphs", "", "share-circle.svg", ""
+        blockk "Save your Time", "", "clock-square.svg", ""
+        blockk "It's Open Source", "", "hand-heart.svg", "https://github.com/hamidb80/rems"
+        blockk "Login", "", "user.svg", get_login_url()
+        blockk "Remembering Utils", "", "repeat.svg", ""
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
