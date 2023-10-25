@@ -125,6 +125,10 @@ type
     shape: KonvaShape
     line: Line
 
+  FontTest = tuple
+    name: string
+    test: string
+
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
@@ -134,10 +138,9 @@ const
   minimizeWidth = 360
 
   nonExistsTheme = c(0, 0, 0)
-  fontFamilies = @[
-    "Vazirmatn", "Mooli", "Ubuntu Mono"]
+  fontFamilies: seq[FontTest] = @[
+    ("Vazirmatn", "سلام"), ("Mooli", "teshey"), ("Ubuntu Mono", "hey")]
 
-# TODO add touch events
 # FIXME do not make 2 types of nodes. only 1 type with optional image url
 # FIXME sometimes the fontobserver does not work and texts does not fit in the box
 # TODO add loading... before content loads
@@ -154,7 +157,6 @@ const
 # TODO ability to set the center
 # TODO add "exploratory mode" where all nodes' content are hidden when you click they show up
 # TODO customize border radius for nodes
-# TODO add beizier curve
 # TODO add custom shape for connections
 # FIXME image node border radius is depend on font size
 # TODO ability to save as file and import all parts of app
@@ -983,12 +985,12 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
     let id = Id parseInt k
     result[id] = v
 
-proc loadFonts(fontsFamilies: seq[string]): Future[void] =
+proc loadFonts(fontFamilies: seq[FontTest]): Future[void] =
   newPromise proc(resolve, reject: proc()) =
     var loadEvents: seq[Future[void]]
 
-    for ff in fontsFamilies:
-      add loadEvents, load newFontFaceObserver ff
+    for f in fontFamilies:
+      add loadEvents, load(newFontFaceObserver f.name, f.test)
 
     waitAll loadEvents, resolve
 
@@ -1105,8 +1107,8 @@ proc createDom*(data: RouterData): VNode =
                 app.footerState = fsBorderWidth
 
           of fsFontFamily:
-            for f in fontFamilies:
-              fontFamilySelectBtn(f, true)
+            for (fname, _) in fontFamilies:
+              fontFamilySelectBtn(fname, true)
 
           of fsFontSize:
             for s in countup(10, 300, 10):
@@ -1567,7 +1569,7 @@ proc init* =
 
     block prepare:
       app.sidebarWidth = defaultWidth
-      app.font.family = fontFamilies[1]
+      app.font.family = fontFamilies[1].name
       app.font.size = 20
       app.theme = nonExistsTheme
       app.edge.theme = nonExistsTheme

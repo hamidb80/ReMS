@@ -7,6 +7,6 @@ type
 func newFontFaceObserver*(ff: cstring): FontFaceObserver
     {.importjs: "new FontFaceObserver(@)".}
 
-# TODO use time unit like MilliSecond or Second
-proc load*(ffo: FontFaceObserver, timeout = 10_000): Future[void] 
-    {.importjs: "#.load(null, #)".}
+proc load*(ffo: FontFaceObserver, testString: cstring,
+        timeout = 10_000): Future[void]
+    {.importjs: "#.load(#, #)".}
