@@ -34,11 +34,6 @@ requires "karax == 1.3.0"
 # Tasks
 import std/[os, strutils, strformat]
 
-task testdefs, "define envorment vars only for test":
-  putEnv "BALE_BOT_TOKEN", readfile "bot.token"
-  putEnv "APP_DIR", "./"
-  putEnv "JWT_KEY", "1111"
-
 task make, "make all":
   exec "nimble html"
   exec "nimble genb"
@@ -84,7 +79,7 @@ task prepare, "define envorment vars only for test":
 task db, "init db":
   exec "nim r src/backend/utils/db_init.nim"
 
-task bot, "bale box":
+task bot, "bale bot":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task go, "runs server + bot":
