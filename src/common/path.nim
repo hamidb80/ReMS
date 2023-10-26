@@ -6,7 +6,7 @@ let m = newMimetypes()
 
 func mimeType*(ext: string): string =
   {.cast(noSideEffect).}:
-    m.getMimetype ext
+    getMimetype m, ext
 
 func getExt*(s: string): string =
   s[s.rfind('.')+1 .. ^1]

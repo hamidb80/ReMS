@@ -54,7 +54,9 @@ proc loadDist*(path: string): RequestHandler =
 
 proc download*(url: string): string =
   var client = newHttpClient()
-  client.get(url).body
+  result = client.get(url).body
+  close client
+
 
 ## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 const jwtKey = "auth"
