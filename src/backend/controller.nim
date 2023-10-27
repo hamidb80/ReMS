@@ -95,7 +95,7 @@ proc login*(req: Request, u: models.User) =
 
 # ------- main
 
-proc getMe*(req: Request) {.adminOnly.} =
+proc getMe*(req: Request) {.userOnly.} =
   respJson toJson user
 
 proc logoutCookieSet: webby.HttpHeaders =
@@ -147,16 +147,17 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
 proc getAsset*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)
 
-proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, adminOnly.} =
+proc updateAssetName*(req: Request) {.qparams: {id: int, name: string},
+    checkAdmin, userOnly.} =
   !! db.updateAssetName(id, name)
   resp OK
 
 proc updateAssetRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, adminOnly.} =
+    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
   !! db.updateAssetRelTags(id, data)
   resp OK
 
-proc saveAsset(req: Request): Id {.adminOnly.} =
+proc saveAsset(req: Request): Id {.checkAdmin, userOnly.} =
   let multip = req.decodeMultipart()
 
   for entry in multip:
@@ -178,7 +179,7 @@ proc saveAsset(req: Request): Id {.adminOnly.} =
 
   raise newException(ValueError, "no files found")
 
-proc assetsUpload*(req: Request) {.adminOnly.} =
+proc assetsUpload*(req: Request) {.checkAdmin, userOnly.} =
   respJson str saveAsset req
 
 proc assetShorthand*(req: Request) =
@@ -197,12 +198,12 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
 
   respFile asset.mime, content
 
-proc deleteAsset*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc deleteAsset*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
   !!db.deleteAsset id
   resp OK
 
 
-proc newNote*(req: Request) {.adminOnly.} =
+proc newNote*(req: Request) {.checkAdmin, userOnly.} =
   let id = forceSafety !!<db.newNote()
   redirect get_note_editor_url id
 
@@ -214,60 +215,62 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
     let node = !!<db.getNote(id).data
     respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {id: int}, jbody: TreeNodeRaw[
-    JsonNode], adminOnly.} =
+proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {
+    id: int}, jbody: TreeNodeRaw[JsonNode], checkAdmin, userOnly.} =
 
   forceSafety:
     !!db.updateNoteContent(id, data)
     resp OK
 
 proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, adminOnly.} =
+    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
   !!db.updateNoteRelTags(id, data)
   resp OK
 
-proc deleteNote*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc deleteNote*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
   !!db.deleteNote id
   resp OK
 
 
-proc newBoard*(req: Request) {.adminOnly.} =
+proc newBoard*(req: Request) {.checkAdmin, userOnly.} =
   let id = !!<db.newBoard()
   redirect get_board_edit_url id
 
-proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, adminOnly.} =
+proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData,
+    checkAdmin, userOnly.} =
   !!db.updateBoardContent(id, data)
   resp OK
 
-proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
   !!db.setBoardScreenShot(id, saveAsset req)
   resp OK
 
-proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, adminOnly.} =
+proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string},
+    checkAdmin, userOnly.} =
   !!db.updateBoardTitle(id, title)
   resp OK
 
 proc updateBoardRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, adminOnly.} =
+    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
   !!db.updateBoardRelTags(id, data)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
-proc deleteBoard*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc deleteBoard*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
   !!db.deleteBoard id
   resp OK
 
 
-proc newTag*(req: Request) {.jbody: Tag, adminOnly.} =
+proc newTag*(req: Request) {.jbody: Tag, checkAdmin, userOnly.} =
   !!respJson toJson db.newTag data
 
-proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, adminOnly.} =
+proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, checkAdmin, userOnly.} =
   !!db.updateTag(id, data)
   resp OK
 
-proc deleteTag*(req: Request) {.qparams: {id: int}, adminOnly.} =
+proc deleteTag*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
   !!db.deleteTag id
   resp OK
 
@@ -291,17 +294,14 @@ proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
 proc getPalette*(req: Request) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
-proc updatePalette*(req: Request) {.qparams: {name: string}, jbody: Palette, adminOnly.} =
+proc updatePalette*(req: Request) {.qparams: {name: string}, jbody: Palette,
+    checkAdmin, userOnly.} =
   !!db.updatePalette(name, data)
   resp OK
 
 proc listPalettes*(req: Request) =
   !!respJson toJson db.listPalettes()
 
-
-# FIXME do not download files more than 5 MB
-proc proxyDownload*(req: Request) {.qparams: {url: string}.} =
-  req.respond(200, body = download url)
 
 proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGithubJsFile download url

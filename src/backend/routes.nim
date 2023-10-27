@@ -79,7 +79,6 @@ dispatch router, ../controller:
   get "/api/explore/users/"?(name: string), exploreUsers {.json.}
 
   # to aviod CORS
-  get "/proxy/download/"?(url: string), proxyDownload {.file.} 
   get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} 
   get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.}
 

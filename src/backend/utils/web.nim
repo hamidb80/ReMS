@@ -168,7 +168,7 @@ macro jbody*(desttype, procdef): untyped =
   procdef
 
 
-macro adminOnly*(procdef): untyped =
+macro userOnly*(procdef): untyped =
   let
     req = procdef.firstArgument
     body = procdef.body
@@ -181,11 +181,7 @@ macro adminOnly*(procdef): untyped =
         let
           s = forceSafety tk.claim["user"]
           `user` {.used.} = fromJson($s, models.User)
-
-        if `user`.role == urAdmin:
-          `body`
-        else:
-          raise newException(ValueError, "Permission Denied")
+        `body`
       else:
         raise newException(ValueError, "Invalid JWT token")
     else:
@@ -193,6 +189,19 @@ macro adminOnly*(procdef): untyped =
 
   procdef
 
+
+macro checkAdmin*(procdef): untyped =
+  let
+    user = ident"user"
+    body = procdef.body
+
+  procdef.body = quote:
+    if `user`.role == urAdmin:
+      `body`
+    else:
+      raise newException(ValueError, "Permission Denied")
+
+  procdef
 
 template respJson*(body): untyped {.dirty.} =
   req.respond 200, @{"Content-Type": "application/json"}, body

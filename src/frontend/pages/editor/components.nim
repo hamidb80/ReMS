@@ -9,14 +9,7 @@ import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
 
-# TODO make restore hook to get values optionally
-
-# TODO remove markdown compoenent and replace it with a action
-# (convert md to tw-nodes) and a reverse one (convert paragraph to md)
-# I think that would be a lot better | OR a custom markdown component ?
-
 # TODO declarative schema check & assignment in restore hook | dont use 'to' event 'cast' is better
-
 # TODO ability to add classes to the nodes manually
 
 # ----- Utils -----------
