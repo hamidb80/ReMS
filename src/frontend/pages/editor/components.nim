@@ -408,7 +408,6 @@ proc initLatex: Hooks =
           input: toJs inline(),
           updateCallback: mutState(iset, bool)))]
 
-# TODO
 proc initLinearMarkdown: Hooks =
   let
     el = createElement("div", {"class": "tw-linear-markdown"})
@@ -428,7 +427,7 @@ proc initLinearMarkdown: Hooks =
 
   proc inss(comp: Component, ct: ComponentsTable): TwNode =
     result = instantiate(comp, ct)
-    mounted result, mbUser, tmInteractive
+    mounted result, mbDeserializer, tmOutputGeneration
 
   proc genElemForImpl(hooks: Hooks, str: cstring,
       mode: LinearMarkdownMode): TwNode =
@@ -499,7 +498,7 @@ proc initLinearMarkdown: Hooks =
       reset tw.children
       for i, n in parseLinearMarkdown $content():
         attach tw, genElemFor(hooks, n.substr, n.modes), i
-      
+
     settings = () => @[
       SettingsPart(
         field: "linear markdown",
