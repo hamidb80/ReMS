@@ -4,11 +4,12 @@ import std/[with, options, sequtils, tables, sugar, strformat]
 import ./core
 import ../../utils/[browser, js, api]
 import ../../jslib/[katex, axios]
-import ../../../common/[conventions, types, datastructures]
+import ../../../common/[conventions, types, datastructures, linear_markdown]
 import ../../../backend/[routes]
 import ../../../backend/database/[models]
 
 
+# FIXME clean up
 # TODO declarative schema check & assignment in restore hook | dont use 'to' event 'cast' is better
 # TODO ability to add classes to the nodes manually
 
@@ -33,6 +34,7 @@ template defHooks(body): untyped {.dirty.} =
     status = () => (tsNothing, "")
     role = (i: Index) => ""
     die = noop
+    ignoreChildren = () => false
     focus = addFocusClass hooks
     blur = removeFocusClass hooks
     hover = addHoverClass hooks
@@ -356,8 +358,8 @@ proc initLink: Hooks =
       el.setAttr "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["raw-text"], hooks,
-            hooks.componentsTable()
+        let ct = hooks.componentsTable()
+        attachInstance ct["raw-text"], hooks, ct
 
     settings = () => @[
       SettingsPart(
@@ -406,6 +408,116 @@ proc initLatex: Hooks =
           input: toJs inline(),
           updateCallback: mutState(iset, bool)))]
 
+# TODO
+proc initLinearMarkdown: Hooks =
+  let
+    el = createElement("div", {"class": "tw-linear-markdown"})
+    (content, cset) = genState c""
+    (inline, iset) = genState false
+  var
+    id: TimeOut
+
+  proc contentSetter(data: JsObject) =
+    proc after =
+      result.refresh()
+      cset data.to cstring
+      discard result.render()
+
+    clearTimeout id
+    id = settimeout(after, 500)
+
+  proc inss(comp: Component, ct: ComponentsTable): TwNode =
+    result = instantiate(comp, ct)
+    mounted result, mbUser, tmInteractive
+
+  proc genElemForImpl(hooks: Hooks, str: cstring,
+      mode: LinearMarkdownMode): TwNode =
+    let
+      ct = hooks.componentsTable()
+      ename =
+        case mode
+        of lmmItalic: "italic"
+        of lmmBold: "bold"
+        of lmmUnderline: "underline"
+        of lmmStrikeThrough: "strike through"
+        of lmmLatex: "latex"
+        of lmmCode: "raw code"
+
+    result = inss(ct[ename], ct)
+
+    case mode
+    of lmmLatex, lmmCode:
+      restore result, <*{
+        "content": cstring str,
+        "inline": true}
+    else:
+      discard
+
+    discard render result
+
+  proc genElemFor(hooks: Hooks, str: cstring, modes: set[
+      LinearMarkdownMode]): TwNode =
+    let localmodes = modes - {lmmCode, lmmLatex}
+    result =
+      if lmmCode in modes:
+          genElemForImpl hooks, $str, lmmCode
+
+        elif lmmLatex in modes:
+          genElemForImpl hooks, $str, lmmLatex
+
+        else:
+          let ct = hooks.componentsTable()
+          var temp = inss(ct["raw-text"], ct)
+          restore temp, <*{
+            "content": str,
+            "spaceAround": false}
+          discard render temp
+          temp
+
+    for m in localmodes:
+      var temp = genElemForImpl(hooks, str, m)
+      attach temp, result, 0
+      result = temp
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = noTags
+    ignoreChildren = () => true
+    capture = () => <*{
+      "content": content(),
+      "inline": inline()}
+
+    restore = proc(input: JsObject) =
+      cset input["content"].to cstring
+      iset input["inline"].to bool
+
+    render = genRender:
+      el.ctrlClass displayInlineClass, inline()
+      purge el
+
+      let tw = hooks.self()
+      reset tw.children
+      for i, n in parseLinearMarkdown $content():
+        attach tw, genElemFor(hooks, n.substr, n.modes), i
+      
+    settings = () => @[
+      SettingsPart(
+        field: "linear markdown",
+        icon: "bi bi-markdown-fill",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs content(),
+          updateCallback: contentSetter)),
+
+      SettingsPart(
+        field: "inline",
+        icon: "bi bi-displayport",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: toJs inline(),
+          updateCallback: mutState(iset, bool)))]
+
+
 proc initImage: Hooks =
   let
     hooks = Hooks()
@@ -451,8 +563,8 @@ proc initImage: Hooks =
     mounted = genMounted:
       wrapper.append img, caption
       if mode == tmInteractive and by == mbUser:
-        attachInstance hooks.componentsTable()["paragraph"], hooks,
-            hooks.componentsTable()
+        let ct = hooks.componentsTable()
+        attachInstance ct["paragraph"], hooks, ct
 
     attachNode = proc(child: TwNode, at: Index) =
       attachNodeDefault hooks.self(), child, caption, child.dom, at
@@ -518,7 +630,7 @@ proc initList: Hooks =
     dom = () => ul
     acceptsAsChild = anyTag
 
-    capture = () => <*{ 
+    capture = () => <*{
       "style": style(),
       "dir": dir()}
 
@@ -1020,6 +1132,18 @@ defComponent strikethroughComponent,
   @["global", "inline"],
   initStrikethrough
 
+defComponent latexComponent,
+  "latex",
+  "bi bi-regex",
+  @["global", "inline", "block"],
+  initLatex
+
+defComponent linearMdComponent,
+  "linear markdown",
+  "bi bi-markdown-fill",
+  @["global", "inline", "block"],
+  initLinearMarkdown
+
 defComponent h1Component,
   "h1",
   "bi bi-type-h1",
@@ -1055,12 +1179,6 @@ defComponent h6Component,
   "bi bi-type-h6",
   @["global", "title", "block"],
   initTitleH6
-
-defComponent latexComponent,
-  "latex",
-  "bi bi-regex",
-  @["global", "inline", "block"],
-  initLatex
 
 defComponent verticalSpaceComponent,
   "vertical-space",
@@ -1170,13 +1288,14 @@ proc defaultComponents*: ComponentsTable =
     boldComponent,
     italicComponent,
     strikethroughComponent,
+    latexComponent,
+    linearMdComponent,
     h1Component,
     h2Component,
     h3Component,
     h4Component,
     h5Component,
     h6Component,
-    latexComponent,
     verticalSpaceComponent,
     imageComponent,
     videoComponent,

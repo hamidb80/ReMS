@@ -59,6 +59,7 @@ type
     attachNode*: proc(n: TwNode, at: Index)
     detachNode*: proc(at: Index)
 
+    ignoreChildren*: proc(): bool ## the serializer procedure should not go through its children - generator objects should return true
     capture*: proc(): JsObject           ## returns internal states
     restore*: proc(input: JsObject)      ## restores internal states
     refresh*: proc()                     ## refreshes, can be used before render called
@@ -106,6 +107,7 @@ proc restore*(t: TwNode, input: JsObject) = t.data.hooks.restore(input)
 proc refresh*(t: TwNode) = t.data.hooks.refresh()
 proc render*(t: TwNode): auto = t.data.hooks.render()
 proc acceptsAsChild*(t: TwNode): auto = t.data.hooks.acceptsAsChild()
+proc ignoreChildren*(t: TwNode): auto = t.data.hooks.ignoreChildren()
 proc settings*(t: TwNode): auto = t.data.hooks.settings()
 
 proc firstChild*(t: TwNode, cname: string): TwNode =
@@ -120,9 +122,10 @@ proc serialize*(t: TwNode): TreeNodeRaw[JsObject] =
     data: t.capture,
     children: @[])
 
-  for n in t.children:
-    if not n.data.isTemp:
-      result.children.add serialize n
+  if not t.ignoreChildren():
+    for n in t.children:
+      if not n.data.isTemp:
+        result.children.add serialize n
 
 proc instantiate*(c: Component, ct: ComponentsTable): TwNode =
   let node = TwNode(data: TwNodeData(
@@ -141,9 +144,9 @@ proc attach*(father, child: TwNode, at: int) =
 proc destroyChildren*(father: TwNode) =
   for ch in mitems father.children:
     ch.father = nil
-  
+
   reset father.children
-  
+
 
 # ---------------------
 
