@@ -410,9 +410,8 @@ proc initLatex: Hooks =
 
 proc initLinearMarkdown: Hooks =
   let
-    el = createElement("div", {"class": "tw-linear-markdown"})
+    el = createElement("div", {"class": "tw-linear-markdown " & displayInlineClass})
     (content, cset) = genState c""
-    (inline, iset) = genState false
   var
     id: TimeOut
 
@@ -459,19 +458,19 @@ proc initLinearMarkdown: Hooks =
     let localmodes = modes - {lmmCode, lmmLatex}
     result =
       if lmmCode in modes:
-          genElemForImpl hooks, $str, lmmCode
+        genElemForImpl hooks, $str, lmmCode
 
-        elif lmmLatex in modes:
-          genElemForImpl hooks, $str, lmmLatex
+      elif lmmLatex in modes:
+        genElemForImpl hooks, $str, lmmLatex
 
-        else:
-          let ct = hooks.componentsTable()
-          var temp = inss(ct["raw-text"], ct)
-          restore temp, <*{
-            "content": str,
-            "spaceAround": false}
-          discard render temp
-          temp
+      else:
+        let ct = hooks.componentsTable()
+        var temp = inss(ct["raw-text"], ct)
+        restore temp, <*{
+          "content": str,
+          "spaceAround": false}
+        discard render temp
+        temp
 
     for m in localmodes:
       var temp = genElemForImpl(hooks, str, m)
@@ -483,15 +482,12 @@ proc initLinearMarkdown: Hooks =
     acceptsAsChild = noTags
     ignoreChildren = () => true
     capture = () => <*{
-      "content": content(),
-      "inline": inline()}
+      "content": content()}
 
     restore = proc(input: JsObject) =
       cset input["content"].to cstring
-      iset input["inline"].to bool
 
     render = genRender:
-      el.ctrlClass displayInlineClass, inline()
       purge el
 
       let tw = hooks.self()
@@ -506,15 +502,7 @@ proc initLinearMarkdown: Hooks =
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
-          updateCallback: contentSetter)),
-
-      SettingsPart(
-        field: "inline",
-        icon: "bi bi-displayport",
-        editorData: () => EditorInitData(
-          name: "checkbox-editor",
-          input: toJs inline(),
-          updateCallback: mutState(iset, bool)))]
+          updateCallback: contentSetter))]
 
 
 proc initImage: Hooks =
