@@ -1,3 +1,5 @@
+> People are asleep, they wake up when they die - Muhammad the prophet (PBUH) - [read more ...](https://the12thimam.com/2020/04/06/people-are-asleep-when-they-die-they-awake/)
+
 # ReMS :: Remembering Management System
 
 > [!IMPORTANT]  
