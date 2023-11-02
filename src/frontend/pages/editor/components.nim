@@ -624,7 +624,7 @@ proc initList: Hooks =
     restore = proc(j: JsObject) =
       if isObject j:
         setStyle getDefault(j, c"style", c"list-disc") ~~ cstring
-        setdir getDefault(j, c"dir", c"ltr") ~~ cstring
+        setdir getDefault(j, c"dir", c"auto") ~~ cstring
 
     render = genRender:
       case $dir()
