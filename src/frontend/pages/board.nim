@@ -185,10 +185,11 @@ template `?`(a): untyped =
 proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
     fill = toColorString theme.bg
-    shadowColor = toColorString theme.st
-    shadowOffsetY = 6
-    shadowBlur = 8
-    shadowOpacity = 0.2
+    stroke = toColorString theme.st
+    # shadowColor = toColorString theme.st
+    # shadowOffsetY = 6
+    # shadowBlur = 8
+    # shadowOpacity = 0.2
 
   with txt:
     fill = toColorString theme.fg
@@ -224,6 +225,7 @@ proc redrawSizeNode(v: VisualNode; font: FontConfig) =
     y = -pad
     width = v.konva.txt.width + pad*2
     height = v.konva.txt.height + pad*2
+    strokeWidth = font.size / 10
     cornerRadius = pad
 
 proc getFocusedFont: FontConfig =
