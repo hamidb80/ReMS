@@ -186,10 +186,6 @@ proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
   with box:
     fill = toColorString theme.bg
     stroke = toColorString theme.st
-    # shadowColor = toColorString theme.st
-    # shadowOffsetY = 6
-    # shadowBlur = 8
-    # shadowOpacity = 0.2
 
   with txt:
     fill = toColorString theme.fg
