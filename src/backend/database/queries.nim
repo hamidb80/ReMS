@@ -12,6 +12,9 @@ import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
 # TODO add auto generated tags
+# TODO add pagination
+# TODO consider permissions
+# TODO consider private ones 
 
 template R: untyped {.dirty.} =
   typeof result
@@ -303,8 +306,7 @@ proc deleteBoardLogical*(db: DbConn, id: Id, time: UnixTime) =
 proc deleteBoardPhysical*(db: DbConn, id: Id) =
   db.exec fsql"DELETE FROM Board WHERE id = {id}"
 
-# TODO add pagination
-# TODO consider private ones 
+
 func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
   let
     introCond =
