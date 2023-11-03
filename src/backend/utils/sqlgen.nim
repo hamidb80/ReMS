@@ -8,15 +8,16 @@ macro fsql*(str: static string): untyped =
     ## []: raw value
     ## {}: formatted sql, replaced with `?`
 
-    let 
-        minLen = 2 * len str 
+    let
+        minLen = 2 * len str
         res = genSym(nskVar, "sqlFmtTemp")
+    var 
+        lasti = -1
 
     result = newStmtList()
     add result, quote do:
         var `res` = newStringOfCap `minLen`
 
-    var lasti = -1
     for i, ch in str:
         case ch
         of '[', '{':
@@ -37,11 +38,14 @@ macro fsql*(str: static string): untyped =
         else:
             discard
 
-        case ch
-        of '[', ']', '{', '}':
+        if ch in "[]{}":
             lasti = i
-        else:
-            discard
+
+    
+    let d = str[lasti+1 .. str.len-1]
+    result.add quote do:
+        `res`.add `d`
+
 
     result = quote:
         block:
@@ -53,8 +57,8 @@ macro fsql*(str: static string): untyped =
 
 when isMainModule:
     import lowdb/sqlite
-    
-    let 
+
+    let
         name = "hamid"
         age = 22
 
@@ -62,6 +66,4 @@ when isMainModule:
         UPDATE Tag SET 
         name = {name}, 
         age = {age}
-        """        
-    
-    
+        """
