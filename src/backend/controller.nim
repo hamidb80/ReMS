@@ -105,7 +105,7 @@ proc logout*(req: Request) =
   respond req, 200, logoutCookieSet()
 
 proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
-  let inv = !!<db.getInvitation(secret, toUnixTime now(), 60)
+  let inv = !!<db.getInvitation(secret, unow(), 60)
 
   if i =? inv:
     let
@@ -199,7 +199,7 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
   respFile asset.mime, content
 
 proc deleteAsset*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteAsset id
+  !!db.deleteAssetLogical(id, unow())
   resp OK
 
 
@@ -228,7 +228,7 @@ proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
   resp OK
 
 proc deleteNote*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteNote id
+  !!db.deleteNoteLogical(id, unow())
   resp OK
 
 
@@ -259,7 +259,7 @@ proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
 proc deleteBoard*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteBoard id
+  !!db.deleteBoardLogical(id, unow())
   resp OK
 
 

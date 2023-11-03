@@ -110,8 +110,12 @@ func getFields*[T](t: typedesc[T]): seq[string] =
 
 converter toBytes*(s: Mb): int = s.int * 1024 * 1024
 
+
 func toUnixtime*(d: DateTime): UnixTime =
   d.toTime.toUnix.UnixTime
+
+proc unow*: UnixTime = 
+  toUnixtime now()
 
 proc toDateTime*(u: UnixTime): DateTime =
   u.int64.fromUnix.utc

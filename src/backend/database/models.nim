@@ -44,16 +44,22 @@ type # database models
     mime*: Str
     size*: Bytes
     path*: Path # where is it stored?
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
     data*: TreeNodeRaw[NativeJson]
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
 
   Board* = object
     id* {.primary, autoIncrement.}: Id
     title*: Str
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
