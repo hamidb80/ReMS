@@ -132,7 +132,7 @@ type
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
-  minScale = 0.10 # minimum amount of scale
+  minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
   ciriticalWidth = 400
   minimizeWidth = 360
