@@ -22,7 +22,6 @@ type # database models
     role*: UserRole
 
   Invitation* = object
-    ## must be deleted after usage
     id* {.primary, autoIncrement.}: Id
     secret*: Str # TODO hash it
     data*: JsonNode
@@ -45,7 +44,7 @@ type # database models
     size*: Bytes
     path*: Path # where is it stored?
 
-    owner*: User
+    owner* {.references: User.id.}: Id
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
@@ -53,7 +52,7 @@ type # database models
     id* {.primary, autoIncrement.}: Id
     data*: TreeNodeRaw[NativeJson]
 
-    owner*: User
+    owner* {.references: User.id.}: Id
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
@@ -63,7 +62,7 @@ type # database models
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
 
-    owner*: User
+    owner* {.references: User.id.}: Id
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
@@ -81,14 +80,7 @@ type # database models
     tvtDate
     tvtJson
 
-
-  TagCreator* = enum
-    tcUser   ## created by user
-    tcSystem ## created by system
-
-  TagLabel* = enum
-    tlOrdinary         ## can be removed :: if it's not ordinary then its special
-
+  TagLabel* = enum     ## special tags
     tlOwner            ## owner
     tlTimestamp        ## creation time
 
@@ -101,7 +93,7 @@ type # database models
     tlTextContent      ## raw text
     tlForwarded        ## a note that is forwarded from another user
     tlNoteHighlight    ##
-    tlNoteComment      ## a note (as comment) that refers to main note (ival)
+    tlNoteComment      ## a note (as comment) that refers to main note (refers)
     tlNoteCommentReply ## reply to another comment
 
     tlPrivate          ## everything is public except when it has private tag
@@ -109,12 +101,12 @@ type # database models
 
     tlLike
     tlImportant
-    tlSeeLater
+    tlLater
 
     tlBoardNode
-    tlNodeNote         ## note list of node
+    tlBoardNodeNote
 
-    tlFollows          ## user => ival (user.id)
+    tlFollows          ## user => refers (user.id)
     tlNotification     ##
 
     tlRememberIn
@@ -126,8 +118,7 @@ type # database models
 
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
-    creator*: TagCreator
-    label*: TagLabel
+    label*: Option[TagLabel]
     name*: Str
     icon*: Str
     show_name*: bool
@@ -135,7 +126,7 @@ type # database models
     can_be_repeated*: bool
     theme*: ColorTheme
     value_type*: TagValueType
-    # TODO tag with "open/closed enums" values [only choosing from some options]
+    # TODO tag with "open/closed enums" values or a range
 
   NotificationKind* = enum
     nkLoginBale
@@ -181,6 +172,10 @@ type # database models
     active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
 
 type # view models
+  UserCache* = object
+    account*: User
+    defaultsTags*: array[TagLabel, Id]
+
   EntityClass* = enum
     ecNote = "note"
     ecAsset = "asset"
@@ -199,12 +194,8 @@ type # view models
     qoMore      ## >
     qoSubStr    ## ~ substring check
 
-  TagKind* = enum
-    tkGlobal
-    tkUserSpecific
-
   TagCriteria* = object
-    label*: TagLabel
+    label*: Option[TagLabel]
     tagId*: Id
     value_type*: TagValueType
     operator*: QueryOperator
@@ -255,8 +246,6 @@ type # view models
     title*: Str
     desc*: Str
     image*: Str
-    # timestamp*: string # TODO
-      # cardType twitter:card
 
 
 func newNoteData*: TreeNodeRaw[JsonNode] =
@@ -273,11 +262,6 @@ func hasValue*(t: Tag): bool =
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin
-
-func criteriaKind*(tc: TagCriteria): TagKind =
-  case tc.label
-  of tlOrdinary: tkUserSpecific
-  else: tkGlobal
 
 func columnName*(vt: TagValueType): string =
   case vt

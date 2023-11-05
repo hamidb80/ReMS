@@ -60,21 +60,17 @@ proc download*(url: string): string =
 
 ## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
 const jwtKey = "auth"
-proc toUserJwt(u: models.User, expire: int64): JsonNode =
-  %*{
-    "exp": expire,
-    "user": {
-      "id": u.id,
-      "username": u.username,
-      "nickname": u.nickname,
-      "role": u.role.ord}}
 
-proc toJwt(u: models.User): string =
+proc appendJwtExpire(ucj: sink JsonNode, expire: int64): JsonNode =
+  ucj["exp"] = %expire
+  ucj
+
+proc toJwt(uc: UserCache): string =
   sign(
     header = %*{
       "typ": "JWT",
       "alg": "HS256"},
-    claim = toUserJwt(u, toUnix getTime() + 1.days),
+    claim = appendJwtExpire(%uc, toUnix getTime() + 1.days),
     secret = jwtSecret)
 
 proc jwtCookieSet(token: string): webby.HttpHeaders =

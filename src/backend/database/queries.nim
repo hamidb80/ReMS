@@ -143,12 +143,12 @@ proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
     nickname: nname,
     role: r)
 
+# TODO add default tags [labeled tags]
+
 
 proc newTag*(db: DbConn, t: Tag): Id =
   db.insertID Tag(
     owner: 0,
-    creator: tcUser,
-    label: tlOrdinary,
     can_be_repeated: false,
     show_name: t.show_name,
     is_private: t.is_private,
@@ -306,7 +306,7 @@ proc deleteBoardPhysical*(db: DbConn, id: Id) =
   db.exec fsql"DELETE FROM Board WHERE id = {id}"
 
 
-func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
+proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
   let
     introCond =
       case c.operator
@@ -314,11 +314,10 @@ func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
       else: "EXISTS"
 
     candidateCond =
-      case c.label
-      of tlOrdinary:
-        fmt"rel.tag = {c.tagId}"
+      if l =? c.label:
+        fmt"rel.label = {l.ord}"
       else:
-        fmt"rel.label = {c.label.ord}"
+        fmt"rel.tag = {c.tagId}"
 
     primaryCond =
       if isInfix c.operator:

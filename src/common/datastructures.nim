@@ -79,7 +79,7 @@ type
     vndkImage
 
   VisualNodeConfig* = object
-    id*: Str
+    id*: int
     theme*: ColorTheme
     data*: VisualNodeData
     font*: FontConfig  # TODO move this to `VisualNodeData`
