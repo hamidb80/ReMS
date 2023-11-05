@@ -16,7 +16,6 @@ requires "db_connector >= 0.1.0" # for Nim 2
 
 requires "macroplus >= 0.2.5"
 requires "caster"
-requires "uuid4"
 requires "iterrr" # 1.2.0
 requires "questionable"
 requires "prettyvec"

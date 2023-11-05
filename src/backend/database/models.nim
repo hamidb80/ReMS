@@ -44,12 +44,16 @@ type # database models
     mime*: Str
     size*: Bytes
     path*: Path # where is it stored?
+
+    owner*: User
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
     data*: TreeNodeRaw[NativeJson]
+
+    owner*: User
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
@@ -58,6 +62,8 @@ type # database models
     title*: Str
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
+
+    owner*: User
     is_private*: bool
     deleted_at*: Option[UnixTime]
 

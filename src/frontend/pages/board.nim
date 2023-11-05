@@ -6,7 +6,7 @@ import std/[with, math, stats, options, lenientops, strformat, sets, tables, ran
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
-import caster, uuid4, questionable, prettyvec
+import caster, questionable, prettyvec
 
 import ../jslib/[konva, fontfaceobserver]
 import ./editor/[components, core]
@@ -57,6 +57,7 @@ type
   AppData = object
     id: Id ## current board id that is editing
     title: cstring
+    maxNodeId: int
 
     # konva states
     stage: Stage
@@ -146,7 +147,6 @@ const
 # TODO add loading... before content loads
 # TODO make it SPA
 # TODO search graph by tags of messages of nodes
-# TODO do not use uuid, use simple int
 # TODO add material design palette
 # TODO ability to take backup from everything and import it later
 # FIXME the mouseup event after creating node causes selection bug
@@ -767,7 +767,8 @@ proc currentVisualNodeConfig(uid: cstring = c""): VisualNodeConfig =
       text: ""))
 
 proc createNode: VisualNode =
-  let uid = cstring $uuid4()
+  inc app.maxNodeId
+  let uid = cstring $app.maxNodeId
   let vn = createnode currentVisualNodeConfig(uid)
 
   app.objects[uid] = vn
@@ -799,6 +800,7 @@ proc toJson(app: AppData): BoardData =
 
 proc restore(app: var AppData; data: BoardData) =
   for oid, data in data.objects:
+    app.maxNodeId = max(app.maxNodeId, parseInt oid)
     let vn = createNode data
     app.objects[oid] = vn
     app.mainGroup.getLayer.add vn.konva.wrapper

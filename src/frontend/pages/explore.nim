@@ -16,7 +16,6 @@ import ./editor/[core, components]
 
 # TODO add tags for boards
 # TODO hide admin buttons for normal users
-# TODO add pagination
 # TODO add confirmation for deletation | the icon of delete button changes to check
 
 type

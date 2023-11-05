@@ -12,7 +12,6 @@ import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
 # TODO add auto generated tags
-# TODO add pagination
 # TODO consider permissions
 # TODO consider private ones 
 
@@ -338,6 +337,7 @@ func toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
   )
   """
 
+# TODO add deleted_at
 func exploreSqlConds(field: string, xqdata: ExploreQuery,
     ident: string): string =
   if xqdata.searchCriterias.len == 0: "1"
