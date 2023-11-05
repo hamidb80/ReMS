@@ -41,7 +41,8 @@ dispatch router, ../controller:
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}
-  put "/api/notes/update/content/"?(id: Id), updateNoteContent {.form: Note.data, ok.}
+  put "/api/notes/update/content/"?(id: Id),
+      updateNoteContent {.form: Note.data, ok.}
   put "/api/notes/update/tags/"?(id: Id), updateNoteRelTags {.form: Note.data, ok.}
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
@@ -68,18 +69,19 @@ dispatch router, ../controller:
   get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
   get "/api/palettes/", listPalettes {.json: seq[Palette].}
   put "/api/update/palette/"?(name: string), updatePalette {.json: Palette.}
-  # post "/api/palette/new/"?(name: string), 
-  # put "/api/palette/update/"?(name: string), 
+  # post "/api/palette/new/"?(name: string),
+  # put "/api/palette/update/"?(name: string),
   # delete "/api/palette/"?(name: string)
 
   get "/explore/", loadDist"explore.html" {.html.}
-  post "/api/explore/notes/", exploreNotes {.json.}
-  post "/api/explore/boards/", exploreBoards {.json.}
-  post "/api/explore/assets/", exploreAssets {.json.}
-  get "/api/explore/users/"?(name: string), exploreUsers {.json.}
+  post "/api/explore/notes/"?(offset: int, limit: int), exploreNotes {.json.}
+  post "/api/explore/boards/"?(offset: int, limit: int), exploreBoards {.json.}
+  post "/api/explore/assets/"?(offset: int, limit: int), exploreAssets {.json.}
+  get "/api/explore/users/"?(name: string, offset: int, limit: int),
+      exploreUsers {.json.}
 
   # to aviod CORS
-  get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.} 
+  get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.}
   get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.}
 
 

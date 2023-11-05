@@ -240,7 +240,7 @@ proc newNote*(db: DbConn): Id {.gcsafe.} =
 proc updateNoteContent*(db: DbConn, id: Id, data: TreeNodeRaw[JsonNode]) =
   db.exec fsql"""
     UPDATE Note 
-    SET data = {data},
+    SET data = {data}
     WHERE id = {id}
   """
 
@@ -361,7 +361,7 @@ func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
   else:
     ("", fieldIdVar)
 
-func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
+func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, limit: Natural): SqlQuery =
   let
     repl = exploreSqlConds($entity, xqdata, "thing.id")
     (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
@@ -370,7 +370,10 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       ON rc.{entity} = thing.id
       {joinq}
       WHERE {repl}
-      ORDER BY {field} {xqdata.order}"""
+      ORDER BY {field} {xqdata.order}
+      LIMIT {limit}
+      OFFSET {offset}
+    """
 
   case entity
   of ecNote: sql fmt"""
@@ -391,16 +394,16 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery): SqlQuery =
       {common}
     """
 
-proc exploreNotes*(db: DbConn, xqdata: ExploreQuery): seq[NoteItemView] =
-  db.find R, exploreGenericQuery(ecNote, xqdata)
+proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[NoteItemView] =
+  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit)
 
-proc exploreBoards*(db: DbConn, xqdata: ExploreQuery): seq[BoardItemView] =
-  db.find R, exploreGenericQuery(ecBoard, xqdata)
+proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[BoardItemView] =
+  db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit)
 
-proc exploreAssets*(db: DbConn, xqdata: ExploreQuery): seq[AssetItemView] =
-  db.find R, exploreGenericQuery(ecAsset, xqdata)
+proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[AssetItemView] =
+  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit)
 
-proc exploreUser*(db: DbConn, str: string): seq[User] =
+proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   db.find R, fsql"""
     SELECT *
     FROM User u

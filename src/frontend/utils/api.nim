@@ -261,40 +261,44 @@ proc apiDeleteTag*(
 
 proc apiExploreNotes*(
     xqdata: ExploreQuery,
+    offset, limit: int,
     success: proc(ns: seq[NoteItemView]),
     fail: proc() = noop
 ) =
-    discard post_api_explore_notes_url()
+    discard post_api_explore_notes_url(offset, limit)
     .postApi(forceJsObject xqdata)
     .then(wrapResp success cast[seq[NoteItemView]](r.data))
     .catch(fail)
 
 proc apiExploreBoards*(
     xqdata: ExploreQuery,
+    offset, limit: int,
     success: proc(bs: seq[BoardItemView]),
     fail: proc() = noop
 ) =
-    discard post_api_explore_boards_url()
+    discard post_api_explore_boards_url(offset, limit)
     .postApi(forceJsObject xqdata)
     .then(wrapResp success cast[seq[BoardItemView]](r.data))
     .catch(fail)
 
 proc apiExploreAssets*(
     xqdata: ExploreQuery,
+    offset, limit: int,
     success: proc(ns: seq[AssetItemView]),
     fail: proc() = noop
 ) =
-    discard post_api_explore_assets_url()
+    discard post_api_explore_assets_url(offset, limit)
     .postApi(forceJsObject xqdata)
     .then(wrapResp success cast[seq[AssetItemView]](r.data))
     .catch(fail)
 
 proc apiExploreUsers*(
     name: string,
+    offset, limit: int,
     success: proc(us: seq[User]),
     fail: proc() = noop
 ) =
-    discard get_api_explore_users_url(name)
+    discard get_api_explore_users_url(name, offset, limit)
     .getApi()
     .then(wrapResp success cast[seq[User]](r.data))
     .catch(fail)

@@ -46,9 +46,10 @@ type
 
   RelTagPath = tuple[tagid: Id, index: int]
 
-
+const maxItems = 5
 let compTable = defaultComponents()
 var
+  lastPage: array[SearchableClass, Natural]
   appState = asNormal
   tags: Table[Id, Tag]
   msgCache: Table[Id, cstring]
@@ -92,7 +93,9 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
 
 
 proc fetchAssets =
-  apiExploreAssets ExploreQuery(), proc(ass: seq[AssetItemView]) =
+  let p = lastPage[scAssets]
+  apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
+      AssetItemView]) =
     assets = ass
 
 proc startUpload(u: Upload) =
@@ -367,7 +370,9 @@ proc getExploreQuery: ExploreQuery =
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreBoards getExploreQuery(), proc(bs: seq[BoardItemView]) =
+    let p = lastPage[scBoards]
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
+        BoardItemView]) =
       boards = bs
       resolve()
 
@@ -377,7 +382,8 @@ proc deleteBoard(id: Id) =
 
 proc fetchUsers: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreUsers userSearchStr, proc(us: seq[User]) =
+    let p = lastPage[scUsers]
+    apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
       users = us
       resolve()
 
@@ -389,7 +395,9 @@ proc loadMsg(n: NoteItemView) =
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreNotes getExploreQuery(), proc(ns: seq[NoteItemView]) =
+    let p = lastPage[scNotes]
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
+        NoteItemView]) =
       notes = ns
       for n in notes:
         loadMsg n
@@ -569,6 +577,14 @@ proc relTagManager(): Vnode =
           reset activeRelTag
           appState = asNormal
 
+proc doSearch =
+  case selectedClass
+  of scNotes: discard fetchNotes()
+  of scBoards: discard fetchBoards()
+  of scAssets: fetchAssets()
+  of scUsers: discard fetchUsers()
+
+
 proc incRound[E: enum](i: var E) =
   i =
     if i == E.high: E.low
@@ -731,17 +747,8 @@ proc createDom: Vnode =
             icon "mx-2 fa-search"
 
             proc onclick =
-              case selectedClass
-              of scNotes: discard fetchNotes()
-              of scBoards: discard fetchBoards()
-              of scAssets:
-                apiExploreAssets getExploreQuery(), proc(ass: seq[
-                    AssetItemView]) =
-                  assets = ass
-                  redraw()
-
-              of scUsers:
-                discard fetchUsers()
+              reset lastPage
+              doSearch()
 
           case selectedClass
           of scUsers:
@@ -768,6 +775,28 @@ proc createDom: Vnode =
                   assetFocusedComponent a, u, i
                 else:
                   assetItemComponent i, a, u
+
+          tdiv(class="d-flex justify-content-center align-items-center"):
+            ul(class = "pagination pagination-lg"):
+
+              li(class = "page-item"):
+                a(class = "page-link", href = "#"):
+                  icon "fa-angle-left"
+                proc onclick = 
+                  if lastPage[selectedClass] > 0:
+                    dec lastPage[selectedClass]
+                    doSearch()
+
+              li(class = "page-item"):
+                tdiv(class = "page-link active"):
+                  text $(lastPage[selectedClass] + 1)
+
+              li(class = "page-item"):
+                a(class = "page-link", href = "#"):
+                  icon "fa-angle-right"
+                proc onclick = 
+                  inc lastPage[selectedClass]
+                  doSearch()
 
       of asTagManager:
         relTagManager()

@@ -278,17 +278,20 @@ proc listTags*(req: Request) =
   !!respJson toJson db.listTags
 
 
-proc exploreNotes*(req: Request) {.jbody: ExploreQuery.} =
-  !!respJson forceSafety toJson db.exploreNotes(data)
+proc exploreNotes*(req: Request) {.qparams: {limit: Natural, offset: Natural},
+    jbody: ExploreQuery.} =
+  !!respJson forceSafety toJson db.exploreNotes(data, offset, limit)
 
-proc exploreBoards*(req: Request) {.jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreBoards(data)
+proc exploreBoards*(req: Request) {.qparams: {limit: Natural, offset: Natural},
+    jbody: ExploreQuery.} =
+  !!respJson toJson db.exploreBoards(data, offset, limit)
 
-proc exploreAssets*(req: Request) {.jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreAssets(data)
+proc exploreAssets*(req: Request) {.qparams: {limit: Natural, offset: Natural},
+    jbody: ExploreQuery.} =
+  !!respJson toJson db.exploreAssets(data, offset, limit)
 
-proc exploreUsers*(req: Request) {.qparams: {name: string}.} =
-  !!respJson toJson db.exploreUser(name)
+proc exploreUsers*(req: Request) {.qparams: {name: string, limit: Natural, offset: Natural}.} =
+  !!respJson toJson db.exploreUser(name, offset, limit)
 
 
 proc getPalette*(req: Request) {.qparams: {name: string}.} =
