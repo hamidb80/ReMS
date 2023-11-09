@@ -13,7 +13,8 @@ import ../../common/[types, datastructures, conventions]
 
 # TODO add auto generated tags
 # TODO consider permissions
-# TODO consider private ones 
+# TODO consider private ones
+# set owner
 
 template R: untyped {.dirty.} =
   typeof result
@@ -87,7 +88,6 @@ proc getInvitation*(db: DbConn, secret: string, time: Unixtime,
       secret = {secret}
     """
 
-
 proc getAuthBale*(db: DbConn, baleUserId: Id): options.Option[Auth] =
   db.find R, fsql"""
     SELECT *
@@ -133,7 +133,7 @@ proc getUser*(db: DbConn, username: string): options.Option[User] =
     WHERE u.username = {username}
   """
 
-proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
+proc newUserRaw*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
   let r =
     if isAdmin: urAdmin
     else: urUser
@@ -143,7 +143,37 @@ proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
     nickname: nname,
     role: r)
 
-# TODO add default tags [labeled tags]
+proc newUserTags*(uid: Id): seq[Tag] =
+  for lbl in TagLabel:
+    add result, Tag(
+      owner: uid,
+      label: some lbl,
+      name: $lbl,
+      show_name: true,
+      icon: "fa-hashtag",
+      theme: c(0x000000, 0xffffff, 0x888888),
+      value_type: tvtNone)
+
+proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
+  result = db.newUserRaw(uname, nname, isAdmin)
+  db.insert newUserTags result
+
+template findValues(db, typee, query, acc): untyped = 
+  for it in db.find(seq[(typee, )], query):
+    add acc, it[0]
+
+proc getUserLabeledTagIds*(db: DbConn, uid: Id): seq[Id] =
+  db.findValues(Id, fsql"""
+    SELECT 
+      t.id
+    FROM 
+      Tag t
+    WHERE 
+      t.owner = {uid} AND
+      t.label IS NOT NULL 
+    ORDER BY 
+      t.label ASC
+  """, result)
 
 
 proc newTag*(db: DbConn, t: Tag): Id =
@@ -170,10 +200,16 @@ proc updateTag*(db: DbConn, id: Id, t: Tag) =
     """
 
 proc deleteTag*(db: DbConn, id: Id) =
-  db.exec fsql"DELETE FROM Tag WHERE id = {id}"
+  db.exec fsql"""
+    DELETE FROM Tag 
+    WHERE id = {id}
+  """
 
 proc listTags*(db: DbConn): seq[Tag] =
-  db.find R, sql"SELECT * FROM Tag"
+  db.find R, sql"""
+    SELECT * 
+    FROM Tag
+  """
 
 proc findTags*(db: DbConn, ids: seq[Id]): Table[Id, Tag] =
   for t in db.find(seq[Tag], fsql"SELECT * FROM Tag WHERE id IN [sqlize ids]"):
@@ -191,7 +227,11 @@ proc addAsset*(db: DbConn, n: string, m: string, p: Path, s: Bytes): int64 =
     asset: some result)
 
 proc findAsset*(db: DbConn, id: Id): Asset =
-  db.find R, fsql"SELECT * FROM Asset WHERE id = {id}"
+  db.find R, fsql"""
+    SELECT * 
+    FROM Asset 
+    WHERE id = {id}
+  """
 
 proc getAsset*(db: DbConn, id: Id): AssetItemView =
   db.find R, fsql"""
@@ -220,7 +260,10 @@ proc deleteAssetLogical*(db: DbConn, id: Id, time: UnixTime) =
   """
 
 proc deleteAssetPhysical*(db: DbConn, id: Id) =
-  db.exec fsql"DELETE FROM Asset WHERE id = {id}"
+  db.exec fsql"""
+    DELETE FROM Asset 
+    WHERE id = {id}
+  """
 
 
 proc getNote*(db: DbConn, id: Id): NoteItemView =
@@ -293,7 +336,11 @@ proc updateBoardRelTags*(db: DbConn, id: Id, data: RelValuesByTagId) =
   updateRelTagsGeneric db, board, "board", id, data
 
 proc getBoard*(db: DbConn, id: Id): Board =
-  db.find R, fsql"SELECT * FROM Board WHERE id = {id}"
+  db.find R, fsql"""
+    SELECT * 
+    FROM Board
+    WHERE id = {id}
+  """
 
 proc deleteBoardLogical*(db: DbConn, id: Id, time: UnixTime) =
   db.exec fsql"""
@@ -303,7 +350,10 @@ proc deleteBoardLogical*(db: DbConn, id: Id, time: UnixTime) =
   """
 
 proc deleteBoardPhysical*(db: DbConn, id: Id) =
-  db.exec fsql"DELETE FROM Board WHERE id = {id}"
+  db.exec fsql"""
+    DELETE FROM Board
+    WHERE id = {id}
+  """
 
 
 proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
@@ -360,7 +410,8 @@ func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
   else:
     ("", fieldIdVar)
 
-func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, limit: Natural): SqlQuery =
+func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset,
+    limit: Natural, user: options.Option[Id]): SqlQuery =
   let
     repl = exploreSqlConds($entity, xqdata, "thing.id")
     (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
@@ -368,7 +419,10 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
       JOIN RelationsCache rc
       ON rc.{entity} = thing.id
       {joinq}
-      WHERE {repl}
+      WHERE 
+        thing.deleted_at IS NULL AND
+        {repl}
+        
       ORDER BY {field} {xqdata.order}
       LIMIT {limit}
       OFFSET {offset}
@@ -376,31 +430,46 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
 
   case entity
   of ecNote: sql fmt"""
-      SELECT thing.id, thing.data, rc.active_rels_values
+      SELECT 
+        thing.id, 
+        thing.data, 
+        rc.active_rels_values
       FROM Note thing
       {common}
     """
 
   of ecBoard: sql fmt"""
-      SELECT thing.id, thing.title, thing.screenshot, rc.active_rels_values
+      SELECT 
+        thing.id, 
+        thing.title, 
+        thing.screenshot, 
+        rc.active_rels_values
       FROM Board thing
       {common}
     """
 
   of ecAsset: sql fmt"""
-      SELECT thing.id, thing.name, thing.mime, thing.size, rc.active_rels_values
+      SELECT 
+        thing.id, 
+        thing.name, 
+        thing.mime, 
+        thing.size, 
+        rc.active_rels_values
       FROM Asset thing
       {common}
     """
 
-proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[NoteItemView] =
-  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit)
+proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset,
+    limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
+  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
 
-proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[BoardItemView] =
-  db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit)
+proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
+    limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
+  db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit, user)
 
-proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural): seq[AssetItemView] =
-  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit)
+proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset,
+    limit: Natural, user: options.Option[Id]): seq[AssetItemView] =
+  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
 
 proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   db.find R, fsql"""
@@ -413,10 +482,17 @@ proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
 
 
 proc getPalette*(db: DbConn, name: string): Palette =
-  db.find R, fsql"SELECT * FROM Palette WHERE name = {name}"
+  db.find R, fsql"""
+    SELECT * 
+    FROM Palette 
+    WHERE name = {name}
+  """
 
 proc listPalettes*(db: DbConn): seq[Palette] =
-  db.find R, sql"SELECT * FROM Palette"
+  db.find R, sql"""
+    SELECT * 
+    FROM Palette
+  """
 
 proc updatePalette*(db: DbConn, name: string, p: Palette) =
   db.exec fsql"""

@@ -70,7 +70,7 @@ proc toJwt(uc: UserCache): string =
     header = %*{
       "typ": "JWT",
       "alg": "HS256"},
-    claim = appendJwtExpire(%uc, toUnix getTime() + 1.days),
+    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() + 1.days),
     secret = jwtSecret)
 
 proc jwtCookieSet(token: string): webby.HttpHeaders =
@@ -85,20 +85,28 @@ proc jwt(req: Request): options.Option[string] =
   except:
     discard
 
-proc login*(req: Request, u: models.User) =
+proc login*(req: Request, uc: UserCache) =
   {.cast(gcsafe).}:
-    respond req, 200, jwtCookieSet toJwt u
+    respond req, 200, jwtCookieSet toJwt uc
 
 # ------- main
 
 proc getMe*(req: Request) {.userOnly.} =
-  respJson toJson user
+  respJson toJson userc.account
 
 proc logoutCookieSet: webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
 proc logout*(req: Request) =
   respond req, 200, logoutCookieSet()
+
+func len[E: enum](e: type E): Natural =
+  len e.low .. e.high
+
+proc toEnumArr[E: enum, V](s: seq[V]): array[E, V] =
+  assert len(E) == len(s)
+  for i, x in s:
+    result[E(i)] = x
 
 proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
   let inv = !!<db.getInvitation(secret, unow(), 60)
@@ -118,8 +126,12 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
           u
 
       maybeUsr = !!<db.getUser(uid)
+      tags = !!<db.getUserLabeledTagIds(uid)
+      uc = UserCache(
+        account: get maybeUsr,
+        defaultTags: toEnumArr[TagLabel, Id](tags))
 
-    login req, get maybeUsr
+    login req, uc
     !!db.loginNotif(uid)
 
   else:
@@ -133,7 +145,9 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
 
   if hash =? a.hashedPass:
     if hash == secureHash data.password:
-      login req, u
+      login req, UserCache(
+        account: u,
+        defaultTags: toEnumArr[TagLabel, Id](!!<db.getUserLabeledTagIds(u.id)))
     else:
       # TODO add syntax sugar for errors
       raise newException(ValueError, "password is not valid")
@@ -170,7 +184,10 @@ proc saveAsset(req: Request): Id {.checkAdmin, userOnly.} =
       {.cast(gcsafe).}:
         let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"
         writeFile storePath, content
-        return !!<db.addAsset(fname, mime, Path storePath,
+        return !!<db.addAsset(
+            fname,
+            mime,
+            Path storePath,
             Bytes len start..last)
 
   raise newException(ValueError, "no files found")
@@ -276,17 +293,18 @@ proc listTags*(req: Request) =
 
 proc exploreNotes*(req: Request) {.qparams: {limit: Natural, offset: Natural},
     jbody: ExploreQuery.} =
-  !!respJson forceSafety toJson db.exploreNotes(data, offset, limit)
+  !!respJson forceSafety toJson db.exploreNotes(data, offset, limit, none Id)
 
 proc exploreBoards*(req: Request) {.qparams: {limit: Natural, offset: Natural},
     jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreBoards(data, offset, limit)
+  !!respJson toJson db.exploreBoards(data, offset, limit, none Id)
 
 proc exploreAssets*(req: Request) {.qparams: {limit: Natural, offset: Natural},
     jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreAssets(data, offset, limit)
+  !!respJson toJson db.exploreAssets(data, offset, limit, none Id)
 
-proc exploreUsers*(req: Request) {.qparams: {name: string, limit: Natural, offset: Natural}.} =
+proc exploreUsers*(req: Request) {.qparams: {name: string, limit: Natural,
+    offset: Natural}.} =
   !!respJson toJson db.exploreUser(name, offset, limit)
 
 

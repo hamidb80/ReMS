@@ -81,36 +81,36 @@ type # database models
     tvtJson
 
   TagLabel* = enum     ## special tags
-    tlOwner            ## owner
-    tlTimestamp        ## creation time
-
-    tlSize             ## size in bytes
-    tlFileName         ##
-    tlMime             ## mime type of a file
-
-    tlBoardScreenShot  ## screenshots that are taken from boards
-
+    # -- hidden or special view component
     tlTextContent      ## raw text
     tlForwarded        ## a note that is forwarded from another user
     tlNoteHighlight    ##
     tlNoteComment      ## a note (as comment) that refers to main note (refers)
     tlNoteCommentReply ## reply to another comment
 
-    tlPrivate          ## everything is public except when it has private tag
     tlHasAccess        ## tag with username of the person as value - is used with private
 
-    tlLike
-    tlImportant
-    tlLater
-
-    tlBoardNode
-    tlBoardNodeNote
+    tlBoardNode        ##
+    tlBoardNodeNote    ##
 
     tlFollows          ## user => refers (user.id)
     tlNotification     ##
 
-    tlRememberIn
-    tlRemembered
+    tlRememberIn       ##
+    tlRemembered       ##
+
+    # -- visible
+
+    tlOwner            ## owner
+    tlTimestamp        ## creation time
+    tlSize             ## size in bytes
+    tlFileName         ## name of file
+    tlMime             ## mime type of a file
+    tlPrivate          ## everything is public except when it has private tag
+    tlBoardScreenShot  ## screenshots that are taken from boards
+    tlLike             ##
+    tlImportant        ##
+    tlLater            ##
 
   Tag* = object
     ## most of the tags are primarily made for searching
@@ -135,11 +135,6 @@ type # database models
     rsFresh
     rsStale ## to mark as processed or expired by the system
 
-  RelationCreationReason* = enum
-    rcrUserInteraction
-    rcrSystemAutomation
-    rcrExternalEvent
-
   Relation* = object
     id* {.primary, autoIncrement.}: Id
     tag* {.references: Tag.id, index.}: Id            ## originates from
@@ -158,7 +153,6 @@ type # database models
 
     info*: Option[Str]                                ## additional information
     state*: RelationState
-    created_due_to*: RelationCreationReason
     timestamp*: UnixTime                              ## creation time
 
   RelValuesByTagId* = NTable[Str, seq[Str]]
@@ -173,8 +167,9 @@ type # database models
 
 type # view models
   UserCache* = object
+    exp*: int
     account*: User
-    defaultsTags*: array[TagLabel, Id]
+    defaultTags*: array[TagLabel, Id]
 
   EntityClass* = enum
     ecNote = "note"
@@ -206,6 +201,7 @@ type # view models
     sortCriteria*: Option[TagCriteria]
     order*: SortOrder
     limit*: Natural
+    selectedUser*: Option[Id] ## only search notes for a specific user
     skip*: Natural
 
 
@@ -273,6 +269,9 @@ func columnName*(vt: TagValueType): string =
 func isInfix*(qo: QueryOperator): bool =
   qo in qoLess..qoSubStr
 
+func `[]`*[V](s: seq[V], i: ConnectionPointKind): V = 
+  s[ord i]
+
 func `$`*(qo: QueryOperator): string =
   case qo
   of qoExists: "??"
@@ -283,7 +282,7 @@ func `$`*(qo: QueryOperator): string =
   of qoNotEq: "!="
   of qoMoreEq: ">="
   of qoMore: ">"
-  of qoSubStr: "LIKE"
+  else: "no operator"
 
 func `$`*(tvt: TagValueType): string =
   case tvt

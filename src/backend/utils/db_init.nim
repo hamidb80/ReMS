@@ -3,7 +3,7 @@ import std/[json, sha1, options]
 import ponairi
 
 import ../../common/[types, datastructures]
-import ../database/[models]
+import ../database/[models, queries]
 import ../config
 
 type
@@ -59,10 +59,7 @@ proc defaultPalette*(db: DbConn) =
         color_themes: loadColors "src/frontend/material_colors.json")
 
 proc addAdminUser*(db: DbConn) =
-    let uid = db.insertID User(
-        username: "admin",
-        nickname: "admin",
-        role: urAdmin)
+    let uid = db.newUser("admin", "admin user", true)
 
     db.insert Auth(
         user: uid,

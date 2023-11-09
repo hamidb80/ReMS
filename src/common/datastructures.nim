@@ -103,7 +103,7 @@ type
     cpkHead, cpkTail
 
   EdgeData* = object
-    points*: array[ConnectionPointKind, Str]
+    points*: seq[Id] ## array[ConnectionPointKind, Id]
     config*: EdgeConfig
 
   BoardData* = object

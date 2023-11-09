@@ -20,8 +20,6 @@ import ../../backend/database/[models]
 randomize()
 
 type
-  Oid = cstring
-
   Region = range[1..4]
 
   Axis = enum
@@ -103,9 +101,9 @@ type
 
     # board data
     # TODO selectedPalletes: seq[string]
-    objects: Table[Oid, VisualNode]
-    edgeGraph: Graph[Oid]
-    edgeInfo: Table[Slice[Oid], Edge]
+    objects: Table[Id, VisualNode]
+    edgeGraph: Graph[Id]
+    edgeInfo: Table[Slice[Id], Edge]
 
   VisualNode = ref object
     config*: VisualNodeConfig
@@ -368,7 +366,7 @@ proc updateEdgeTheme(e: Edge; t: ColorTheme) =
     stroke = toColorString t.st
     fill = toColorString t.bg
 
-proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
+proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
   var k = EdgeKonvaNodes(
     wrapper: newGroup(),
     shape: newCircle(),
@@ -392,7 +390,7 @@ proc newEdge(head, tail: Oid; c: EdgeConfig): Edge =
   Edge(
     konva: k,
     data: EdgeData(
-      points: [head, tail],
+      points: @[head, tail],
       config: c))
 
 proc addEdgeClick(e: Edge) =
@@ -404,10 +402,10 @@ proc addEdgeClick(e: Edge) =
       select e
       redraw()
 
-proc cloneEdge(id1, id2: Oid; e: Edge): Edge =
+proc cloneEdge(id1, id2: Id; e: Edge): Edge =
   result = Edge(
     data: EdgeData(
-      points: [id1, id2],
+      points: @[id1, id2],
       config: e.data.config),
     konva: EdgeKonvaNodes(
       line: Line clone e.konva.line,
@@ -420,7 +418,7 @@ proc cloneEdge(id1, id2: Oid; e: Edge): Edge =
 
   addEdgeClick result
 
-proc redrawConnectionsTo(uid: Oid) =
+proc redrawConnectionsTo(uid: Id) =
   for id in app.edgeGraph.getOrDefault(uid):
     let
       ei = app.edgeInfo[sorted id..uid]
@@ -671,7 +669,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       else:
         let
           id1 = cfg.id
-          id2 = cstring sv.config.id
+          id2 = sv.config.id
           conn = sorted id1..id2
 
         var ei = cloneEdge(id1, id2, app.tempEdge)
@@ -756,7 +754,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     loadImageGen u, vn, false
   vn
 
-proc currentVisualNodeConfig(uid: cstring = c""): VisualNodeConfig =
+proc currentVisualNodeConfig(uid: Id): VisualNodeConfig =
   VisualNodeConfig(
     id: uid,
     position: app.lastAbsoluteMousePos,
@@ -768,7 +766,7 @@ proc currentVisualNodeConfig(uid: cstring = c""): VisualNodeConfig =
 
 proc createNode: VisualNode =
   inc app.maxNodeId
-  let uid = cstring $app.maxNodeId
+  let uid = app.maxNodeId
   let vn = createnode currentVisualNodeConfig(uid)
 
   app.objects[uid] = vn
@@ -790,19 +788,19 @@ proc startPuttingNode =
 proc toJson(app: AppData): BoardData =
   result.objects = initNTable[Str, VisualNodeConfig]()
 
-  for oid, node in app.objects:
-    result.objects[oid] = node.config
+  for id, node in app.objects:
+    result.objects[toCstring id] = node.config
 
   for conn, info in app.edgeInfo:
-    result.edges.add EdgeData(
-      points: [conn.a, conn.b],
+    add result.edges, EdgeData(
+      points: @[conn.a, conn.b],
       config: info.data.config)
 
 proc restore(app: var AppData; data: BoardData) =
-  for oid, data in data.objects:
-    app.maxNodeId = max(app.maxNodeId, parseInt oid)
+  for id, data in data.objects:
+    app.maxNodeId = max(app.maxNodeId, parseInt id)
     let vn = createNode data
-    app.objects[oid] = vn
+    app.objects[parseInt id] = vn
     app.mainGroup.getLayer.add vn.konva.wrapper
 
   for info in data.edges:
@@ -814,9 +812,9 @@ proc restore(app: var AppData; data: BoardData) =
       n2 = app.objects[conn.b]
       e = newEdge(id1, id2, info.config)
 
-    app.edgeGraph.addConn conn
+    addConn app.edgeGraph, conn
     app.edgeInfo[conn] = e
-    app.bottomGroup.add e.konva.wrapper
+    add app.bottomGroup, e.konva.wrapper
     updateEdgeWidth e, info.config.width
     updateEdgeTheme e, info.config.theme
     updateEdgePos e, n1.area, n1.center, n2.area, n2.center
@@ -1387,7 +1385,7 @@ proc init* =
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
-      tempEdge = newEdge("[temp]", "[temp]", EdgeConfig())
+      tempEdge = newEdge(-1, -1, EdgeConfig())
       # tempNode: VisualNode
 
     with app.stage:
@@ -1469,7 +1467,7 @@ proc init* =
         app.leftClicked = true
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if app.leftClicked and (kcSpace in app.pressedKeys):
+        if kcSpace in app.pressedKeys:
           moveStage movement e
 
       on "mouseup", proc =
@@ -1590,16 +1588,16 @@ proc init* =
           of kcDelete:
             if app.selectedVisualNodes.len > 0:
               for vn in app.selectedVisualNodes:
-                let oid = vn.config.id
+                let Id = vn.config.id
 
-                for n in app.edgeGraph.getOrDefault(oid):
-                  let key = sorted oid..n
+                for n in app.edgeGraph.getOrDefault(Id):
+                  let key = sorted Id..n
                   destroy app.edgeInfo[key].konva.wrapper
                   del app.edgeInfo, key
 
                 destroy vn.konva.wrapper
-                del app.objects, oid
-                removeNode app.edgeGraph, oid
+                del app.objects, Id
+                removeNode app.edgeGraph, Id
 
               unselect()
               redraw()
@@ -1661,6 +1659,10 @@ proc init* =
             let s = ||app.stage.scale
             app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
 
+          of kcD: # download
+            downloadFile "data.json", "application/json",
+              stringify forceJsObject toJson app
+
           of kcS: # save
             let data = forceJsObject toJson app
             proc success =
@@ -1703,9 +1705,14 @@ proc init* =
 
     app.id = parseInt getWindowQueryParam "id"
 
-    waitAll [loadPalettes(), loadFonts fontFamilies, fetchTags()], proc =
+    waitAll [
+      loadPalettes(),
+      loadFonts fontFamilies,
+      fetchTags()
+    ], proc =
       fetchBoard app.id
       setFocusedTheme sample (sample app.palettes).colorThemes
       redraw()
+
 
 when isMainModule: init()
