@@ -16,13 +16,13 @@ var
   app = App(state: asTreeView)
   sidebarWidth = 300
 
-app.register "raw-text-editor", rawTextEditor
-app.register "linear-text-editor", textInput
-app.register "checkbox-editor", checkBoxEditor
-app.register "option-selector", selectEditor
+register app, "raw-text-editor", rawTextEditor
+register app, "linear-text-editor", textInput
+register app, "checkbox-editor", checkBoxEditor
+register app, "option-selector", selectEditor
 
 app.components = defaultComponents()
-app.regiterComponents
+regiterComponents app
 
 # TODO app ability to copy node path
 # TODO ability to add/remove tags here
@@ -31,7 +31,7 @@ app.regiterComponents
 # ----- UI ------------------------------
 
 proc saveServer = 
-  let id = parseInt getWindowQueryParam("id")
+  let id = parseInt getWindowQueryParam "id"
   apiUpdateNoteContent id, serialize app, proc = 
     notify "note updated!"
 

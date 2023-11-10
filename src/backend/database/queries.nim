@@ -193,10 +193,7 @@ proc updateTag*(db: DbConn, user: User, id: Id, t: sink Tag) =
       is_private = {t.is_private}
     WHERE 
       id = {id} AND
-      (CASE
-          WHEN owner IS NULL THEN {user.isAdmin}
-          ELSE owner = {user.id}
-      END)
+      ({isAdmin u} OR owner = {u.id})
     """
 
 proc deleteTag*(db: DbConn, u: User, id: Id) =
