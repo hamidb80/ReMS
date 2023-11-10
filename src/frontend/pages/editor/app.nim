@@ -200,6 +200,18 @@ proc createInstance(listIndex: int) =
   app.focusedNode = newNode
   app.state = asTreeView
 
+proc deleteSelectedNode = 
+  if not isRoot app.focusedNode:
+    let
+      n = app.focusedNode
+      i = app.focusedPath.pop
+      f = n.father
+
+    die n
+    detachNode f, i
+    app.focusedNode = f
+
+
 proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   let lastFocus = app.focusedNode
 
@@ -260,16 +272,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       startInsertAfter()
 
     of kcDelete: # delete node
-      if not isRoot app.focusedNode:
-        let
-          n = app.focusedNode
-          i = app.focusedPath.pop
-          f = n.father
-
-        die n
-        detachNode f, i
-        app.focusedNode = f
-
+      deleteSelectedNode()
+      
     of kcT: negate app.focusedNode.data.visibleChildren
 
     of kcQ: # to query children of focued node like XPath like VIM editor
@@ -426,6 +430,11 @@ proc createDom: VNode =
             icon "fa-chevron-down fa-xl"
             proc onclick =
               startInsertAfter()
+
+          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-trash fa-xl"
+            proc onclick =
+              deleteSelectedNode()
 
           button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-tag fa-xl"
