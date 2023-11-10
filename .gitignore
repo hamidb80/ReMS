@@ -1,6 +1,9 @@
 .vscode/
 dist/
 resources/
+tmp/
+temp/
+out/
 
 *.token
 play.*

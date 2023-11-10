@@ -338,5 +338,5 @@ when not defined js:
 
   proc parseHook*(s: string, i: var int, v: var cstring) =
     var temp: string
-    parseHook(s, i, temp)
+    parseHook s, i, temp
     v = cstring temp

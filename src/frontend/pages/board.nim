@@ -260,6 +260,8 @@ proc removeHighlight(vn: Edge) =
 proc unselect(vn: VisualNode) =
   removeHighlight vn
   app.selectedVisualNodes.remove vn
+  if 0 == app.selectedVisualNodes.len:
+    app.state = asNormal
 
 proc unselect =
   for v in app.selectedVisualNodes:
@@ -421,7 +423,8 @@ proc cloneEdge(id1, id2: Id; e: Edge): Edge =
 proc redrawConnectionsTo(uid: Id) =
   for id in app.edgeGraph.getOrDefault(uid):
     let
-      ei = app.edgeInfo[sorted id..uid]
+      k = sorted id..uid
+      ei = app.edgeInfo[k]
       # ps = ei.konva.line.points.foldPoints
       n1 = app.objects[id]
       n2 = app.objects[uid]
@@ -807,7 +810,7 @@ proc restore(app: var AppData; data: BoardData) =
     let
       id1 = info.points[cpkHead]
       id2 = info.points[cpkTail]
-      conn = id1..id2
+      conn = sorted id1..id2
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
       e = newEdge(id1, id2, info.config)

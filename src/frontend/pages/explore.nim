@@ -45,11 +45,12 @@ type
 
   RelTagPath = tuple[tagid: Id, index: int]
 
-const maxItems = 5
+const maxItems = 20
 let compTable = defaultComponents()
 var
   lastPage: array[SearchableClass, Natural]
   appState = asNormal
+  showGlobalTags = false
   tags: Table[Id, Tag]
   msgCache: Table[Id, cstring]
   notes: seq[NoteItemView]
@@ -90,12 +91,14 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
     result[id] = v
 
 
-
-proc fetchAssets =
-  let p = lastPage[scAssets]
-  apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
-      AssetItemView]) =
-    assets = ass
+proc fetchAssets: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    let p = lastPage[scAssets]
+    reset assets
+    apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
+        AssetItemView]) =
+      assets = ass
+      resolve()
 
 proc startUpload(u: Upload) =
   var
@@ -110,7 +113,7 @@ proc startUpload(u: Upload) =
 
   u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
-    fetchAssets()
+    discard fetchAssets()
     redraw()
 
   u.promise.dcatch proc(r: AxiosResponse) =
@@ -370,6 +373,7 @@ proc getExploreQuery: ExploreQuery =
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scBoards]
+    reset boards
     apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
         BoardItemView]) =
       boards = bs
@@ -382,6 +386,7 @@ proc deleteBoard(id: Id) =
 proc fetchUsers: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scUsers]
+    reset users
     apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
       users = us
       resolve()
@@ -395,6 +400,7 @@ proc loadMsg(n: NoteItemView) =
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scNotes]
+    reset notes
     apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
         NoteItemView]) =
       notes = ns
@@ -501,19 +507,27 @@ proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
     activeRelTag = some (tagid, index)
 
-# TODO make it globally available
-
 proc relTagManager(): Vnode =
   buildHTML:
     tdiv:
       h3(class = "mt-4"):
         text "Available Tags"
 
+      tdiv(class = "form-check"):
+        input(class = "form-check-input", type = "checkbox",
+            checked = showGlobalTags):
+          proc onchange(e: Event, n: VNode) =
+            showGlobalTags = e.target.checked
+
+        label(class = "form-check-label"):
+          text "show all tags"
+
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
             if id notin currentRelTags or t.can_be_repeated:
-              tagViewC t, "...", genAddTagToList id
+              if (isNone t.label) or showGlobalTags:
+                tagViewC t, "...", genAddTagToList id
 
       h3(class = "mt-4"):
         text "Current Tags"
@@ -580,7 +594,7 @@ proc doSearch =
   case selectedClass
   of scNotes: discard fetchNotes()
   of scBoards: discard fetchBoards()
-  of scAssets: fetchAssets()
+  of scAssets: discard fetchAssets()
   of scUsers: discard fetchUsers()
 
 
@@ -627,10 +641,19 @@ proc searchTagManager(): Vnode =
       h3(class = "mt-4"):
         text "Available Tags"
 
+      tdiv(class = "form-check"):
+        input(class = "form-check-input", type = "checkbox",
+            checked = showGlobalTags):
+          proc onchange(e: Event, n: VNode) =
+            showGlobalTags = e.target.checked
+
+        label(class = "form-check-label"):
+          text "show all tags"
+
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            if (isnone t.label) or (not isHidden get t.label):
+            if (isnone t.label) or showGlobalTags:
               tagViewC t, "...", genAddSearchCriteria t
 
       h3(class = "mt-4"):
@@ -810,7 +833,7 @@ when isMainModule:
     of soPortrait: 1
     of soLandscape: 2
 
-  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers()], proc =
+  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers(), fetchAssets()], proc =
     redraw()
 
   document.body.addEventListener "paste":

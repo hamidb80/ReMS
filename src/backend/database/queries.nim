@@ -47,13 +47,13 @@ template updateRelTagsGeneric*(
 ) =
   let qperm = sql(
     " SELECT 1 " &
-    " FROM " & entityTable & " thing " & 
-    " WHERE thing.id = " & $entityid & 
+    " FROM " & entityTable & " thing " &
+    " WHERE thing.id = " & $entityid &
     " AND " &
     " thing.owner = " & $uid &
     " LIMIT 1")
 
-  doAssert 1 == get db.find(Option[int], qperm) 
+  doAssert 1 == len db.find(seq[(int, )], qperm)
 
   transaction db:
     # remove existing rels
