@@ -30,6 +30,11 @@ app.regiterComponents
 
 # ----- UI ------------------------------
 
+proc saveServer = 
+  let id = parseInt getWindowQueryParam("id")
+  apiUpdateNoteContent id, serialize app, proc = 
+    notify "note updated!"
+
 func cls(path, hover: TreePath, selected: HashSet[TreePath], active: string): string =
   if path == hover: active
   elif path in selected: "bg-info"
@@ -136,13 +141,18 @@ proc createDom: VNode =
 
         aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 "):
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-solid fa-save fa-xl"
+            icon "fa-save fa-xl"
+            proc onclick = 
+              saveServer()
           
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-solid fa-tag fa-xl"
+            icon "fa-tag fa-xl"
 
           button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-solid fa-close fa-xl"
+            icon "fa-close fa-xl"
+
+            proc onclick = 
+              app.state = asTreeView
 
         tdiv(id = settingsAreaId, class="overflow-hidden d-inline-block w-100"):
           if app.state == asTreeView:
@@ -321,10 +331,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         stringify forceJsObject serialize app
     
     of kcS: # save
-      let id = parseInt getWindowQueryParam("id")
-      apiUpdateNoteContent id, serialize app, proc = 
-        notify "note updated!"
-
+      saveServer()
+      
     of kcH: # download as HTML
       proc afterLoad(t: TwNode) = 
         downloadFile "data.html", "text/html", t.dom.innerHTML
