@@ -919,8 +919,6 @@ proc genSelectPalette(i: int): proc() =
     app.selectedPalleteI = i
     app.footerState = fsColor
 
-# FIXME save button not work after adding message to node
-
 proc addToMessages(id: Id) =
   if app.selectedVisualNodes.len == 1:
     let v = app.selectedVisualNodes[0]
@@ -1013,6 +1011,13 @@ proc fetchTags(): Future[void] =
         tags[t.id] = t
       resolve()
 
+proc saveServer = 
+  let data = forceJsObject toJson app
+  proc success =
+    notify "saved!"
+  apiUpdateBoardContent app.id, data, success
+
+
 
 func clientPos(t: Touch): Vector =
   v(t.clientX, t.clientY)
@@ -1034,6 +1039,14 @@ proc zoom(s, Δy: float) =
       if app.sidebarvisible: app.sidebarWidth
       else: 0
     app.stage.center = mm - v(sw/2, 0) * (1/s - 1/s′)
+
+proc gotoCenterOfBoard = 
+  let 
+    s = ||app.stage.scale
+    w = 
+      if app.sidebarVisible: app.sidebarWidth
+      else: 0
+  app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
 
 
 proc createDom*(data: RouterData): VNode =
@@ -1192,9 +1205,13 @@ proc createDom*(data: RouterData): VNode =
           # TODO show shortcut and name via a tooltip
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-expand fa-lg"
+            proc onclick = 
+              gotoCenterOfBoard()
 
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-download fa-lg"
+            icon "fa-save fa-lg"
+            proc onclick = 
+              saveServer()
 
       if app.sidebarVisible:
         aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
@@ -1659,19 +1676,15 @@ proc init* =
               startAddConn app.selectedVisualNodes[0]
 
           of kcC: # go to center
-            let s = ||app.stage.scale
-            app.stage.center = v(0, 0) + v(app.sidebarWidth/2, 0) * 1/s
-
+            gotoCenterOfBoard()
+            
           of kcD: # download
             downloadFile "data.json", "application/json",
               stringify forceJsObject toJson app
 
           of kcS: # save
-            let data = forceJsObject toJson app
-            proc success =
-              notify "saved!"
-            apiUpdateBoardContent app.id, data, success
-
+            saveServer()
+            
           of kcZ: # reset zoom
             let c = app.stage.center
             changeScale c, 1, false
@@ -1692,6 +1705,10 @@ proc init* =
             app.stage.toBlob(1/2).dthen proc(b: Blob) =
               apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
                 notify "screenshot updated!"
+
+          of kcL: # lock/unlock
+            negate app.ableToDrag
+            redraw()
 
           else: discard
 

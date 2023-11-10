@@ -492,12 +492,12 @@ proc boardItemViewC(b: BoardItemView): VNode =
             href = get_board_edit_url b.id):
           icon "fa-pen"
 
-        a(class = "btn mx-1 btn-compact btn-outline-danger"):
+        button(class = "btn mx-1 btn-compact btn-outline-danger"):
           icon "fa-close"
 
           proc onclick(e: Event, v: Vnode) =
             deleteBoard b.id
-            redirect ""
+            discard fetchBoards()
 
 proc genAddTagToList(id: Id): proc() =
   proc =
