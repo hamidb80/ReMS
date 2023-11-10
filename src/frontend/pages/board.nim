@@ -795,7 +795,7 @@ proc startPuttingNode =
   app.hoverGroup.add app.tempNode.konva.wrapper
   select app.tempNode
 
-proc deleteSelectedNodes = 
+proc deleteSelectedNodes =
   for vn in app.selectedVisualNodes:
     let Id = vn.config.id
 
@@ -836,7 +836,7 @@ proc restore(app: var AppData; data: BoardData) =
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
       e = newEdge(id1, id2, info.config)
-    
+
     addConn app.edgeGraph, conn
     app.edgeInfo[conn] = e
     add app.bottomGroup, e.konva.wrapper
@@ -1033,7 +1033,7 @@ proc fetchTags(): Future[void] =
         tags[t.id] = t
       resolve()
 
-proc saveServer = 
+proc saveServer =
   let data = forceJsObject toJson app
   proc success =
     notify "saved!"
@@ -1062,10 +1062,10 @@ proc zoom(s, Δy: float) =
       else: 0
     app.stage.center = mm - v(sw/2, 0) * (1/s - 1/s′)
 
-proc gotoCenterOfBoard = 
-  let 
+proc gotoCenterOfBoard =
+  let
     s = ||app.stage.scale
-    w = 
+    w =
       if app.sidebarVisible: app.sidebarWidth
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
@@ -1080,7 +1080,7 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "regions position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
+      footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
             StyleAttr.width, cstring $iff(
               app.sidebarvisible,
@@ -1235,12 +1235,12 @@ proc createDom*(data: RouterData): VNode =
           # TODO show shortcut and name via a tooltip
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-expand fa-lg"
-            proc onclick = 
+            proc onclick =
               gotoCenterOfBoard()
 
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-save fa-lg"
-            proc onclick = 
+            proc onclick =
               saveServer()
 
       if app.sidebarVisible:
@@ -1695,14 +1695,14 @@ proc init* =
 
           of kcC: # go to center
             gotoCenterOfBoard()
-            
+
           of kcD: # download
             downloadFile "data.json", "application/json",
               stringify forceJsObject toJson app
 
           of kcS: # save
             saveServer()
-            
+
           of kcZ: # reset zoom
             let c = app.stage.center
             changeScale c, 1, false
