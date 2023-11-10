@@ -16,13 +16,13 @@ var
   app = App(state: asTreeView)
   sidebarWidth = 300
 
-app.register "raw-text-editor", rawTextEditor
-app.register "linear-text-editor", textInput
-app.register "checkbox-editor", checkBoxEditor
-app.register "option-selector", selectEditor
+register app, "raw-text-editor", rawTextEditor
+register app, "linear-text-editor", textInput
+register app, "checkbox-editor", checkBoxEditor
+register app, "option-selector", selectEditor
 
 app.components = defaultComponents()
-app.regiterComponents
+regiterComponents app
 
 # TODO app ability to copy node path
 # TODO ability to add/remove tags here
@@ -31,7 +31,7 @@ app.regiterComponents
 # ----- UI ------------------------------
 
 proc saveServer = 
-  let id = parseInt getWindowQueryParam("id")
+  let id = parseInt getWindowQueryParam "id"
   apiUpdateNoteContent id, serialize app, proc = 
     notify "note updated!"
 
@@ -131,81 +131,6 @@ const
   editRootElementId = "tw-editor-root-element"
   searchComponentInputId = "tw-search-component-input"
 
-proc createDom: VNode =
-  buildHtml tdiv:
-    snackbar()
-
-    tdiv(class = "w-100 h-screen-100 overflow-hidden"):
-      tdiv(id="left-container", class="float-start h-100 d-flex flex-row",
-          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
-
-        aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 "):
-          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-save fa-xl"
-            proc onclick = 
-              saveServer()
-          
-          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-tag fa-xl"
-
-          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-close fa-xl"
-
-            proc onclick = 
-              app.state = asTreeView
-
-        tdiv(id = settingsAreaId, class="overflow-hidden d-inline-block w-100"):
-          if app.state == asTreeView:
-            tdiv(id = treeViewId, class="overflow-y-scroll h-100"):
-              recursiveList app.tree
-
-          elif app.state == asSetting:
-            tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
-              for s in app.focusedNode.settings():
-                tdiv(class="w-100"):
-                  tdiv(class="d-flex mx-2"):
-                    italic(class= s.icon)
-                    span(class="mx-2"): text s.field
-                  tdiv:
-                    let 
-                      data = s.editorData()
-                      editor = app.editors[data.name](data.input, data.updateCallback)
-
-                    editor
-
-          elif app.state == asSelectComponent:
-            tdiv(class="d-flex flex-column h-100"):
-              ul(class="list-group rounded-0 overflow-y-scroll h-100"):
-                for i, c in app.filteredComponents:
-                  li(class="list-group-item d-flex justify-content-between align-items-center " & iff(app.listIndex == i, "active")):
-                    span: text c.name
-                    italic(class = c.icon)
-
-              tdiv:
-                input(id=searchComponentInputId, `type`="text", class="form-control w-100", autocomplete="off"):
-                  proc oninput(e: Event, v: VNode) = 
-                    app.listIndex = 0
-                    app.filterString = e.target.value.toLower
-                    app.filteredComponents = app.availableComponents.filter(c => app.filterString in c.name.toLower.cstring)
-
-        tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 d-inline-block"):
-          proc onMouseDown =
-            # setCursor ccresizex
-
-            winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              sidebarWidth = clamp(e.x, 100 .. window.innerWidth - 200)
-              redraw()
-
-            winel.onmouseup = proc(e: Event) =
-              # setCursor ccNone
-              reset winel.onmousemove
-              reset winel.onmouseup
-              
-      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block",
-          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 16}px""")):
-        verbatim fmt"<div id='{editRootElementId}'></div>"
-
-
 proc resetApp(root: TwNode) = 
   app.tree = root
   app.focusedNode = root
@@ -235,6 +160,21 @@ proc setState(newState: AppState) =
       redraw()
 
   app.state = newState
+
+proc startInsertAtEnd = 
+  setState asSelectComponent
+  app.insertionMode = imAppend
+  prepareComponentSelection app.focusedNode
+
+proc startInsertBefore = 
+  setState asSelectComponent
+  app.insertionMode = imBefore
+  prepareComponentSelection app.focusedNode.father
+
+proc startInsertAfter = 
+  setState asSelectComponent
+  app.insertionMode = imAfter
+  prepareComponentSelection app.focusedNode.father
 
 proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   let lastFocus = app.focusedNode
@@ -287,19 +227,13 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       discard
 
     of kcn: # insert inside
-      setState asSelectComponent
-      app.insertionMode = imAppend
-      prepareComponentSelection app.focusedNode
+      startInsertAtEnd()
 
     of kcOpenbracket:# insert before
-      setState asSelectComponent
-      app.insertionMode = imBefore
-      prepareComponentSelection app.focusedNode.father
+      startInsertBefore()
       
     of kcCloseBraket:# insert after
-      setState asSelectComponent
-      app.insertionMode = imAfter
-      prepareComponentSelection app.focusedNode.father
+      startInsertAfter()
 
     of kcDelete: # delete node
       if not isRoot app.focusedNode:
@@ -455,6 +389,95 @@ proc fetchNote(id: Id) =
 
   apiGetNote id, whenGet, proc = 
     echo "whaaat", getcurrentExceptionmsg()
+
+proc createDom: VNode =
+  buildHtml tdiv:
+    snackbar()
+
+    tdiv(class = "w-100 h-screen-100 overflow-hidden"):
+      tdiv(id="left-container", class="float-start h-100 d-flex flex-row",
+          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
+
+        aside(id="tw-side-bar", class="h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 "):
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-save fa-xl"
+            proc onclick = 
+              saveServer()
+          
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-plus fa-xl"
+            proc onclick = 
+              startInsertAtEnd()
+          
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-chevron-up fa-xl"
+            proc onclick = 
+              startInsertBefore()
+          
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-chevron-down fa-xl"
+            proc onclick = 
+              startInsertAfter()
+          
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-tag fa-xl"
+
+          button(class="btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-close fa-xl"
+
+            proc onclick = 
+              app.state = asTreeView
+
+        tdiv(id = settingsAreaId, class="overflow-hidden d-inline-block w-100"):
+          if app.state == asTreeView:
+            tdiv(id = treeViewId, class="overflow-y-scroll h-100"):
+              recursiveList app.tree
+
+          elif app.state == asSetting:
+            tdiv(id = porpertySettingId, class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
+              for s in app.focusedNode.settings():
+                tdiv(class="w-100"):
+                  tdiv(class="d-flex mx-2"):
+                    italic(class= s.icon)
+                    span(class="mx-2"): text s.field
+                  tdiv:
+                    let 
+                      data = s.editorData()
+                      editor = app.editors[data.name](data.input, data.updateCallback)
+
+                    editor
+
+          elif app.state == asSelectComponent:
+            tdiv(class="d-flex flex-column h-100"):
+              ul(class="list-group rounded-0 overflow-y-scroll h-100"):
+                for i, c in app.filteredComponents:
+                  li(class="list-group-item d-flex justify-content-between align-items-center " & iff(app.listIndex == i, "active")):
+                    span: text c.name
+                    italic(class = c.icon)
+
+              tdiv:
+                input(id=searchComponentInputId, `type`="text", class="form-control w-100", autocomplete="off"):
+                  proc oninput(e: Event, v: VNode) = 
+                    app.listIndex = 0
+                    app.filterString = e.target.value.toLower
+                    app.filteredComponents = app.availableComponents.filter(c => app.filterString in c.name.toLower.cstring)
+
+        tdiv(id = extenderId, class="extender h-100 btn btn-secondary border-1 p-0 d-inline-block"):
+          proc onMouseDown =
+            # setCursor ccresizex
+
+            winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
+              sidebarWidth = clamp(e.x, 100 .. window.innerWidth - 200)
+              redraw()
+
+            winel.onmouseup = proc(e: Event) =
+              # setCursor ccNone
+              reset winel.onmousemove
+              reset winel.onmouseup
+              
+      tdiv(id = "tw-render", class="tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block",
+          style = style(StyleAttr.width, fmt"""{window.innerWidth - sidebarwidth - 16}px""")):
+        verbatim fmt"<div id='{editRootElementId}'></div>"
 
 proc init* = 
   let root = instantiate(rootComponent, nil)

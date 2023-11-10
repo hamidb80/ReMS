@@ -182,7 +182,7 @@ proc newTag*(db: DbConn, u: User, t: sink Tag): Id =
   t.owner = some u.id
   db.insertID t
 
-proc updateTag*(db: DbConn, user: User, id: Id, t: sink Tag) =
+proc updateTag*(db: DbConn, u: User, id: Id, t: sink Tag) =
   db.exec fsql"""
     UPDATE Tag SET 
       name = {t.name},
@@ -193,10 +193,7 @@ proc updateTag*(db: DbConn, user: User, id: Id, t: sink Tag) =
       is_private = {t.is_private}
     WHERE 
       id = {id} AND
-      (CASE
-          WHEN owner IS NULL THEN {user.isAdmin}
-          ELSE owner = {user.id}
-      END)
+      ({isAdmin u} OR owner = {u.id})
     """
 
 proc deleteTag*(db: DbConn, u: User, id: Id) =
