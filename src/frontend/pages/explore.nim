@@ -16,7 +16,6 @@ import ./editor/[core, components]
 
 # TODO add tags for boards
 # TODO hide admin buttons for normal users
-# TODO add pagination
 # TODO add confirmation for deletation | the icon of delete button changes to check
 
 type
@@ -46,10 +45,12 @@ type
 
   RelTagPath = tuple[tagid: Id, index: int]
 
-
+const maxItems = 20
 let compTable = defaultComponents()
 var
+  lastPage: array[SearchableClass, Natural]
   appState = asNormal
+  showGlobalTags = false
   tags: Table[Id, Tag]
   msgCache: Table[Id, cstring]
   notes: seq[NoteItemView]
@@ -90,10 +91,14 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
     result[id] = v
 
 
-
-proc fetchAssets =
-  apiExploreAssets ExploreQuery(), proc(ass: seq[AssetItemView]) =
-    assets = ass
+proc fetchAssets: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    let p = lastPage[scAssets]
+    reset assets
+    apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
+        AssetItemView]) =
+      assets = ass
+      resolve()
 
 proc startUpload(u: Upload) =
   var
@@ -108,7 +113,7 @@ proc startUpload(u: Upload) =
 
   u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
-    fetchAssets()
+    discard fetchAssets()
     redraw()
 
   u.promise.dcatch proc(r: AxiosResponse) =
@@ -367,7 +372,10 @@ proc getExploreQuery: ExploreQuery =
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreBoards getExploreQuery(), proc(bs: seq[BoardItemView]) =
+    let p = lastPage[scBoards]
+    reset boards
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
+        BoardItemView]) =
       boards = bs
       resolve()
 
@@ -377,7 +385,9 @@ proc deleteBoard(id: Id) =
 
 proc fetchUsers: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreUsers userSearchStr, proc(us: seq[User]) =
+    let p = lastPage[scUsers]
+    reset users
+    apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
       users = us
       resolve()
 
@@ -389,7 +399,10 @@ proc loadMsg(n: NoteItemView) =
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiExploreNotes getExploreQuery(), proc(ns: seq[NoteItemView]) =
+    let p = lastPage[scNotes]
+    reset notes
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
+        NoteItemView]) =
       notes = ns
       for n in notes:
         loadMsg n
@@ -494,19 +507,27 @@ proc genActiveTagClick(tagId: Id, index: int): proc() =
   proc =
     activeRelTag = some (tagid, index)
 
-# TODO make it globally available
-
 proc relTagManager(): Vnode =
   buildHTML:
     tdiv:
       h3(class = "mt-4"):
         text "Available Tags"
 
+      tdiv(class = "form-check"):
+        input(class = "form-check-input", type = "checkbox",
+            checked = showGlobalTags):
+          proc onchange(e: Event, n: VNode) =
+            showGlobalTags = e.target.checked
+
+        label(class = "form-check-label"):
+          text "show all tags"
+
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
             if id notin currentRelTags or t.can_be_repeated:
-              tagViewC t, "val", genAddTagToList id
+              if (isNone t.label) or showGlobalTags:
+                tagViewC t, "...", genAddTagToList id
 
       h3(class = "mt-4"):
         text "Current Tags"
@@ -569,6 +590,14 @@ proc relTagManager(): Vnode =
           reset activeRelTag
           appState = asNormal
 
+proc doSearch =
+  case selectedClass
+  of scNotes: discard fetchNotes()
+  of scBoards: discard fetchBoards()
+  of scAssets: discard fetchAssets()
+  of scUsers: discard fetchUsers()
+
+
 proc incRound[E: enum](i: var E) =
   i =
     if i == E.high: E.low
@@ -612,10 +641,20 @@ proc searchTagManager(): Vnode =
       h3(class = "mt-4"):
         text "Available Tags"
 
+      tdiv(class = "form-check"):
+        input(class = "form-check-input", type = "checkbox",
+            checked = showGlobalTags):
+          proc onchange(e: Event, n: VNode) =
+            showGlobalTags = e.target.checked
+
+        label(class = "form-check-label"):
+          text "show all tags"
+
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            tagViewC t, "...", genAddSearchCriteria t
+            if (isnone t.label) or showGlobalTags:
+              tagViewC t, "...", genAddSearchCriteria t
 
       h3(class = "mt-4"):
         text "Current Criterias"
@@ -731,17 +770,8 @@ proc createDom: Vnode =
             icon "mx-2 fa-search"
 
             proc onclick =
-              case selectedClass
-              of scNotes: discard fetchNotes()
-              of scBoards: discard fetchBoards()
-              of scAssets:
-                apiExploreAssets getExploreQuery(), proc(ass: seq[
-                    AssetItemView]) =
-                  assets = ass
-                  redraw()
-
-              of scUsers:
-                discard fetchUsers()
+              reset lastPage
+              doSearch()
 
           case selectedClass
           of scUsers:
@@ -769,6 +799,28 @@ proc createDom: Vnode =
                 else:
                   assetItemComponent i, a, u
 
+          tdiv(class = "d-flex justify-content-center align-items-center"):
+            ul(class = "pagination pagination-lg"):
+
+              li(class = "page-item"):
+                a(class = "page-link", href = "#"):
+                  icon "fa-angle-left"
+                proc onclick =
+                  if lastPage[selectedClass] > 0:
+                    dec lastPage[selectedClass]
+                    doSearch()
+
+              li(class = "page-item"):
+                tdiv(class = "page-link active"):
+                  text $(lastPage[selectedClass] + 1)
+
+              li(class = "page-item"):
+                a(class = "page-link", href = "#"):
+                  icon "fa-angle-right"
+                proc onclick =
+                  inc lastPage[selectedClass]
+                  doSearch()
+
       of asTagManager:
         relTagManager()
 
@@ -781,7 +833,7 @@ when isMainModule:
     of soPortrait: 1
     of soLandscape: 2
 
-  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers()], proc =
+  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers(), fetchAssets()], proc =
     redraw()
 
   document.body.addEventListener "paste":

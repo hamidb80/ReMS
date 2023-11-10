@@ -110,8 +110,12 @@ func getFields*[T](t: typedesc[T]): seq[string] =
 
 converter toBytes*(s: Mb): int = s.int * 1024 * 1024
 
+
 func toUnixtime*(d: DateTime): UnixTime =
   d.toTime.toUnix.UnixTime
+
+proc unow*: UnixTime = 
+  toUnixtime now()
 
 proc toDateTime*(u: UnixTime): DateTime =
   u.int64.fromUnix.utc
@@ -214,8 +218,11 @@ when defined js:
 
   func somec*[T](j: T): Option[T] {.importjs: "(@)".}
 
-  func issome*[T](j: Option[T]): bool =
-    cast[JsObject](j) != nil
+  func isNone*[T](j: Option[T]): bool =
+    cast[JsObject](j) == nil
+
+  func isSome*[T](j: Option[T]): bool =
+    not isNone j
 
   func get*[T](j: Option[T]): T =
     assert issome j

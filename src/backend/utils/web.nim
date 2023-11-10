@@ -172,15 +172,15 @@ macro userOnly*(procdef): untyped =
   let
     req = procdef.firstArgument
     body = procdef.body
-    user = ident"user"
+    userc = ident"userc"
 
   procdef.body = quote:
     if tk =? `req`.jwt:
       let verified = forceSafety verify(tk, jwtSecret)
       if verified:
         let
-          s = forceSafety tk.claim["user"]
-          `user` {.used.} = fromJson($s, models.User)
+          s = forceSafety tk.claim
+          `userc` {.used.} = fromJson($s, UserCache)
         `body`
       else:
         raise newException(ValueError, "Invalid JWT token")
@@ -192,14 +192,14 @@ macro userOnly*(procdef): untyped =
 
 macro checkAdmin*(procdef): untyped =
   let
-    user = ident"user"
+    userc = ident"userc"
     body = procdef.body
 
   procdef.body = quote:
-    if `user`.role == urAdmin:
+    if `userc`.account.role == urAdmin:
       `body`
     else:
-      raise newException(ValueError, "Permission Denied")
+      raise newException(ValueError, "Permission Denied " & $(`userc`.account.role))
 
   procdef
 

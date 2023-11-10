@@ -22,16 +22,12 @@ type # database models
     role*: UserRole
 
   Invitation* = object
-    ## must be deleted after usage
     id* {.primary, autoIncrement.}: Id
     secret*: Str # TODO hash it
     data*: JsonNode
     timestamp*: UnixTime
 
   Auth* = object
-    ## there are 2 ways of login:
-    ## 1. by Bale bot
-    ## 2. by username & pass
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
     bale* {.references: User.id.}: Option[Id] # bale chat id
@@ -45,15 +41,27 @@ type # database models
     size*: Bytes
     path*: Path # where is it stored?
 
+    owner* {.references: User.id.}: Id
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
+
   Note* = object
     id* {.primary, autoIncrement.}: Id
     data*: TreeNodeRaw[NativeJson]
+
+    owner* {.references: User.id.}: Id
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
 
   Board* = object
     id* {.primary, autoIncrement.}: Id
     title*: Str
     screenshot* {.references: Asset.id.}: Option[Id]
     data*: BoardData
+
+    owner* {.references: User.id.}: Id
+    is_private*: bool
+    deleted_at*: Option[UnixTime]
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
@@ -69,53 +77,45 @@ type # database models
     tvtDate
     tvtJson
 
-
-  TagCreator* = enum
-    tcUser   ## created by user
-    tcSystem ## created by system
-
-  TagLabel* = enum
-    tlOrdinary         ## can be removed :: if it's not ordinary then its special
-
-    tlOwner            ## owner
-    tlTimestamp        ## creation time
-
-    tlSize             ## size in bytes
-    tlFileName         ##
-    tlMime             ## mime type of a file
-
-    tlBoardScreenShot  ## screenshots that are taken from boards
-
-    tlTextContent      ## raw text
+  TagLabel* = enum     ## special tags
+    # -- hidden or special view component
     tlForwarded        ## a note that is forwarded from another user
-    tlNoteHighlight    ##
-    tlNoteComment      ## a note (as comment) that refers to main note (ival)
+    tlNoteComment      ## a note (as comment) that refers to main note (refers)
     tlNoteCommentReply ## reply to another comment
 
-    tlPrivate          ## everything is public except when it has private tag
-    tlHasAccess        ## tag with username of the person as value - is used with private
+    tlBoardNode        ##
+    tlBoardNodeNote    ##
 
-    tlLike
-    tlImportant
-    tlSeeLater
-
-    tlBoardNode
-    tlNodeNote         ## note list of node
-
-    tlFollows          ## user => ival (user.id)
+    tlFollows          ## user => refers (user.id)
     tlNotification     ##
 
-    tlRememberIn
-    tlRemembered
+    # -- visible
+    tlOwner            ## owner
+    tlTimestamp        ## creation time
+    tlSize             ## size in bytes
+    tlFileName         ## name of file
+    tlMime             ## mime type of a file
+    tlPrivate          ## everything is public except when it has private tag
+
+    tlHasAccess        ## tag with username of the person as value - is used with private
+    tlNoteHighlight    ##
+    tlTextContent      ## raw text
+    tlBoardScreenShot  ## screenshots that are taken from boards
+
+    tlLike             ##
+    tlImportant        ##
+    tlLater            ##
+
+    tlRememberIn       ##
+    tlRemembered       ##
 
   Tag* = object
     ## most of the tags are primarily made for searching
     ## purposes and have redundent data
 
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
-    creator*: TagCreator
-    label*: TagLabel
+    owner* {.references: User.id.}: Option[Id] # NULL means global
+    label*: Option[TagLabel]
     name*: Str
     icon*: Str
     show_name*: bool
@@ -123,7 +123,7 @@ type # database models
     can_be_repeated*: bool
     theme*: ColorTheme
     value_type*: TagValueType
-    # TODO tag with "open/closed enums" values [only choosing from some options]
+    # TODO tag with "open/closed enums" values or a range
 
   NotificationKind* = enum
     nkLoginBale
@@ -131,11 +131,6 @@ type # database models
   RelationState* = enum
     rsFresh
     rsStale ## to mark as processed or expired by the system
-
-  RelationCreationReason* = enum
-    rcrUserInteraction
-    rcrSystemAutomation
-    rcrExternalEvent
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
@@ -153,9 +148,8 @@ type # database models
     sval*: Option[Str]
     refers*: Option[Id]                               ## arbitrary row id
 
-    info*: Option[Str]                                ## additional information
+    info*: Str                                        ## additional information
     state*: RelationState
-    created_due_to*: RelationCreationReason
     timestamp*: UnixTime                              ## creation time
 
   RelValuesByTagId* = NTable[Str, seq[Str]]
@@ -169,6 +163,11 @@ type # database models
     active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
 
 type # view models
+  UserCache* = object
+    exp*: int
+    account*: User
+    defaultTags*: array[TagLabel, Id]
+
   EntityClass* = enum
     ecNote = "note"
     ecAsset = "asset"
@@ -187,12 +186,8 @@ type # view models
     qoMore      ## >
     qoSubStr    ## ~ substring check
 
-  TagKind* = enum
-    tkGlobal
-    tkUserSpecific
-
   TagCriteria* = object
-    label*: TagLabel
+    label*: Option[TagLabel]
     tagId*: Id
     value_type*: TagValueType
     operator*: QueryOperator
@@ -203,6 +198,7 @@ type # view models
     sortCriteria*: Option[TagCriteria]
     order*: SortOrder
     limit*: Natural
+    selectedUser*: Option[Id] ## only search notes for a specific user
     skip*: Natural
 
 
@@ -243,8 +239,6 @@ type # view models
     title*: Str
     desc*: Str
     image*: Str
-    # timestamp*: string # TODO
-      # cardType twitter:card
 
 
 func newNoteData*: TreeNodeRaw[JsonNode] =
@@ -262,11 +256,6 @@ func hasValue*(t: Tag): bool =
 func isAdmin*(u: User): bool =
   u.role == urAdmin
 
-func criteriaKind*(tc: TagCriteria): TagKind =
-  case tc.label
-  of tlOrdinary: tkUserSpecific
-  else: tkGlobal
-
 func columnName*(vt: TagValueType): string =
   case vt
   of tvtNone: raise newException(ValueError, "'tvtNone' does not have column")
@@ -274,8 +263,15 @@ func columnName*(vt: TagValueType): string =
   of tvtInt, tvtDate: "ival"
   of tvtJson, tvtStr: "sval"
 
+func isHidden*(lbl: TagLabel): bool =
+  lbl in tlForwarded .. tlNotification
+
 func isInfix*(qo: QueryOperator): bool =
   qo in qoLess..qoSubStr
+
+func `[]`*[V](s: seq[V], i: ConnectionPointKind): V =
+  assert 2 == len s
+  s[ord i]
 
 func `$`*(qo: QueryOperator): string =
   case qo
@@ -287,7 +283,7 @@ func `$`*(qo: QueryOperator): string =
   of qoNotEq: "!="
   of qoMoreEq: ">="
   of qoMore: ">"
-  of qoSubStr: "LIKE"
+  else: "no operator"
 
 func `$`*(tvt: TagValueType): string =
   case tvt
@@ -342,5 +338,5 @@ when not defined js:
 
   proc parseHook*(s: string, i: var int, v: var cstring) =
     var temp: string
-    parseHook(s, i, temp)
+    parseHook s, i, temp
     v = cstring temp
