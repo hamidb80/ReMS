@@ -100,7 +100,6 @@ type
     pressedKeys: set[KeyCode]
 
     # board data
-    # TODO selectedPalletes: seq[string]
     objects: Table[Id, VisualNode]
     edgeGraph: Graph[Id]
     edgeInfo: Table[Slice[Id], Edge]
@@ -377,8 +376,13 @@ proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
   with k.line:
     listening = false
     linecap = lcRound
+    perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
 
   with k.shape:
+    perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
+
     on "mouseenter", proc =
       setCursor ccPointer
 
@@ -654,6 +658,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     y = 0
     align = $hzCenter
     listening = false
+    perfectDrawEnabled = false
 
   proc boxClick =
     case app.boardState
@@ -692,6 +697,9 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
     redraw()
 
   with box:
+    perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
+
     on "mouseover", proc =
       hover vn
       setCursor ccPointer
@@ -814,7 +822,7 @@ proc restore(app: var AppData; data: BoardData) =
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
       e = newEdge(id1, id2, info.config)
-
+    
     addConn app.edgeGraph, conn
     app.edgeInfo[conn] = e
     add app.bottomGroup, e.konva.wrapper
