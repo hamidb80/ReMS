@@ -377,9 +377,11 @@ proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
     listening = false
     linecap = lcRound
     perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
 
   with k.shape:
     perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
 
     on "mouseenter", proc =
       setCursor ccPointer
@@ -696,6 +698,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
   with box:
     perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
 
     on "mouseover", proc =
       hover vn
