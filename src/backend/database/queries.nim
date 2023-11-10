@@ -38,7 +38,7 @@ func setRelValue(rel: var Relation, value_type: TagValueType, value: string) =
 
 template updateRelTagsGeneric*(
   db: DbConn,
-  uid: Id,
+  u: User,
   entityTable: string,
   field: untyped,
   fieldStr: string,
@@ -50,7 +50,11 @@ template updateRelTagsGeneric*(
     " FROM " & entityTable & " thing " &
     " WHERE thing.id = " & $entityid &
     " AND " &
-    " thing.owner = " & $uid &
+    " ( " &
+    ($dbvalue isAdmin(u)) &
+    " OR " &
+    " thing.owner = " & $u.id &
+    " ) " &
     " LIMIT 1")
 
   doAssert 1 == len db.find(seq[(int, )], qperm)
@@ -174,8 +178,8 @@ proc getLabeledTagIds*(db: DbConn): seq[Id] =
       t.label ASC
   """, result)
 
-proc newTag*(db: DbConn, uid: Id, t: sink Tag): Id =
-  t.owner = some uid
+proc newTag*(db: DbConn, u: User, t: sink Tag): Id =
+  t.owner = some u.id
   db.insertID t
 
 proc updateTag*(db: DbConn, user: User, id: Id, t: sink Tag) =
@@ -195,10 +199,13 @@ proc updateTag*(db: DbConn, user: User, id: Id, t: sink Tag) =
       END)
     """
 
-proc deleteTag*(db: DbConn, id, uid: Id) =
+proc deleteTag*(db: DbConn, u: User, id: Id) =
   db.exec fsql"""
     DELETE FROM Tag 
-    WHERE id = {id}
+    WHERE 
+      id = {id} AND
+      label IS NULL AND
+      ({isAdmin u} OR owner = {u.id})
   """
 
 proc listTags*(db: DbConn): seq[Tag] =
@@ -212,10 +219,10 @@ proc findTags*(db: DbConn, ids: seq[Id]): Table[Id, Tag] =
     result[t.id] = t
 
 
-proc addAsset*(db: DbConn, uid: Id, n: string, m: string, p: Path,
+proc addAsset*(db: DbConn, u: User, n: string, m: string, p: Path,
     s: Bytes): int64 =
   result = db.insertID Asset(
-      owner: uid,
+      owner: u.id,
       name: n,
       path: p,
       mime: m,
@@ -240,25 +247,25 @@ proc getAsset*(db: DbConn, id: Id): AssetItemView =
     WHERE a.id = {id}
   """
 
-proc updateAssetName*(db: DbConn, uid, id: Id, name: string) =
+proc updateAssetName*(db: DbConn, u: User, id: Id, name: string) =
   db.exec fsql"""
     UPDATE Asset
     SET name = {name}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
-proc updateAssetRelTags*(db: DbConn, uid, id: Id, data: RelValuesByTagId) =
-  updateRelTagsGeneric db, uid, "Asset", asset, "asset", id, data
+proc updateAssetRelTags*(db: DbConn, u: User, id: Id, data: RelValuesByTagId) =
+  updateRelTagsGeneric db, u, "Asset", asset, "asset", id, data
 
-proc deleteAssetLogical*(db: DbConn, uid, id: Id, time: UnixTime) =
+proc deleteAssetLogical*(db: DbConn, u: User, id: Id, time: UnixTime) =
   db.exec fsql"""
     UPDATE Asset
     SET deleted_at = {time}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
 proc deleteAssetPhysical*(db: DbConn, id: Id) =
@@ -277,29 +284,32 @@ proc getNote*(db: DbConn, id: Id): NoteItemView =
     WHERE n.id = {id}
   """
 
-proc newNote*(db: DbConn, uid: Id): Id {.gcsafe.} =
+proc newNote*(db: DbConn, u: User): Id {.gcsafe.} =
   result = forceSafety db.insertID Note(
-    owner: uid,
+    owner: u.id,
     data: newNoteData())
   db.insert RelationsCache(note: some result)
 
-proc updateNoteContent*(db: DbConn, uid, id: Id, data: TreeNodeRaw[JsonNode]) =
+proc updateNoteContent*(db: DbConn, u: User, id: Id, data: TreeNodeRaw[JsonNode]) =
   db.exec fsql"""
     UPDATE Note 
     SET data = {data}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
-proc updateNoteRelTags*(db: DbConn, uid, noteid: Id, data: RelValuesByTagId) =
-  updateRelTagsGeneric db, uid, "Note", note, "note", noteid, data
+proc updateNoteRelTags*(db: DbConn, u: User, noteid: Id,
+    data: RelValuesByTagId) =
+  updateRelTagsGeneric db, u, "Note", note, "note", noteid, data
 
-proc deleteNoteLogical*(db: DbConn, id: Id, time: UnixTime) =
+proc deleteNoteLogical*(db: DbConn, u: User, id: Id, time: UnixTime) =
   db.exec fsql"""
     UPDATE Note
     SET deleted_at = {time}
-    WHERE id = {id}
+    WHERE 
+      id = {id} AND
+      ({isAdmin u} OR owner = {u.id})
   """
 
 proc deleteNotePhysical*(db: DbConn, id: Id) =
@@ -308,45 +318,45 @@ proc deleteNotePhysical*(db: DbConn, id: Id) =
     db.exec fsql"DELETE FROM RelationsCache WHERE note = {id}"
     db.exec fsql"DELETE FROM Relation       WHERE note = {id}"
 
-proc newBoard*(db: DbConn, uid: Id): Id =
+proc newBoard*(db: DbConn, u: User): Id =
   result = db.insertID Board(
     title: "[no title]",
-    owner: uid,
+    owner: u.id,
     data: BoardData())
 
   db.insert RelationsCache(
     board: some result,
     active_rels_values: RelValuesByTagId())
 
-proc updateBoardContent*(db: DbConn, uid, id: Id, data: BoardData) =
+proc updateBoardContent*(db: DbConn, u: User, id: Id, data: BoardData) =
   db.exec fsql"""
     UPDATE Board 
     SET data = {data}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
-proc updateBoardTitle*(db: DbConn, uid, id: Id, title: string) =
+proc updateBoardTitle*(db: DbConn, u: User, id: Id, title: string) =
   db.exec fsql"""
     UPDATE Board 
     SET title = {title}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
-proc setBoardScreenShot*(db: DbConn, uid, boardId, assetId: Id) =
+proc setBoardScreenShot*(db: DbConn, u: User, boardId, assetId: Id) =
   db.exec fsql"""
     UPDATE Board 
     SET screenshot = {assetId}
     WHERE 
       id = {boardId} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
-proc updateBoardRelTags*(db: DbConn, uid, id: Id, data: RelValuesByTagId) =
-  updateRelTagsGeneric db, uid, "Board", board, "board", id, data
+proc updateBoardRelTags*(db: DbConn, u: User, id: Id, data: RelValuesByTagId) =
+  updateRelTagsGeneric db, u, "Board", board, "board", id, data
 
 proc getBoard*(db: DbConn, id: Id): Board =
   db.find R, fsql"""
@@ -355,13 +365,17 @@ proc getBoard*(db: DbConn, id: Id): Board =
     WHERE id = {id}
   """
 
-proc deleteBoardLogical*(db: DbConn, uid, id: Id, time: UnixTime) =
-  db.exec fsql"""
+proc inspect(s: SqlQuery): SqlQuery =
+  echo string s
+  s
+
+proc deleteBoardLogical*(db: DbConn, u: User, id: Id, time: UnixTime) =
+  db.exec inspect fsql"""
     UPDATE Board 
     SET deleted_at = {time}
     WHERE 
       id = {id} AND
-      owner = {uid}
+      ({isAdmin u} OR owner = {u.id})
   """
 
 proc deleteBoardPhysical*(db: DbConn, id: Id) =
@@ -512,8 +526,10 @@ proc listPalettes*(db: DbConn): seq[Palette] =
 proc updatePalette*(db: DbConn, name: string, p: Palette) =
   db.exec fsql"""
     UPDATE Palette 
-    SET color_themes = {p.color_themes}
-    WHERE name = {name}
+    SET 
+      color_themes = {p.color_themes}
+    WHERE 
+      name = {name}
   """
 
 proc loginNotif*(db: DbConn, usr: Id) =
