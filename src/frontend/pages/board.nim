@@ -795,6 +795,20 @@ proc startPuttingNode =
   app.hoverGroup.add app.tempNode.konva.wrapper
   select app.tempNode
 
+proc deleteSelectedNodes = 
+  for vn in app.selectedVisualNodes:
+    let Id = vn.config.id
+
+    for n in app.edgeGraph.getOrDefault(Id):
+      let key = sorted Id..n
+      destroy app.edgeInfo[key].konva.wrapper
+      del app.edgeInfo, key
+
+    destroy vn.konva.wrapper
+    del app.objects, Id
+    removeNode app.edgeGraph, Id
+
+  unselect()
 
 proc toJson(app: AppData): BoardData =
   result.objects = initNTable[Str, VisualNodeConfig]()
@@ -1178,6 +1192,14 @@ proc createDom*(data: RouterData): VNode =
 
           proc onclick =
             negate app.ableToDrag
+
+        if n >= 1:
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
+            icon "fa-trash"
+
+            proc onclick =
+              deleteSelectedNodes()
+
 
         if n > 1:
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
@@ -1615,19 +1637,7 @@ proc init* =
           case kc
           of kcDelete:
             if app.selectedVisualNodes.len > 0:
-              for vn in app.selectedVisualNodes:
-                let Id = vn.config.id
-
-                for n in app.edgeGraph.getOrDefault(Id):
-                  let key = sorted Id..n
-                  destroy app.edgeInfo[key].konva.wrapper
-                  del app.edgeInfo, key
-
-                destroy vn.konva.wrapper
-                del app.objects, Id
-                removeNode app.edgeGraph, Id
-
-              unselect()
+              deleteSelectedNodes()
               redraw()
 
             elif app.selectedEdges.len > 0:
