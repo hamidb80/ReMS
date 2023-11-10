@@ -15,21 +15,22 @@ type
     colors: seq[Theme]
 
 
-proc loadColors(jsonFilePath: string): seq[ColorTheme] = 
-    let j = parseJson readfile jsonFilePath
-    let palettes = j.to(seq[Palette1])
+# proc loadColors(jsonFilePath: string): seq[ColorTheme] = 
+#     let 
+#         j = parseJson readfile jsonFilePath
+#         palettes = j.to(seq[Palette1])
 
-    var allColors: seq[Theme]
+#     var allColors: seq[Theme]
 
-    for p in palettes:
-        add allColors, p.colors
+#     for p in palettes:
+#         add allColors, p.colors
 
-    for c in allColors:
-        let 
-            b = parseHexColorPack c.bg
-            f = parseHexColorPack c.fg
+#     for c in allColors:
+#         let 
+#             b = parseHexColorPack c.bg
+#             f = parseHexColorPack c.fg
     
-        add result, ColorTheme(bg: b, fg: f, st: f)
+#         add result, ColorTheme(bg: b, fg: f, st: f)
 
 proc defaultPalette*(db: DbConn) =
     db.insert Palette(
@@ -54,16 +55,15 @@ proc defaultPalette*(db: DbConn) =
         c(0x424242, 0xececec, 0x919191), # dark
     ])
 
-    db.insert Palette(
-        name: "Material",
-        color_themes: loadColors "src/frontend/material_colors.json")
-
 proc addAdminUser*(db: DbConn) =
     let uid = db.newUser("admin", "admin user", true)
 
     db.insert Auth(
         user: uid,
         hashed_pass: some secureHash defaultAdminPass)
+
+proc addCommonTags*(db: DbConn) =
+    db.insert commonTags()
 
 proc createTables*(db: DbConn) =
     db.create(
@@ -84,6 +84,7 @@ proc initDb* =
     try:
         addAdminUser db
         defaultPalette db
+        addCommonTags db
     except:
         discard
 

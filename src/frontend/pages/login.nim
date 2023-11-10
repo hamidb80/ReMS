@@ -11,7 +11,7 @@ import ../../backend/database/models
 # TODO merge tag manager and user manager and login & profile and pallete in one page
 
 type AppAction = enum
-  aaBaleBot = "bale bot"
+  aaBaleBot = "bale"
   aaLoginForm = "form"
 
 var
@@ -20,8 +20,8 @@ var
   state = aaBaleBot
   user: Option[User]
 
-proc genSetState(i: AppAction): proc() = 
-  proc = 
+proc genSetState(i: AppAction): proc() =
+  proc =
     state = i
 
 # TODO form to change username/nickname
@@ -29,6 +29,11 @@ proc genSetState(i: AppAction): proc() =
 # TODO enable login by password
 # TODO link to tag manager
 # TODO link to palette manager
+
+func iconname(aa: AppAction): string = 
+  case aa
+  of aaBaleBot: "fa-robot"
+  of aaLoginForm: "fa-pen"
 
 proc createDom: Vnode =
   result = buildHtml tdiv:
@@ -41,13 +46,16 @@ proc createDom: Vnode =
           text "Login"
 
 
-    ul(class = "pagination pagination-lg"):
+    ul(class = "pagination pagination-lg d-flex justify-content-center mt-2"):
       for i in AppAction:
         li(class = "page-item " & iff(i == state, "active")):
           a(class = "page-link", href = "#", onclick = genSetState i):
-            text $i
+            span(class="me-2"):
+              text $i
 
-    tdiv(class = "card border-secondary mb-3"):
+            icon iconname i
+
+    tdiv(class = "card border-secondary m-3 d-flex justify-content-center"):
       if u =? user:
         tdiv(class = "card-header"):
           text u.nickname
@@ -62,28 +70,26 @@ proc createDom: Vnode =
               reset user
               redraw()
 
-
       else:
         tdiv(class = "card-header"):
-          text "Login Form"
+          text "Login/signup Form"
 
         tdiv(class = "card-body p-2"):
-          tdiv(class = "form-group d-inline-block"):
+          tdiv(class = "form-group"):
             case state
             of aaBaleBot: discard
             of aaLoginForm:
               label(class = "form-check-label"):
                 text "username: "
 
-              input(`type` = "text", class = "form-control tag-input",
-                  value = username):
+              input(`type` = "text", class = "form-control", value = username):
                 proc oninput(e: Event, v: Vnode) =
                   username = $e.target.value
 
             label(class = "form-check-label"):
               text "pass: "
 
-            input(`type` = "text", class = "form-control tag-input", value = pass):
+            input(`type` = "text", class = "form-control", value = pass):
               proc oninput(e: Event, v: Vnode) =
                 pass = $e.target.value
 

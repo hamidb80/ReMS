@@ -126,7 +126,7 @@ proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
           u
 
       maybeUsr = !!<db.getUser(uid)
-      tags = !!<db.getUserLabeledTagIds(uid)
+      tags = !!<db.getLabeledTagIds()
       uc = UserCache(
         account: get maybeUsr,
         defaultTags: toEnumArr[TagLabel, Id](tags))
@@ -147,7 +147,7 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
     if hash == secureHash data.password:
       login req, UserCache(
         account: u,
-        defaultTags: toEnumArr[TagLabel, Id](!!<db.getUserLabeledTagIds(u.id)))
+        defaultTags: toEnumArr[TagLabel, Id](!!<db.getLabeledTagIds()))
     else:
       # TODO add syntax sugar for errors
       raise newException(ValueError, "password is not valid")
@@ -157,17 +157,15 @@ proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
 proc getAsset*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)
 
-proc updateAssetName*(req: Request) {.qparams: {id: int, name: string},
-    checkAdmin, userOnly.} =
-  !! db.updateAssetName(id, name)
+proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, userOnly.} =
+  !! db.updateAssetName(id, userc.account.id, name)
   resp OK
 
-proc updateAssetRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
-  !! db.updateAssetRelTags(id, data)
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, userOnly.} =
+  !! db.updateAssetRelTags(id, userc.account.id, data)
   resp OK
 
-proc saveAsset(req: Request): Id {.checkAdmin, userOnly.} =
+proc saveAsset(req: Request): Id {.userOnly.} =
   let multip = req.decodeMultipart()
 
   for entry in multip:
@@ -185,6 +183,7 @@ proc saveAsset(req: Request): Id {.checkAdmin, userOnly.} =
         let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"
         writeFile storePath, content
         return !!<db.addAsset(
+            userc.account.id,
             fname,
             mime,
             Path storePath,
@@ -192,11 +191,11 @@ proc saveAsset(req: Request): Id {.checkAdmin, userOnly.} =
 
   raise newException(ValueError, "no files found")
 
-proc assetsUpload*(req: Request) {.checkAdmin, userOnly.} =
+proc assetsUpload*(req: Request) {.userOnly.} =
   respJson str saveAsset req
 
 proc assetShorthand*(req: Request) =
-  let qi = req.uri.find('?')
+  let qi = req.uri.find '?'
   if qi == -1:
     notFoundHandler req
   else:
@@ -211,13 +210,13 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
 
   respFile asset.mime, content
 
-proc deleteAsset*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteAssetLogical(id, unow())
+proc deleteAsset*(req: Request) {.qparams: {id: int}, userOnly.} =
+  !!db.deleteAssetLogical(id, userc.account.id, unow())
   resp OK
 
 
-proc newNote*(req: Request) {.checkAdmin, userOnly.} =
-  let id = forceSafety !!<db.newNote()
+proc newNote*(req: Request) {.userOnly.} =
+  let id = forceSafety !!<db.newNote(userc.account.id)
   redirect get_note_editor_url id
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
@@ -229,62 +228,60 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
     respJson toJson node.follow path
 
 proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {
-    id: int}, jbody: TreeNodeRaw[JsonNode], checkAdmin, userOnly.} =
+    id: int}, jbody: TreeNodeRaw[JsonNode], userOnly.} =
 
   forceSafety:
-    !!db.updateNoteContent(id, data)
+    !!db.updateNoteContent(id, userc.account.id,data)
     resp OK
 
 proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
-  !!db.updateNoteRelTags(id, data)
+    jbody: RelValuesByTagId, userOnly.} =
+  !!db.updateNoteRelTags(id, userc.account.id, data)
   resp OK
 
-proc deleteNote*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
+proc deleteNote*(req: Request) {.qparams: {id: int}, userOnly.} =
   !!db.deleteNoteLogical(id, unow())
   resp OK
 
 
-proc newBoard*(req: Request) {.checkAdmin, userOnly.} =
-  let id = !!<db.newBoard()
+proc newBoard*(req: Request) {.userOnly.} =
+  let id = !!<db.newBoard(userc.account.id)
   redirect get_board_edit_url id
 
-proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData,
-    checkAdmin, userOnly.} =
-  !!db.updateBoardContent(id, data)
+proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, userOnly.} =
+  !!db.updateBoardContent(id, userc.account.id, data)
   resp OK
 
-proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.setBoardScreenShot(id, saveAsset req)
+proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, userOnly.} =
+  !!db.setBoardScreenShot(id, userc.account.id, saveAsset req)
   resp OK
 
-proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string},
-    checkAdmin, userOnly.} =
-  !!db.updateBoardTitle(id, title)
+proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, userOnly.} =
+  !!db.updateBoardTitle(id, userc.account.id, title)
   resp OK
 
 proc updateBoardRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, checkAdmin, userOnly.} =
-  !!db.updateBoardRelTags(id, data)
+    jbody: RelValuesByTagId, userOnly.} =
+  !!db.updateBoardRelTags(id, userc.account.id, data)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
-proc deleteBoard*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteBoardLogical(id, unow())
+proc deleteBoard*(req: Request) {.qparams: {id: int}, userOnly.} =
+  !!db.deleteBoardLogical(id, userc.account.id, unow())
   resp OK
 
 
-proc newTag*(req: Request) {.jbody: Tag, checkAdmin, userOnly.} =
-  !!respJson toJson db.newTag data
+proc newTag*(req: Request) {.jbody: Tag, userOnly.} =
+  !!respJson toJson db.newTag(userc.account.id, data)
 
-proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, checkAdmin, userOnly.} =
-  !!db.updateTag(id, data)
+proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, userOnly.} =
+  !!db.updateTag(userc.account, id, data)
   resp OK
 
-proc deleteTag*(req: Request) {.qparams: {id: int}, checkAdmin, userOnly.} =
-  !!db.deleteTag id
+proc deleteTag*(req: Request) {.qparams: {id: int}, userOnly.} =
+  !!db.deleteTag(userc.account.id, id)
   resp OK
 
 proc listTags*(req: Request) =

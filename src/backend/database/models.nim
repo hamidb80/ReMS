@@ -28,9 +28,6 @@ type # database models
     timestamp*: UnixTime
 
   Auth* = object
-    ## there are 2 ways of login:
-    ## 1. by Bale bot
-    ## 2. by username & pass
     id* {.primary, autoIncrement.}: Id
     user* {.references: User.id.}: Id
     bale* {.references: User.id.}: Option[Id] # bale chat id
@@ -82,13 +79,9 @@ type # database models
 
   TagLabel* = enum     ## special tags
     # -- hidden or special view component
-    tlTextContent      ## raw text
     tlForwarded        ## a note that is forwarded from another user
-    tlNoteHighlight    ##
     tlNoteComment      ## a note (as comment) that refers to main note (refers)
     tlNoteCommentReply ## reply to another comment
-
-    tlHasAccess        ## tag with username of the person as value - is used with private
 
     tlBoardNode        ##
     tlBoardNodeNote    ##
@@ -96,28 +89,32 @@ type # database models
     tlFollows          ## user => refers (user.id)
     tlNotification     ##
 
-    tlRememberIn       ##
-    tlRemembered       ##
-
     # -- visible
-
     tlOwner            ## owner
     tlTimestamp        ## creation time
     tlSize             ## size in bytes
     tlFileName         ## name of file
     tlMime             ## mime type of a file
     tlPrivate          ## everything is public except when it has private tag
+
+    tlHasAccess        ## tag with username of the person as value - is used with private
+    tlNoteHighlight    ##
+    tlTextContent      ## raw text
     tlBoardScreenShot  ## screenshots that are taken from boards
+
     tlLike             ##
     tlImportant        ##
     tlLater            ##
+
+    tlRememberIn       ##
+    tlRemembered       ##
 
   Tag* = object
     ## most of the tags are primarily made for searching
     ## purposes and have redundent data
 
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
+    owner* {.references: User.id.}: Option[Id] # NULL means global
     label*: Option[TagLabel]
     name*: Str
     icon*: Str
@@ -151,7 +148,7 @@ type # database models
     sval*: Option[Str]
     refers*: Option[Id]                               ## arbitrary row id
 
-    info*: Option[Str]                                ## additional information
+    info*: Str                                        ## additional information
     state*: RelationState
     timestamp*: UnixTime                              ## creation time
 
@@ -266,10 +263,14 @@ func columnName*(vt: TagValueType): string =
   of tvtInt, tvtDate: "ival"
   of tvtJson, tvtStr: "sval"
 
+func isHidden*(lbl: TagLabel): bool =
+  lbl in tlForwarded .. tlNotification
+
 func isInfix*(qo: QueryOperator): bool =
   qo in qoLess..qoSubStr
 
-func `[]`*[V](s: seq[V], i: ConnectionPointKind): V = 
+func `[]`*[V](s: seq[V], i: ConnectionPointKind): V =
+  assert 2 == len s
   s[ord i]
 
 func `$`*(qo: QueryOperator): string =

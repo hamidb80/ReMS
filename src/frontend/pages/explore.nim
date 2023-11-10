@@ -513,7 +513,7 @@ proc relTagManager(): Vnode =
         tdiv(class = "card-body"):
           for id, t in tags:
             if id notin currentRelTags or t.can_be_repeated:
-              tagViewC t, "val", genAddTagToList id
+              tagViewC t, "...", genAddTagToList id
 
       h3(class = "mt-4"):
         text "Current Tags"
@@ -630,7 +630,8 @@ proc searchTagManager(): Vnode =
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            tagViewC t, "...", genAddSearchCriteria t
+            if (isnone t.label) or (not isHidden get t.label):
+              tagViewC t, "...", genAddSearchCriteria t
 
       h3(class = "mt-4"):
         text "Current Criterias"
@@ -775,13 +776,13 @@ proc createDom: Vnode =
                 else:
                   assetItemComponent i, a, u
 
-          tdiv(class="d-flex justify-content-center align-items-center"):
+          tdiv(class = "d-flex justify-content-center align-items-center"):
             ul(class = "pagination pagination-lg"):
 
               li(class = "page-item"):
                 a(class = "page-link", href = "#"):
                   icon "fa-angle-left"
-                proc onclick = 
+                proc onclick =
                   if lastPage[selectedClass] > 0:
                     dec lastPage[selectedClass]
                     doSearch()
@@ -793,7 +794,7 @@ proc createDom: Vnode =
               li(class = "page-item"):
                 a(class = "page-link", href = "#"):
                   icon "fa-angle-right"
-                proc onclick = 
+                proc onclick =
                   inc lastPage[selectedClass]
                   doSearch()
 

@@ -93,7 +93,7 @@ proc createDom: Vnode =
 
         tdiv(class = "d-flex flex-row flex-wrap"):
           for i, t in tags:
-            tagViewC t, "val", genChangeSelectedTagi i
+            tagViewC t, "...", genChangeSelectedTagi i
 
       tdiv(class = "p-4 mx-4 my-2"):
         h6(class = "mb-3"):
@@ -189,7 +189,7 @@ proc createDom: Vnode =
                   currentTag.get.theme.fg = parseHexColorPack $e.target.value
 
           tdiv(class = "my-2"):
-            tagViewC get currentTag, "val", noop
+            tagViewC get currentTag, "...", noop
 
           if selectedTagI == noIndex:
             button(class = "btn btn-success w-100 mt-2 mb-4"):

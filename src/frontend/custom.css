@@ -82,7 +82,7 @@ body {
   display: inline-block;
 }
 
-.tw-raw-code{
+.tw-raw-code {
   font-family: "Ubuntu Mono";
 }
 
@@ -222,14 +222,11 @@ body {
   height: 400px;
   width: 50vw;
   max-height: 30vh;
+  min-width: calc(min(100%, 400px));
 }
 
 .limited-progress {
   width: 200px;
-}
-
-.tag-input {
-  width: 8rem !important;
 }
 
 .card-img img {
@@ -310,16 +307,18 @@ p p {
   system: additive;
   range: 1 1000;
   additive-symbols: 1000 "\63A", 900 "\638", 800 "\636",
-   700 "\630", 600 "\62E", 500 "\62B", 400 "\62A", 300 "\634",
-   200 "\631", 100 "\642", 90 "\635", 80 "\641", 70 "\639",
+    700 "\630", 600 "\62E", 500 "\62B", 400 "\62A", 300 "\634",
+    200 "\631", 100 "\642", 90 "\635", 80 "\641", 70 "\639",
     60 "\633", 50 "\646", 40 "\645", 30 "\644",
-   20 "\6AF", 10 "\649", 9 "\637", 8 "\62D", 7 "\698",
+    20 "\6AF", 10 "\649", 9 "\637", 8 "\62D", 7 "\698",
     6 "\648", 5 "\FEEB", 4 "\62F", 3 "\686",
-   2 "\67E", 1 "\627";
+    2 "\67E", 1 "\627";
 }
-.tw-content .list-abjad{
+
+.tw-content .list-abjad {
   list-style-type: abjad;
 }
+
 .tw-content .list-persian-number {
   list-style-type: persian;
 }
