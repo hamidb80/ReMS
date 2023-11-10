@@ -86,8 +86,9 @@ proc jwt(req: Request): options.Option[string] =
     discard
 
 proc login*(req: Request, uc: UserCache) =
-  {.cast(gcsafe).}:
-    respond req, 200, jwtCookieSet toJwt uc
+  if uc.account.id != 1 or defined login_default_admin:
+    {.cast(gcsafe).}:
+      respond req, 200, jwtCookieSet toJwt uc
 
 # ------- main
 
