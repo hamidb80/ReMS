@@ -159,11 +159,12 @@ proc getAsset*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)
 
 proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, userOnly.} =
-  !! db.updateAssetName(id, userc.account.id, name)
+  !! db.updateAssetName(userc.account, id, name)
   resp OK
 
-proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: RelValuesByTagId, userOnly.} =
-  !! db.updateAssetRelTags(id, userc.account.id, data)
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int},
+    jbody: RelValuesByTagId, userOnly.} =
+  !! db.updateAssetRelTags(userc.account, id, data)
   resp OK
 
 proc saveAsset(req: Request): Id {.userOnly.} =
@@ -184,7 +185,7 @@ proc saveAsset(req: Request): Id {.userOnly.} =
         let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"
         writeFile storePath, content
         return !!<db.addAsset(
-            userc.account.id,
+            userc.account,
             fname,
             mime,
             Path storePath,
@@ -212,12 +213,12 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
   respFile asset.mime, content
 
 proc deleteAsset*(req: Request) {.qparams: {id: int}, userOnly.} =
-  !!db.deleteAssetLogical(id, userc.account.id, unow())
+  !!db.deleteAssetLogical(userc.account, id, unow())
   resp OK
 
 
 proc newNote*(req: Request) {.userOnly.} =
-  let id = forceSafety !!<db.newNote(userc.account.id)
+  let id = forceSafety !!<db.newNote(userc.account)
   redirect get_note_editor_url id
 
 proc getNote*(req: Request) {.qparams: {id: int}.} =
@@ -232,57 +233,57 @@ proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {
     id: int}, jbody: TreeNodeRaw[JsonNode], userOnly.} =
 
   forceSafety:
-    !!db.updateNoteContent(id, userc.account.id,data)
+    !!db.updateNoteContent(userc.account, id, data)
     resp OK
 
 proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
     jbody: RelValuesByTagId, userOnly.} =
-  !!db.updateNoteRelTags(id, userc.account.id, data)
+  !!db.updateNoteRelTags(userc.account, id, data)
   resp OK
 
 proc deleteNote*(req: Request) {.qparams: {id: int}, userOnly.} =
-  !!db.deleteNoteLogical(id, unow())
+  !!db.deleteNoteLogical(userc.account, id, unow())
   resp OK
 
 
 proc newBoard*(req: Request) {.userOnly.} =
-  let id = !!<db.newBoard(userc.account.id)
+  let id = !!<db.newBoard(userc.account)
   redirect get_board_edit_url id
 
 proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, userOnly.} =
-  !!db.updateBoardContent(id, userc.account.id, data)
+  !!db.updateBoardContent(userc.account, id, data)
   resp OK
 
 proc updateBoardScreenShot*(req: Request) {.qparams: {id: int}, userOnly.} =
-  !!db.setBoardScreenShot(id, userc.account.id, saveAsset req)
+  !!db.setBoardScreenShot(userc.account, id, saveAsset req)
   resp OK
 
 proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, userOnly.} =
-  !!db.updateBoardTitle(id, userc.account.id, title)
+  !!db.updateBoardTitle(userc.account, id, title)
   resp OK
 
 proc updateBoardRelTags*(req: Request) {.qparams: {id: int},
     jbody: RelValuesByTagId, userOnly.} =
-  !!db.updateBoardRelTags(id, userc.account.id, data)
+  !!db.updateBoardRelTags(userc.account, id, data)
   resp OK
 
 proc getBoard*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
 proc deleteBoard*(req: Request) {.qparams: {id: int}, userOnly.} =
-  !!db.deleteBoardLogical(id, userc.account.id, unow())
+  !!db.deleteBoardLogical(userc.account, id, unow())
   resp OK
 
 
 proc newTag*(req: Request) {.jbody: Tag, userOnly.} =
-  !!respJson toJson db.newTag(userc.account.id, data)
+  !!respJson toJson db.newTag(userc.account, data)
 
 proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, userOnly.} =
   !!db.updateTag(userc.account, id, data)
   resp OK
 
 proc deleteTag*(req: Request) {.qparams: {id: int}, userOnly.} =
-  !!db.deleteTag(userc.account.id, id)
+  !!db.deleteTag(userc.account, id)
   resp OK
 
 proc listTags*(req: Request) =

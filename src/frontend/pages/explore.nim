@@ -270,6 +270,9 @@ proc userItemC(u: User): VNode =
       span(class = "text-muted fst-italic"):
         text u.nickname
 
+        if isAdmin u:
+          icon "fa-user-shield ms-2"
+
 proc assetItemComponent(index: int, a: AssetItemView,
     previewLink: string): Vnode =
   buildHtml:
