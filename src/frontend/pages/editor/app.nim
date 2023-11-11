@@ -410,7 +410,7 @@ proc createDom: VNode =
       tdiv(id = "left-container", class = "float-start h-100 d-flex flex-row",
           style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
 
-        aside(id = "tw-side-bar", class = "h-100 bg-dark d-flex justify-contnent-center flex-column flex-wrap p-1 "):
+        aside(id = "tw-side-bar", class = "h-100 bg-dark justify-contnent-center p-1 overflow-y-auto overflow-x-hidden"):
           button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-save fa-xl"
             proc onclick =
