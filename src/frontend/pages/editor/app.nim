@@ -211,6 +211,23 @@ proc deleteSelectedNode =
     detachNode f, i
     app.focusedNode = f
 
+proc moveToUp = 
+  if app.focusedPath.len > 0:
+    if app.focusedPath[^1] == 0:
+      discard
+    else:
+      dec app.focusedPath[^1]
+      app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+
+
+proc moveToDown = 
+  if app.focusedPath.len > 0:
+    if app.focusedPath[^1] + 1 == app.focusedNode.father.children.len:
+      discard
+    else:
+      app.focusedPath[^1].inc
+      app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+
 
 proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   let lastFocus = app.focusedNode
@@ -219,24 +236,12 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   of asTreeView:
     case e.keyCode.KeyCode
     of kcArrowUp: # goes up
-      e.preventDefault
-
-      if app.focusedPath.len > 0:
-        if app.focusedPath[^1] == 0:
-          discard
-        else:
-          dec app.focusedPath[^1]
-          app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+      preventDefault e
+      moveToUp()
 
     of kcArrowDown: # goes down
-      e.preventDefault
-
-      if app.focusedPath.len > 0:
-        if app.focusedPath[^1] + 1 == app.focusedNode.father.children.len:
-          discard
-        else:
-          app.focusedPath[^1].inc
-          app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+      preventDefault e
+      moveToDown()
 
     of kcArrowLeft: # goes inside
       if app.focusedPath.len > 0:
