@@ -714,7 +714,7 @@ proc createDom: Vnode =
           icon "fa-search fa-xl me-3 ms-1"
           text "Explore"
 
-    tdiv(class = "px-4 py-2 my-2"):
+    tdiv(class = "px-1 px-sm-2 px-md-3 px-lg-4-4 py-2 my-2"):
       case appState
       of asNormal:
         tdiv(class = "d-flex justify-content-around align-items-center flex-wrap my-4"):

@@ -12,3 +12,4 @@ play
 *.db
 *.sqlite3
 rems
+*.out

@@ -395,9 +395,15 @@ proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
       else:
         fmt"rel.tag = {c.tagId}"
 
+    op =
+      if c.operator == qoExists and c.value.len != 0:
+        qoEq # exists with a value means equal. ?? (field: 3) -> (field == 3)
+      else:
+        c.operator
+
     primaryCond =
-      if isInfix c.operator:
-        fmt"rel.{columnName c.valueType} {c.operator} {dbvalue c.value}"
+      if isInfix op:
+        fmt"rel.{columnName c.valueType} {op} {dbvalue c.value}"
       else:
         "1"
 
