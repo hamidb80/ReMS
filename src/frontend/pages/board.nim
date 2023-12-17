@@ -1077,6 +1077,19 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
+      tdiv(class="zoom-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
+        button(class="btn btn-outline-primary border-0 px-3 py-3"):
+          icon "fa-plus"
+
+          proc onclick = 
+            zoom ||app.stage.scale, -200
+
+        button(class="btn btn-outline-primary border-0 px-3 py-3"):
+          icon "fa-minus"
+
+          proc onclick = 
+            zoom ||app.stage.scale, +200
+
       footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
             StyleAttr.width, cstring $iff(
@@ -1512,7 +1525,7 @@ proc init* =
         app.leftClicked = true
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if kcSpace in app.pressedKeys:
+        if app.leftClicked:
           moveStage movement e
 
       on "mouseup", proc =

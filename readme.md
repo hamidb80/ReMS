@@ -30,3 +30,6 @@ hostname -I
 ```
 
 then enter it in mobile
+
+## Others
+- https://ogb.stanford.edu/
