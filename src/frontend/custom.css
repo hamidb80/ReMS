@@ -113,6 +113,11 @@ body {
   transform: translateY(-50%);
 }
 
+.zoom-bar {
+    top: calc(100vh - 50px);
+    transform: translateY(-100%);
+}
+
 .content-wrapper {
   overflow-y: scroll;
 }

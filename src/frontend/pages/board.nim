@@ -68,8 +68,6 @@ type
     # transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
-    ableToDrag: bool
-
     # app states
     hoverVisualNode: NOption[VisualNode]
     selectedVisualNodes: seq[VisualNode]
@@ -401,7 +399,7 @@ proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
 
 proc addEdgeClick(e: Edge) =
   with e.konva.shape:
-    on "click", proc =
+    on "click tap", proc =
       if kcShift notin app.pressedKeys:
         unselect()
 
@@ -690,6 +688,8 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
           select ei
           hide app.tempEdge.konva.wrapper
           removeHighlight sv
+          redrawConnectionsTo sv.config.id
+
 
     else:
       discard
@@ -708,9 +708,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
       unhover vn
       setCursor ccNone
 
-    on "click", boxClick
-
-    on "touchstart", boxClick
+    on "click tap", boxClick
 
     on "touchmove", proc =
       touchMoved = true
@@ -726,7 +724,6 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc =
       if
-        not app.ableToDrag or
         app.state != asNormal or
         vn notin app.selectedVisualNodes:
         stopDrag wrapper
@@ -1080,6 +1077,19 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
+      tdiv(class="zoom-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
+        button(class="btn btn-outline-primary border-0 px-3 py-3"):
+          icon "fa-plus"
+
+          proc onclick = 
+            zoom ||app.stage.scale, -200
+
+        button(class="btn btn-outline-primary border-0 px-3 py-3"):
+          icon "fa-minus"
+
+          proc onclick = 
+            zoom ||app.stage.scale, +200
+
       footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
             StyleAttr.width, cstring $iff(
@@ -1183,22 +1193,20 @@ proc createDom*(data: RouterData): VNode =
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         let n = app.selectedVisualNodes.len
 
-        button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-          let c =
-            if app.ableToDrag: "fa-lock-open"
-            else: "fa-lock"
-
-          icon c
-
-          proc onclick =
-            negate app.ableToDrag
-
         if n >= 1:
           button(class = "btn btn-outline-primary border-0 px-3 py-3"):
             icon "fa-trash"
 
             proc onclick =
               deleteSelectedNodes()
+
+          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
+            icon "fa-ban"
+
+            proc onclick =
+              unselect()
+              app.boardstate = bsFree
+              # app.state = asNormal
 
 
         if n > 1:
@@ -1517,7 +1525,7 @@ proc init* =
         app.leftClicked = true
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if kcSpace in app.pressedKeys:
+        if app.leftClicked or kcSpace in app.pressedKeys:
           moveStage movement e
 
       on "mouseup", proc =
@@ -1723,10 +1731,6 @@ proc init* =
             app.stage.toBlob(1/2).dthen proc(b: Blob) =
               apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
                 notify "screenshot updated!"
-
-          of kcL: # lock/unlock
-            negate app.ableToDrag
-            redraw()
 
           else: discard
 
