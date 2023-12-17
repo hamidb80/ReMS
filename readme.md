@@ -18,7 +18,6 @@
 - [Theme](https://bootswatch.com/litera)
 - [Nim 2 bug](https://github.com/nim-lang/Nim/issues/22510)
 
-
 ## Thoughts
 the only thing that I can think that why Orgpad is smooth [even with lots of nides](https://orgpad.com/o/DI-59ACG5AXrOPN9FU79u_?token=BaJP8ZfN9J_a4teJvTXQ3Z) is that it caches nodes as images, and updates them when you zoom in or zoom out after some periods of time.
 
@@ -33,3 +32,4 @@ then enter it in mobile
 
 ## Others
 - https://ogb.stanford.edu/
+
