@@ -91,6 +91,21 @@ func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
     result[id] = v
 
 
+# TODO write a note laod manager component in a different file
+proc loadMsg(n: NoteItemView) =
+  deserizalize(compTable, n.data).dthen proc(t: TwNode) =
+    msgCache[n.id] = t.dom.innerHtml
+    redraw()
+
+
+proc getExploreQuery: ExploreQuery =
+  result = ExploreQuery(
+    searchCriterias: searchCriterias,
+    order: sortOrder)
+
+  if selectedCriteriaI != noIndex:
+    result.sortCriteria = somec searchCriterias[selectedCriteriaI]
+
 proc fetchAssets: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scAssets]
@@ -99,6 +114,42 @@ proc fetchAssets: Future[void] =
         AssetItemView]) =
       assets = ass
       resolve()
+
+proc fetchBoards: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    let p = lastPage[scBoards]
+    reset boards
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
+        BoardItemView]) =
+      boards = bs
+      resolve()
+
+proc fetchNotes: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    let p = lastPage[scNotes]
+    reset notes
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
+        NoteItemView]) =
+      notes = ns
+      for n in notes:
+        loadMsg n
+      resolve()
+
+proc fetchTags: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetTagsList proc(tagsList: seq[Tag]) =
+      for t in tagsList:
+        tags[t.id] = t
+      resolve()
+
+proc fetchUsers: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    let p = lastPage[scUsers]
+    reset users
+    apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
+      users = us
+      resolve()
+
 
 proc startUpload(u: Upload) =
   var
@@ -113,8 +164,8 @@ proc startUpload(u: Upload) =
 
   u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
-    discard fetchAssets()
-    redraw()
+    discard fetchAssets().then proc = 
+      redraw()
 
   u.promise.dcatch proc(r: AxiosResponse) =
     u.status = usFailed
@@ -178,7 +229,6 @@ func progressbar(percent: Percent, status: UploadStatus): Vnode =
           StyleAttr.width,
           $iff(cond, percent, 100) & "%"))
 
-
 proc uploadStatusBtn(u: Upload): VNode =
   buildHtml:
     case u.status
@@ -202,7 +252,6 @@ proc uploadStatusBtn(u: Upload): VNode =
         icon "fa-check"
 
     # TODO show error message as a tooltip
-
 
 proc genAssetDelete(id: Id, index: int): proc() =
   proc =
@@ -364,59 +413,9 @@ proc assetUploader: VNode =
               uploadStatusBtn u
 
 
-
-proc getExploreQuery: ExploreQuery =
-  result = ExploreQuery(
-    searchCriterias: searchCriterias,
-    order: sortOrder)
-
-  if selectedCriteriaI != noIndex:
-    result.sortCriteria = somec searchCriterias[selectedCriteriaI]
-
-proc fetchBoards: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scBoards]
-    reset boards
-    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
-        BoardItemView]) =
-      boards = bs
-      resolve()
-
 proc deleteBoard(id: Id) =
   apiDeleteBoard id, proc =
     discard fetchBoards()
-
-proc fetchUsers: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scUsers]
-    reset users
-    apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
-      users = us
-      resolve()
-
-# TODO write a note laod manager component in a different file
-proc loadMsg(n: NoteItemView) =
-  deserizalize(compTable, n.data).dthen proc(t: TwNode) =
-    msgCache[n.id] = t.dom.innerHtml
-    redraw()
-
-proc fetchNotes: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scNotes]
-    reset notes
-    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
-        NoteItemView]) =
-      notes = ns
-      for n in notes:
-        loadMsg n
-      resolve()
-
-proc fetchTags(): Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    apiGetTagsList proc(tagsList: seq[Tag]) =
-      for t in tagsList:
-        tags[t.id] = t
-      resolve()
 
 proc deleteNote(id: Id) =
   apiDeleteNote id, proc =

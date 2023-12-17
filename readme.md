@@ -21,3 +21,12 @@
 
 ## Thoughts
 the only thing that I can think that why Orgpad is smooth [even with lots of nides](https://orgpad.com/o/DI-59ACG5AXrOPN9FU79u_?token=BaJP8ZfN9J_a4teJvTXQ3Z) is that it caches nodes as images, and updates them when you zoom in or zoom out after some periods of time.
+
+
+## host in local network
+see your IP in local network by
+```
+hostname -I
+```
+
+then enter it in mobile
