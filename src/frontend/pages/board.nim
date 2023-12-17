@@ -1525,7 +1525,7 @@ proc init* =
         app.leftClicked = true
 
       on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if app.leftClicked:
+        if app.leftClicked or kcSpace in app.pressedKeys:
           moveStage movement e
 
       on "mouseup", proc =
