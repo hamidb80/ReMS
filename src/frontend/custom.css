@@ -114,8 +114,7 @@ body {
 }
 
 .zoom-bar {
-    top: calc(100vh - 50px);
-    transform: translateY(-100%);
+    transform: translateY(-120%);
 }
 
 .content-wrapper {

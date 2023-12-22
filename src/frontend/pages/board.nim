@@ -690,7 +690,6 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
           removeHighlight sv
           redrawConnectionsTo sv.config.id
 
-
     else:
       discard
 
@@ -790,7 +789,6 @@ proc startPuttingNode =
   app.tempNode = createNode()
 
   app.hoverGroup.add app.tempNode.konva.wrapper
-  select app.tempNode
 
 proc deleteSelectedNodes =
   for vn in app.selectedVisualNodes:
@@ -804,6 +802,15 @@ proc deleteSelectedNodes =
     destroy vn.konva.wrapper
     del app.objects, Id
     removeNode app.edgeGraph, Id
+
+  for ed in app.selectedEdges:
+    let
+      p = ed.data.points
+      conn = sorted p[cpkHead]..p[cpkTail]
+
+    destroy app.edgeInfo[conn].konva.wrapper
+    del app.edgeInfo, conn
+    removeConn app.edgeGraph, conn
 
   unselect()
 
@@ -1067,6 +1074,15 @@ proc gotoCenterOfBoard =
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
 
+proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
+  buildHtml button(
+    class = "btn btn-outline-primary border-0 px-3 py-3",
+    onclick = action):
+    icon iconClass
+
+    if note != "":
+      span(class = "ms-1"):
+        text note
 
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
@@ -1077,20 +1093,14 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      tdiv(class="zoom-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
-        button(class="btn btn-outline-primary border-0 px-3 py-3"):
-          icon "fa-plus"
-
-          proc onclick = 
+      footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
+        tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
+          sidebarBtn "fa-plus", "", proc =
             zoom ||app.stage.scale, -200
 
-        button(class="btn btn-outline-primary border-0 px-3 py-3"):
-          icon "fa-minus"
-
-          proc onclick = 
+          sidebarBtn "fa-minus", "", proc =
             zoom ||app.stage.scale, +200
 
-      footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
         tdiv(class = "inside h-100 d-flex align-items-center", style = style(
             StyleAttr.width, cstring $iff(
               app.sidebarvisible,
@@ -1191,65 +1201,37 @@ proc createDom*(data: RouterData): VNode =
             text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
-        let n = app.selectedVisualNodes.len
+        let
+          n = app.selectedVisualNodes.len
+          m = app.selectedEdges.len
 
-        if n >= 1:
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-trash"
-
-            proc onclick =
-              deleteSelectedNodes()
-
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-ban"
-
-            proc onclick =
-              unselect()
-              app.boardstate = bsFree
-              # app.state = asNormal
-
+        if n >= 1 or m >= 1:
+          sidebarBtn "fa-trash", "", deleteSelectedNodes
+          sidebarBtn "fa-ban", "", proc =
+            unselect()
+            app.boardstate = bsFree
+            # app.state = asNormal
 
         if n > 1:
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            span:
-              text $n
+          sidebarBtn "", $n, noop
 
         elif n == 1:
           let vn = app.selectedVisualNodes[0]
 
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-circle-nodes"
+          sidebarBtn "fa-circle-nodes", "", proc =
+            startAddConn vn
 
-            proc onclick =
-              startAddConn vn
-
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-message"
-
-            span(class = "ms-1"):
-              text $vn.config.messageIdList.len
-
-            proc onclick =
-              app.sidebarVisible = true
-              app.sidebarState = ssMessagesView
+          sidebarBtn "fa-message", $vn.config.messageIdList.len, proc =
+            app.sidebarVisible = true
+            app.sidebarState = ssMessagesView
 
         else:
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-plus fa-lg"
-
-            proc onclick =
-              startPuttingNode()
+          if m == 0:
+            sidebarBtn "fa-plus fa-lg", "", startPuttingNode
 
           # TODO show shortcut and name via a tooltip
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-expand fa-lg"
-            proc onclick =
-              gotoCenterOfBoard()
-
-          button(class = "btn btn-outline-primary border-0 px-3 py-3"):
-            icon "fa-save fa-lg"
-            proc onclick =
-              saveServer()
+          sidebarBtn "fa-expand fa-lg", "", gotoCenterOfBoard
+          sidebarBtn "fa-save fa-lg", "", saveServer
 
       if app.sidebarVisible:
         aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
@@ -1451,47 +1433,6 @@ proc init* =
       height = window.innerHeight
       add layer
 
-      on "mousedown pointerdown", proc =
-        app.leftClicked = true
-
-      on "mouseup pointerup", proc =
-        app.leftClicked = false
-
-      on "mousemove pointermove":
-        proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
-          let
-            m = v(ke.evt.x, ke.evt.y)
-            s = ||app.stage.scale
-            currentMousePos = coordinate(m, app.stage)
-            Δy = m.y - app.lastClientMousePos.y
-
-          if kcJ in app.pressedKeys:
-            zoom s, Δy
-
-          case app.boardState
-          of bsMakeConnection:
-            let
-              v = app.hoverVisualNode
-              n1 = app.selectedVisualNodes[0]
-
-            if ?v:
-              let n2 = !v
-              updateEdgePos app.tempEdge, n1.area, n1.center, n2.area, n2.center
-            else:
-              let t = newPoint currentMousePos
-              updateEdgePos app.tempEdge, n1.area, n1.center, t.area, t.position
-
-          of bsAddNode:
-            app.tempNode.konva.wrapper.position = currentMousePos
-            app.tempNode.config.position = currentMousePos
-
-          else:
-            discard
-
-          app.lastAbsoluteMousePos = currentMousePos
-          app.lastClientMousePos = m
-
-
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         discard
 
@@ -1524,23 +1465,60 @@ proc init* =
       on "mousedown", proc =
         app.leftClicked = true
 
-      on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
-        if app.leftClicked or kcSpace in app.pressedKeys:
-          moveStage movement e
+      on "mousemove", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
+        let
+          m = v(ke.evt.x, ke.evt.y)
+          currentMousePos = coordinate(m, app.stage)
+
+        if kcJ in app.pressedKeys:
+          let
+            s = ||app.stage.scale
+            Δy = m.y - app.lastClientMousePos.y
+          zoom s, Δy
+        
+        elif
+          kcSpace in app.pressedKeys or
+          app.leftClicked and app.hoverVisualNode.isNone:
+          moveStage movement ke
+
+        else:
+          case app.boardState
+          of bsMakeConnection:
+            let
+              v = app.hoverVisualNode
+              n1 = app.selectedVisualNodes[0]
+
+            if ?v:
+              let n2 = !v
+              updateEdgePos app.tempEdge, n1.area, n1.center, n2.area, n2.center
+            else:
+              let t = newPoint currentMousePos
+              updateEdgePos app.tempEdge, n1.area, n1.center, t.area, t.position
+
+          of bsAddNode:
+            app.tempNode.konva.wrapper.position = currentMousePos
+            app.tempNode.config.position = currentMousePos
+
+          else:
+            discard
+
+        app.lastAbsoluteMousePos = currentMousePos
+        app.lastClientMousePos = m
 
       on "mouseup", proc =
         app.leftClicked = false
 
-        case app.boardState
-        of bsAddNode:
-          if app.state == asNormal:
-            app.boardState = bsFree
-            app.objects[app.tempNode.config.id] = app.tempNode
-            app.mainGroup.add app.tempNode.konva.wrapper
-            app.tempNode = nil
-            unselect()
-        else:
-          discard
+        setTimeout 100, proc =
+          case app.boardState
+          of bsAddNode:
+            if app.state == asNormal:
+              app.boardState = bsFree
+              app.objects[app.tempNode.config.id] = app.tempNode
+              app.mainGroup.add app.tempNode.konva.wrapper
+              app.tempNode = nil
+              # unselect()
+          else:
+            discard
 
     with layer:
       add centerCircle
@@ -1623,6 +1601,97 @@ proc init* =
                 loadImageGen assetUrl, vn, true
                 add app.mainGroup, vn.konva.wrapper
 
+      addEventListener document.documentElement, "keydown":
+        proc (e: Event as KeyboardEvent) {.caster.} =
+          let kc = e.keyCode.KeyCode
+
+          if document.activeElement == document.body:
+            case kc
+            of kcDelete:
+              if app.selectedVisualNodes.len > 0:
+                deleteSelectedNodes()
+                redraw()
+
+              else:
+                notify "nothing to delete"
+
+            of kcEscape:
+              if app.boardState == bsAddNode:
+                destroy app.tempNode.konva.wrapper
+
+              app.boardState = bsFree
+              app.footerState = fsOverview
+              app.state = asNormal
+
+              hide app.tempEdge.konva.wrapper
+              unselect()
+              redraw()
+
+            of kcN:
+              startPuttingNode()
+
+            of kcK: # copy style
+              if app.selectedVisualNodes.len == 1:
+                let v = app.selectedVisualNodes[0]
+
+                app.theme = v.config.theme
+                app.font = v.config.font
+
+              elif app.selectedEdges.len == 1:
+                let e = app.selectedEdges[0]
+
+                app.theme = e.data.config.theme
+                app.edge.width = e.data.config.width
+
+              else:
+                discard
+
+              redraw()
+
+            of kcQ: # start connection
+              if app.selectedVisualNodes.len == 1:
+                startAddConn app.selectedVisualNodes[0]
+
+            of kcC: # go to center
+              gotoCenterOfBoard()
+
+            of kcD: # download
+              downloadFile "data.json", "application/json",
+                stringify forceJsObject toJson app
+
+            of kcS: # save
+              saveServer()
+
+            of kcZ: # reset zoom
+              let c = app.stage.center
+              changeScale c, 1, false
+              app.stage.center = c
+
+            of kcF: # focus
+              if app.selectedVisualNodes.len == 1:
+                let v = app.selectedVisualNodes[0]
+                app.stage.center = v.center
+                app.stage.x = app.stage.x - app.sidebarWidth/2
+
+            of kcT: # show/hide side bar
+              if document.activeElement == document.body:
+                negate app.sidebarVisible
+                redraw()
+
+            of kcP: # scrennshot
+              app.stage.toBlob(1/2).dthen proc(b: Blob) =
+                apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
+                  notify "screenshot updated!"
+
+            else: discard
+
+          else: # if typing in input
+            case kc
+            of kcEscape:
+              blur document.activeElement
+
+            else: discard
+
     block prepare:
       app.sidebarWidth = defaultWidth
       app.font.family = fontFamilies[1].name
@@ -1635,115 +1704,6 @@ proc init* =
       hide app.tempEdge.konva.wrapper
       moveStage app.stage.center
       redraw()
-
-    block shortcuts:
-
-      proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
-        let kc = e.keyCode.KeyCode
-
-        if document.activeElement == document.body:
-          case kc
-          of kcDelete:
-            if app.selectedVisualNodes.len > 0:
-              deleteSelectedNodes()
-              redraw()
-
-            elif app.selectedEdges.len > 0:
-              for ed in app.selectedEdges:
-                let
-                  p = ed.data.points
-                  conn = sorted p[cpkHead]..p[cpkTail]
-
-                destroy app.edgeInfo[conn].konva.wrapper
-                del app.edgeInfo, conn
-                removeConn app.edgeGraph, conn
-
-              unselect()
-              redraw()
-
-            else:
-              notify "nothing to delete"
-
-          of kcEscape:
-            if app.boardState == bsAddNode:
-              destroy app.tempNode.konva.wrapper
-
-            app.boardState = bsFree
-            app.footerState = fsOverview
-            app.state = asNormal
-
-            hide app.tempEdge.konva.wrapper
-            unselect()
-            redraw()
-
-          of kcN:
-            startPuttingNode()
-
-          of kcK: # copy style
-            if app.selectedVisualNodes.len == 1:
-              let v = app.selectedVisualNodes[0]
-
-              app.theme = v.config.theme
-              app.font = v.config.font
-
-            elif app.selectedEdges.len == 1:
-              let e = app.selectedEdges[0]
-
-              app.theme = e.data.config.theme
-              app.edge.width = e.data.config.width
-
-            else:
-              discard
-
-            redraw()
-
-          of kcQ: # start connection
-            if app.selectedVisualNodes.len == 1:
-              startAddConn app.selectedVisualNodes[0]
-
-          of kcC: # go to center
-            gotoCenterOfBoard()
-
-          of kcD: # download
-            downloadFile "data.json", "application/json",
-              stringify forceJsObject toJson app
-
-          of kcS: # save
-            saveServer()
-
-          of kcZ: # reset zoom
-            let c = app.stage.center
-            changeScale c, 1, false
-            app.stage.center = c
-
-          of kcF: # focus
-            if app.selectedVisualNodes.len == 1:
-              let v = app.selectedVisualNodes[0]
-              app.stage.center = v.center
-              app.stage.x = app.stage.x - app.sidebarWidth/2
-
-          of kcT: # show/hide side bar
-            if document.activeElement == document.body:
-              negate app.sidebarVisible
-              redraw()
-
-          of kcP: # scrennshot
-            app.stage.toBlob(1/2).dthen proc(b: Blob) =
-              apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
-                notify "screenshot updated!"
-
-          else: discard
-
-        else: # if typing in input
-          case kc
-          of kcEscape:
-            blur document.activeElement
-
-          else: discard
-
-
-      with document.documentElement:
-        addEventListener "keydown", keyboardListener
 
     app.id = parseInt getWindowQueryParam "id"
 

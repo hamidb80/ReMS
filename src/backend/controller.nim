@@ -65,16 +65,18 @@ proc appendJwtExpire(ucj: sink JsonNode, expire: int64): JsonNode =
   ucj["exp"] = %expire
   ucj
 
+const expireDays = 10
+
 proc toJwt(uc: UserCache): string =
   sign(
     header = %*{
       "typ": "JWT",
       "alg": "HS256"},
-    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() + 1.days),
+    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() + expireDays.days),
     secret = jwtSecret)
 
 proc jwtCookieSet(token: string): webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie(jwtKey, token, now() + 30.days, path = "/")
+  result["Set-Cookie"] = $initCookie(jwtKey, token, now() + expireDays.days, path = "/")
 
 proc jwt(req: Request): options.Option[string] =
   try:
