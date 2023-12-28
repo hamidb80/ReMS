@@ -210,7 +210,10 @@ template respOk*: untyped {.dirty.} =
   req.respond 200
 
 template respFile*(mime, content): untyped {.dirty.} =
-  req.respond 200, @{"Content-Type": mime}, content
+  req.respond 200, @{
+    "Content-Type": mime,
+    "Cache-Control": "max-age=2592000" # cache for 30 days
+    }, content
 
 template redirect*(loc): untyped {.dirty.} =
   req.respond(302, @{"Location": loc})

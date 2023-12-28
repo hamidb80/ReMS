@@ -45,28 +45,28 @@ task make, "make all":
   exec "nimble genps"
 
 task genps, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/palette-studio.js src/frontend/pages/palette"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/palette-studio-{version}.js src/frontend/pages/palette"
 
 task genlg, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-login.js src/frontend/pages/login"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-login-{version}.js src/frontend/pages/login"
 
 task gennp, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/note-preview.js src/frontend/pages/note_preview"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/note-preview-{version}.js src/frontend/pages/note_preview"
 
 task genex, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-explore.js src/frontend/pages/explore"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-explore-{version}.js src/frontend/pages/explore"
 
 task genb, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board.js src/frontend/pages/board"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board-{version}.js src/frontend/pages/board"
 
 task gentg, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags.js src/frontend/pages/tags"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags-{version}.js src/frontend/pages/tags"
 
 task gened, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor.js src/frontend/pages/editor/app"
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
 
 task html, "generate index.html ./dist":
-  cpfile "./src/frontend/custom.css", "./dist/custom.css"
+  cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"
   cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
 

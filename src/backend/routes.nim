@@ -3,7 +3,6 @@ import std/[strformat]
 import ./utils/web
 import ../common/types
 
-
 when not (defined(js) or defined(frontend)):
   import mummy/routers
   var router*: Router

@@ -10,7 +10,7 @@ import jsony
 import questionable
 import bale
 
-import ../common/[types, path, datastructures, conventions]
+import ../common/[types, path, datastructures, conventions, package]
 import ./utils/[web, github, link_preview]
 import ./routes
 import ./database/[models, queries, dbconn]
@@ -44,7 +44,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
 
 proc loadDist*(path: string): RequestHandler =
   let
-    p = projectHome / "dist" / path
+    p = projectHome / "dist" / distp path
     mime = mimeType getExt path
 
   proc(req: Request) =

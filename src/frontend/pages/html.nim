@@ -2,6 +2,7 @@ import std/[strutils, os]
 
 import karax/[vdom, karaxdsl]
 
+import ../../common/package
 import ../../backend/routes
 
 
@@ -48,7 +49,6 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extCss "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
     # extCss "https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
 
-
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
     link(rel = "preconnect", href = "https://fonts.gstatic.com",
@@ -56,7 +56,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
 
     # custom
-    extCss "./custom.css"
+    extCss distp"./custom.css"
 
     for e in extra: e
 
@@ -70,32 +70,32 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 proc tags: VNode =
   commonPage "tag manager", [
-      extJs("./script-tags.js", true)]
+      extJs(distp"./script-tags.js", true)]
 
 proc boardEdit: VNode =
   commonPage "Board", [
       extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
-      extJs("./script-board.js", true)]
+      extJs(distp"./script-board.js", true)]
 
 proc notePreview: VNode =
   commonPage "Note preview", [
-      extJs("./note-preview.js", true)]
+      extJs(distp"./note-preview.js", true)]
 
 proc noteEditor: VNode =
   commonPage "editor", [
-      extJs("./script-editor.js", true)]
+      extJs(distp"./script-editor.js", true)]
 
 proc explore*: VNode =
   commonPage "explore", [
-      extJs("./script-explore.js", true)]
+      extJs(distp"./script-explore.js", true)]
 
 proc login*: VNode =
   commonPage "login", [
-      extJs("./script-login.js", true)]
+      extJs(distp"./script-login.js", true)]
 
 proc palette*: VNode =
   commonPage "login", [
-      extJs("./palette-studio.js", true)]
+      extJs(distp"./palette-studio.js", true)]
 
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
@@ -162,11 +162,11 @@ template `$$`(s): untyped {.dirty.} =
   "<!DOCTYPE html>\n" & $s
 
 when isMainModule:
-  writeFile "./dist/index.html", $$index()
-  writeFile "./dist/login.html", $$login()
-  writeFile "./dist/tags.html", $$tags()
-  writeFile "./dist/explore.html", $$explore()
-  writeFile "./dist/board.html", $$boardEdit()
-  writeFile "./dist/note-preview.html", $$notePreview()
-  writeFile "./dist/editor.html", $$noteEditor()
-  writeFile "./dist/palette.html", $$palette()
+  writeFile distp"./dist/index.html", $$index()
+  writeFile distp"./dist/login.html", $$login()
+  writeFile distp"./dist/tags.html", $$tags()
+  writeFile distp"./dist/explore.html", $$explore()
+  writeFile distp"./dist/board.html", $$boardEdit()
+  writeFile distp"./dist/note-preview.html", $$notePreview()
+  writeFile distp"./dist/editor.html", $$noteEditor()
+  writeFile distp"./dist/palette.html", $$palette()
