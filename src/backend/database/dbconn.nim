@@ -10,7 +10,7 @@ let pool = newSqlitePool(10, appDbPath)
 
 
 template withConn*(db, body): untyped =
-  pool.withConnnection db:
+  pool.withConnection db:
     body
 
 template `!!`*(dbworks): untyped {.dirty.} =

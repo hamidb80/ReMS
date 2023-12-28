@@ -23,7 +23,7 @@ requires "prettyvec"
 requires "mummy" # 0.3.2
 requires "jsony" # 1.1.5
 requires "ponairi" # 0.3.2
-requires "waterpark >= 0.1.5"
+requires "waterpark == 0.1.6"
 requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
 requires "bale" # 1.0.0

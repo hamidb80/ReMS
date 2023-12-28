@@ -71,6 +71,7 @@ var
   uploads: seq[Upload]
   selectedAssetIndex: int = -1 # noIndex
   assetNameTemp = c""
+  messagesResolved = true
 
 
 func iconClass(sc: SearchableClass): string =
@@ -124,6 +125,12 @@ proc fetchBoards: Future[void] =
       boards = bs
       resolve()
 
+proc resolveNotes =
+  for n in notes:
+    loadMsg n
+
+  messagesResolved = true
+
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scNotes]
@@ -131,8 +138,12 @@ proc fetchNotes: Future[void] =
     apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
         NoteItemView]) =
       notes = ns
-      for n in notes:
-        loadMsg n
+
+      messagesResolved = false
+
+      if selectedClass == scNotes:
+        resolveNotes()
+
       resolve()
 
 proc fetchTags: Future[void] =
@@ -164,7 +175,7 @@ proc startUpload(u: Upload) =
 
   u.promise.dthen proc(r: AxiosResponse) =
     u.status = usCompleted
-    discard fetchAssets().then proc = 
+    discard fetchAssets().then proc =
       redraw()
 
   u.promise.dcatch proc(r: AxiosResponse) =
@@ -430,6 +441,9 @@ proc columnCountSetter(i: int): proc() =
 
 proc searchClassSetter(i: SearchableClass): proc() =
   proc =
+    if i == scNotes and not messagesResolved:
+      resolveNotes()
+
     selectedClass = i
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
@@ -835,7 +849,7 @@ when isMainModule:
     of soPortrait: 1
     of soLandscape: 2
 
-  waitAll [fetchTags(), fetchNotes(), fetchBoards(), fetchUsers(), fetchAssets()], proc =
+  waitAll [fetchTags(), fetchUsers(), fetchNotes(), fetchBoards(), fetchAssets()], proc =
     redraw()
 
   document.body.addEventListener "paste":
