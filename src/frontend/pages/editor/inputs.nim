@@ -1,6 +1,11 @@
-import std/[jsffi, dom, jsconsole]
+import std/[dom, cstrutils, jsffi]
+
 import karax/[karax, karaxdsl, vdom]
+import caster
+
+import ../../utils/[ui, browser, js, api]
 import core
+
 
 proc textInput*(input: JsObject, cb: CallBack): VNode =
   buildHtml input(
@@ -25,6 +30,32 @@ proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
     checked = input.to bool):
     proc onchange(e: Event, n: VNode) =
       cb e.target.checked.toJs
+
+proc imageLinkOrUploadOnPasteInput*(input: JsObject, cb: CallBack): VNode =
+  result = buildHtml input(
+    class = "form-control",
+    `type` = "text",
+    value = (input.to cstring),
+    placeholder = "paste image or link to image"):
+    proc pasteHandler(e: dom.Event as ClipboardEvent) {.caster.} =
+      let files = e.clipboardData.filesArray
+
+      if files.len == 1: # paste by image
+        let f = files[0]
+
+        if f.`type`.startswith "image/":
+          cb toJs "loading..."
+
+          apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
+            blur e.target.Element
+            cb toJs assetUrl
+
+    proc onfocus =
+      addEventListener document.body, "paste", pasteHandler
+
+    proc onblur =
+      removeEventListener document.body, "paste", pasteHandler
+
 
 proc optionItem(val, txt: cstring, selected: bool): VNode =
   result = buildHtml:

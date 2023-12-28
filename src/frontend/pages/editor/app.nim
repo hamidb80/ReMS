@@ -18,6 +18,7 @@ var
 
 register app, "raw-text-editor", rawTextEditor
 register app, "linear-text-editor", textInput
+register app, "image-upload-on-paste", imageLinkOrUploadOnPasteInput
 register app, "checkbox-editor", checkBoxEditor
 register app, "option-selector", selectEditor
 

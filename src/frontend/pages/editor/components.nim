@@ -410,7 +410,8 @@ proc initLatex: Hooks =
 
 proc initLinearMarkdown: Hooks =
   let
-    el = createElement("div", {"class": "tw-linear-markdown " & displayInlineClass})
+    el = createElement("div", {"class": "tw-linear-markdown " &
+        displayInlineClass})
     (content, cset) = genState c""
   var
     id: TimeOut
@@ -561,7 +562,7 @@ proc initImage: Hooks =
         field: "url",
         icon: "bi bi-link-45deg",
         editorData: () => EditorInitData(
-          name: "raw-text-editor",
+          name: "image-upload-on-paste",
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring))),
 
