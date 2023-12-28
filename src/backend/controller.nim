@@ -1,5 +1,5 @@
 import std/[strformat, tables, strutils, os, oids, json, httpclient,
-    times, htmlparser, sha1]
+    times, sha1]
 
 # import checksums/sha1
 import mummy, mummy/multipart
@@ -9,6 +9,7 @@ import cookiejar
 import jsony
 import questionable
 import bale
+import htmlparser
 
 import ../common/[types, path, datastructures, conventions, package]
 import ./utils/[web, github, link_preview]

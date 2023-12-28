@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.1"
+version       = "0.0.2"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -11,7 +11,9 @@ bin           = @["rems"]
 # Dependencies
 
 requires "nim >= 2.0.0"
+
 requires "checksums" # for Nim 2
+requires "htmlparser" # for Nim 2
 requires "db_connector >= 0.1.0" # for Nim 2
 
 requires "macroplus >= 0.2.5"
@@ -27,7 +29,6 @@ requires "waterpark == 0.1.6"
 requires "quickjwt" # 0.2.1
 requires "cookiejar" # 0.3.0
 requires "bale" # 1.0.0
-
 requires "karax == 1.3.0"
 
 
@@ -86,5 +87,5 @@ task go, "runs server + bot":
   exec """nim -d:ssl --d:login_default_admin --passL:"-lcrypto" r ./src/backend/main.nim"""
 
 task done, "runs server + bot":
-  exec """nim -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
+  exec """nim -d:useMalloc -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
 
