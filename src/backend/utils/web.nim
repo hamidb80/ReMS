@@ -217,7 +217,7 @@ template respFile*(mime, content): untyped {.dirty.} =
     "Cache-Control": "max-age=" & $longCacheTime
     }, content
 
-template redirect*(loc, cache: bool): untyped {.dirty.} =
+template redirect*(loc: string, cache: bool = false): untyped {.dirty.} =
   let t =
     if cache: -1
     else: longCacheTime
