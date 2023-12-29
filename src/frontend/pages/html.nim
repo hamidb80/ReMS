@@ -130,18 +130,26 @@ proc index: VNode =
         text " Better With Us"
 
       h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Features"
+        text "Actions"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "", "planet.svg", get_explore_url()
-        blockk "Files", "", "inbox-archive.svg", ""
         blockk "Tags", "", "tag.svg", get_tags_url()
-        blockk "Notes", "", "pen-writing-on-paper.svg", ""
         blockk "change colors", "", "palette.svg", get_palette_studio_url()
-        blockk "Graphs", "", "share-circle.svg", ""
-        blockk "Save your Time", "", "clock-square.svg", ""
-        blockk "It's Open Source", "", "hand-heart.svg", "https://github.com/hamidb80/rems"
         blockk "Login", "", "user.svg", get_login_url()
-        blockk "Remembering Utils", "", "repeat.svg", ""
+
+      h3(class = "mt-4 mb-2 text-center w-100"):
+        text "parts"
+      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
+        blockk "Notes", "", "pen-writing-on-paper.svg", ""
+        blockk "Files", "", "inbox-archive.svg", ""
+        blockk "Boards", "", "share-circle.svg", ""
+  
+      h3(class = "mt-4 mb-2 text-center w-100"):
+        text "Features"
+      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
+        blockk "Save your Time", "", "clock-square.svg", ""
+        blockk "Remember", "", "repeat.svg", ""
+        blockk "Open Source", "", "hand-heart.svg", "https://github.com/hamidb80/rems"
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
