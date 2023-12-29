@@ -205,7 +205,7 @@ proc assetShorthand*(req: Request) =
     notFoundHandler req
   else:
     let assetid = req.uri[qi+1..^1]
-    redirect get_assets_download_url parseInt assetid
+    redirect get_assets_download_url parseInt assetid, true
 
 proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
   # TODO return a default image if not exists
