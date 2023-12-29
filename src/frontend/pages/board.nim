@@ -1534,7 +1534,6 @@ proc init* =
 
     block global_events:
       addEventListener window, "resize", proc =
-        echo "resized"
         fitStage app.stage
 
       addEventListener app.stage.container, "wheel", nonPassive:
