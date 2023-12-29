@@ -134,9 +134,14 @@ func toForm*(name: cstring; file: Blob): FormData =
 template winEl*: untyped =
   window.document.body
 
-proc valueAsNumber*[T](el: Element): T {.importjs: "#.valueAsNumber".}
-proc filesArray*(d: DataTransfer or Element or Node or Event): seq[
-    DFile] {.importjs: "Array.from(#.files)".}
+proc valueAsNumber*[T](el: Element): T
+  {.importjs: "#.valueAsNumber".}
+
+proc filesArray*(d: DataTransfer or Element or Node or Event):
+  seq[DFile] {.importjs: "Array.from(#.files)".}
+
+proc openNewTab*(link: cstring) 
+  {.importjs: "window.open(@)".}
 
 proc downloadUrl*(name, dataurl: cstring) =
   let link = document.createElement("a")

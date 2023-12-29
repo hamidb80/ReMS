@@ -14,7 +14,7 @@ import ../components/[snackbar]
 import ../utils/[ui, browser, js, api]
 import ../../common/[conventions, datastructures, types, iter]
 
-import ../../backend/database/[models]
+import ../../backend/database/[models], ../../backend/routes
 
 
 randomize()
@@ -1392,6 +1392,14 @@ proc createDom*(data: RouterData): VNode =
                   tdiv(class = "input-group"):
                     input(`type` = "text", id = "new-message-input",
                         class = "form-control form-control-sm")
+
+                    button(class = "input-group-text btn btn-primary"):
+                      icon "fa-pen"
+                      proc onClick =
+                        apiNewNote proc(id: Id) =
+                          addToMessages id
+                          openNewTab get_note_editor_url(id)
+
                     button(class = "input-group-text btn btn-primary"):
                       icon "fa-add"
                       proc onClick =

@@ -113,6 +113,15 @@ proc apiUpdateBoardContent*(
     .catch(fail)
 
 
+proc apiNewNote*(
+    success: proc(noteId: Id),
+    fail: proc() = noop
+) =
+    discard get_api_note_new_url()
+    .getApi()
+    .then(wrapResp success cast[Id](r.data))
+    .catch(fail)
+
 proc apiGetNote*(
     id: Id,
     success: proc(n: NoteItemView),

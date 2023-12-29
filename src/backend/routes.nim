@@ -34,9 +34,10 @@ dispatch router, ../controller:
   put "/api/asset/update/tags/"?(id: Id), updateAssetRelTags {.ok.}
   delete "/api/asset/"?(id: Id), deleteAsset {.ok.}
 
-  get "/notes/new/", newNote {.Id.}
+  get "/notes/new/", newNote {.redirect.}
   get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
   get "/note/preview/"?(id: Id), loadDist"note-preview.html" {.html.}
+  get "/api/note/new/", newNoteApi {.json: Id.}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
       getNoteContentQuery {.json: Note.}

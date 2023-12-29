@@ -224,6 +224,10 @@ proc newNote*(req: Request) {.userOnly.} =
   let id = forceSafety !!<db.newNote(userc.account)
   redirect get_note_editor_url id
 
+proc newNoteApi*(req: Request) {.userOnly.} =
+  let id = forceSafety !!<db.newNote(userc.account)
+  respJson toJson id
+
 proc getNote*(req: Request) {.qparams: {id: int}.} =
   !!respJson forceSafety toJson db.getNote(id)
 

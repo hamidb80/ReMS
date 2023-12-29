@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.4"
+version       = "0.0.5"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -35,15 +35,6 @@ requires "karax == 1.3.0"
 # Tasks
 import std/[os, strutils, strformat]
 
-task make, "make all":
-  exec "nimble html"
-  exec "nimble genb"
-  exec "nimble gened"
-  exec "nimble gentg"
-  exec "nimble gennp"
-  exec "nimble genex"
-  exec "nimble genlg"
-  exec "nimble genps"
 
 task genps, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/palette-studio-{version}.js src/frontend/pages/palette"
@@ -70,6 +61,17 @@ task html, "generate index.html ./dist":
   cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"
   cpDir "./assets/", "./dist/"
   exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
+
+
+task make, "make all":
+  html_task()
+  genb_task()
+  gened_task()
+  gentg_task()
+  gennp_task()
+  genex_task()
+  genlg_task()
+  genps_task()
 
 
 task prepare, "define envorment vars only for test":
