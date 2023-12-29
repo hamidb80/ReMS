@@ -209,14 +209,22 @@ template respJson*(body): untyped {.dirty.} =
 template respOk*: untyped {.dirty.} =
   req.respond 200
 
+const longCacheTime* = 30 * 24 * 60 * 60 # 30 days in sec
+
 template respFile*(mime, content): untyped {.dirty.} =
   req.respond 200, @{
     "Content-Type": mime,
-    "Cache-Control": "max-age=2592000" # cache for 30 days
+    "Cache-Control": "max-age=" & $longCacheTime
     }, content
 
-template redirect*(loc): untyped {.dirty.} =
-  req.respond(302, @{"Location": loc})
+template redirect*(loc, cache: bool): untyped {.dirty.} =
+  let t =
+    if cache: -1
+    else: longCacheTime
+
+  req.respond 302, @{
+    "Location": loc,
+    "Cache-Control": "max-age=" & $t}
 
 template respErr*(code, msg): untyped {.dirty.} =
   let ct =
