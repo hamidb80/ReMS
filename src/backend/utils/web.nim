@@ -219,8 +219,8 @@ template respFile*(mime, content): untyped {.dirty.} =
 
 template redirect*(loc: string, cache: bool = false): untyped {.dirty.} =
   let t =
-    if cache: -1
-    else: longCacheTime
+    if cache: longCacheTime
+    else: -1
 
   req.respond 302, @{
     "Location": loc,
