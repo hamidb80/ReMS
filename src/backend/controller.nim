@@ -45,7 +45,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
 
 proc loadDist*(path: string): RequestHandler =
   let
-    p = projectHome / "dist" / distp path
+    p = projectHome / "dist" / apv path
     mime = mimeType getExt path
 
   proc(req: Request) =

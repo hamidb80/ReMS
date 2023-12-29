@@ -1404,6 +1404,11 @@ proc createDom*(data: RouterData): VNode =
 
       snackbar()
 
+proc fitStage(stage: Stage) =
+  with stage:
+    width = window.innerWidth
+    height = window.innerHeight
+
 proc init* =
   document.body.classList.add "overflow-hidden"
   setRenderer createDom
@@ -1429,8 +1434,8 @@ proc init* =
       # tempNode: VisualNode
 
     with app.stage:
-      width = window.innerWidth
-      height = window.innerHeight
+      fitStage()
+
       add layer
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
@@ -1475,7 +1480,7 @@ proc init* =
             s = ||app.stage.scale
             Δy = m.y - app.lastClientMousePos.y
           zoom s, Δy
-        
+
         elif
           kcSpace in app.pressedKeys or
           app.leftClicked and app.hoverVisualNode.isNone:
@@ -1528,6 +1533,10 @@ proc init* =
       add app.hoverGroup
 
     block global_events:
+      addEventListener window, "resize", proc =
+        echo "resized"
+        fitStage app.stage
+
       addEventListener app.stage.container, "wheel", nonPassive:
         proc (e: Event as WheelEvent) {.caster.} =
           preventDefault e

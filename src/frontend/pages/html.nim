@@ -56,7 +56,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
 
     # custom
-    extCss distp"./custom.css"
+    extCss apv"./custom.css"
 
     for e in extra: e
 
@@ -70,32 +70,32 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 proc tags: VNode =
   commonPage "tag manager", [
-      extJs(distp"./script-tags.js", true)]
+      extJs(apv"./script-tags.js", true)]
 
 proc boardEdit: VNode =
   commonPage "Board", [
       extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
-      extJs(distp"./script-board.js", true)]
+      extJs(apv"./script-board.js", true)]
 
 proc notePreview: VNode =
   commonPage "Note preview", [
-      extJs(distp"./note-preview.js", true)]
+      extJs(apv"./note-preview.js", true)]
 
 proc noteEditor: VNode =
   commonPage "editor", [
-      extJs(distp"./script-editor.js", true)]
+      extJs(apv"./script-editor.js", true)]
 
 proc explore*: VNode =
   commonPage "explore", [
-      extJs(distp"./script-explore.js", true)]
+      extJs(apv"./script-explore.js", true)]
 
 proc login*: VNode =
   commonPage "login", [
-      extJs(distp"./script-login.js", true)]
+      extJs(apv"./script-login.js", true)]
 
 proc palette*: VNode =
   commonPage "login", [
-      extJs(distp"./palette-studio.js", true)]
+      extJs(apv"./palette-studio.js", true)]
 
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
@@ -162,11 +162,11 @@ template `$$`(s): untyped {.dirty.} =
   "<!DOCTYPE html>\n" & $s
 
 when isMainModule:
-  writeFile distp"./dist/index.html", $$index()
-  writeFile distp"./dist/login.html", $$login()
-  writeFile distp"./dist/tags.html", $$tags()
-  writeFile distp"./dist/explore.html", $$explore()
-  writeFile distp"./dist/board.html", $$boardEdit()
-  writeFile distp"./dist/note-preview.html", $$notePreview()
-  writeFile distp"./dist/editor.html", $$noteEditor()
-  writeFile distp"./dist/palette.html", $$palette()
+  writeFile apv"./dist/index.html", $$index()
+  writeFile apv"./dist/login.html", $$login()
+  writeFile apv"./dist/tags.html", $$tags()
+  writeFile apv"./dist/explore.html", $$explore()
+  writeFile apv"./dist/board.html", $$boardEdit()
+  writeFile apv"./dist/note-preview.html", $$notePreview()
+  writeFile apv"./dist/editor.html", $$noteEditor()
+  writeFile apv"./dist/palette.html", $$palette()
