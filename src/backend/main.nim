@@ -2,9 +2,12 @@ import std/[nativesockets, threadpool, os]
 
 import ./[server, bot, config]
 import ./utils/db_init
+import ../common/package
 
 
 when isMainModule:
+    echo "..:: ReMS - v", packageVersion, " ::.."
+
     echo "init directories"
     discard existsOrCreateDir appSaveDir
 

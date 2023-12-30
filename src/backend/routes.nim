@@ -12,10 +12,10 @@ dispatch router, ../controller:
   config "[method not allowed]", notFoundHandler {.depends.}
   config "[error]", errorHandler {.depends.}
 
-  get "/", loadDist"index.html" {.html.}
+  get "/", loadHtml"index.html" {.html.}
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
-  get "/login/", loadDist"login.html" {.html.}
+  get "/login/", loadHtml"login.html" {.html.}
   get "/api/login/bale/"?(secret: string), loginWithInvitationCode {.ok.}
   post "/api/login/form/", loginWithForm {.ok.}
   get "/api/logout/", logout {.ok.}
@@ -28,15 +28,15 @@ dispatch router, ../controller:
   post "/assets/upload/", assetsUpload {.form: File, Id.}
   get "/assets/download/"?(id: Id), assetsDownload {.file.}
   get "/a", assetShorthand {.redirect.}
-  get "/asset/preview/"?(id: Id), loadDist"asset-preview.html" {.html.}
+  get "/asset/preview/"?(id: Id), loadHtml"asset-preview.html" {.html.}
   get "/api/asset/"?(id: Id), getAsset {.json.}
   get "/api/asset/update/name/"?(id: Id, name: string), updateAssetName {.ok.}
   put "/api/asset/update/tags/"?(id: Id), updateAssetRelTags {.ok.}
   delete "/api/asset/"?(id: Id), deleteAsset {.ok.}
 
   get "/notes/new/", newNote {.redirect.}
-  get "/note/editor/"?(id: Id), loadDist"editor.html" {.html.}
-  get "/note/preview/"?(id: Id), loadDist"note-preview.html" {.html.}
+  get "/note/editor/"?(id: Id), loadHtml"editor.html" {.html.}
+  get "/note/preview/"?(id: Id), loadHtml"note-preview.html" {.html.}
   get "/api/note/new/", newNoteApi {.json: Id.}
   get "/api/note/"?(id: Id), getNote {.json: Note.}
   get "/api/note/content/query/"?(id: Id, path: seq[int]),
@@ -47,11 +47,11 @@ dispatch router, ../controller:
   delete "/api/note/"?(id: Id), deleteNote {.ok.}
 
   # 'Pages' are just views for notes with predefined criteria
-  # get "/page/"?(s: string), loadDist"page.html" {.html.}
+  # get "/page/"?(s: string), loadHtml"page.html" {.html.}
   # get "/api/page/"?(page: string, start: Id, limit: int), page {.json: seq[Note].}
 
   get "/boards/new/", newBoard {.Id.}
-  get "/board/edit/"?(id: Id), loadDist"board.html" {.html.}
+  get "/board/edit/"?(id: Id), loadHtml"board.html" {.html.}
   get "/api/board/"?(id: Id), getBoard {.json: Board.}
   put "/api/board/title/"?(id: Id, title: string), updateBoardTitle {.ok.}
   put "/api/board/content/"?(id: Id), updateBoardContent {.ok.}
@@ -59,13 +59,13 @@ dispatch router, ../controller:
   put "/api/board/update/tags/"?(id: Id), updateBoardRelTags {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
-  get "/tags/", loadDist"tags.html" {.html.}
+  get "/tags/", loadHtml"tags.html" {.html.}
   get "/api/tags/list/", listTags {.json: seq[Tag].}
   post "/api/tag/new/", newTag {.Id.}
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
-  get "/palette/studio/", loadDist"palette.html" {.html.}
+  get "/palette/studio/", loadHtml"palette.html" {.html.}
   get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
   get "/api/palettes/", listPalettes {.json: seq[Palette].}
   put "/api/update/palette/"?(name: string), updatePalette {.json: Palette.}
@@ -73,7 +73,7 @@ dispatch router, ../controller:
   # put "/api/palette/update/"?(name: string),
   # delete "/api/palette/"?(name: string)
 
-  get "/explore/", loadDist"explore.html" {.html.}
+  get "/explore/", loadHtml"explore.html" {.html.}
   post "/api/explore/notes/"?(offset: int, limit: int), exploreNotes {.json.}
   post "/api/explore/boards/"?(offset: int, limit: int), exploreBoards {.json.}
   post "/api/explore/assets/"?(offset: int, limit: int), exploreAssets {.json.}

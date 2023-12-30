@@ -211,20 +211,20 @@ template respOk*: untyped {.dirty.} =
 
 const longCacheTime* = 30 * 24 * 60 * 60 # 30 days in sec
 
-template respFile*(mime, content): untyped {.dirty.} =
+func cacheTime*(shouldCache: bool): int =
+  if shouldCache: longCacheTime
+  else: -1
+
+template respFile*(mime, content: untyped, cache: bool): untyped {.dirty.} =
   req.respond 200, @{
     "Content-Type": mime,
-    "Cache-Control": "max-age=" & $longCacheTime
+    "Cache-Control": "max-age=" & $cacheTime(cache)
     }, content
 
 template redirect*(loc: string, cache: bool = false): untyped {.dirty.} =
-  let t =
-    if cache: longCacheTime
-    else: -1
-
   req.respond 302, @{
     "Location": loc,
-    "Cache-Control": "max-age=" & $t}
+    "Cache-Control": "max-age=" & $cacheTime(cache)}
 
 template respErr*(code, msg): untyped {.dirty.} =
   let ct =

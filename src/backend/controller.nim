@@ -29,19 +29,26 @@ proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
+
+const distFolder* = projectHome / "dist"
+
 proc staticFileHandler*(req: Request) {.qparams.} =
   if "file" in q:
     let
       fname = q["file"]
       ext = getExt fname
       mime = mimeType ext
-      fpath = projectHome / "dist" / fname
+      fpath = distFolder / fname
 
     if fileExists fpath:
-      respFile mime, readFile fpath
+      respFile mime, readFile fpath, true
 
     else: resp 404
   else: resp 404
+
+proc loadHtml*(path: string): RequestHandler =
+  proc(req: Request) =
+    respFile "text/html", readfile distFolder / path, false
 
 proc loadDist*(path: string): RequestHandler =
   let
@@ -49,7 +56,7 @@ proc loadDist*(path: string): RequestHandler =
     mime = mimeType getExt path
 
   proc(req: Request) =
-    respFile mime, readfile p
+    respFile mime, readfile p, true
 
 # ------- utility
 
@@ -73,7 +80,8 @@ proc toJwt(uc: UserCache): string =
     header = %*{
       "typ": "JWT",
       "alg": "HS256"},
-    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() + expireDays.days),
+    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() +
+        expireDays.days),
     secret = jwtSecret)
 
 proc jwtCookieSet(token: string): webby.HttpHeaders =
@@ -213,7 +221,7 @@ proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
     asset = !!<db.findAsset(id)
     content = readfile asset.path
 
-  respFile asset.mime, content
+  respFile asset.mime, content, true
 
 proc deleteAsset*(req: Request) {.qparams: {id: int}, userOnly.} =
   !!db.deleteAssetLogical(userc.account, id, unow())
