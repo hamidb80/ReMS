@@ -864,10 +864,6 @@ var
   noteRelTags: Table[Id, RelValuesByTagId]
   tags: Table[Id, Tag]
 
-proc defaultWidth: int =
-  min 500, window.innerwidth
-
-
 proc getMsg(id: Id) =
   noteHtmlContent[id] = none cstring
 
@@ -962,6 +958,10 @@ proc addToMessages(id: Id) =
       v.config.messageIdList.add id
       getmsg id
 
+
+proc defaultWidth: int =
+  min 500, window.innerwidth
+
 proc isMaximized: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
 
@@ -970,6 +970,20 @@ proc maximize =
     if isMaximized(): defaultWidth()
     else: window.innerWidth
   redraw()
+
+proc closeSideBar =
+  app.sidebarVisible = false
+
+proc openSideBar =
+  ## we have to check the width to prevent problems after screen rotation or resize
+  app.sidebarVisible = true
+  app.sidebarwidth =
+    min(
+      max(
+        app.sidebarwidth,
+        minimizeWidth),
+      window.innerWidth)
+
 
 proc toggleLock =
   negate app.isLocked
@@ -1086,19 +1100,6 @@ proc gotoCenterOfBoard =
       if app.sidebarVisible: app.sidebarWidth
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
-
-proc closeSideBar =
-  app.sidebarVisible = false
-
-proc openSideBar =
-  ## we have to check the width to prevent problems after screen rotation or resize
-  app.sidebarVisible = true
-  app.sidebarwidth =
-    min(
-      max(
-        app.sidebarwidth,
-        minimizeWidth),
-      window.innerWidth)
 
 
 proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
