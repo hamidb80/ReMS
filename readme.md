@@ -32,4 +32,4 @@ then enter it in mobile
 
 ## Others
 - https://ogb.stanford.edu/
-- [Latex Editor](https://latexeditor.lagrida.com/)https://latexeditor.lagrida.com/
+- [Latex Editor](https://latexeditor.lagrida.com/)
