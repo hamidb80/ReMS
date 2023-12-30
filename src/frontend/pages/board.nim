@@ -56,6 +56,7 @@ type
     id: Id ## current board id that is editing
     title: cstring
     maxNodeId: int
+    isLocked: bool = true
 
     # konva states
     stage: Stage
@@ -918,35 +919,36 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             target = "_blank"):
           icon "fa-glasses"
 
-        a(class = "btn mx-1 btn-compact btn-outline-warning",
-            href = get_note_editor_url mid,
-            target = "_blank"):
-          icon "fa-pen"
-
         button(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-sync"
           proc onclick =
             getMsg mid
 
-        button(class = "btn mx-1 btn-compact btn-outline-dark"):
-          icon "fa-chevron-up"
-          proc onclick =
-            if 0 < i:
-              swap v.config.messageIdList[i], v.config.messageIdList[i-1]
-              redraw()
+        if not app.isLocked:
+          a(class = "btn mx-1 btn-compact btn-outline-warning",
+              href = get_note_editor_url mid,
+              target = "_blank"):
+            icon "fa-pen"
 
-        button(class = "btn mx-1 btn-compact btn-outline-dark"):
-          icon "fa-chevron-down"
-          proc onclick =
-            if i < v.config.messageIdList.high:
-              swap v.config.messageIdList[i+1], v.config.messageIdList[i]
-              redraw()
+          button(class = "btn mx-1 btn-compact btn-outline-dark"):
+            icon "fa-chevron-up"
+            proc onclick =
+              if 0 < i:
+                swap v.config.messageIdList[i], v.config.messageIdList[i-1]
+                redraw()
 
-        button(class = "btn mx-1 btn-compact btn-outline-danger"):
-          icon "fa-close"
-          proc onclick =
-            v.config.messageIdList.delete i
-            redraw()
+          button(class = "btn mx-1 btn-compact btn-outline-dark"):
+            icon "fa-chevron-down"
+            proc onclick =
+              if i < v.config.messageIdList.high:
+                swap v.config.messageIdList[i+1], v.config.messageIdList[i]
+                redraw()
+
+          button(class = "btn mx-1 btn-compact btn-outline-danger"):
+            icon "fa-close"
+            proc onclick =
+              v.config.messageIdList.delete i
+              redraw()
 
 proc genSelectPalette(i: int): proc() =
   proc =
@@ -960,14 +962,17 @@ proc addToMessages(id: Id) =
       v.config.messageIdList.add id
       getmsg id
 
-proc isMaximized*: bool =
+proc isMaximized: bool =
   app.sidebarWidth >= window.innerWidth * 2/3
 
-proc maximize* =
+proc maximize =
   app.sidebarWidth =
     if isMaximized(): defaultWidth()
     else: window.innerWidth
   redraw()
+
+proc toggleLock =
+  negate app.isLocked
 
 proc sidebarStateMutator*(to: SidebarState): proc =
   proc =
@@ -1086,6 +1091,7 @@ proc closeSideBar =
   app.sidebarVisible = false
 
 proc openSideBar =
+  ## we have to check the width to prevent problems after screen rotation or resize
   app.sidebarVisible = true
   app.sidebarwidth =
     min(
@@ -1114,7 +1120,7 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "regions user-select-none position-absolute bottom-0 left-0 w-100 bg-white border-top border-dark-subtle"):
+      footer(class = "position-absolute bottom-0 left-0 w-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
           sidebarBtn "fa-plus", "", proc =
             zoom ||app.stage.scale, -200
@@ -1122,116 +1128,125 @@ proc createDom*(data: RouterData): VNode =
           sidebarBtn "fa-minus", "", proc =
             zoom ||app.stage.scale, +200
 
-        tdiv(class = "inside h-100 d-flex align-items-center", style = style(
-            StyleAttr.width, cstring $iff(
-              app.sidebarvisible,
-              window.innerWidth - app.sidebarWidth,
-              window.innerWidth))):
+        if not app.isLocked:
+          tdiv(class = "inside regions user-select-none bg-white border-top border-dark-subtle d-flex align-items-center",
+                style = style(StyleAttr.width, cstring $iff(
+                app.sidebarvisible,
+                window.innerWidth - app.sidebarWidth,
+                window.innerWidth))):
 
-          tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
-            if app.selectedVisualNodes.len != 0:
-              icon "fa-crosshairs"
-            elif app.selectedEdges.len != 0:
-              icon "fa-grip-lines"
-            else:
-              icon "fa-earth-asia"
+            tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
+              if app.selectedVisualNodes.len != 0:
+                icon "fa-crosshairs"
+              elif app.selectedEdges.len != 0:
+                icon "fa-grip-lines"
+              else:
+                icon "fa-earth-asia"
 
-          case app.footerState
-          of fsOverview:
-            let
-              font = getFocusedFont()
-              theme = getFocusedTheme()
-
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              bold: text "Color: "
-              colorSelectBtn(nonExistsTheme, theme, false)
-
-              proc onclick =
-                app.footerState = fsColor
-                redraw()
-
-            if app.selectedEdges.len == 0:
+            case app.footerState
+            of fsOverview:
+              let
+                font = getFocusedFont()
+                theme = getFocusedTheme()
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
-                bold(class = "me-2"): text "Font: "
-                span: text font.family
+                bold: text "Color: "
+                colorSelectBtn(nonExistsTheme, theme, false)
 
                 proc onclick =
-                  app.footerState = fsFontFamily
+                  app.footerState = fsColor
                   redraw()
+
+              if app.selectedEdges.len == 0:
+
+                tdiv(class = "d-inline-flex mx-2 pointer"):
+                  bold(class = "me-2"): text "Font: "
+                  span: text font.family
+
+                  proc onclick =
+                    app.footerState = fsFontFamily
+                    redraw()
+
+                tdiv(class = "d-inline-flex mx-2 pointer"):
+                  span: text $font.size
+
+                  proc onclick =
+                    app.footerState = fsFontSize
+                    redraw()
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
-                span: text $font.size
+                bold: text "connection: "
+
+              tdiv(class = "d-inline-flex mx-2 pointer"):
+                span: text "shape "
 
                 proc onclick =
-                  app.footerState = fsFontSize
-                  redraw()
+                  app.footerState = fsBorderShape
 
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              bold: text "connection: "
+              tdiv(class = "d-inline-flex mx-2 pointer"):
+                span(class = "me-2"): text "width: "
+                span: text $getFocusedEdgeWidth()
 
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              span: text "shape "
+                proc onclick =
+                  app.footerState = fsBorderWidth
 
-              proc onclick =
-                app.footerState = fsBorderShape
+            of fsFontFamily:
+              for (fname, _) in fontFamilies:
+                fontFamilySelectBtn(fname, true)
 
-            tdiv(class = "d-inline-flex mx-2 pointer"):
-              span(class = "me-2"): text "width: "
-              span: text $getFocusedEdgeWidth()
+            of fsFontSize:
+              for s in countup(10, 300, 10):
+                fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc =
+                  setFocusedFontSize s
+                  app.footerState = fsOverview)
 
-              proc onclick =
-                app.footerState = fsBorderWidth
+            of fsBorderWidth:
+              for w in countup(10, 100, 5):
+                fontSizeSelectBtn w.Tenth, app.edge.width, true, capture(w, proc =
+                  setFocusedEdgeWidth w.Tenth
+                  app.footerState = fsOverview)
 
-          of fsFontFamily:
-            for (fname, _) in fontFamilies:
-              fontFamilySelectBtn(fname, true)
-
-          of fsFontSize:
-            for s in countup(10, 300, 10):
-              fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc =
-                setFocusedFontSize s
-                app.footerState = fsOverview)
-
-          of fsBorderWidth:
-            for w in countup(10, 100, 5):
-              fontSizeSelectBtn w.Tenth, app.edge.width, true, capture(w, proc =
-                setFocusedEdgeWidth w.Tenth
-                app.footerState = fsOverview)
-
-          of fsPalette:
-            for i, p in app.palettes:
-              # TODO active class should highlight
-              span(class = "mx-1 " & iff(i == app.selectedPalleteI, "active"),
-                  onclick = genSelectPalette i):
-                text p.name
+            of fsPalette:
+              for i, p in app.palettes:
+                # TODO active class should highlight
+                span(class = "mx-1 " & iff(i == app.selectedPalleteI, "active"),
+                    onclick = genSelectPalette i):
+                  text p.name
 
 
-          of fsColor:
-            span(class = "mx-1"):
-              text app.palettes[app.selectedPalleteI].name
-
-              proc onclick =
-                app.footerState = fsPalette
-
-            for i, ct in app.palettes[app.selectedPalleteI].colorThemes:
+            of fsColor:
               span(class = "mx-1"):
-                colorSelectBtn(getFocusedTheme(), ct, true)
+                text app.palettes[app.selectedPalleteI].name
 
-          else:
-            text "not defined"
+                proc onclick =
+                  app.footerState = fsPalette
+
+              for i, ct in app.palettes[app.selectedPalleteI].colorThemes:
+                span(class = "mx-1"):
+                  colorSelectBtn(getFocusedTheme(), ct, true)
+
+            else:
+              text "not defined"
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         let
           n = app.selectedVisualNodes.len
           m = app.selectedEdges.len
 
-        if n >= 1 or m >= 1:
-          sidebarBtn "fa-trash", "", deleteSelectedNodes
+        if n >= 1 or m >= 1: # if something was selected
+          if not app.isLocked:
+            sidebarBtn "fa-trash", "", deleteSelectedNodes
           sidebarBtn "fa-ban", "", proc =
             unselect()
             app.boardstate = bsFree
             # app.state = asNormal
+        else:
+          let iconName =
+            if app.isLocked: "fa-lock"
+            else: "fa-lock-open"
+
+          sidebarBtn iconName, "", toggleLock
+
 
         if n > 1:
           sidebarBtn "", $n, noop
@@ -1239,20 +1254,23 @@ proc createDom*(data: RouterData): VNode =
         elif n == 1:
           let vn = app.selectedVisualNodes[0]
 
-          sidebarBtn "fa-circle-nodes", "", proc =
-            startAddConn vn
+          if not app.isLocked:
+            sidebarBtn "fa-circle-nodes", "", proc =
+              startAddConn vn
 
           sidebarBtn "fa-message", $vn.config.messageIdList.len, proc =
             openSideBar()
             app.sidebarState = ssMessagesView
 
         else:
-          if m == 0:
+          if m == 0 and not app.isLocked:
             sidebarBtn "fa-plus fa-lg", "", startPuttingNode
 
           # TODO show shortcut and name via a tooltip
           sidebarBtn "fa-expand fa-lg", "", gotoCenterOfBoard
-          sidebarBtn "fa-save fa-lg", "", saveServer
+
+          if not app.isLocked:
+            sidebarBtn "fa-save fa-lg", "", saveServer
 
       if app.sidebarVisible:
         aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
@@ -1287,21 +1305,22 @@ proc createDom*(data: RouterData): VNode =
                       text "Messages "
                     icon "fa-message"
 
-                tdiv(class = "nav-item",
-                    onclick = sidebarStateMutator ssPropertiesView):
-                  span(class = "nav-link px-3 pointer" &
-                    iff(app.sidebarState == ssPropertiesView, " active")):
-                    span(class = "caption"):
-                      text "Properties "
-                    icon "fa-circle-info"
+                if not app.isLocked:
+                  tdiv(class = "nav-item",
+                      onclick = sidebarStateMutator ssPropertiesView):
+                    span(class = "nav-link px-3 pointer" &
+                      iff(app.sidebarState == ssPropertiesView, " active")):
+                      span(class = "caption"):
+                        text "Properties "
+                      icon "fa-circle-info"
 
-                tdiv(class = "nav-item",
-                    onclick = sidebarStateMutator ssBoardProperties):
-                  span(class = "nav-link px-3 pointer" &
-                    iff(app.sidebarState == ssBoardProperties, " active")):
-                    span(class = "caption"):
-                      text "board "
-                    icon "fa-play"
+                  tdiv(class = "nav-item",
+                      onclick = sidebarStateMutator ssBoardProperties):
+                    span(class = "nav-link px-3 pointer" &
+                      iff(app.sidebarState == ssBoardProperties, " active")):
+                      span(class = "caption"):
+                        text "board "
+                      icon "fa-play"
 
               tdiv(class = "nav-item d-flex flex-row px-2"):
                 span(class = "nav-link px-1 pointer", onclick = maximize):
@@ -1405,31 +1424,31 @@ proc createDom*(data: RouterData): VNode =
                     apiUpdateBoardTitle app.id, $app.title, proc =
                       notify "title updated!"
 
+            if
+              not app.isLocked and
+              app.sidebarState == ssMessagesView and
+              app.selectedVisualNodes.len > 0:
 
-            footer(class = "mt-2"):
-              case app.sidebarState
-              of ssMessagesView:
-                if app.selectedVisualNodes.len > 0:
-                  tdiv(class = "input-group"):
-                    input(`type` = "text", id = "new-message-input",
-                        class = "form-control form-control-sm")
+              footer(class = "mt-2"):
+                tdiv(class = "input-group"):
+                  input(`type` = "text", id = "new-message-input",
+                      class = "form-control form-control-sm")
 
-                    button(class = "input-group-text btn btn-primary"):
-                      icon "fa-pen"
-                      proc onClick =
-                        apiNewNote proc(id: Id) =
-                          addToMessages id
-                          openNewTab get_note_editor_url(id)
-
-                    button(class = "input-group-text btn btn-primary"):
-                      icon "fa-add"
-                      proc onClick =
-                        let
-                          inp = el"new-message-input"
-                          id = parseInt inp.value
+                  button(class = "input-group-text btn btn-primary"):
+                    icon "fa-pen"
+                    proc onClick =
+                      apiNewNote proc(id: Id) =
                         addToMessages id
-                        inp.value = c""
-              else: discard
+                        openNewTab get_note_editor_url(id)
+
+                  button(class = "input-group-text btn btn-primary"):
+                    icon "fa-add"
+                    proc onClick =
+                      let
+                        inp = el"new-message-input"
+                        id = parseInt inp.value
+                      addToMessages id
+                      inp.value = c""
 
       snackbar()
 
