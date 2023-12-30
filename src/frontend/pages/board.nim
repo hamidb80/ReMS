@@ -988,7 +988,7 @@ proc sidebarStateMutator*(to: SidebarState): proc =
   proc =
     app.sidebarState = to
 
-proc colorSelectBtn(selectedTheme, theme: ColorTheme; seleNTable: bool): Vnode =
+proc colorSelectBtn(selectedTheme, theme: ColorTheme; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(selectedTheme == theme, "bg-light")):
@@ -998,11 +998,11 @@ proc colorSelectBtn(selectedTheme, theme: ColorTheme; seleNTable: bool): Vnode =
           (StyleAttr.borderColor, toColorString theme.fg),
         )):
           proc onclick =
-            if seleNTable:
+            if selectable:
               setFocusedTheme theme
               app.footerState = fsOverview
 
-proc fontSizeSelectBtn[T](size, selected: T; seleNTable: bool; fn: proc()): Vnode =
+proc fontSizeSelectBtn[T](size, selected: T; selectable: bool; fn: proc()): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(size == selected, "bg-light")):
@@ -1011,10 +1011,10 @@ proc fontSizeSelectBtn[T](size, selected: T; seleNTable: bool; fn: proc()): Vnod
           text $size
 
         proc onclick =
-          if seleNTable:
+          if selectable:
             fn()
 
-proc fontFamilySelectBtn(name: string; seleNTable: bool): Vnode =
+proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
   buildHTML:
     tdiv(class = "px-1 h-100 d-flex align-items-center " &
       iff(name == app.font.family, "bg-light")):
@@ -1023,7 +1023,7 @@ proc fontFamilySelectBtn(name: string; seleNTable: bool): Vnode =
           text name
 
         proc onclick =
-          if seleNTable:
+          if selectable:
             setFocusedFontFamily name
             app.footerState = fsOverview
 
