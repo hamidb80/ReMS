@@ -33,7 +33,6 @@ template defHooks(body): untyped {.dirty.} =
     status = () => (tsNothing, "")
     role = (i: Index) => ""
     die = noop
-    ignoreChildren = () => false
     focus = addFocusClass hooks
     blur = removeFocusClass hooks
     hover = addHoverClass hooks
@@ -56,12 +55,13 @@ template defHooks(body): untyped {.dirty.} =
 
   result = hooks
 
-template defComponent(ident, identstr, icone, tagss, initproc): untyped =
+template defComponent(ident, identstr, icone, tagss, initproc: untyped, gn = false): untyped =
   let ident* = Component(
     name: identstr,
     icon: icone,
     tags: tagss,
-    init: initproc)
+    init: initproc,
+    isGenerator: gn)
 
 # ----- Defaults -----------
 
@@ -480,7 +480,6 @@ proc initLinearMarkdown: Hooks =
   defHooks:
     dom = () => el
     acceptsAsChild = noTags
-    ignoreChildren = () => true
     capture = () => <*{
       "content": content()}
 
@@ -1129,7 +1128,8 @@ defComponent linearMdComponent,
   "linear markdown",
   "bi bi-markdown-fill",
   @["global", "inline", "block"],
-  initLinearMarkdown
+  initLinearMarkdown,
+  true
 
 defComponent h1Component,
   "h1",
