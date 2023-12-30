@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.13"
+version       = "0.0.15"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -60,7 +60,7 @@ task gened, "":
 task html, "generate index.html ./dist":
   cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"
   cpDir "./assets/", "./dist/"
-  exec fmt"nim -d:frontend r src/frontend/pages/html.nim"
+  exec fmt"nim -f -d:frontend r src/frontend/pages/html.nim"
 
 
 task make, "make all":

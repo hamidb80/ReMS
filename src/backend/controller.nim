@@ -48,7 +48,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
 
 proc loadHtml*(path: string): RequestHandler =
   proc(req: Request) =
-    respFile "text/html", readfile distFolder / path, false
+    respFile "text/html", readfile apv distFolder / path, false
 
 proc loadDist*(path: string): RequestHandler =
   let

@@ -178,11 +178,11 @@ func `$$`(vn: VNode): string =
   "<!DOCTYPE html>\n" & $vn
 
 when isMainModule:
-  writeFile "./dist/index.html", $$index()
-  writeFile "./dist/login.html", $$login()
-  writeFile "./dist/tags.html", $$tags()
-  writeFile "./dist/explore.html", $$explore()
-  writeFile "./dist/board.html", $$boardEdit()
-  writeFile "./dist/note-preview.html", $$notePreview()
-  writeFile "./dist/editor.html", $$noteEditor()
-  writeFile "./dist/palette.html", $$palette()
+  writeFile apv "./dist/index.html", $$index()
+  writeFile apv "./dist/login.html", $$login()
+  writeFile apv "./dist/tags.html", $$tags()
+  writeFile apv "./dist/explore.html", $$explore()
+  writeFile apv "./dist/board.html", $$boardEdit()
+  writeFile apv "./dist/note-preview.html", $$notePreview()
+  writeFile apv "./dist/editor.html", $$noteEditor()
+  writeFile apv "./dist/palette.html", $$palette()

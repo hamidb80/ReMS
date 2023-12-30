@@ -1125,7 +1125,7 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "position-absolute bottom-0 left-0 w-100"):
+      footer(class = "position-absolute bottom-0 left-0 overflow-hidden wv-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
           sidebarBtn "fa-plus", "", proc =
             zoom ||app.stage.scale, -200
@@ -1134,11 +1134,11 @@ proc createDom*(data: RouterData): VNode =
             zoom ||app.stage.scale, +200
 
         if not app.isLocked:
-          tdiv(class = "inside regions user-select-none bg-white border-top border-dark-subtle d-flex align-items-center",
+          tdiv(class = "inside user-select-none bg-white border-top border-dark-subtle d-flex align-items-center",
                 style = style(StyleAttr.width, cstring $iff(
                 app.sidebarvisible,
                 window.innerWidth - app.sidebarWidth,
-                window.innerWidth))):
+                window.innerWidth) & "px")):
 
             tdiv(class = "d-inline-flex jusitfy-content-center align-items-center mx-2"):
               if app.selectedVisualNodes.len != 0:

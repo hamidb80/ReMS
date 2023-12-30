@@ -121,6 +121,10 @@ p{
     transform: translateY(-120%);
 }
 
+.wv-100{
+  width: 100vw;
+}
+
 .content-wrapper {
   overflow-y: scroll;
 }
@@ -134,18 +138,15 @@ p{
   width: 50px;
 }
 
-.regions {
+.inside {
   height: 40px;
   border-top-width: 2px !important;
-}
-
-.regions .inside {
   overflow-x: scroll;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-.regions .inside::-webkit-scrollbar {
+.inside::-webkit-scrollbar {
   display: none;
 }
 
