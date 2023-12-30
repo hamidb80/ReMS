@@ -1726,6 +1726,7 @@ proc init* =
             else: discard
 
     block prepare:
+      app.sidebarWidth = defaultWidth()
       app.font.family = fontFamilies[1].name
       app.font.size = 20
       app.theme = nonExistsTheme
