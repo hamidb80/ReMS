@@ -130,7 +130,7 @@ const
   # TODO define maximum map [boarders to not go further if not nessesarry]
   minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
-  ciriticalWidth = 400
+  ciriticalWidth = 460
   minimizeWidth = 360
 
   nonExistsTheme = c(0, 0, 0)
@@ -859,10 +859,12 @@ proc newPoint(pos: Vector; r = 1.0): Circle =
 # ----- UI
 let compTable = defaultComponents()
 var
-  defaultWidth = min(500, window.innerwidth)
   noteHtmlContent: Table[Id, Option[cstring]]
   noteRelTags: Table[Id, RelValuesByTagId]
   tags: Table[Id, Tag]
+
+proc defaultWidth: int =
+  min 500, window.innerwidth
 
 
 proc getMsg(id: Id) =
@@ -887,6 +889,7 @@ proc msgState(id: Id): MsgState =
     else: msQueue
   else: msOut
 
+# TODO make it a separate component in a different file
 proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
   buildHTML:
     tdiv(class = "card mb-4"):
@@ -910,10 +913,15 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
 
 
       tdiv(class = "card-footer d-flex justify-content-center"):
-        button(class = "btn mx-1 btn-compact btn-outline-info"):
-          icon "fa-link"
-          proc onclick =
-            discard
+        a(class = "btn mx-1 btn-compact btn-outline-info",
+            href = get_note_preview_url mid,
+            target = "_blank"):
+          icon "fa-glasses"
+
+        a(class = "btn mx-1 btn-compact btn-outline-warning",
+            href = get_note_editor_url mid,
+            target = "_blank"):
+          icon "fa-pen"
 
         button(class = "btn mx-1 btn-compact btn-outline-primary"):
           icon "fa-sync"
@@ -957,7 +965,7 @@ proc isMaximized*: bool =
 
 proc maximize* =
   app.sidebarWidth =
-    if isMaximized(): defaultWidth
+    if isMaximized(): defaultWidth()
     else: window.innerWidth
   redraw()
 
@@ -1073,6 +1081,19 @@ proc gotoCenterOfBoard =
       if app.sidebarVisible: app.sidebarWidth
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
+
+proc closeSideBar =
+  app.sidebarVisible = false
+
+proc openSideBar =
+  app.sidebarVisible = true
+  app.sidebarwidth =
+    min(
+      max(
+        app.sidebarwidth,
+        minimizeWidth),
+      window.innerWidth)
+
 
 proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
   buildHtml button(
@@ -1222,7 +1243,7 @@ proc createDom*(data: RouterData): VNode =
             startAddConn vn
 
           sidebarBtn "fa-message", $vn.config.messageIdList.len, proc =
-            app.sidebarVisible = true
+            openSideBar()
             app.sidebarState = ssMessagesView
 
         else:
@@ -1295,7 +1316,7 @@ proc createDom*(data: RouterData): VNode =
                   icon "fa-close"
 
                   proc onclick =
-                    app.sidebarVisible = false
+                    closeSideBar()
 
             main(class = "p-2 content-wrapper h-100"):
               case app.sidebarState
@@ -1686,7 +1707,8 @@ proc init* =
 
             of kcT: # show/hide side bar
               if document.activeElement == document.body:
-                negate app.sidebarVisible
+                if app.sidebarVisible: closeSideBar()
+                else: openSideBar()
                 redraw()
 
             of kcP: # scrennshot
@@ -1704,7 +1726,6 @@ proc init* =
             else: discard
 
     block prepare:
-      app.sidebarWidth = defaultWidth
       app.font.family = fontFamilies[1].name
       app.font.size = 20
       app.theme = nonExistsTheme
