@@ -1,4 +1,4 @@
-import std/[strutils, os]
+import std/[strutils, os, times]
 
 import karax/[vdom, karaxdsl]
 
@@ -143,7 +143,7 @@ proc index: VNode =
         blockk "Notes", "", "pen-writing-on-paper.svg", ""
         blockk "Files", "", "inbox-archive.svg", ""
         blockk "Boards", "", "share-circle.svg", ""
-  
+
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
@@ -161,7 +161,10 @@ proc index: VNode =
   card's content."""
 
         tdiv(class = "card-footer text-center"):
-          text "created with passion"
+          text "created with passion - version "
+          text packageVersion
+          text " built at "
+          text $now()
 
 
 # -----

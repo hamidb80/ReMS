@@ -3,7 +3,7 @@ import std/[os, strscans, strutils]
 type
     Version = array[3, int]
 
-proc getNimbleVersion: Version =
+proc getPackageVersion: Version =
     let
         content = readFile "./rems.nimble"
         i = content.find("version")
@@ -18,12 +18,9 @@ func `$`(v: Version): string =
     join v, "."
 
 
-const nimbleVersion* = $getNimbleVersion()
+const packageVersion* = $getPackageVersion()
 
 func apv*(path: string): string =
     ## apv :: Attach Package Version
     let parts = splitFile path
-    result = parts.dir & '/' & parts.name & '-' & nimbleVersion & parts.ext
-
-
-echo nimbleVersion
+    result = parts.dir & '/' & parts.name & '-' & packageVersion & parts.ext
