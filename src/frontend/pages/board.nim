@@ -1624,12 +1624,7 @@ proc init* =
           if document.activeElement == document.body:
             case kc
             of kcDelete:
-              if app.selectedVisualNodes.len > 0:
-                deleteSelectedNodes()
-                redraw()
-
-              else:
-                notify "nothing to delete"
+              deleteSelectedNodes()
 
             of kcEscape:
               if app.boardState == bsAddNode:
