@@ -1,7 +1,6 @@
-import std/[dom]
 import std/[strformat]
 
-import karax/[karax, karaxdsl, vdom, vstyles]
+import karax/[karaxdsl, vdom, vstyles]
 
 import ../../common/types
 import ../../backend/database/[models]
@@ -54,8 +53,11 @@ proc tagViewC*(
             text ": "
             text value
 
-proc checkbox*(active: bool, changeHandler: proc(b: bool)): VNode =
-  result = buildHtml:
-    input(class = "form-check-input", `type` = "checkbox", checked = active):
-      proc oninput(e: Event, v: VNode) =
-        changeHandler e.target.checked
+when defined js:
+  import std/[dom]
+
+  proc checkbox*(active: bool, changeHandler: proc(b: bool)): VNode =
+    result = buildHtml:
+      input(class = "form-check-input", `type` = "checkbox", checked = active):
+        proc oninput(e: Event, v: VNode) =
+          changeHandler e.target.checked

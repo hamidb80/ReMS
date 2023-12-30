@@ -2,6 +2,7 @@ import std/[strutils, os, times]
 
 import karax/[vdom, karaxdsl]
 
+import ../utils/ui
 import ../../common/package
 import ../../backend/routes
 
@@ -154,17 +155,20 @@ proc index: VNode =
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
           h4(class = "card-title"):
-            text "Primary card title"
+            text "Still waiting?"
+
           p(class = "card-text"):
-            text """
-  Some quick example text to build on the card title and make up the bulk of the
-  card's content."""
+            text "WTF man? Just click on `explore` and have fun remembering!"
 
         tdiv(class = "card-footer text-center"):
-          text "created with passion - version "
-          text packageVersion
-          text " built at "
-          text $now()
+          text "created with passion "
+          icon "fa-heart"
+
+        tdiv(class = "card-footerer text-center p-1"):
+            text "version "
+            text packageVersion
+            text " - built at "
+            text $now()
 
 
 # -----

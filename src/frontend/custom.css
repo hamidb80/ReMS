@@ -8,6 +8,10 @@ body {
   --bs-btn-font-family: "mooli", "Vazirmatn";
 }
 
+p{
+  font-family: var(--bs-body-font-family);
+}
+
 .btn {
   cursor: pointer;
 }
@@ -243,7 +247,11 @@ body {
 }
 
 .app-footer .card-footer {
-  box-shadow: inset 0 0 0 20px #00000045;
+  background-color:  #00000045;
+}
+
+.app-footer .card-footerer {
+  background-color:  #00000070;
 }
 
 .tw-pointer {
