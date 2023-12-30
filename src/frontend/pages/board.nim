@@ -961,7 +961,7 @@ proc defaultWidth: int =
   min 500, window.innerwidth
 
 proc isMaximized: bool =
-  app.sidebarWidth >= window.innerWidth * 2/3
+  window.innerWidth - 20 < app.sidebarWidth
 
 proc maximize =
   app.sidebarWidth =
