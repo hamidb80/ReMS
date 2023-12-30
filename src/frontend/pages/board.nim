@@ -967,12 +967,7 @@ proc maximize =
     else: window.innerWidth
   redraw()
 
-proc closeSideBar =
-  app.sidebarVisible = false
-
-proc openSideBar =
-  ## we have to check the width to prevent problems after screen rotation or resize
-  app.sidebarVisible = true
+proc reconsiterSideBarWidth = 
   app.sidebarwidth =
     min(
       max(
@@ -980,7 +975,14 @@ proc openSideBar =
         minimizeWidth),
       window.innerWidth)
 
+proc closeSideBar =
+  app.sidebarVisible = false
 
+proc openSideBar =
+  ## we have to check the width to prevent problems after screen rotation or resize
+  app.sidebarVisible = true
+  reconsiterSideBarWidth()
+  
 proc toggleLock =
   negate app.isLocked
 
@@ -1579,6 +1581,7 @@ proc init* =
 
     block global_events:
       addEventListener window, "resize", proc =
+        reconsiterSideBarWidth()
         fitStage app.stage
 
       addEventListener app.stage.container, "wheel", nonPassive:
