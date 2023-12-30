@@ -1,5 +1,5 @@
 import std/[options, sequtils, tables, algorithm]
-import std/[dom, jsconsole, jsffi, asyncjs, jsformdata]
+import std/[dom, jsffi, asyncjs, jsformdata]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable
@@ -205,9 +205,6 @@ proc pushUploads(files: seq[DFile]) =
 
 proc dropHandler(ev: Event as DragEvent) {.caster.} =
   pushUploads ev.dataTransfer.filesArray
-
-proc clipboardHandler(e: Event as ClipboardEvent) {.caster.} =
-  pushUploads e.clipboardData.filesArray
 
 proc genCopy(url: cstring): proc =
   proc =

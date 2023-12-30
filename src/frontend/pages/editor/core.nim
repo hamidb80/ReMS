@@ -1,5 +1,5 @@
-import std/[sets, tables, strutils, sequtils, options, sugar, enumerate, strformat]
-import std/[jsffi, dom, asyncjs, jsconsole]
+import std/[sets, tables, strutils, options, sugar, enumerate]
+import std/[jsffi, dom, asyncjs]
 
 import karax/[vdom], questionable
 

@@ -1,4 +1,4 @@
-import std/[macros, options]
+import std/[macros]
 import std/[jsffi, asyncjs, dom]
 
 import ../../common/conventions

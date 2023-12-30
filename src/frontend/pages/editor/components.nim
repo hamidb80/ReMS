@@ -1,11 +1,10 @@
-import std/[jsffi, dom, asyncjs, jsconsole]
-import std/[with, options, sequtils, tables, sugar, strformat]
+import std/[jsffi, dom, asyncjs]
+import std/[with, options, tables, sugar, strformat]
 
 import ./core
 import ../../utils/[browser, js, api]
-import ../../jslib/[katex, axios]
-import ../../../common/[conventions, types, datastructures, linear_markdown]
-import ../../../backend/[routes]
+import ../../jslib/[katex]
+import ../../../common/[conventions, datastructures, linear_markdown]
 import ../../../backend/database/[models]
 
 

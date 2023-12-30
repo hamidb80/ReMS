@@ -1,11 +1,11 @@
-import std/[dom, jsconsole, jsffi, asyncjs]
+import std/[dom]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
 import ../components/[snackbar]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
-import ../utils/[browser, ui, api, js]
+import ../utils/[ui, api, js]
 
 
 var

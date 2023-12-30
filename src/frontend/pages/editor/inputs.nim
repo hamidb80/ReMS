@@ -3,7 +3,7 @@ import std/[dom, cstrutils, jsffi]
 import karax/[karax, karaxdsl, vdom]
 import caster
 
-import ../../utils/[ui, browser, js, api]
+import ../../utils/[browser, api]
 import core
 
 

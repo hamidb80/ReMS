@@ -5,6 +5,9 @@ import karax/[karaxdsl, vdom, vstyles]
 import ../../common/types
 import ../../backend/database/[models]
 
+when defined js:
+  import karax/karax
+
 # --- components ---
 
 func icon*(class: string): VNode =

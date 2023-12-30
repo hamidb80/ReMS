@@ -128,7 +128,6 @@ const
   minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
   ciriticalWidth = 460
-  minimizeWidth = 360
 
   nonExistsTheme = c(0, 0, 0)
   fontFamilies: seq[FontTest] = @[
@@ -955,6 +954,9 @@ proc addToMessages(id: Id) =
       getmsg id
 
 
+proc minSidebarWidth: int =
+  min 360, window.innerWidth * 5 div 10
+
 proc defaultWidth: int =
   min 500, window.innerwidth
 
@@ -967,13 +969,17 @@ proc maximize =
     else: window.innerWidth
   redraw()
 
-proc reconsiterSideBarWidth = 
+proc reconsiderSideBarWidth =
   app.sidebarwidth =
     min(
       max(
         app.sidebarwidth,
-        minimizeWidth),
+        minSidebarWidth()),
       window.innerWidth)
+
+proc reconsiderSideBarWidth(newWidth: int) =
+  app.sidebarwidth = newWidth
+  reconsiderSideBarWidth()
 
 proc closeSideBar =
   app.sidebarVisible = false
@@ -981,8 +987,8 @@ proc closeSideBar =
 proc openSideBar =
   ## we have to check the width to prevent problems after screen rotation or resize
   app.sidebarVisible = true
-  reconsiterSideBarWidth()
-  
+  reconsiderSideBarWidth()
+
 proc toggleLock =
   negate app.isLocked
 
@@ -1283,8 +1289,7 @@ proc createDom*(data: RouterData): VNode =
               setCursor ccresizex
 
               winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-                let w = window.innerWidth - e.x
-                app.sidebarWidth = max(w, minimizeWidth)
+                reconsiderSideBarWidth window.innerWidth - e.x
                 redraw()
 
               winel.onmouseup = proc(e: Event) =
@@ -1581,8 +1586,9 @@ proc init* =
 
     block global_events:
       addEventListener window, "resize", proc =
-        reconsiterSideBarWidth()
+        reconsiderSideBarWidth()
         fitStage app.stage
+        redraw()
 
       addEventListener app.stage.container, "wheel", nonPassive:
         proc (e: Event as WheelEvent) {.caster.} =

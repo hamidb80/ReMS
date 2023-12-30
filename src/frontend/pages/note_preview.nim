@@ -1,15 +1,11 @@
-import std/[options, sequtils, tables]
-import std/[dom, jsconsole, jsffi, asyncjs, jsformdata]
+import std/[tables]
+import std/[dom, jsconsole, jsffi, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
-import questionable
-import caster
 
 import ../components/[snackbar]
 import ../utils/[browser, js, ui, api]
-import ../jslib/[axios]
-import ../../common/[iter, types, datastructures, conventions]
-import ../../backend/routes
+import ../../common/[types, datastructures, conventions]
 import ../../backend/database/[models]
 import ./editor/[core, components]
 
