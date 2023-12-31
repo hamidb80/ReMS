@@ -121,10 +121,6 @@ p{
     transform: translateY(-120%);
 }
 
-.wv-100{
-  width: 100vw;
-}
-
 .content-wrapper {
   overflow-y: scroll;
 }

@@ -1125,7 +1125,7 @@ proc createDom*(data: RouterData): VNode =
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
 
-      footer(class = "position-absolute bottom-0 left-0 overflow-hidden wv-100"):
+      footer(class = "position-absolute bottom-0 left-0 w-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
           sidebarBtn "fa-plus", "", proc =
             zoom ||app.stage.scale, -200
