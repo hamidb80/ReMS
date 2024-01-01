@@ -32,31 +32,38 @@ proc errorHandler*(req: Request, e: ref Exception) =
 
 const distFolder* = projectHome / "dist"
 
-proc staticFileHandler*(req: Request) {.qparams.} =
-  if "file" in q:
-    let
-      fname = q["file"]
-      ext = getExt fname
-      mime = mimeType ext
-      fpath = distFolder / fname
-
-    if fileExists fpath:
-      respFile mime, readFile fpath, true
-
-    else: resp 404
-  else: resp 404
-
 proc loadHtml*(path: string): RequestHandler =
   proc(req: Request) =
     respFile "text/html", readfile apv distFolder / path, false
 
-proc loadDist*(path: string): RequestHandler =
+func isFilename(s: string): bool =
+  ## https://owasp.org/www-community/attacks/Path_Traversal
+  for c in s:
+    if c in invalidFilenameChars:
+      return false
+  true
+
+proc loadDist*(filename: string): RequestHandler =
+  doAssert isFilename filename, "illegal file name"
+
   let
-    p = projectHome / "dist" / apv path
-    mime = mimeType getExt path
+    p = projectHome / "dist" / apv filename
+    mime = mimeType getExt filename
 
   proc(req: Request) =
     respFile mime, readfile p, true
+
+proc staticFileHandler*(req: Request) {.qparams.} =
+  let
+    fname = q.getOrDefault "file"
+    ext = getExt fname
+    mime = mimeType ext
+    fpath = distFolder / fname
+
+  if (fileExists fpath) and (isFilename fname):
+    respFile mime, readFile fpath, true
+  else: 
+    resp 404
 
 # ------- utility
 
