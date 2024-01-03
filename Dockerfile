@@ -1,4 +1,5 @@
-FROM nimlang/nim:2.0.0-alpine-onbuild
+# FROM nimlang/nim:2.0.0-alpine-onbuild
+FROM hub.hamdocker.ir/nimlang/nim:2.0.0-alpine-onbuild
 
 # install timezones database
 RUN apk add tzdata

@@ -580,21 +580,25 @@ proc initImage: Hooks =
           input: toJs height(),
           updateCallback: mutState(setHeight, cstring)))]
 
+# TODO add max-width, loop (auto replay), ...
 proc initVideo: Hooks =
   let
-    el = createElement "video"
+    wrapper = createElement("div", {"class": "tw-video-wrapper"})
+    videl = createElement "video"
     (url, setUrl) = genstate c""
 
+  append wrapper, videl
+
   defHooks:
-    dom = () => el
+    dom = () => wrapper
     acceptsAsChild = noTags
     capture = () => tojs url()
     restore = (j: JsObject) => setUrl j.to cstring
     render = genRender:
-      el.setAttr("src", url())
+      videl.setAttr("src", url())
 
     mounted = genMounted:
-      el.setAttr "controls", ""
+      videl.setAttr "controls", ""
 
     settings = () => @[
       SettingsPart(

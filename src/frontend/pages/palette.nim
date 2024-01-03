@@ -5,7 +5,7 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import ../components/[snackbar]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
-import ../utils/[ui, api, js]
+import ../utils/[ui, api]
 
 
 var

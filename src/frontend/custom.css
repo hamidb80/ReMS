@@ -205,13 +205,17 @@ p{
   max-width: 100%;
 }
 
-.tw-image-wrapper {
+.tw-image-wrapper, .tw-video-wrapper {
   text-align: center;
 }
 
-.tw-image-wrapper img {
+.tw-image-wrapper img, .tw-video-wrapper video {
   max-width: 100%;
   object-fit: contain
+}
+
+.tw-video-wrapper video {
+  max-height: 100vh;
 }
 
 

@@ -1,10 +1,9 @@
-import std/[sequtils, cstrutils, strutils, sets, with, strformat, sugar, tables, math]
-import std/[dom, jsconsole, jsffi]
+import std/[sequtils, strutils, sets, with, strformat, sugar, tables, math]
+import std/[dom, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable, caster
 
-import ../../../backend/routes
 import ../../../backend/database/[models]
 import ./[core, components, inputs]
 import ../../utils/[js, browser, api, ui]
@@ -391,7 +390,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 # FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) =
   proc done(tw: TwNode) =
-    echo "what"
     resetApp tw
     redraw()
 
