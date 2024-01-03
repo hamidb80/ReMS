@@ -47,7 +47,7 @@ type # database models
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    data*: TreeNodeRaw[NativeJson]
+    data*: NoteData 
 
     owner* {.references: User.id.}: Id
     is_private*: bool

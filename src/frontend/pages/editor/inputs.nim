@@ -13,15 +13,16 @@ proc textInput*(input: JsObject, cb: CallBack): VNode =
     value = (input.to cstring),
     dir = "auto"):
     proc oninput(e: Event, n: VNode) =
-      cb n.value.toJs
+      cb toJs n.value
 
 proc rawTextEditor*(input: JsObject, cb: CallBack): VNode =
   buildHtml textarea(
     class = "form-control h40v",
     value = (input.to cstring),
     dir = "auto"):
+
     proc oninput(e: Event, n: VNode) =
-      cb n.value.toJs
+      cb toJs n.value
 
 proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml input(
@@ -31,19 +32,29 @@ proc checkBoxEditor*(input: JsObject, cb: CallBack): VNode =
     proc onchange(e: Event, n: VNode) =
       cb e.target.checked.toJs
 
-proc imageLinkOrUploadOnPasteInput*(input: JsObject, cb: CallBack): VNode =
+proc fileLinkOrUploadOnPasteInput*(input: JsObject, cb: CallBack): VNode =
   result = buildHtml input(
     class = "form-control",
     `type` = "text",
     value = (input.to cstring),
     placeholder = "paste image or link to image"):
+
+    proc oninput(e: Event, n: VNode) =
+      cb toJs n.value
+
     proc pasteHandler(e: dom.Event as ClipboardEvent) {.caster.} =
       let files = e.clipboardData.filesArray
 
       if files.len == 1: # paste by image
-        let f = files[0]
+        let
+          f = files[0]
+          ft = f.`type`
 
-        if f.`type`.startswith "image/":
+        if
+          startswith(ft, "image/") or
+          startswith(ft, "video/") or
+          startswith(ft, "audio/"):
+
           cb toJs "loading..."
 
           apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =

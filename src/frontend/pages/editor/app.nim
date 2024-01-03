@@ -17,9 +17,10 @@ var
 
 register app, "raw-text-editor", rawTextEditor
 register app, "linear-text-editor", textInput
-register app, "image-upload-on-paste", imageLinkOrUploadOnPasteInput
+register app, "file-upload-on-paste", fileLinkOrUploadOnPasteInput
 register app, "checkbox-editor", checkBoxEditor
 register app, "option-selector", selectEditor
+
 
 app.components = defaultComponents()
 regiterComponents app
@@ -29,6 +30,13 @@ regiterComponents app
 # TODO import to a specific node not replace the whole tree!
 
 # ----- UI ------------------------------
+
+proc setSidebarWidth(w: int) = 
+  sidebarWidth = clamp(w, 100 .. window.innerWidth - 200)
+
+addEventListener window, "resize", proc =
+  setSidebarWidth sidebarWidth
+  redraw()
 
 proc saveServer =
   let id = parseInt getWindowQueryParam "id"
@@ -494,7 +502,7 @@ proc createDom: VNode =
             # setCursor ccresizex
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              sidebarWidth = clamp(e.x, 100 .. window.innerWidth - 200)
+              setSidebarWidth e.x
               redraw()
 
             winel.onmouseup = proc(e: Event) =

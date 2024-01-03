@@ -121,14 +121,14 @@ let nonPassive* = AddEventListenerOptions(passive: false)
 proc addEventListener*(el: Element, event: cstring,
     options: AddEventListenerOptions, action: proc(e: Event)
   ) =
-  el.addEventListener event, action, options
+  addEventListener el, event, action, options
 
 func add*(self: FormData; name: cstring;
     value: Blob) {.importjs: "#.append(#, #)".}
 
 func toForm*(name: cstring; file: Blob): FormData =
   result = newFormData()
-  result.add name, file
+  add result, name, file
 
 
 template winEl*: untyped =
@@ -140,15 +140,8 @@ proc valueAsNumber*[T](el: Element): T
 proc filesArray*(d: DataTransfer or Element or Node or Event):
   seq[DFile] {.importjs: "Array.from(#.files)".}
 
-proc openNewTab*(link: cstring) 
+proc openNewTab*(link: cstring)
   {.importjs: "window.open(@)".}
-
-proc downloadUrl*(name, dataurl: cstring) =
-  let link = document.createElement("a")
-  link.setAttr "href", dataurl
-  link.setAttr "target", "_blank"
-  link.setAttr "download", name
-  link.click
 
 proc imageDataUrl(file: DFile): Future[cstring] =
   newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
@@ -156,7 +149,7 @@ proc imageDataUrl(file: DFile): Future[cstring] =
     reader.onload = (ev: Event) => resolve("ev.target.result") # resolve(ev.target.result)
     reader.onerror = reject
     reader.onabort = reject
-    reader.readAsDataURL(file)
+    readAsDataURL reader, file
 
 proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
     (new URLSearchParams(window.location.search)).get(@)
@@ -173,26 +166,39 @@ proc revokeObjectURL(url: cstring) {.importjs: "URL.revokeObjectURL(@)".}
 func toInlineCss*[A, B: SomeString](
     s: openArray[tuple[prop: A; val: B]]): string =
   for (p, v) in s:
-    result.add p
-    result.add ": "
-    result.add v
-    result.add ";"
+    add result, p
+    add result, ": "
+    add result, v
+    add result, ";"
 
 proc el*(id: cstring): Element =
-  document.getElementById id
+  getElementById document, id
 
 proc purge*(el: Element) =
   el.innerHTML = ""
 
 proc ctrlClass*(el: Element; class: cstring; cond: bool) =
   if cond:
-    el.classList.add class
+    add el.classList, class
   else:
-    el.classList.remove class
+    remove el.classList, class
+
+proc toggleAttr*(el: Element; attr: cstring; cond: bool) =
+  if cond:
+    setAttr el, attr, ""
+  else:
+    removeAttribute el, attr
 
 
 proc createElement*(tag: string): Element =
-  document.createElement(tag)
+  createElement document, tag
+
+proc downloadUrl*(name, dataurl: cstring) =
+  let link = createElement "a"
+  setAttr link, "href", dataurl
+  setAttr link, "target", "_blank"
+  setAttr link, "download", name
+  click link
 
 proc createElement*[A, B: SomeString](
   tag: string;
@@ -201,14 +207,14 @@ proc createElement*[A, B: SomeString](
 
   result = createElement tag
   for (k, v) in attrs:
-    result.setAttr k, v
+    setAttr result, k, v
 
 proc append*(el: Element; children: varargs[Element]) =
   for ch in children:
-    el.appendChild ch
+    appendChild el, ch
 
 proc appendTemp(el: Element; action: proc()) =
-  document.body.appendChild el
+  appendChild document.body, el
   action()
   remove el
 
@@ -229,7 +235,7 @@ proc downloadFile*(fileName, mimeType, content: cstring) =
 proc selectFile*(action: proc(s: cstring)) =
   let fileInput = createElement("input", {"type": "file"})
 
-  fileInput.addEventListener "input", proc(e: Event) =
+  addEventListener fileInput, "input", proc(e: Event) =
     let
       files = e.target.InputElement.files
       file = files[0]
@@ -242,13 +248,11 @@ proc selectFile*(action: proc(s: cstring)) =
   appendTemp fileInput, () => fileInput.click
 
 
-proc copyToClipboard*(t: cstring) {.importjs: """
-    navigator.clipboard.writeText(@);
-  """.}
+proc copyToClipboard*(t: cstring) 
+  {.importjs: "navigator.clipboard.writeText(@);".}
 
-proc text*(e: ClipboardEvent): cstring {.importjs: """
-  #.clipboardData.getData('text/plain')
-""".}
+proc text*(e: ClipboardEvent): cstring 
+  {.importjs: "  #.clipboardData.getData('text/plain')".}
 
 proc redirect*(url: cstring)
   {.importjs: "location.href = #;".}

@@ -97,8 +97,8 @@ proc removeHoverClass(hooks: Hooks): proc() =
 
 proc attachNodeDefault(father, child: TwNode, wrapper, what: Element, at: Index) =
   if father.children.len == at:
-    father.children.add child
-    wrapper.appendChild what
+    add father.children, child
+    appendChild wrapper, what
   elif 0 == at:
     father.children.insert child, at
     wrapper.prepend what
@@ -237,21 +237,20 @@ proc initParagraph: Hooks =
 
     render = genRender:
       case $dir()
-      of "ltr": el.setAttr "dir", "ltr"
-      of "rtl": el.setAttr "dir", "rtl"
-      else: el.setAttr "dir", "auto"
+      of "ltr": setAttr el, "dir", "ltr"
+      of "rtl": setAttr el, "dir", "rtl"
+      else: setAttr el, "dir", "auto"
 
       el.className = "tw-paragraph"
 
       case $align()
-      of "center": el.classList.add "text-center"
-      of "left": el.classList.add "text-start"
-      of "right": el.classList.add "text-end"
+      of "center": add el.classList, "text-center"
+      of "left": add el.classList, "text-start"
+      of "right": add el.classList, "text-end"
       else: discard
 
       if inline():
-        el.classList.add displayInlineClass
-
+        add el.classList, displayInlineClass
 
     mounted = genMounted:
       if mode == tmInteractive and by == mbUser:
@@ -351,10 +350,10 @@ proc initLink: Hooks =
     capture = () => tojs url()
     restore = (j: JsObject) => setUrl(j.to cstring)
     render = genRender:
-      el.setAttr("href", url())
+      setAttr el, "href", url()
 
     mounted = genMounted:
-      el.setAttr "target", "_blank"
+      setAttr el, "target", "_blank"
 
       if mode == tmInteractive and by == mbUser:
         let ct = hooks.componentsTable()
@@ -541,13 +540,13 @@ proc initImage: Hooks =
     status = () => status()
 
     render = genRender:
-      img.setAttr "src", url()
-      img.setAttr "style", toInlineCss {
+      setAttr img, "src", url()
+      setAttr img, "style", toInlineCss {
         "width": width(),
         "height": height()}
 
     mounted = genMounted:
-      wrapper.append img, caption
+      append wrapper, img, caption
       if mode == tmInteractive and by == mbUser:
         let ct = hooks.componentsTable()
         attachInstance ct["paragraph"], hooks, ct
@@ -560,7 +559,7 @@ proc initImage: Hooks =
         field: "url",
         icon: "bi bi-link-45deg",
         editorData: () => EditorInitData(
-          name: "image-upload-on-paste",
+          name: "file-upload-on-paste",
           input: toJs url(),
           updateCallback: mutState(setUrl, cstring))),
 
@@ -580,36 +579,78 @@ proc initImage: Hooks =
           input: toJs height(),
           updateCallback: mutState(setHeight, cstring)))]
 
-# TODO add max-width, loop (auto replay), ...
 proc initVideo: Hooks =
   let
     wrapper = createElement("div", {"class": "tw-video-wrapper"})
     videl = createElement "video"
     (url, setUrl) = genstate c""
+    (width, setWidth) = genState c""
+    (height, setHeight) = genState c""
+    (loop, setLoop) = genState false
 
   append wrapper, videl
 
   defHooks:
     dom = () => wrapper
     acceptsAsChild = noTags
-    capture = () => tojs url()
-    restore = (j: JsObject) => setUrl j.to cstring
+
+    capture = () => <* {
+      "url": url(),
+      "loop": loop(),
+      "width": width(),
+      "height": height()}
+
+    restore = proc(j: JsObject) =
+      setUrl j["url"].to cstring
+      setLoop j["loop"].to bool
+      setWidth j["width"].to cstring
+      setHeight j["height"].to cstring
+
     render = genRender:
-      videl.setAttr("src", url())
+      echo url(), " <<"
+      setAttr videl, "src", url()
+      setAttr videl, "style", toInlineCss {
+        "width": width(),
+        "height": height()}
+      toggleAttr videl, "loop", loop()
+
 
     mounted = genMounted:
-      videl.setAttr "controls", ""
+      setAttr videl, "controls", ""
 
     settings = () => @[
       SettingsPart(
         field: "url",
         icon: "bi bi-link-45deg",
         editorData: () => EditorInitData(
-          name: "raw-text-editor",
+          name: "file-upload-on-paste",
           input: toJs url(),
-          updateCallback: mutState(setUrl, cstring)))]
+          updateCallback: mutState(setUrl, cstring))),
 
-# TODO add ltr and rtl for list
+      SettingsPart(
+        field: "width",
+        icon: "bi bi-arrow-right",
+        editorData: () => EditorInitData(
+          name: "linear-text-editor",
+          input: toJs width(),
+          updateCallback: mutState(setWidth, cstring))),
+
+      SettingsPart(
+        field: "height",
+        icon: "bi bi-arrow-down",
+        editorData: () => EditorInitData(
+          name: "linear-text-editor",
+          input: toJs height(),
+          updateCallback: mutState(setHeight, cstring))),
+          
+      SettingsPart(
+        field: "loop?",
+        icon: "bi bi-repeat",
+        editorData: () => EditorInitData(
+          name: "checkbox-editor",
+          input: toJs loop(),
+          updateCallback: mutState(setLoop, bool)))]
+
 proc initList: Hooks =
   let
     ul = createElement "ui"
@@ -631,9 +672,9 @@ proc initList: Hooks =
 
     render = genRender:
       case $dir()
-      of "ltr": ul.setAttr "dir", "ltr"
-      of "rtl": ul.setAttr "dir", "rtl"
-      else: ul.setAttr "dir", "auto"
+      of "ltr": setAttr ul, "dir", "ltr"
+      of "rtl": setAttr ul, "dir", "rtl"
+      else: setAttr ul, "dir", "auto"
 
       let c =
         case $style()
@@ -645,11 +686,11 @@ proc initList: Hooks =
         else: "list-disc"
 
       ul.className = "tw-content-list w-100"
-      ul.classList.add c
+      add ul.classList, c
 
     attachNode = proc(child: TwNode, at: Index) =
       let li = createElement "li"
-      li.appendChild child.dom
+      appendChild li, child.dom
       attachNodeDefault hooks.self(), child, hooks.dom(), li, at
 
     detachNode = proc(at: Index) =
@@ -684,8 +725,7 @@ proc initList: Hooks =
               ["auto", "auto"],
               ["ltr", "ltr"],
               ["rtl", "rtl"]]},
-          updateCallback: mutState(setDir, cstring))),
-    ]
+          updateCallback: mutState(setDir, cstring)))]
 
 proc initTableRow: Hooks =
   let el = createElement "tr"
@@ -696,7 +736,7 @@ proc initTableRow: Hooks =
 
     attachNode = proc(child: TwNode, at: Index) =
       let td = createElement "td"
-      td.appendChild child.dom
+      appendChild td, child.dom
       attachNodeDefault hooks.self(), child, hooks.dom(), td, at
 
     detachNode = proc(at: Index) =
@@ -743,7 +783,7 @@ proc initGithubGist: Hooks =
     codeEl = createElement("div", {"class": "tw-gh-code-content"})
     (url, uset) = genState c""
 
-  wrapperEl.append cssLinkEl, codeEl
+  append wrapperEl, cssLinkEl, codeEl
 
   defHooks:
     dom = () => wrapperEl
@@ -848,10 +888,10 @@ proc initLinkPreivew: Hooks =
 
     (url, uset) = genstate c""
 
-  titleEl.append titleTextEl
-  photoWrapperEl.append photoEl
-  detailsEl.append descEl, photoWrapperEl
-  mainEl.append titleEl, detailsEl
+  append titleEl, titleTextEl
+  append photoWrapperEl, photoEl
+  append detailsEl, descEl, photoWrapperEl
+  append mainEl, titleEl, detailsEl
 
   defHooks:
     dom = () => mainEl
@@ -868,8 +908,8 @@ proc initLinkPreivew: Hooks =
 
             titleTextEl.innerText = resp.title
             descEl.innerText = resp.desc
-            titleTextEl.setAttr "href", url()
-            photoEl.setAttr "src", resp.image
+            setAttr titleTextEl, "href", url()
+            setAttr photoEl, "src", resp.image
 
             lastUrl = url()
             resolve()
@@ -906,7 +946,7 @@ proc initMoreCollapse: Hooks =
     mainEl = createElement("main", {"class": "tw-more-body"})
 
   # TODO add option to center the summary element
-  wrapperEl.append summaryEl, mainEl
+  append wrapperEl, summaryEl, mainEl
 
   defHooks:
     dom = () => wrapperEl
@@ -984,7 +1024,7 @@ proc initGrid: Hooks =
       setmh input["maxHeight"].to cstring
 
     render = genRender:
-      el.setAttr "style", fmt"""
+      setAttr el, "style", fmt"""
         margin: {margin()};
         padding: {padding()};
         width: {width()};
@@ -999,8 +1039,7 @@ proc initGrid: Hooks =
       sss("width", "bi bi-arrows", width, setw),
       sss("height", "bi bi-arrows-vertical", height, seth),
       sss("max width", "bi bi-arrows", maxWidth, setmw),
-      sss("max height", "bi bi-arrows-vertical", maxHeight, setmh),
-    ]
+      sss("max height", "bi bi-arrows-vertical", maxHeight, setmh)]
 
 # TODO
 proc initConfig: Hooks =

@@ -110,6 +110,8 @@ type
     objects*: NTable[Str, VisualNodeConfig]
     edges*: seq[EdgeData]
 
+  NoteData* = TreeNodeRaw[NativeJson]
+
 
 func c*(bg, fg, st: int): ColorTheme =
   ColorTheme(
