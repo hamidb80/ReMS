@@ -8,7 +8,7 @@ body {
   --bs-btn-font-family: "mooli", "Vazirmatn";
 }
 
-p{
+p {
   font-family: var(--bs-body-font-family);
 }
 
@@ -118,7 +118,7 @@ p{
 }
 
 .zoom-bar {
-    transform: translateY(-120%);
+  transform: translateY(-120%);
 }
 
 .content-wrapper {
@@ -248,11 +248,11 @@ p{
 }
 
 .app-footer .card-footer {
-  background-color:  #00000045;
+  background-color: #00000045;
 }
 
 .app-footer .card-footerer {
-  background-color:  #00000070;
+  background-color: #00000070;
 }
 
 .tw-pointer {
@@ -269,6 +269,11 @@ p{
 
 .tw-custom-html.tw-focus-hover>* {
   opacity: 0.5;
+}
+
+.tw-latex {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .tw-link-preview.tw-focus-hover {
