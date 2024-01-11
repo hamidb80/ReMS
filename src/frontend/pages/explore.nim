@@ -70,6 +70,7 @@ var
   assets: seq[AssetItemView]
   uploads: seq[Upload]
   selectedAssetIndex: int = -1 # noIndex
+  wantToDelete: seq[int]
   assetNameTemp = c""
   messagesResolved = true
 
@@ -442,6 +443,7 @@ proc searchClassSetter(i: SearchableClass): proc() =
       resolveNotes()
 
     selectedClass = i
+    reset wantToDelete
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
   buildHtml:
@@ -484,10 +486,19 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
           icon "fa-pen"
 
         button(class = "btn mx-1 btn-compact btn-outline-danger"):
-          icon "fa-close"
+          # TODO make buttons a separate component
+          let icn =
+            if n.id in wantToDelete: "fa-exclamation-circle"
+            else: "fa-trash"
+
+          icon icn
 
           proc onclick =
-            deleteNote n.id
+            echo n.id, wantToDelete, n.id in wantToDelete
+            if n.id in wantToDelete:
+              deleteNote n.id
+            else:
+              add wantToDelete, n.id
 
 proc boardItemViewC(b: BoardItemView): VNode =
   buildHtml:

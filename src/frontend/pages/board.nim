@@ -916,6 +916,11 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
             getMsg mid
 
         if not app.isLocked:
+          button(class = "btn mx-1 btn-compact btn-outline-primary"):
+            icon "fa-copy"
+            proc onclick =
+              copyToClipboard $mid
+
           a(class = "btn mx-1 btn-compact btn-outline-warning",
               href = get_note_editor_url mid,
               target = "_blank"):
