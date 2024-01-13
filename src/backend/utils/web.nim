@@ -203,25 +203,36 @@ macro checkAdmin*(procdef): untyped =
 
   procdef
 
-template respJson*(body): untyped {.dirty.} =
-  req.respond 200, @{"Content-Type": "application/json"}, body
-
 template respOk*: untyped {.dirty.} =
   req.respond 200
 
-const longCacheTime* = 30 * 24 * 60 * 60 # 30 days in sec
+type 
+  CacheDecision* = enum
+    noCache
+    cache
 
-func cacheTime*(shouldCache: bool): int =
-  if shouldCache: longCacheTime
-  else: -1
+const
+  daySecs = 24 * 60 * 60
+  longCacheTime* = 30 * daySecs
 
-template respFile*(mime, content: untyped, cache: bool): untyped {.dirty.} =
+func cacheTime*(cd: CacheDecision): Natural =
+  case cd
+  of noCache: 0
+  of cache: longCacheTime
+
+template respJson*(body: untyped, cache: CacheDecision = noCache): untyped {.dirty.} =
+  req.respond 200, @{
+    "Content-Type": "application/json",
+    "Cache-Control": "max-age=" & $cacheTime(cache)
+    }, body
+
+template respFile*(mime, content: untyped, cache: CacheDecision): untyped {.dirty.} =
   req.respond 200, @{
     "Content-Type": mime,
     "Cache-Control": "max-age=" & $cacheTime(cache)
     }, content
 
-template redirect*(loc: string, cache: bool = false): untyped {.dirty.} =
+template redirect*(loc: string, cache: CacheDecision = noCache): untyped {.dirty.} =
   req.respond 302, @{
     "Location": loc,
     "Cache-Control": "max-age=" & $cacheTime(cache)}

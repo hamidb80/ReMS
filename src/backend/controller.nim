@@ -34,7 +34,7 @@ const distFolder* = projectHome / "dist"
 
 proc loadHtml*(path: string): RequestHandler =
   proc(req: Request) =
-    respFile "text/html", readfile apv distFolder / path, false
+    respFile "text/html", readfile apv distFolder / path, noCache
 
 func isFilename(s: string): bool =
   ## https://owasp.org/www-community/attacks/Path_Traversal
@@ -51,7 +51,7 @@ proc loadDist*(filename: string): RequestHandler =
     mime = mimeType getExt filename
 
   proc(req: Request) =
-    respFile mime, readfile p, true
+    respFile mime, readfile p, cache
 
 proc staticFileHandler*(req: Request) {.qparams.} =
   let
@@ -61,7 +61,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
     fpath = distFolder / fname
 
   if (fileExists fpath) and (isFilename fname):
-    respFile mime, readFile fpath, true
+    respFile mime, readFile fpath, cache
   else: 
     resp 404
 
@@ -220,15 +220,14 @@ proc assetShorthand*(req: Request) =
     notFoundHandler req
   else:
     let assetid = req.uri[qi+1..^1]
-    redirect get_assets_download_url parseInt assetid, true
+    redirect get_assets_download_url parseInt assetid, cache
 
 proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
-  # TODO return a default image if not exists
   let
     asset = !!<db.findAsset(id)
     content = readfile asset.path
 
-  respFile asset.mime, content, true
+  respFile asset.mime, content, cache
 
 proc deleteAsset*(req: Request) {.qparams: {id: int}, userOnly.} =
   !!db.deleteAssetLogical(userc.account, id, unow())
@@ -345,4 +344,4 @@ proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGithubJsFile download url
 
 proc fetchLinkPreivewData*(req: Request) {.qparams: {url: string}.} =
-  respJson toJson linkPreviewData parseHtml cropHead download url
+  respJson toJson linkPreviewData parseHtml cropHead download url, cache
