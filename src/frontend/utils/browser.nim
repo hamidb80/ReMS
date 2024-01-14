@@ -257,6 +257,8 @@ proc text*(e: ClipboardEvent): cstring
 proc redirect*(url: cstring)
   {.importjs: "location.href = #;".}
 
+# proc clsx
+
 type
   ScreenOrient* = enum
     soPortrait

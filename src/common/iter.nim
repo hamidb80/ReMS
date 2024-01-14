@@ -14,3 +14,9 @@ template deleteIt*(s: var seq, cond: untyped) =
     if cond:
       delete s, i
       break
+
+  
+proc incRound*[E: enum](i: var E) =
+  i =
+    if i == E.high: E.low
+    else: succ i

@@ -201,6 +201,10 @@ p {
   z-index: 3;
 }
 
+.mw-100{
+  max-width: 100%;
+}
+
 .tw-content img {
   max-width: 100%;
 }

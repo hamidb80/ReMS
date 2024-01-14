@@ -8,12 +8,21 @@ import ../../../backend/database/[models]
 import ./[core, components, inputs]
 import ../../utils/[js, browser, api, ui]
 import ../../components/[snackbar]
-import ../../../common/[conventions, datastructures, types]
+import ../../../common/[conventions, datastructures, types, iter]
+
+
+type
+  ViewMode = enum
+    vmBoth
+    vmEditor
+    vmPreview
 
 
 var
   app = App(state: asTreeView)
   sidebarWidth = 300
+  viewmode = vmBoth
+
 
 register app, "raw-text-editor", rawTextEditor
 register app, "linear-text-editor", textInput
@@ -31,7 +40,7 @@ regiterComponents app
 
 # ----- UI ------------------------------
 
-proc setSidebarWidth(w: int) = 
+proc setSidebarWidth(w: int) =
   sidebarWidth = clamp(w, 100 .. window.innerWidth - 200)
 
 addEventListener window, "resize", proc =
@@ -86,7 +95,7 @@ proc recursiveListImpl(
         else: ""
 
 
-    h6(class = "badge text-start w-100 " & cls(path, hover, selected, c)):
+    h6(class = "badge text-start px-2 w-100 " & cls(path, hover, selected, c)):
       proc onMouseEnter = node.hover()
       proc onMouseLeave = node.unhover()
 
@@ -104,10 +113,10 @@ proc recursiveListImpl(
           italic(class = "mx-2 " & node.data.component.icon)
           text node.data.component.name
 
-        span(class = "me-1 " & iff(path == hover, "", t)):
+        span(class = "me-2 " & iff(path == hover, "", t)):
           if s.code != tsNothing:
-            italic(class = i & " mx-1")
             text s.msg
+            italic(class = i & " mx-1")
 
           elif not isRoot node:
             text node.father.role path[^1]
@@ -144,6 +153,20 @@ proc resetApp(root: TwNode) =
   app.tree = root
   app.focusedNode = root
   app.focusedPath = @[]
+
+
+type BlockStyles = tuple
+  editorCls: cstring
+  editorWidth: int
+
+  contentCls: cstring
+  contentWidth: int
+
+proc blocksStyleCtrl(viewmode: ViewMode): BlockStyles =
+  case viewmode
+  of vmBoth: ("", sidebarWidth, "", window.innerWidth - sidebarwidth)
+  of vmEditor: ("", window.innerWidth, "d-none", 0)
+  of vmPreview: ("d-none", 50, "", window.innerWidth)
 
 # ----- Events ------------------------------
 
@@ -208,7 +231,7 @@ proc createInstance(listIndex: int) =
   app.focusedNode = newNode
   app.state = asTreeView
 
-proc deleteSelectedNode = 
+proc deleteSelectedNode =
   if not isRoot app.focusedNode:
     let
       n = app.focusedNode
@@ -219,7 +242,7 @@ proc deleteSelectedNode =
     detachNode f, i
     app.focusedNode = f
 
-proc moveToUp = 
+proc moveToUp =
   if app.focusedPath.len > 0:
     if app.focusedPath[^1] == 0:
       discard
@@ -228,7 +251,7 @@ proc moveToUp =
       app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
 
-proc moveToDown = 
+proc moveToDown =
   if app.focusedPath.len > 0:
     if app.focusedPath[^1] + 1 == app.focusedNode.father.children.len:
       discard
@@ -286,7 +309,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     of kcDelete: # delete node
       deleteSelectedNode()
-      
+
     of kcT: negate app.focusedNode.data.visibleChildren
 
     of kcQ: # to query children of focued node like XPath like VIM editor
@@ -418,11 +441,16 @@ proc createDom: VNode =
   buildHtml tdiv:
     snackbar()
 
-    tdiv(class = "w-100 h-screen-100 overflow-hidden"):
-      tdiv(id = "left-container", class = "float-start h-100 d-flex flex-row",
-          style = style(StyleAttr.width, fmt"{sidebarWidth}px")):
+    tdiv(class = "w-100 h-screen-100 d-flex overflow-hidden"):
+      let bsc = blocksStyleCtrl viewmode
 
-        aside(id = "tw-side-bar", class = "h-100 bg-dark justify-contnent-center p-1 overflow-y-auto overflow-x-hidden"):
+      tdiv(id = "left-container",
+        class = "float-start h-100 d-flex flex-row mw-100",
+        style = style(StyleAttr.width, fmt"{bsc.editorWidth}px")):
+
+        aside(id = "tw-side-bar",
+          class = "h-100 bg-dark justify-contnent-center p-1 overflow-y-auto overflow-x-hidden"):
+
           button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-save fa-xl"
             proc onclick =
@@ -449,6 +477,12 @@ proc createDom: VNode =
               deleteSelectedNode()
 
           button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+            icon "fa-eye fa-xl"
+
+            proc onclick =
+              incRound viewMode
+
+          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
             icon "fa-tag fa-xl"
 
           button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
@@ -457,14 +491,19 @@ proc createDom: VNode =
             proc onclick =
               app.state = asTreeView
 
-        tdiv(id = settingsAreaId, class = "overflow-hidden d-inline-block w-100"):
+        tdiv(id = settingsAreaId, 
+          class = "overflow-hidden d-inline-block w-100 " & bsc.editorCls):
+
           if app.state == asTreeView:
-            tdiv(id = treeViewId, class = "overflow-y-scroll h-100"):
+            tdiv(id = treeViewId, 
+              class = "overflow-y-scroll py-2 px-1 h-100"):
+
               recursiveList app.tree
 
           elif app.state == asSetting:
             tdiv(id = porpertySettingId,
                 class = "mt-3 d-flex flex-column align-items-center justify-content-center p-2"):
+
               for s in app.focusedNode.settings():
                 tdiv(class = "w-100"):
                   tdiv(class = "d-flex mx-2"):
@@ -510,9 +549,9 @@ proc createDom: VNode =
               reset winel.onmousemove
               reset winel.onmouseup
 
-      tdiv(id = "tw-render", class = "tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block",
-          style = style(StyleAttr.width,
-              fmt"""{window.innerWidth - sidebarwidth - 16}px""")):
+      tdiv(id = "tw-render", 
+        class = "tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block " & bsc.contentCls,
+        style = style(StyleAttr.width, fmt"""{bsc.contentWidth}px""")):
         verbatim fmt"<div id='{editRootElementId}'></div>"
 
 proc init* =

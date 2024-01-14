@@ -622,11 +622,6 @@ proc doSearch =
   of scUsers: discard fetchUsers()
 
 
-proc incRound[E: enum](i: var E) =
-  i =
-    if i == E.high: E.low
-    else: succ i
-
 proc genRoundOperator(i: int, vt: TagValueType): proc() =
   proc =
     incRound searchCriterias[i].operator
