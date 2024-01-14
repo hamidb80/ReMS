@@ -123,8 +123,10 @@ proc recursiveListImpl(
 
         let p = path
         proc onclick =
+          blur app.focusedNode
           app.focusedPath = p
           app.focusedNode = node
+          focus app.focusedNode
           redraw()
 
         proc ondblclick =
