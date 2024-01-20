@@ -406,6 +406,7 @@ proc initLatex: Hooks =
           input: toJs inline(),
           updateCallback: mutState(iset, bool)))]
 
+const mdRerenderAfter = 100
 proc initLinearMarkdown: Hooks =
   let
     el = createElement("div", {"class": "tw-linear-markdown " &
@@ -421,7 +422,7 @@ proc initLinearMarkdown: Hooks =
       discard result.render()
 
     clearTimeout id
-    id = settimeout(after, 500)
+    id = settimeout(after, mdRerenderAfter)
 
   proc inss(comp: Component, ct: ComponentsTable): TwNode =
     result = instantiate(comp, ct)
