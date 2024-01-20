@@ -73,12 +73,12 @@ type
   KonvaEventKind* = enum
     mouseover, mouseout, mouseenter, mouseleave,
     mousemove, mousedown, mouseup,
-        wheel, click, dblclick                           # Mouse events
-    touchstart, touchmove, touchend, tap, dbltap         # Touch events
+        wheel, click, dblclick                         # Mouse events
+    touchstart, touchmove, touchend, tap, dbltap       # Touch events
     pointerdown, pointermove, pointereup, pointercancel, pointerover,
         pointerenter, pointerout, pointerleave, pointerclick, pointerdblclick # Pointer events
-    dragstart, dragmove, dragend                         # Drag events
-    transformstart, transform, transformend              # Transform events
+    dragstart, dragmove, dragend                       # Drag events
+    transformstart, transform, transformend            # Transform events
 
 
 proc toKonvaMethod(def: NimNode): NimNode =
@@ -102,6 +102,9 @@ func asScalar*(v: Vector): float =
 
 func v*(s: Size): Vector =
   v(s.width, s.height)
+
+converter toSize*(v: Vector): Size =
+  Size(width: v.x, height: v.y)
 
 # --- utils ---
 
@@ -468,3 +471,9 @@ func center*(k: KonvaObject): Vector =
 func contains*(a: Area, v: Vector): bool =
   v.x in a.x1..a.x2 and
   v.y in a.y1..a.y2
+
+func contains*(a, b: Area): bool =
+  a.x1 < b.x1 and
+  a.x2 > b.x2 and
+  a.y1 < b.y1 and
+  a.y2 > b.y2

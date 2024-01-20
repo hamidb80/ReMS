@@ -62,6 +62,7 @@ type
 
     tempEdge: Edge
     tempNode: VisualNode
+    areaSelectionNode: KonvaShape
     # transformer: Transformer
     # selectedKonvaObject: Option[KonvaObject]
 
@@ -1466,28 +1467,42 @@ proc fitStage(stage: Stage) =
     width = window.innerWidth
     height = window.innerHeight
 
+proc initAreaSelector: KonvaShape =
+  result = newRect()
+  with result:
+    visible = false
+    opacity = 0.4
+    x = 0
+    y = 0
+    width = 0
+    height = 0
+    strokeWidth = 3
+    stroke = "blue"
+    fill = "skyblue"
+
+proc initCenterPin: KonvaShape =
+  result = newCircle()
+  with result:
+    x = 0
+    y = 0
+    radius = 2
+    stroke = "black"
+    strokeWidth = 2
+
 proc init* =
   document.body.classList.add "overflow-hidden"
   setRenderer createDom
   setTimeout 500, proc =
-    let
-      layer = newLayer()
-      centerCircle = newCircle()
-
-    with centerCircle:
-      x = 0
-      y = 0
-      radius = 2
-      stroke = "black"
-      strokeWidth = 2
+    let layer = newLayer()
 
     with app:
       stage = newStage "board"
-      # transformer = newTransformer()
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
       tempEdge = newEdge(-1, -1, EdgeConfig())
+      areaSelectionNode = initAreaSelector()
+      # transformer = newTransformer()
       # tempNode: VisualNode
 
     with app.stage:
@@ -1516,6 +1531,7 @@ proc init* =
 
             if diff != 0.0:
               zoom ||app.stage.scale, diff
+        
         else:
           discard
 
@@ -1524,8 +1540,19 @@ proc init* =
       on "touchend", proc =
         reset app.lastTouches
 
-      on "mousedown", proc =
+      on "mousedown", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
         app.leftClicked = true
+
+        if kcCtrl in app.pressedKeys:
+          let
+            m = v(ke.evt.x, ke.evt.y)
+            currentMousePos = coordinate(m, app.stage)
+
+          with app.areaSelectionNode:
+            visible = true
+            position = currentMousePos
+            width = 10
+            height = 10
 
       on "mousemove", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
         let
@@ -1537,6 +1564,13 @@ proc init* =
             s = ||app.stage.scale
             Δy = m.y - app.lastClientMousePos.y
           zoom s, Δy
+
+        elif kcCtrl in app.pressedKeys:
+          let 
+            a = app.areaSelectionNode.position
+            b = currentMousePos
+
+          app.areaSelectionNode.size = b - a
 
         elif
           kcSpace in app.pressedKeys or
@@ -1568,8 +1602,12 @@ proc init* =
         app.lastClientMousePos = m
 
       on "mouseup", proc =
-        app.leftClicked = false
-
+        if visible app.areaSelectionNode:
+          let selectedArea = area app.areaSelectionNode
+          for _, vn in app.objects:
+            if vn.area in selectedArea:
+              select vn
+        
         setTimeout 100, proc =
           case app.boardState
           of bsAddNode:
@@ -1582,8 +1620,14 @@ proc init* =
           else:
             discard
 
+        app.leftClicked = false
+        app.areaSelectionNode.visible = false
+
+    with app.hoverGroup:
+      add app.areaSelectionNode
+
     with layer:
-      add centerCircle
+      add initCenterPin()
       add app.bottomGroup
       add app.tempEdge.konva.wrapper
       add app.mainGroup
