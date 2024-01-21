@@ -1531,7 +1531,7 @@ proc init* =
 
             if diff != 0.0:
               zoom ||app.stage.scale, diff
-        
+
         else:
           discard
 
@@ -1566,7 +1566,7 @@ proc init* =
           zoom s, Δy
 
         elif kcCtrl in app.pressedKeys:
-          let 
+          let
             a = app.areaSelectionNode.position
             b = currentMousePos
 
@@ -1607,7 +1607,7 @@ proc init* =
           for _, vn in app.objects:
             if vn.area in selectedArea:
               select vn
-        
+
         setTimeout 100, proc =
           case app.boardState
           of bsAddNode:

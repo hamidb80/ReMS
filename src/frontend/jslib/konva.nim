@@ -447,11 +447,17 @@ func area*(k: KonvaObject): Area =
     p = k.position
     s = k.size
 
+    x1 = p.x
+    x2 = p.x + s.width
+    y1 = p.y
+    y2 = p.y + s.height
+
+  # width and height can be negative
   Area(
-    x1: p.x,
-    x2: p.x + s.width,
-    y1: p.y,
-    y2: p.y + s.height)
+    x1: min(x1, x2),
+    x2: max(x1, x2),
+    y1: min(y1, y2),
+    y2: max(y1, y2))
 
 func topLeft*(a: Area): Vector = v(a.x1, a.y1)
 func topRight*(a: Area): Vector = v(a.x2, a.y1)
