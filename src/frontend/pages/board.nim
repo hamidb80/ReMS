@@ -81,6 +81,7 @@ type
 
     palettes: seq[Palette]
     selectedPalleteI: int
+    selectedCenterShape: ConnectionCenterShapeKind
     theme: ColorTheme
 
     sidebarWidth: Natural
@@ -135,23 +136,11 @@ const
     ("Vazirmatn", "سلام"), ("Mooli", "teshey"), ("Ubuntu Mono", "hey")]
 
 # FIXME do not make 2 types of nodes. only 1 type with optional image url
-# FIXME sometimes the fontobserver does not work and texts does not fit in the box
-# TODO add loading... before content loads
-# TODO make it SPA
-# TODO search graph by tags of messages of nodes
-# TODO add material design palette
-# TODO ability to take backup from everything and import it later
-# FIXME the mouseup event after creating node causes selection bug
-# TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level
-# TODO add more size + logarithmic sizes
-# TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
-# TODO select custom color palletes
-# TODO ability to set the center
-# TODO add "exploratory mode" where all nodes' content are hidden when you click they show up
-# TODO customize border radius for nodes
-# TODO add custom shape for connections
 # FIXME image node border radius is depend on font size
-# TODO ability to save as file and import all parts of app
+# TODO add loading... before content loads
+# TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level
+# TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
+# TODO add "exploratory mode" where all nodes' content are hidden when you click they show up
 
 var
   app = AppData()
@@ -346,15 +335,30 @@ proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
 
   e.konva.line.points = [h, t]
   e.konva.shape.position = (h + t) / 2
+  e.konva.shape.rotation = float -θ
+
+proc updateEdgeConnSize(sh: KonvaShape; v: float, cs: ConnectionCenterShapeKind) =
+  sh.strokeWidth = v
+
+  case cs
+  of ccsCircle:
+    sh.radius = max(6, v * 3)
+  else:
+    with sh:
+      width = v * 10
+      height = v * 10
+
+  if cs != ccsCircle:
+    with sh:
+      offsetX = sh.width/2
+      offsetY = sh.height/2
 
 proc updateEdgeWidth(e: Edge; w: Tenth) =
   let v = tofloat w
   e.data.config.width = w
   e.konva.line.strokeWidth = v
-  with e.konva.shape:
-    strokeWidth = v
-    radius = max(6, v * 3)
-
+  updateEdgeConnSize e.konva.shape, v, e.data.config.centerShape
+  
 proc updateEdgeTheme(e: Edge; t: ColorTheme) =
   e.data.config.theme = t
   e.konva.line.stroke = toColorString t.st
@@ -362,40 +366,23 @@ proc updateEdgeTheme(e: Edge; t: ColorTheme) =
     stroke = toColorString t.st
     fill = toColorString t.bg
 
-proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
-  var k = EdgeKonvaNodes(
-    wrapper: newGroup(),
-    shape: newCircle(),
-    line: newLine())
+func initCenterShape(cs: ConnectionCenterShapeKind): KonvaShape =
+  case cs:
+  of ccsCircle: newCircle()
+  # of ccsDiomand: discard
+  # of ccsSquare: newRect()
+  else: newRect()
+  # of ccsTriangle: discard
+  # of ccsDoubleTriangle: discard
 
-  with k.line:
-    listening = false
-    linecap = lcRound
-    perfectDrawEnabled = false
-    shadowForStrokeEnabled = false
-
-  with k.shape:
-    perfectDrawEnabled = false
-    shadowForStrokeEnabled = false
-
+proc addEdgeEvents(e: Edge) =
+  with e.konva.shape:
     on "mouseenter", proc =
       setCursor ccPointer
 
     on "mouseleave", proc =
       setCursor ccNone
 
-  with k.wrapper:
-    add k.line
-    add k.shape
-
-  Edge(
-    konva: k,
-    data: EdgeData(
-      points: @[head, tail],
-      config: c))
-
-proc addEdgeClick(e: Edge) =
-  with e.konva.shape:
     on "click tap", proc =
       if kcShift notin app.pressedKeys:
         unselect()
@@ -417,7 +404,7 @@ proc cloneEdge(id1, id2: Id; e: Edge): Edge =
     add result.konva.line
     add result.konva.shape
 
-  addEdgeClick result
+  addEdgeEvents result
 
 proc redrawConnectionsTo(uid: Id) =
   for id in app.edgeGraph.getOrDefault(uid):
@@ -429,6 +416,44 @@ proc redrawConnectionsTo(uid: Id) =
       n2 = app.objects[uid]
 
     updateEdgePos ei, n1.area, n1.center, n2.area, n2.center
+
+proc updateEdgeShape(e: Edge; cs: ConnectionCenterShapeKind) =
+  e.data.config.centerShape = cs
+  destroy e.konva.shape
+  e.konva.shape = initCenterShape(cs)
+  add e.konva.wrapper, e.konva.shape
+  console.log(e.konva.shape)
+  
+  updateEdgeWidth e, e.data.config.width
+  updateEdgeTheme e, e.data.config.theme
+  addEdgeEvents e
+  redrawConnectionsTo e.data.points[0]
+
+proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
+  var k = EdgeKonvaNodes(
+    wrapper: newGroup(),
+    shape: initCenterShape(c.centerShape),
+    line: newLine())
+
+  with k.line:
+    listening = false
+    linecap = lcRound
+    perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
+
+  with k.shape:
+    perfectDrawEnabled = false
+    shadowForStrokeEnabled = false
+
+  with k.wrapper:
+    add k.line
+    add k.shape
+
+  Edge(
+    konva: k,
+    data: EdgeData(
+      points: @[head, tail],
+      config: c))
 
 proc setText(v: VisualNode; t: cstring) =
   assert v.config.data.kind == vndkText
@@ -554,6 +579,16 @@ proc getFocusedTheme: ColorTheme =
   elif app.selectedEdges.len == 1: app.selectedEdges[0].data.config.theme
   else: app.theme
 
+proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
+  if app.selectedEdges.len == 1:
+    updateEdgeShape app.selectedEdges[0], cs
+  else:
+    app.selectedCenterShape = cs
+
+proc getFocusedConnShape: ConnectionCenterShapeKind =
+  if app.selectedEdges.len == 1: app.selectedEdges[0].data.config.centerShape
+  else: app.selectedCenterShape
+
 proc setFocusedTheme(theme: ColorTheme) =
   var done = false
   for v in app.selectedVisualNodes:
@@ -622,13 +657,14 @@ proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
 
 proc startAddConn(vn: VisualNode) =
   let w = vn.konva.wrapper
+
   highlight vn
   show app.tempEdge.konva.wrapper
   updateEdgePos app.tempEdge, w.area, w.center, w.area, w.center
   updateEdgeTheme app.tempEdge, getFocusedTheme()
   updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
-  app.boardState = bsMakeConnection
 
+  app.boardState = bsMakeConnection
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
   unselect()
@@ -844,7 +880,7 @@ proc restore(app: var AppData; data: BoardData) =
     updateEdgeWidth e, info.config.width
     updateEdgeTheme e, info.config.theme
     updateEdgePos e, n1.area, n1.center, n2.area, n2.center
-    addEdgeClick e
+    addEdgeEvents e
 
 
 proc newPoint(pos: Vector; r = 1.0): Circle =
@@ -982,6 +1018,11 @@ proc reconsiderSideBarWidth =
         app.sidebarwidth,
         minSidebarWidth()),
       window.innerWidth)
+
+proc onclicker(ct: ConnectionCenterShapeKind): proc() =
+  proc = 
+    setFocusedConnShape ct
+    app.footerState = fsOverview
 
 proc reconsiderSideBarWidth(newWidth: int) =
   app.sidebarwidth = newWidth
@@ -1133,11 +1174,12 @@ proc createDom*(data: RouterData): VNode =
 
       footer(class = "position-absolute bottom-0 left-0 w-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
+          sidebarBtn "fa-minus", "", proc =
+            zoom ||app.stage.scale, +200
+
           sidebarBtn "fa-plus", "", proc =
             zoom ||app.stage.scale, -200
 
-          sidebarBtn "fa-minus", "", proc =
-            zoom ||app.stage.scale, +200
 
         if not app.isLocked:
           tdiv(class = "inside user-select-none bg-white border-top border-dark-subtle d-flex align-items-center",
@@ -1189,7 +1231,7 @@ proc createDom*(data: RouterData): VNode =
                 bold: text "connection: "
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
-                span: text "shape "
+                span: text $getFocusedConnShape()
 
                 proc onclick =
                   app.footerState = fsBorderShape
@@ -1224,7 +1266,6 @@ proc createDom*(data: RouterData): VNode =
                     onclick = genSelectPalette i):
                   text p.name
 
-
             of fsColor:
               span(class = "mx-1"):
                 text app.palettes[app.selectedPalleteI].name
@@ -1232,12 +1273,17 @@ proc createDom*(data: RouterData): VNode =
                 proc onclick =
                   app.footerState = fsPalette
 
+              let t  = getFocusedTheme()
               for i, ct in app.palettes[app.selectedPalleteI].colorThemes:
                 span(class = "mx-1"):
-                  colorSelectBtn(getFocusedTheme(), ct, true)
+                  colorSelectBtn(t, ct, true)
 
-            else:
-              text "not defined"
+            of fsBorderShape:
+              let fc = getFocusedConnShape()
+
+              for ct in ConnectionCenterShapeKind:
+                span(class = "mx-1", onclick = onclicker(ct)):
+                  text $ct
 
       aside(class = "tool-bar btn-group-vertical position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
         let
@@ -1490,7 +1536,7 @@ proc initCenterPin: KonvaShape =
     strokeWidth = 2
 
 proc init* =
-  document.body.classList.add "overflow-hidden"
+  add document.body.classList, "overflow-hidden"
   setRenderer createDom
   setTimeout 500, proc =
     let layer = newLayer()
@@ -1543,7 +1589,7 @@ proc init* =
       on "mousedown", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
         app.leftClicked = true
 
-        if kcCtrl in app.pressedKeys:
+        if kcM in app.pressedKeys:
           let
             m = v(ke.evt.x, ke.evt.y)
             currentMousePos = coordinate(m, app.stage)
@@ -1565,7 +1611,7 @@ proc init* =
             Δy = m.y - app.lastClientMousePos.y
           zoom s, Δy
 
-        elif kcCtrl in app.pressedKeys:
+        elif kcM in app.pressedKeys:
           let
             a = app.areaSelectionNode.position
             b = currentMousePos
@@ -1660,68 +1706,21 @@ proc init* =
         proc(e: Event) =
           e.preventDefault
 
-      addEventListener document.body, "keydown":
-        proc(e: Event as KeyboardEvent) {.caster.} =
-          let kc = e.keyCode.KeyCode
-          app.pressedKeys.incl kc
-
-          case kc
-          of kcSpace:
-            setCursor ccGrabbing
-            app.state = asPan
-
-          of kcJ:
-            setCursor ccZoom
-
-          else:
-            discard
-
-      addEventListener document.body, "keyup":
-        proc(e: Event as KeyboardEvent) {.caster.} =
-          let kc = KeyCode e.keyCode
-          app.pressedKeys.excl kc
-
-          if app.pressedKeys.len == 0:
-            setCursor ccNone
-            app.state = asNormal
-
-      addEventListener document.body, "paste":
-        proc(e: Event as ClipboardEvent) {.caster.} =
-
-          let
-            s = e.text
-            files = e.clipboardData.filesArray
-
-          if s.startswith "/": # paste by link
-            let vn = createNode()
-            loadImageGen s, vn, true
-            add app.mainGroup, vn.konva.wrapper
-
-          elif files.len == 1: # paste by image
-            let f = files[0]
-            ## TODO change name of image to something with
-            ## proper name & extension
-            if f.`type`.startswith "image/":
-              apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
-                let vn = createNode()
-
-                vn.config.data = VisualNodeData(
-                  kind: vndkImage,
-                  url: assetUrl)
-
-                loadImageGen assetUrl, vn, true
-                add app.mainGroup, vn.konva.wrapper
-
       addEventListener document.documentElement, "keydown":
         proc (e: Event as KeyboardEvent) {.caster.} =
           let kc = e.keyCode.KeyCode
+          incl app.pressedKeys, kc
 
           if document.activeElement == document.body:
             case kc
-            of kcDelete:
+            of kcSpace: # span
+              setCursor ccGrabbing
+              app.state = asPan
+
+            of kcDelete: # delete
               deleteSelectedNodes()
 
-            of kcEscape:
+            of kcEscape: # cancel select
               if app.boardState == bsAddNode:
                 destroy app.tempNode.konva.wrapper
 
@@ -1733,7 +1732,10 @@ proc init* =
               unselect()
               redraw()
 
-            of kcN:
+            of kcJ: # zoom
+              setCursor ccZoom
+
+            of kcN: # new node
               startPuttingNode()
 
             of kcK: # copy style
@@ -1790,7 +1792,12 @@ proc init* =
                 apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
                   notify "screenshot updated!"
 
-            else: discard
+            of kcL: # lock / unlock
+              negate app.isLocked
+              redraw()
+
+            else:
+              discard
 
           else: # if typing in input
             case kc
@@ -1798,6 +1805,42 @@ proc init* =
               blur document.activeElement
 
             else: discard
+
+      addEventListener document.body, "keyup":
+        proc(e: Event as KeyboardEvent) {.caster.} =
+          let kc = KeyCode e.keyCode
+          app.pressedKeys.excl kc
+
+          if app.pressedKeys.len == 0:
+            setCursor ccNone
+            app.state = asNormal
+
+      addEventListener document.body, "paste":
+        proc(e: Event as ClipboardEvent) {.caster.} =
+
+          let
+            s = e.text
+            files = e.clipboardData.filesArray
+
+          if s.startswith "/": # paste by link
+            let vn = createNode()
+            loadImageGen s, vn, true
+            add app.mainGroup, vn.konva.wrapper
+
+          elif files.len == 1: # paste by image
+            let f = files[0]
+            ## TODO change name of image to something with
+            ## proper name & extension
+            if f.`type`.startswith "image/":
+              apiUploadAsset toForm(f.name, f), proc(assetUrl: string) =
+                let vn = createNode()
+
+                vn.config.data = VisualNodeData(
+                  kind: vndkImage,
+                  url: assetUrl)
+
+                loadImageGen assetUrl, vn, true
+                add app.mainGroup, vn.konva.wrapper
 
     block prepare:
       app.sidebarWidth = defaultWidth()

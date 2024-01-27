@@ -41,7 +41,6 @@ type
 
   ConnectionCenterShapeKind* = enum
     # undirected connection
-    ccsNothing
     ccsCircle
     ccsDiomand
     ccsSquare
@@ -131,7 +130,7 @@ func cot*(d: Degree): float =
   cot float degToRad d
 
 func `-`*(d: Degree): Degree =
-  Degree 360 - d.float
+  Degree -d.float
 
 # ----- Degree
 
