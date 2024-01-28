@@ -18,6 +18,7 @@ when isMainModule:
 
     if "--bale" in params:
         spawn runBaleBot baleBotToken
+        echo "Bale bot started ..."
 
     echo "Run on port: ", webServerPort
     runWebServer Port webServerPort
