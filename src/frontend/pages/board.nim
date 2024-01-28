@@ -443,8 +443,8 @@ proc updateEdgeConnSize(sh: KonvaShape; v: float;
     sh.points = diomandPoints * max(1.8, v)
   of ccsSquare:
     with sh:
-      width = v * 10
-      height = v * 10
+      width = v * 5
+      height = v * 5
       offsetX = sh.width/2
       offsetY = sh.height/2
   of ccsTriangle:
@@ -722,8 +722,9 @@ proc getFocusedTheme: ColorTheme =
   else: app.theme
 
 proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
-  if app.selectedEdges.len == 1:
-    updateEdgeShape app.selectedEdges[0], cs
+  if 0 < app.selectedEdges.len:
+    for e in app.selectedEdges:
+      updateEdgeShape e, cs
   else:
     app.selectedCenterShape = cs
     updateEdgeShape app.tempEdge, cs
