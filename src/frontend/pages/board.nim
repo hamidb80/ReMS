@@ -1,5 +1,5 @@
-import std/[with, math, stats, options, lenientops, strformat, sequtils, sets,
-    tables, random]
+import std/[with, math, stats, options, lenientops, strutils, strformat,
+    sequtils, sets, tables, random]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -30,6 +30,7 @@ type
     ssMessagesView
     ssPropertiesView
     ssBoardProperties
+    ssShortcuts
 
   BoardState = enum
     bsFree
@@ -64,8 +65,6 @@ type
     tempEdge: Edge
     tempNode: VisualNode
     areaSelectionNode: KonvaShape
-    # transformer: Transformer
-    # selectedKonvaObject: Option[KonvaObject]
 
     # app states
     hoverVisualNode: NOption[VisualNode]
@@ -88,14 +87,18 @@ type
     sidebarWidth: Natural
     sidebarVisible: bool
 
+    areaSelectKeyHold: bool
+    panKeyHold: bool
+    zoomKeyHold: bool
+    
     lastTouches: seq[Touch]
-
     lastAbsoluteMousePos: Vector
     lastClientMousePos: Vector
     leftClicked: bool
 
     state: AppState
     pressedKeys: set[KeyCode]
+    actionsShortcutRegistery: ActionsShortcutRegistery
 
     # board data
     objects: Table[Id, VisualNode]
@@ -125,6 +128,33 @@ type
     name: string
     test: string
 
+
+  ShortCut = object
+    code: KeyCode
+    ctrl, shift: bool
+
+  ActionKind = enum
+    akDelete
+    akCancel
+    akZoomMode
+    akPanMode
+    akOpenCloseSidebar
+    akToggleLock
+    akCreateNode
+    akCreateConnection
+    akSave
+    akGoCenter
+    akUpdateScreenShot
+    akResetZoom
+    akFocus
+    akDownload
+    akCopyStyle
+    akAreaSelect
+
+
+  ActionsShortcutRegistery =
+    array[ActionKind, ShortCut]
+
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
@@ -146,6 +176,58 @@ const
 var
   app = AppData()
 
+
+func initShortCut(e: KeyboardEvent): ShortCut =
+  ShortCut(
+    code: KeyCode e.keyCode,
+    ctrl: e.ctrlKey,
+    shift: e.shiftKey)
+
+func initShortCut(e: string): ShortCut =
+  for k in splitwhitespace toLowerAscii e:
+    case k
+    of "ctrl":
+      result.ctrl = true
+    of "shift":
+      result.shift = true
+    of "del":
+      result.code = kcDelete
+    of "esc":
+      result.code = kcEscape
+    of "spc":
+      result.code = kcSpace
+    of "tab":
+      result.code = kcTab
+    else:
+      if k.len == 1:
+        result.code =
+          case k[0]
+          of '0'..'9', 'a'..'z':
+            Keycode ord toupperAscii k[0]
+          else:
+            raise newException(ValueError, "not defined")
+
+func sc(e: string): ShortCut =
+  initShortCut e
+
+app.actionsShortcutRegistery = [
+  akDelete: sc"DEL",
+  akCancel: sc"ESC",
+  akZoomMode: sc"J",
+  akPanMode: sc"SPC",
+  akOpenCloseSidebar: sc"T",
+  akToggleLock: sc"L",
+  akCreateNode: sc"N",
+  akCreateConnection: sc"Q",
+  akSave: sc"S",
+  akGoCenter: sc"C",
+  akUpdateScreenShot: sc"P",
+  akResetZoom: sc"Z",
+  akFocus: sc"F",
+  akDownload: sc"D",
+  akCopyStyle: sc"K",
+  akAreaSelect: sc"M"]
+
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
@@ -158,6 +240,14 @@ func `or`[S: string or cstring](a, b: S): S =
 template `?`(a): untyped =
   issome a
 
+
+func coordinate(mouse: Vector; scale, offsetx, offsety: float): Vector =
+  v(
+    (-offsetx + mouse.x) / scale,
+    (-offsety + mouse.y) / scale)
+
+proc coordinate(pos: Vector; stage: Stage): Vector =
+  coordinate pos, ||stage.scale, stage.x, stage.y
 
 func center(vn: VisualNode): Vector =
   let
@@ -291,11 +381,31 @@ proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   e.konva.shape.position = (h + t) / 2
   e.konva.shape.rotation = float -θ
 
-const diomandPoints = @[
+const
+  diomandPoints = @[
     vec2(-1.7, 0),
     vec2(0, +1),
     vec2(+1.7, 0),
     vec2(0, -1)] * 3.2
+
+  trianglePoints = @[
+    vec2(-1, +1),
+    vec2(+1, 0),
+    vec2(-1, -1),
+    ] * 3.2
+
+  doubleTrianglePoints = @[
+    vec2(0, +1),
+    vec2(1.7, 0),
+    vec2(0, -1),
+    vec2(0, -2),
+    vec2(+3.4, 0),
+    vec2(0, +2),
+    vec2(0, +1),
+    vec2(-1.7, +2),
+    vec2(-1.7, -2),
+    vec2(+1.7, 0),
+    ] * 2.8
 
 func newDiomand(): Line =
   result = newLine()
@@ -303,30 +413,11 @@ func newDiomand(): Line =
     points = diomandPoints
     closed = true
 
-const trianglePoints = @[
-  vec2(-1, +1),
-  vec2(+1, 0),
-  vec2(-1, -1),
-  ] * 3.2
-
 func newTriangle(): Line =
   result = newLine()
   with result:
     points = trianglePoints
     closed = true
-
-const doubleTrianglePoints = @[
-  vec2(0, +1),
-  vec2(1.7, 0),
-  vec2(0, -1),
-  vec2(0, -2),
-  vec2(+3.4, 0),
-  vec2(0, +2),
-  vec2(0, +1),
-  vec2(-1.7, +2),
-  vec2(-1.7, -2),
-  vec2(+1.7, 0),
-  ] * 2.8
 
 func newDoubleTriangle(): Line =
   result = newLine()
@@ -338,7 +429,7 @@ func initCenterShape(cs: ConnectionCenterShapeKind): KonvaShape =
   case cs:
   of ccsCircle: newCircle()
   of ccsSquare: newRect()
-  of ccsDiomand: newDiomand()
+  of ccsDiamond: newDiomand()
   of ccsTriangle: newTriangle()
   of ccsDoubleTriangle: newDoubleTriangle()
 
@@ -349,24 +440,18 @@ proc updateEdgeConnSize(sh: KonvaShape; v: float;
   case cs
   of ccsCircle:
     sh.radius = max(6, v * 3)
+  of ccsDiamond:
+    sh.points = diomandPoints * max(1.8, v)
   of ccsSquare:
     with sh:
       width = v * 10
       height = v * 10
-  of ccsTriangle:
-    sh.points = trianglePoints * max(1.8, v)
-  of ccsDiomand:
-    sh.points = diomandPoints * max(1.8, v)
-  else:
-    discard
-
-  case cs
-  of ccsSquare:
-    with sh:
       offsetX = sh.width/2
       offsetY = sh.height/2
-  else:
-    discard
+  of ccsTriangle:
+    sh.points = trianglePoints * max(1.8, v)
+  of ccsDoubleTriangle:
+    sh.points = doubleTrianglePoints * max(1, v * 0.65)
 
 proc updateEdgeWidth(e: Edge; w: Tenth) =
   let v = tofloat w
@@ -420,7 +505,7 @@ proc redrawConnectionsTo(uid: Id) =
 
       dir = c1 in app.edgeInfo
 
-      k = 
+      k =
         if dir: c1
         else: c2
 
@@ -496,9 +581,12 @@ proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
     perfectDrawEnabled = false
     shadowForStrokeEnabled = false
 
-  # with k.shape:
-  #   perfectDrawEnabled = false
-  #   shadowForStrokeEnabled = false
+    # on "mousemove", proc(e: JsObject as KonvaMouseEvent) {.caster.} =
+    #   let
+    #     m = v(e.evt.x, e.evt.y)
+    #     currentMousePos = coordinate(m, app.stage)
+
+    #   k.shape.position = currentMousePos
 
   with k.wrapper:
     add k.line
@@ -658,14 +746,6 @@ proc setFocusedTheme(theme: ColorTheme) =
   if not done:
     app.theme = theme
 
-
-func coordinate(mouse: Vector; scale, offsetx, offsety: float): Vector =
-  v(
-    (-offsetx + mouse.x) / scale,
-    (-offsety + mouse.y) / scale)
-
-proc coordinate(pos: Vector; stage: Stage): Vector =
-  coordinate pos, ||stage.scale, stage.x, stage.y
 
 func center(scale, offsetx, offsety, width, height: float): Vector =
   ## real coordinate of center of the canvas
@@ -1426,6 +1506,14 @@ proc createDom*(data: RouterData): VNode =
                       icon "fa-circle-info"
 
                   tdiv(class = "nav-item",
+                      onclick = sidebarStateMutator ssShortcuts):
+                    span(class = "nav-link px-3 pointer" &
+                      iff(app.sidebarState == ssShortcuts, " active")):
+                      span(class = "caption"):
+                        text "Shortcuts "
+                      icon "fa-keyboard"
+
+                  tdiv(class = "nav-item",
                       onclick = sidebarStateMutator ssBoardProperties):
                     span(class = "nav-link px-3 pointer" &
                       iff(app.sidebarState == ssBoardProperties, " active")):
@@ -1535,6 +1623,24 @@ proc createDom*(data: RouterData): VNode =
                     apiUpdateBoardTitle app.id, $app.title, proc =
                       notify "title updated!"
 
+              of ssShortcuts:
+                ul(class="list-group"):
+                  for i, sr in app.actionsShortcutRegistery:
+                    li(class="list-group-item d-flex justify-content-between align-items-center"):
+                      span:
+                        if sr.ctrl:
+                          span(class="badge bg-light"):
+                            text "Ctrl"
+                        if sr.shift:
+                          span(class="badge bg-light"):
+                            text "Shift"
+                        span(class="badge bg-dark"):
+                          text $sr.code
+
+                      span(class="badge bg-primary rounded-pill"):
+                        text $i
+
+
             if
               not app.isLocked and
               app.sidebarState == ssMessagesView and
@@ -1590,6 +1696,125 @@ proc initCenterPin: KonvaShape =
     stroke = "black"
     strokeWidth = 2
 
+proc searchShortcut(sc: ShortCut): NOption[ActionKind] =
+  for ac, sh in app.actionsShortcutRegistery:
+    if sh == sc:
+      return some ac
+
+type
+  KeyState = enum
+    pressed
+    released
+
+proc takeAction(ac: ActionKind, ks: KeyState) =
+  case ks:
+  of pressed: 
+    case ac
+    of akDelete:
+      deleteSelectedNodes()
+
+    of akCancel:
+      if app.boardState == bsAddNode:
+        destroy app.tempNode.konva.wrapper
+
+      app.boardState = bsFree
+      app.footerState = fsOverview
+      app.state = asNormal
+
+      hide app.tempEdge.konva.wrapper
+      unselect()
+      redraw()
+
+    of akResetZoom:
+      let c = app.stage.center
+      changeScale c, 1, false
+      app.stage.center = c
+
+    of akFocus:
+      if app.selectedVisualNodes.len == 1:
+        let v = app.selectedVisualNodes[0]
+        app.stage.center = v.center
+        app.stage.x = app.stage.x - app.sidebarWidth/2
+
+    of akZoomMode:
+      app.zoomKeyHold = true
+      setCursor ccZoom
+
+    of akPanMode:
+      setCursor ccGrabbing
+      app.panKeyHold = true
+      app.state = asPan
+
+    of akOpenCloseSidebar:
+      if document.activeElement == document.body:
+        if app.sidebarVisible: closeSideBar()
+        else: openSideBar()
+        redraw()
+
+    of akToggleLock:
+      negate app.isLocked
+      redraw()
+
+    of akCreateNode:
+      startPuttingNode()
+
+    of akCreateConnection:
+      if app.selectedVisualNodes.len == 1:
+        startAddConn app.selectedVisualNodes[0]
+
+    of akSave:
+      saveServer()
+
+    of akGoCenter:
+      gotoCenterOfBoard()
+
+    of akDownload:
+      downloadFile "data.json", "application/json",
+        stringify forceJsObject toJson app
+
+    of akUpdateScreenShot:
+      app.stage.toBlob(1/2).dthen proc(b: Blob) =
+        apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
+          notify "screenshot updated!"
+
+    of akCopyStyle:
+      if app.selectedVisualNodes.len == 1:
+        let v = app.selectedVisualNodes[0]
+
+        app.theme = v.config.theme
+        app.font = v.config.font
+
+      elif app.selectedEdges.len == 1:
+        let e = app.selectedEdges[0]
+
+        app.theme = e.data.config.theme
+        app.edge.width = e.data.config.width
+
+    of akAreaSelect:
+      app.areaSelectKeyHold = true
+
+    else:
+        discard
+  
+  of released: 
+    case ac:
+
+    of akAreaSelect:
+      app.areaSelectKeyHold = false
+
+    of akZoomMode:
+      app.zoomKeyHold = false
+      setCursor ccNone
+
+    of akPanMode:
+      setCursor ccNone
+      app.panKeyHold = false
+      app.state = asNormal
+
+    else: 
+      discard
+
+
 proc init* =
   add document.body.classList, "overflow-hidden"
   setRenderer createDom
@@ -1644,7 +1869,7 @@ proc init* =
       on "mousedown", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
         app.leftClicked = true
 
-        if kcM in app.pressedKeys:
+        if app.areaSelectKeyHold:
           let
             m = v(ke.evt.x, ke.evt.y)
             currentMousePos = coordinate(m, app.stage)
@@ -1660,13 +1885,13 @@ proc init* =
           m = v(ke.evt.x, ke.evt.y)
           currentMousePos = coordinate(m, app.stage)
 
-        if kcJ in app.pressedKeys:
+        if app.zoomKeyHold:
           let
             s = ||app.stage.scale
             Δy = m.y - app.lastClientMousePos.y
           zoom s, Δy
 
-        elif kcM in app.pressedKeys:
+        elif app.areaSelectKeyHold:
           let
             a = app.areaSelectionNode.position
             b = currentMousePos
@@ -1674,7 +1899,7 @@ proc init* =
           app.areaSelectionNode.size = b - a
 
         elif
-          kcSpace in app.pressedKeys or
+          app.panKeyHold or
           app.leftClicked and app.hoverVisualNode.isNone:
           moveStage movement ke
 
@@ -1767,92 +1992,9 @@ proc init* =
           incl app.pressedKeys, kc
 
           if document.activeElement == document.body:
-            case kc
-            of kcSpace: # span
-              setCursor ccGrabbing
-              app.state = asPan
-
-            of kcDelete: # delete
-              deleteSelectedNodes()
-
-            of kcEscape: # cancel select
-              if app.boardState == bsAddNode:
-                destroy app.tempNode.konva.wrapper
-
-              app.boardState = bsFree
-              app.footerState = fsOverview
-              app.state = asNormal
-
-              hide app.tempEdge.konva.wrapper
-              unselect()
-              redraw()
-
-            of kcJ: # zoom
-              setCursor ccZoom
-
-            of kcN: # new node
-              startPuttingNode()
-
-            of kcK: # copy style
-              if app.selectedVisualNodes.len == 1:
-                let v = app.selectedVisualNodes[0]
-
-                app.theme = v.config.theme
-                app.font = v.config.font
-
-              elif app.selectedEdges.len == 1:
-                let e = app.selectedEdges[0]
-
-                app.theme = e.data.config.theme
-                app.edge.width = e.data.config.width
-
-              else:
-                discard
-
-              redraw()
-
-            of kcQ: # start connection
-              if app.selectedVisualNodes.len == 1:
-                startAddConn app.selectedVisualNodes[0]
-
-            of kcC: # go to center
-              gotoCenterOfBoard()
-
-            of kcD: # download
-              downloadFile "data.json", "application/json",
-                stringify forceJsObject toJson app
-
-            of kcS: # save
-              saveServer()
-
-            of kcZ: # reset zoom
-              let c = app.stage.center
-              changeScale c, 1, false
-              app.stage.center = c
-
-            of kcF: # focus
-              if app.selectedVisualNodes.len == 1:
-                let v = app.selectedVisualNodes[0]
-                app.stage.center = v.center
-                app.stage.x = app.stage.x - app.sidebarWidth/2
-
-            of kcT: # show/hide side bar
-              if document.activeElement == document.body:
-                if app.sidebarVisible: closeSideBar()
-                else: openSideBar()
-                redraw()
-
-            of kcP: # scrennshot
-              app.stage.toBlob(1/2).dthen proc(b: Blob) =
-                apiUpdateBoardScrenshot app.id, toForm("screenshot.png", b), proc =
-                  notify "screenshot updated!"
-
-            of kcL: # lock / unlock
-              negate app.isLocked
-              redraw()
-
-            else:
-              discard
+            let s = searchShortcut initShortCut e
+            if issome s:
+              takeAction get s, pressed
 
           else: # if typing in input
             case kc
@@ -1865,6 +2007,11 @@ proc init* =
         proc(e: Event as KeyboardEvent) {.caster.} =
           let kc = KeyCode e.keyCode
           app.pressedKeys.excl kc
+
+          let s = searchShortcut initShortCut e
+          if issome s:
+            takeAction get s, released
+
 
           if app.pressedKeys.len == 0:
             setCursor ccNone

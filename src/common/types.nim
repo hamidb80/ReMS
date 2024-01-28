@@ -41,12 +41,12 @@ type
 
   ConnectionCenterShapeKind* = enum
     # undirected connection
-    ccsCircle
-    ccsDiomand
-    ccsSquare
+    ccsCircle = "Circle"
+    ccsDiamond = "Diamond"
+    ccsSquare = "Square"
     # directed connection
-    ccsTriangle
-    ccsDoubleTriangle
+    ccsTriangle = "Triangle"
+    ccsDoubleTriangle = "Double Triangle"
 
   # FIXME you can divide konva module into 2 parts: types & procs and simply import these types
   FontVariant* = enum
