@@ -29,7 +29,6 @@ type
   SideBarState = enum
     ssMessagesView
     ssPropertiesView
-    ssBoardProperties
     ssShortcuts
 
   BoardState = enum
@@ -90,7 +89,7 @@ type
     areaSelectKeyHold: bool
     panKeyHold: bool
     zoomKeyHold: bool
-    
+
     lastTouches: seq[Touch]
     lastAbsoluteMousePos: Vector
     lastClientMousePos: Vector
@@ -727,6 +726,7 @@ proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
     updateEdgeShape app.selectedEdges[0], cs
   else:
     app.selectedCenterShape = cs
+    updateEdgeShape app.tempEdge, cs
 
 proc getFocusedConnShape: ConnectionCenterShapeKind =
   if app.selectedEdges.len == 1: app.selectedEdges[0].data.config.centerShape
@@ -1501,9 +1501,16 @@ proc createDom*(data: RouterData): VNode =
                       onclick = sidebarStateMutator ssPropertiesView):
                     span(class = "nav-link px-3 pointer" &
                       iff(app.sidebarState == ssPropertiesView, " active")):
-                      span(class = "caption"):
-                        text "Properties "
-                      icon "fa-circle-info"
+
+                      if app.selectedVisualNodes.len == 0:
+                        span(class = "caption"):
+                          text "board "
+                        icon "fa-play"
+
+                      else:
+                        span(class = "caption"):
+                          text "Properties "
+                        icon "fa-circle-info"
 
                   tdiv(class = "nav-item",
                       onclick = sidebarStateMutator ssShortcuts):
@@ -1512,14 +1519,6 @@ proc createDom*(data: RouterData): VNode =
                       span(class = "caption"):
                         text "Shortcuts "
                       icon "fa-keyboard"
-
-                  tdiv(class = "nav-item",
-                      onclick = sidebarStateMutator ssBoardProperties):
-                    span(class = "nav-link px-3 pointer" &
-                      iff(app.sidebarState == ssBoardProperties, " active")):
-                      span(class = "caption"):
-                        text "board "
-                      icon "fa-play"
 
               tdiv(class = "nav-item d-flex flex-row px-2"):
                 span(class = "nav-link px-1 pointer", onclick = maximize):
@@ -1604,42 +1603,42 @@ proc createDom*(data: RouterData): VNode =
                         let s = e.target.value
                         scaleImage vn, parseFloat s
 
-              of ssBoardProperties:
-                label(class = "form-label"):
-                  text "Title"
+                else:
+                  label(class = "form-label"):
+                    text "Title"
 
-                input(`type` = "text", class = "form-control",
-                      placeholder = "title", value = app.title):
+                  input(`type` = "text", class = "form-control",
+                        placeholder = "title", value = app.title):
 
-                  proc oninput(e: Event; v: Vnode) =
-                    let s = e.target.value
-                    app.title = s
+                    proc oninput(e: Event; v: Vnode) =
+                      let s = e.target.value
+                      app.title = s
 
-                button(class = "btn btn-primary m-2"):
-                  text "update"
-                  icon "fa-sync ms-2"
+                  button(class = "btn btn-primary m-2"):
+                    text "update"
+                    icon "fa-sync ms-2"
 
-                  proc onclick =
-                    apiUpdateBoardTitle app.id, $app.title, proc =
-                      notify "title updated!"
+                    proc onclick =
+                      apiUpdateBoardTitle app.id, $app.title, proc =
+                        notify "title updated!"
+
 
               of ssShortcuts:
-                ul(class="list-group"):
+                ul(class = "list-group"):
                   for i, sr in app.actionsShortcutRegistery:
-                    li(class="list-group-item d-flex justify-content-between align-items-center"):
-                      span:
-                        if sr.ctrl:
-                          span(class="badge bg-light"):
-                            text "Ctrl"
-                        if sr.shift:
-                          span(class="badge bg-light"):
-                            text "Shift"
-                        span(class="badge bg-dark"):
-                          text $sr.code
-
-                      span(class="badge bg-primary rounded-pill"):
+                    li(class = "list-group-item d-flex justify-content-between align-items-center"):
+                      span(class = "text-muted"):
                         text $i
 
+                      span:
+                        if sr.ctrl:
+                          span(class = "badge bg-light"):
+                            text "Ctrl"
+                        if sr.shift:
+                          span(class = "badge bg-light"):
+                            text "Shift"
+                        span(class = "badge bg-dark"):
+                          text $sr.code
 
             if
               not app.isLocked and
@@ -1706,9 +1705,9 @@ type
     pressed
     released
 
-proc takeAction(ac: ActionKind, ks: KeyState) =
+proc takeAction(ac: ActionKind; ks: KeyState) =
   case ks:
-  of pressed: 
+  of pressed:
     case ac
     of akDelete:
       deleteSelectedNodes()
@@ -1788,15 +1787,17 @@ proc takeAction(ac: ActionKind, ks: KeyState) =
         let e = app.selectedEdges[0]
 
         app.theme = e.data.config.theme
-        app.edge.width = e.data.config.width
+        app.edge = e.data.config
+        updateEdgeShape app.tempEdge, e.data.config.centerShape
+
 
     of akAreaSelect:
       app.areaSelectKeyHold = true
 
     else:
-        discard
-  
-  of released: 
+      discard
+
+  of released:
     case ac:
 
     of akAreaSelect:
@@ -1811,7 +1812,7 @@ proc takeAction(ac: ActionKind, ks: KeyState) =
       app.panKeyHold = false
       app.state = asNormal
 
-    else: 
+    else:
       discard
 
 
