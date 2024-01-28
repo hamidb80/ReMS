@@ -1,4 +1,4 @@
-import std/[macros, strformat]
+import std/[macros, strformat, sequtils]
 import std/[jsffi, dom, asyncjs]
 
 import ../../common/types
@@ -160,8 +160,8 @@ proc `size`*(k: KonvaObject): Size {.konva.}
 proc `data=`*(k: KonvaObject, v: cstring) {.konva.}
 proc `data`*(k: KonvaObject): cstring {.konva.}
 proc `points=`*[N: SomeNumber](k: KonvaObject, v: openArray[N]) {.konva.}
-proc `points=`*(k: KonvaObject, v: openArray[
-    Vector]) = k.points = v.spreadPoints
+proc `points=`*(k: KonvaObject, v: openArray[Vector]) = 
+  k.points = spreadPoints v
 proc `points`*(k: KonvaObject): seq[float] {.konva.}
 
 proc `fill=`*(k: KonvaObject, color: Str) {.konva.}
@@ -306,6 +306,8 @@ proc `noise=`*(k: KonvaObject, v: float) {.konva.}
 proc `noise`*(k: KonvaObject): float {.konva.}
 proc `threshold=`*(t: KonvaObject, v: Probablity) {.konva.}
 proc `threshold`*(t: KonvaObject): Probablity {.konva.}
+proc `closed=`*(t: KonvaObject, v: bool) {.konva.}
+proc `closed`*(t: KonvaObject): bool {.konva.}
 
 proc `text=`*(t: KonvaObject, v: Str) {.konva.}
 proc `text`*(t: KonvaObject): Str {.konva.}
@@ -441,7 +443,28 @@ proc toBlob*(wrapper: KonvaContainer, ratio: SomeNumber): Future[Blob]
 
 # --------- Helper
 
-func `-`*(a: Vector): Vector = v(-a.x, -a.y)
+func `-`*(a: Vector): Vector = 
+  v(-a.x, -a.y)
+
+func `*`*(a: seq[Vector], scale: float): seq[Vector] = 
+  mapit a, it * scale
+  
+
+# func closed*(a: seq[Vector]): seq[Vector] = 
+#   if a[0] == a[^1]: a
+#   else:
+#     var b = a
+#     add b, a[0]
+#     b
+
+# func scale*(a: seq[Vector]): seq[Vector] = 
+#   if a[0] == a[^1]: a
+#   else:
+#     var b = a
+#     add b, a[0]
+#     b
+
+
 func area*(k: KonvaObject): Area =
   let
     p = k.position

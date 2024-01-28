@@ -1,4 +1,5 @@
-import std/[with, math, stats, options, lenientops, strformat, sets, tables, random]
+import std/[with, math, stats, options, lenientops, strformat, sequtils, sets,
+    tables, random]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -150,10 +151,6 @@ template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
 template `||`*(v): untyped = v.asScalar
 
-func sorted[T](s: Slice[T]): Slice[T] =
-  if s.a < s.b: s
-  else: s.b .. s.a
-
 func `or`[S: string or cstring](a, b: S): S =
   if a == "": b
   else: a
@@ -161,20 +158,6 @@ func `or`[S: string or cstring](a, b: S): S =
 template `?`(a): untyped =
   issome a
 
-
-
-proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
-  with box:
-    fill = toColorString theme.bg
-    stroke = toColorString theme.st
-
-  with txt:
-    fill = toColorString theme.fg
-
-proc applyFont(txt: KonvaObject; font: FontConfig) =
-  with txt:
-    fontFamily = font.family
-    fontSize = font.size
 
 func center(vn: VisualNode): Vector =
   let
@@ -190,37 +173,8 @@ func area(vn: VisualNode): Area =
 
   b.area + w.position
 
-proc redrawSizeNode(v: VisualNode; font: FontConfig) =
-  # TODO keep center
-  let pad = font.size / 2
-
-  with v.konva.txt:
-    applyFont font
-
-  with v.konva.box:
-    x = -pad
-    y = -pad
-    width = v.konva.txt.width + pad*2
-    height = v.konva.txt.height + pad*2
-    strokeWidth = font.size / 10
-    cornerRadius = pad
-
-proc getFocusedFont: FontConfig =
-  case app.selectedVisualNodes.len
-  of 1: app.selectedVisualNodes[0].config.font
-  else: app.font
-
 proc setCursor(c: CssCursor) =
   window.document.body.style.cursor = $c
-
-proc setFocusedFontFamily(fn: string) =
-  case app.selectedVisualNodes.len
-  of 0:
-    app.font.family = fn
-  else:
-    for v in app.selectedVisualNodes:
-      v.config.font.family = fn
-      redrawSizeNode v, v.config.font
 
 proc hover(vn: VisualNode) =
   app.hoverVisualNode = some vn
@@ -322,58 +276,110 @@ func whichRegion(θ: Degree; a: Area): Region =
 
 proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   let
-    d = c2 - c1
+    d = c1 - c2
     θ = arctan d
     r1 = whichRegion(θ, a1)
     r2 = whichRegion(θ, a2)
     h =
       if c2 in a1: c1
-      else: c1 + onBorder(rectSide(a1 + -c1, r1), θ)
+      else: c1 - onBorder(rectSide(a1 + -c1, r1), θ)
     t =
       if c2 in a1: c1
-      else: c2 - onBorder(rectSide(a2 + -c2, r2), θ)
+      else: c2 + onBorder(rectSide(a2 + -c2, r2), θ)
 
   e.konva.line.points = [h, t]
   e.konva.shape.position = (h + t) / 2
   e.konva.shape.rotation = float -θ
 
-proc updateEdgeConnSize(sh: KonvaShape; v: float, cs: ConnectionCenterShapeKind) =
+const diomandPoints = @[
+    vec2(-1.7, 0),
+    vec2(0, +1),
+    vec2(+1.7, 0),
+    vec2(0, -1)] * 3.2
+
+func newDiomand(): Line =
+  result = newLine()
+  with result:
+    points = diomandPoints
+    closed = true
+
+const trianglePoints = @[
+  vec2(-1, +1),
+  vec2(+1, 0),
+  vec2(-1, -1),
+  ] * 3.2
+
+func newTriangle(): Line =
+  result = newLine()
+  with result:
+    points = trianglePoints
+    closed = true
+
+const doubleTrianglePoints = @[
+  vec2(0, +1),
+  vec2(1.7, 0),
+  vec2(0, -1),
+  vec2(0, -2),
+  vec2(+3.4, 0),
+  vec2(0, +2),
+  vec2(0, +1),
+  vec2(-1.7, +2),
+  vec2(-1.7, -2),
+  vec2(+1.7, 0),
+  ] * 2.8
+
+func newDoubleTriangle(): Line =
+  result = newLine()
+  with result:
+    points = doubleTrianglePoints
+    closed = true
+
+func initCenterShape(cs: ConnectionCenterShapeKind): KonvaShape =
+  case cs:
+  of ccsCircle: newCircle()
+  of ccsSquare: newRect()
+  of ccsDiomand: newDiomand()
+  of ccsTriangle: newTriangle()
+  of ccsDoubleTriangle: newDoubleTriangle()
+
+proc updateEdgeConnSize(sh: KonvaShape; v: float;
+    cs: ConnectionCenterShapeKind) =
   sh.strokeWidth = v
 
   case cs
   of ccsCircle:
     sh.radius = max(6, v * 3)
-  else:
+  of ccsSquare:
     with sh:
       width = v * 10
       height = v * 10
+  of ccsTriangle:
+    sh.points = trianglePoints * max(1.8, v)
+  of ccsDiomand:
+    sh.points = diomandPoints * max(1.8, v)
+  else:
+    discard
 
-  if cs != ccsCircle:
+  case cs
+  of ccsSquare:
     with sh:
       offsetX = sh.width/2
       offsetY = sh.height/2
+  else:
+    discard
 
 proc updateEdgeWidth(e: Edge; w: Tenth) =
   let v = tofloat w
   e.data.config.width = w
   e.konva.line.strokeWidth = v
   updateEdgeConnSize e.konva.shape, v, e.data.config.centerShape
-  
+
 proc updateEdgeTheme(e: Edge; t: ColorTheme) =
   e.data.config.theme = t
   e.konva.line.stroke = toColorString t.st
   with e.konva.shape:
     stroke = toColorString t.st
     fill = toColorString t.bg
-
-func initCenterShape(cs: ConnectionCenterShapeKind): KonvaShape =
-  case cs:
-  of ccsCircle: newCircle()
-  # of ccsDiomand: discard
-  # of ccsSquare: newRect()
-  else: newRect()
-  # of ccsTriangle: discard
-  # of ccsDoubleTriangle: discard
 
 proc addEdgeEvents(e: Edge) =
   with e.konva.shape:
@@ -409,11 +415,18 @@ proc cloneEdge(id1, id2: Id; e: Edge): Edge =
 proc redrawConnectionsTo(uid: Id) =
   for id in app.edgeGraph.getOrDefault(uid):
     let
-      k = sorted id..uid
+      c1 = id..uid
+      c2 = uid..id
+
+      dir = c1 in app.edgeInfo
+
+      k = 
+        if dir: c1
+        else: c2
+
       ei = app.edgeInfo[k]
-      # ps = ei.konva.line.points.foldPoints
-      n1 = app.objects[id]
-      n2 = app.objects[uid]
+      n1 = app.objects[k.a]
+      n2 = app.objects[k.b]
 
     updateEdgePos ei, n1.area, n1.center, n2.area, n2.center
 
@@ -422,12 +435,54 @@ proc updateEdgeShape(e: Edge; cs: ConnectionCenterShapeKind) =
   destroy e.konva.shape
   e.konva.shape = initCenterShape(cs)
   add e.konva.wrapper, e.konva.shape
-  console.log(e.konva.shape)
-  
+
   updateEdgeWidth e, e.data.config.width
   updateEdgeTheme e, e.data.config.theme
   addEdgeEvents e
   redrawConnectionsTo e.data.points[0]
+
+proc applyTheme(txt, box: KonvaObject; theme: ColorTheme) =
+  with box:
+    fill = toColorString theme.bg
+    stroke = toColorString theme.st
+
+  with txt:
+    fill = toColorString theme.fg
+
+proc applyFont(txt: KonvaObject; font: FontConfig) =
+  with txt:
+    fontFamily = font.family
+    fontSize = font.size
+
+proc redrawSizeNode(v: VisualNode; font: FontConfig) =
+  # TODO keep center
+  let pad = font.size / 2
+
+  with v.konva.txt:
+    applyFont font
+
+  with v.konva.box:
+    x = -pad
+    y = -pad
+    width = v.konva.txt.width + pad*2
+    height = v.konva.txt.height + pad*2
+    strokeWidth = font.size / 10
+    cornerRadius = pad
+
+proc getFocusedFontFamily: FontConfig =
+  case app.selectedVisualNodes.len
+  of 1: app.selectedVisualNodes[0].config.font
+  else: app.font
+
+proc setFocusedFontFamily(fn: string) =
+  case app.selectedVisualNodes.len
+  of 0:
+    app.font.family = fn
+  else:
+    for v in app.selectedVisualNodes:
+      v.config.font.family = fn
+      redrawSizeNode v, v.config.font
+
 
 proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
   var k = EdgeKonvaNodes(
@@ -441,9 +496,9 @@ proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
     perfectDrawEnabled = false
     shadowForStrokeEnabled = false
 
-  with k.shape:
-    perfectDrawEnabled = false
-    shadowForStrokeEnabled = false
+  # with k.shape:
+  #   perfectDrawEnabled = false
+  #   shadowForStrokeEnabled = false
 
   with k.wrapper:
     add k.line
@@ -709,7 +764,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
         let
           id1 = cfg.id
           id2 = sv.config.id
-          conn = sorted id1..id2
+          conn = id1..id2
 
         var ei = cloneEdge(id1, id2, app.tempEdge)
 
@@ -825,21 +880,21 @@ proc startPuttingNode =
 
 proc deleteSelectedNodes =
   for vn in app.selectedVisualNodes:
-    let Id = vn.config.id
+    let id = vn.config.id
 
-    for n in app.edgeGraph.getOrDefault(Id):
-      let key = sorted Id..n
+    for n in app.edgeGraph.getOrDefault(id):
+      let key = id..n
       destroy app.edgeInfo[key].konva.wrapper
       del app.edgeInfo, key
 
     destroy vn.konva.wrapper
-    del app.objects, Id
-    removeNode app.edgeGraph, Id
+    del app.objects, id
+    removeNode app.edgeGraph, id
 
   for ed in app.selectedEdges:
     let
       p = ed.data.points
-      conn = sorted p[cpkHead]..p[cpkTail]
+      conn = p[cpkHead]..p[cpkTail]
 
     destroy app.edgeInfo[conn].konva.wrapper
     del app.edgeInfo, conn
@@ -869,7 +924,7 @@ proc restore(app: var AppData; data: BoardData) =
     let
       id1 = info.points[cpkHead]
       id2 = info.points[cpkTail]
-      conn = sorted id1..id2
+      conn = id1..id2
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
       e = newEdge(id1, id2, info.config)
@@ -1020,7 +1075,7 @@ proc reconsiderSideBarWidth =
       window.innerWidth)
 
 proc onclicker(ct: ConnectionCenterShapeKind): proc() =
-  proc = 
+  proc =
     setFocusedConnShape ct
     app.footerState = fsOverview
 
@@ -1122,7 +1177,6 @@ proc saveServer =
   apiUpdateBoardContent app.id, data, success
 
 
-
 func clientPos(t: Touch): Vector =
   v(t.clientX, t.clientY)
 
@@ -1199,7 +1253,7 @@ proc createDom*(data: RouterData): VNode =
             case app.footerState
             of fsOverview:
               let
-                font = getFocusedFont()
+                font = getFocusedFontFamily()
                 theme = getFocusedTheme()
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
@@ -1249,7 +1303,8 @@ proc createDom*(data: RouterData): VNode =
 
             of fsFontSize:
               for s in countup(10, 300, 10):
-                fontSizeSelectBtn s, getFocusedFont().size, true, capture(s, proc =
+                fontSizeSelectBtn s, getFocusedFontFamily().size, true, capture(
+                    s, proc =
                   setFocusedFontSize s
                   app.footerState = fsOverview)
 
@@ -1273,7 +1328,7 @@ proc createDom*(data: RouterData): VNode =
                 proc onclick =
                   app.footerState = fsPalette
 
-              let t  = getFocusedTheme()
+              let t = getFocusedTheme()
               for i, ct in app.palettes[app.selectedPalleteI].colorThemes:
                 span(class = "mx-1"):
                   colorSelectBtn(t, ct, true)
@@ -1817,7 +1872,6 @@ proc init* =
 
       addEventListener document.body, "paste":
         proc(e: Event as ClipboardEvent) {.caster.} =
-
           let
             s = e.text
             files = e.clipboardData.filesArray
@@ -1867,4 +1921,5 @@ proc init* =
       redraw()
 
 
-when isMainModule: init()
+when isMainModule:
+  init()
