@@ -187,8 +187,10 @@ func initShortCut(e: string): ShortCut =
     case k
     of "ctrl":
       result.ctrl = true
+      result.code = kcCtrl
     of "shift":
       result.shift = true
+      result.code = kcShift
     of "del":
       result.code = kcDelete
     of "esc":
@@ -225,7 +227,7 @@ app.actionsShortcutRegistery = [
   akFocus: sc"F",
   akDownload: sc"D",
   akCopyStyle: sc"K",
-  akAreaSelect: sc"M"]
+  akAreaSelect: sc"Ctrl"]
 
 # ----- Util
 template `Δy`*(e): untyped = e.deltaY
@@ -963,13 +965,20 @@ proc deleteSelectedNodes =
   for vn in app.selectedVisualNodes:
     let id = vn.config.id
 
+    destroy vn.konva.wrapper
+    del app.objects, id
+
     for n in app.edgeGraph.getOrDefault(id):
-      let key = id..n
+      let
+        k1 = id..n
+        k2 = n..id
+        key =
+          if k1 in app.edgeInfo: k1
+          else: k2
+
       destroy app.edgeInfo[key].konva.wrapper
       del app.edgeInfo, key
 
-    destroy vn.konva.wrapper
-    del app.objects, id
     removeNode app.edgeGraph, id
 
   for ed in app.selectedEdges:
@@ -1793,6 +1802,7 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
 
 
     of akAreaSelect:
+      echo "hey"
       app.areaSelectKeyHold = true
 
     else:
