@@ -177,10 +177,12 @@ var
 
 
 func initShortCut(e: KeyboardEvent): ShortCut =
+  # release event is a little bit quirky
+  let c = KeyCode e.keyCode
   ShortCut(
-    code: KeyCode e.keyCode,
-    ctrl: e.ctrlKey,
-    shift: e.shiftKey)
+    code: c,
+    ctrl: e.ctrlKey or c == kcCtrl,
+    shift: e.shiftKey or c == kcShift)
 
 func initShortCut(e: string): ShortCut =
   for k in splitwhitespace toLowerAscii e:
@@ -1802,7 +1804,6 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
 
 
     of akAreaSelect:
-      echo "hey"
       app.areaSelectKeyHold = true
 
     else:
@@ -1812,7 +1813,7 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
     case ac:
 
     of akAreaSelect:
-      app.areaSelectKeyHold = false
+      app.areaSelectKeyHold = false 
 
     of akZoomMode:
       app.zoomKeyHold = false
