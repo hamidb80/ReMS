@@ -62,7 +62,7 @@ proc putForm*(
 proc getApi*(url: cstring): Future[AxiosResponse] 
   {.importjs: "axios.get(@)".}
 
-proc postApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 
+proc postApi*(url: cstring, data: JsObject | cstring = ""): Future[AxiosResponse] 
   {.importjs: "axios.post(@)".}
 
 proc putApi*(url: cstring, data: JsObject = nil): Future[AxiosResponse] 

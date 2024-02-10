@@ -1,6 +1,7 @@
 import std/[nativesockets, threadpool, os]
 
-import ./[server, bot, config]
+import ./[server, config]
+import ./extensions/bot
 import ./utils/db_init
 import ../common/package
 

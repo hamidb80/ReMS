@@ -5,6 +5,7 @@ import ponairi
 import ../../common/[types, datastructures]
 import ../database/[models, queries]
 import ../config
+import ../auth
 
 type
   Theme = object
@@ -56,11 +57,8 @@ proc defaultPalette*(db: DbConn) =
     ])
 
 proc addAdminUser*(db: DbConn) =
-    let uid = db.newUser("admin", "admin user", true)
-
-    db.insert Auth(
-        user: uid,
-        hashed_pass: some secureHash defaultAdminPass)
+    let uid = db.newUser("admin", "admin user", true, umTest)
+    db.addPassAuth(uid, defaultAdminPass)
 
 proc addCommonTags*(db: DbConn) =
     db.insert commonTags()
@@ -68,7 +66,6 @@ proc addCommonTags*(db: DbConn) =
 proc createTables*(db: DbConn) =
     db.create(
         User,
-        Invitation,
         Auth,
         Asset,
         Note,

@@ -4,21 +4,18 @@ import std/[strformat, tables, strutils, os, oids, json, httpclient,
 # import checksums/sha1
 import mummy, mummy/multipart
 import webby
-import quickjwt
 import cookiejar
+import quickjwt
 import jsony
 import questionable
-import bale
 import htmlparser
 
 import ../common/[types, path, datastructures, conventions, package]
-import ./utils/[web, github, link_preview]
-import ./routes
+import ./utils/[web, github, link_preview, auth]
 import ./database/[models, queries, dbconn]
-import ./config
+import ./[routes, config]
 
 include ./database/jsony_fix
-
 
 # ------- Static pages
 
@@ -62,7 +59,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
 
   if (fileExists fpath) and (isFilename fname):
     respFile mime, readFile fpath, cache
-  else: 
+  else:
     resp 404
 
 # ------- utility
@@ -72,106 +69,14 @@ proc download*(url: string): string =
   result = client.get(url).body
   close client
 
-
-## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
-const jwtKey = "auth"
-
-proc appendJwtExpire(ucj: sink JsonNode, expire: int64): JsonNode =
-  ucj["exp"] = %expire
-  ucj
-
-const expireDays = 10
-
-proc toJwt(uc: UserCache): string =
-  sign(
-    header = %*{
-      "typ": "JWT",
-      "alg": "HS256"},
-    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() +
-        expireDays.days),
-    secret = jwtSecret)
-
-proc jwtCookieSet(token: string): webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie(jwtKey, token, now() + expireDays.days, path = "/")
-
-proc jwt(req: Request): options.Option[string] =
-  try:
-    if "Cookie" in req.headers:
-      let ck = initCookie req.headers["Cookie"]
-      if ck.name == jwtKey:
-        return some ck.value
-  except:
-    discard
-
-proc login*(req: Request, uc: UserCache) =
-  if uc.account.id != 1 or defined login_default_admin:
-    {.cast(gcsafe).}:
-      respond req, 200, jwtCookieSet toJwt uc
-
 # ------- main
 
 proc getMe*(req: Request) {.userOnly.} =
   respJson toJson userc.account
 
-proc logoutCookieSet: webby.HttpHeaders =
-  result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
-
 proc logout*(req: Request) =
   respond req, 200, logoutCookieSet()
 
-func len[E: enum](e: type E): Natural =
-  len e.low .. e.high
-
-proc toEnumArr[E: enum, V](s: seq[V]): array[E, V] =
-  assert len(E) == len(s)
-  for i, x in s:
-    result[E(i)] = x
-
-proc loginWithInvitationCode*(req: Request) {.qparams: {secret: string}.} =
-  let inv = !!<db.getInvitation(secret, unow(), 60)
-
-  if i =? inv:
-    let
-      baleUser = bale.User i.data
-      maybeAuth = !!<db.getAuthBale(baleUser.id)
-      uid =
-        if a =? maybeAuth: a.user
-        else:
-          let u = !!<db.newUser(
-            "bale_" & $baleUser.id,
-            baleUser.firstName & baleUser.lastname.get "",
-            baleUser.id in adminBaleIds)
-          discard !!<db.newAuth(u, baleUser.id)
-          u
-
-      maybeUsr = !!<db.getUser(uid)
-      tags = !!<db.getLabeledTagIds()
-      uc = UserCache(
-        account: get maybeUsr,
-        defaultTags: toEnumArr[TagLabel, Id](tags))
-
-    login req, uc
-    !!db.loginNotif(uid)
-
-  else:
-    resp 404
-
-proc loginWithForm*(req: Request) {.jbody: LoginForm.} =
-  ## sign up with form is not possible, only from bale and enabeling password later
-  let
-    u = get !!<db.getUser(data.username)
-    a = get !!<db.getAuthUser(u.id)
-
-  if hash =? a.hashedPass:
-    if hash == secureHash data.password:
-      login req, UserCache(
-        account: u,
-        defaultTags: toEnumArr[TagLabel, Id](!!<db.getLabeledTagIds()))
-    else:
-      # TODO add syntax sugar for errors
-      raise newException(ValueError, "password is not valid")
-  else:
-    raise newException(ValueError, "the user does not set login with password")
 
 proc getAsset*(req: Request) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)

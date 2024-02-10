@@ -1813,7 +1813,7 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
     case ac:
 
     of akAreaSelect:
-      app.areaSelectKeyHold = false 
+      app.areaSelectKeyHold = false
 
     of akZoomMode:
       app.zoomKeyHold = false
@@ -2005,9 +2005,8 @@ proc init* =
           incl app.pressedKeys, kc
 
           if document.activeElement == document.body:
-            let s = searchShortcut initShortCut e
-            if issome s:
-              takeAction get s, pressed
+            if s =? searchShortcut initShortCut e:
+              takeAction s, pressed
 
           else: # if typing in input
             case kc
@@ -2021,9 +2020,8 @@ proc init* =
           let kc = KeyCode e.keyCode
           app.pressedKeys.excl kc
 
-          let s = searchShortcut initShortCut e
-          if issome s:
-            takeAction get s, released
+          if s =? searchShortcut initShortCut e:
+            takeAction s, released
 
 
           if app.pressedKeys.len == 0:

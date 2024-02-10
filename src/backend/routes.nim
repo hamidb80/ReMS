@@ -1,9 +1,11 @@
 import std/[strformat]
 
-import ./utils/web
 import ../common/types
+import ./utils/web
+import ./auth
 
 when not (defined(js) or defined(frontend)):
+  # import ./auth
   import mummy/routers
   var router*: Router
 
@@ -16,8 +18,7 @@ dispatch router, ../controller:
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
   get "/login/", loadHtml"login.html" {.html.}
-  get "/api/login/bale/"?(secret: string), loginWithInvitationCode {.ok.}
-  post "/api/login/form/", loginWithForm {.ok.}
+  post "/api/login/"?(kind: string), loginDispatcher {.ok.}
   get "/api/logout/", logout {.ok.}
 
   get "/api/profile/me/", getMe {.json: User.}

@@ -3,9 +3,10 @@ import std/[options, json, sequtils, httpclient, deques]
 import questionable
 import bale, bale/helper/stdhttpclient
 
-import ./database/[dbconn, models, queries]
-import ../common/[types]
-import ./utils/[random]
+import ../database/[dbconn, models, queries]
+import ../auth
+import ../utils/[random]
+import ../../common/[types]
 
 
 type
@@ -31,22 +32,21 @@ var
 
 
 proc registerLoginCode(code: string, u: bale.User) =
-  !!db.newInviteCode(code, JsonNode u)
+  !!db.addInviteCode(messangerT, code, JsonNode u)
 
 template qTextMsg(i, c): untyped =
   addLast msgQueue, Msg(chid: i, content: c)
 
+# proc dbCheck =
+#   let
+#     notifs = !!<db.getActiveNotifs()
+#     ids = notifs.mapIt(it.row_id)
 
-proc dbCheck =
-  let
-    notifs = !!<db.getActiveNotifs()
-    ids = notifs.mapIt(it.row_id)
+#   for n in notifs:
+#     if bid =? n.bale_chat_id:
+#       qTextMsg bid, "You've logged In as: \n" & n.nickname
 
-  for n in notifs:
-    if bid =? n.bale_chat_id:
-      qTextMsg bid, "You've logged In as: \n" & n.nickname
-
-  !!db.markNotifsAsStale(ids)
+#   !!db.markNotifsAsStale(ids)
 
 proc genSendMessages(api: string): proc() =
   proc =
@@ -103,7 +103,7 @@ proc runBaleBot*(token: string) {.raises: [], noreturn.} =
       try:
         msgSender()
         updateChecker()
-        dbCheck()
+        # dbCheck()
       except:
         discard
 

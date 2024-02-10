@@ -1,6 +1,6 @@
 ## https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
 
-import std/[times, json, options, strutils, strformat, sequtils, tables, sha1]
+import std/[times, json, options, strutils, strformat, sequtils, tables]
 import iterrr
 
 import ponairi
@@ -12,13 +12,6 @@ import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
 # TODO add auto generated tags
-
-template R: untyped {.dirty.} =
-  typeof result
-
-
-func sqlize[T](items: seq[T]): string =
-  '(' & join(items, ", ") & ')'
 
 func tagIds(data: RelValuesByTagId): seq[Id] =
   data.keys.toseq.mapIt(Id parseInt it)
@@ -87,46 +80,21 @@ template updateRelTagsGeneric*(
         db.insert r
 
 
-proc getInvitation*(db: DbConn, secret: string, time: Unixtime,
-    expiresAfterSec: Positive): options.Option[Invitation] =
-  db.find R, fsql"""
-    SELECT *
-    FROM Invitation i 
-    WHERE 
-      {time} - i.timestamp <= {expiresAfterSec} AND
-      secret = {secret}
-    """
-
-proc getAuthBale*(db: DbConn, baleUserId: Id): options.Option[Auth] =
-  db.find R, fsql"""
-    SELECT *
-    FROM Auth a
-    WHERE bale = {baleUserId}
-  """
-
-proc getAuthUser*(db: DbConn, user: Id): options.Option[Auth] =
+proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =
   db.find R, fsql"""
     SELECT *
     FROM Auth a
     WHERE user = {user}
   """
 
-proc newAuth*(db: DbConn, userId, baleUserId: Id): Id =
-  db.insert Auth(
-    user: userId,
-    bale: some baleUserId)
-
-proc newAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
-  db.insert Auth(
-    user: userId,
-    hashed_pass: some pass)
-
-proc newInviteCode*(db: DbConn, code: string, info: JsonNode) =
-  db.insert Invitation(
-      secret: code,
-      data: info,
-      timestamp: unow())
-
+proc getUserAuth*(db: DbConn, kind: string, user: Id): options.Option[Auth] =
+  db.find R, fsql"""
+    SELECT *
+    FROM Auth a
+    WHERE 
+      user = {user} AND
+      kind = {kind}
+  """
 
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, fsql"""
@@ -142,7 +110,10 @@ proc getUser*(db: DbConn, username: string): options.Option[User] =
     WHERE u.username = {username}
   """
 
-proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
+proc newUser*(db: DbConn,
+  uname, nname: string,
+  isAdmin: bool, m: UserMode
+): Id =
   let r =
     if isAdmin: urAdmin
     else: urUser
@@ -150,7 +121,8 @@ proc newUser*(db: DbConn, uname, nname: string, isAdmin: bool): Id =
   db.insertID User(
     username: uname,
     nickname: nname,
-    role: r)
+    role: r,
+    mode: m)
 
 proc commonTags*: seq[Tag] =
   for lbl in TagLabel:
@@ -535,26 +507,20 @@ proc updatePalette*(db: DbConn, name: string, p: Palette) =
       name = {name}
   """
 
-proc loginNotif*(db: DbConn, usr: Id) =
-  db.insert Relation(
-    user: some usr,
-    kind: some ord nkLoginBale,
-    timestamp: unow())
+# proc getActiveNotifs*(db: DbConn): seq[Notification] =
+#   db.find R, fsql"""
+#     SELECT r.id, u.id, u.nickname, r.kind, a.bale
+#     FROM Relation r
 
-proc getActiveNotifs*(db: DbConn): seq[Notification] =
-  db.find R, fsql"""
-    SELECT r.id, u.id, u.nickname, r.kind, a.bale
-    FROM Relation r
-    
-    JOIN User u
-    ON r.user = u.id
+#     JOIN User u
+#     ON r.user = u.id
 
-    JOIN Auth a
-    ON a.user = r.user
-    
-    WHERE r.state = {rsFresh}
-    ORDER BY r.id ASC
-  """
+#     JOIN Auth a
+#     ON a.user = r.user
+
+#     WHERE r.state = {rsFresh}
+#     ORDER BY r.id ASC
+#   """
 
 proc markNotifsAsStale*(db: DbConn, ids: seq[Id]) =
   db.exec fsql"""

@@ -89,7 +89,7 @@ proc createDom: Vnode =
             label(class = "form-check-label"):
               text "pass: "
 
-            input(`type` = "text", class = "form-control", value = pass):
+            input(`type` = "password", class = "form-control", value = pass):
               proc oninput(e: Event, v: Vnode) =
                 pass = $e.target.value
 

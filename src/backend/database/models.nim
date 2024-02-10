@@ -6,7 +6,6 @@ when defined js:
   import ponairi/pragmas
   type SecureHash = string
 else:
-  import std/sha1
   import ponairi
 
 
@@ -15,24 +14,33 @@ type # database models
     urUser
     urAdmin
 
+  UserMode* = enum
+    umReal ## real user who signed up 
+    umTest ## used for testing
+
   User* = object
     id* {.primary, autoIncrement.}: Id
     username* {.uniqueIndex.}: Str
     nickname*: Str
     role*: UserRole
-
-  Invitation* = object
-    id* {.primary, autoIncrement.}: Id
-    secret*: Str # TODO hash it
-    data*: JsonNode
-    timestamp*: UnixTime
+    mode*: UserMode
 
   Auth* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
-    bale* {.references: User.id.}: Option[Id] # bale chat id
-    email*: Option[Str]
-    hashed_pass*: Option[SecureHash]
+    kind* {.index.}: string # Email | [third-party-service-name] | ...
+
+    user* {.index, references: User.id.}: Option[Id]
+    secret* {.index.}: string
+
+    str_index* {.index.}: string
+    int_index* {.index.}: int
+    str_val1*: string
+    str_val2*: string
+    int_val3*: int
+    info*: string ## additional information
+
+    created_at*: UnixTime
+    activated*: bool
 
   Asset* = object
     id* {.primary, autoIncrement.}: Id
@@ -47,7 +55,7 @@ type # database models
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    data*: NoteData 
+    data*: NoteData
 
     owner* {.references: User.id.}: Id
     is_private*: bool
@@ -124,9 +132,6 @@ type # database models
     theme*: ColorTheme
     value_type*: TagValueType
     # TODO tag with "open/closed enums" values or a range
-
-  NotificationKind* = enum
-    nkLoginBale
 
   RelationState* = enum
     rsFresh
@@ -224,13 +229,6 @@ type # view models
     username*: Str
     password*: Str
 
-  Notification* = object
-    row_id*: Id
-    uid*: Id
-    nickname*: Str
-    kind*: NotificationKind
-    bale_chat_id*: Option[Id]
-
   GithubCodeEmbed* = object
     style_link*: Str
     html_code*: Str
@@ -304,8 +302,12 @@ when not defined js:
   include jsony_fix
 
   template defSqlJsonType(typename): untyped =
-    proc sqlType*(t: typedesc[typename]): string = "TEXT"
-    proc dbValue*(j: typename): DbValue = DbValue(kind: dvkString, s: toJson j)
+    proc sqlType*(t: typedesc[typename]): string = 
+      "TEXT"
+    
+    proc dbValue*(j: typename): DbValue = 
+      DbValue(kind: dvkString, s: toJson j)
+    
     proc to*(src: DbValue, dest: var typename) =
       dest = fromJson(src.s, typename)
 
@@ -320,11 +322,6 @@ when not defined js:
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
   proc to*(src: DbValue, dest: var Path) =
     dest = src.s.Path
-
-  proc sqlType*(t: typedesc[SecureHash]): string = "TEXT"
-  proc dbValue*(p: SecureHash): DbValue = DbValue(kind: dvkString, s: $p)
-  proc to*(src: DbValue, dest: var SecureHash) =
-    dest = parseSecureHash src.s
 
   proc sqlType*(t: typedesc[UnixTime]): string = "INT"
   proc dbValue*(p: UnixTime): DbValue = DbValue(kind: dvkInt, i: p.Id)

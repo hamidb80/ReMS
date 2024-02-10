@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.32"
+version       = "0.0.33"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -86,8 +86,7 @@ task bot, "bale bot":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task go, "runs server + bot":
-  exec """nim -d:ssl --d:login_default_admin --passL:"-lcrypto" r ./src/backend/main.nim"""
+  exec """nim -d:ssl --d:loginTestUser --passL:"-lcrypto" r ./src/backend/main.nim"""
 
 task done, "runs server + bot":
   exec """nim -d:useMalloc -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
-

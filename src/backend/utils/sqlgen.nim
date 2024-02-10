@@ -1,6 +1,13 @@
-import std/[macros]
+import std/[macros, strutils]
 
 import db_connector/db_sqlite
+
+
+template R*: untyped {.dirty.} =
+  typeof result
+
+func sqlize*[T](items: seq[T]): string =
+  '(' & join(items, ", ") & ')'
 
 
 macro fsql*(str: static string): untyped =

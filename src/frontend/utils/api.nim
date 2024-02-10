@@ -2,12 +2,13 @@ import std/[strutils, sequtils]
 import std/[jsformdata, jsffi]
 
 import ../../backend/routes
+import ../../backend/auth
 import ../../backend/database/[models]
 import ../../common/[types, datastructures, conventions]
 import ../jslib/axios
 import ./js
 
-## XXX know if an error accurs in the promise, 
+## XXX know if an error accurs in the promise,
 ## it executes the `reject` function without stack trace ...
 
 let formCfg = AxiosConfig[FormData]()
@@ -22,8 +23,8 @@ proc loginApi*(
     success: proc(),
     fail: proc() = noop
 ) =
-    discard get_api_login_bale_url(code)
-    .getApi()
+    discard post_api_login_url(messangerT)
+    .postApi(cstring code)
     .then(success)
     .catch(fail)
 
@@ -32,9 +33,9 @@ proc loginApi*(
     success: proc(),
     fail: proc() = noop
 ) =
-    discard post_api_login_form_url()
+    discard post_api_login_url(userPassT)
     .postApi(forceJsObject LoginForm(
-            username: user, 
+            username: user,
             password: pass))
     .then(success)
     .catch(fail)
@@ -200,7 +201,7 @@ proc apiUpdateAssetName*(
     name: string,
     success: proc(),
     fail: proc() = noop
-) = 
+) =
     discard get_api_asset_update_name_url(id, name)
     .getApi
     .then(success)
@@ -211,7 +212,7 @@ proc apiUpdateAssetTags*(
     data: JsObject,
     success: proc(),
     fail: proc() = noop
-) = 
+) =
     discard put_api_asset_update_tags_url(id)
     .putApi(data)
     .then(success)
@@ -221,7 +222,7 @@ proc apiDeleteAsset*(
     id: Id,
     success: proc(),
     fail: proc() = noop
-) = 
+) =
     discard delete_api_asset_url(id)
     .deleteApi
     .then(success)
@@ -333,7 +334,7 @@ proc apiListPalettes*(
     .catch(fail)
 
 proc apiUpdatePalette*(
-    p: Palette,    
+    p: Palette,
     success: proc(),
     fail: proc() = noop
 ) =
