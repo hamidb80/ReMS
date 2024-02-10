@@ -1,4 +1,4 @@
-import std/[options, json, sequtils, httpclient, deques]
+import std/[options, json, sequtils, httpclient, deques, os]
 
 import questionable
 import bale, bale/helper/stdhttpclient
@@ -64,29 +64,30 @@ proc genCheckUpdates(api: string): proc() =
   proc =
     try:
       let updates = httpc.req api.getUpdates(offset = skip)
+      if ok updates:
+        for u in \updates:
+          skip = max(skip, u.id+1)
 
-      for u in \updates:
-        skip = max(skip, u.id+1)
+          if msg =? u.msg and text =? msg.text:
+            let chid = msg.chat.id
 
-        if msg =? u.msg and text =? msg.text:
-          let chid = msg.chat.id
+            case text
+            of startD:
+              qTextMsg chid, "Welcome! choose from keyboard"
 
-          case text
-          of startD:
-            qTextMsg chid, "Welcome! choose from keyboard"
+            of loginD:
+              let code = randCode 4..6
+              registerLoginCode code, msg.frm
+              qTextMsg chid, code
+              qTextMsg chid, "Enter this code in the login page"
 
-          of loginD:
-            let code = randCode 4..6
-            registerLoginCode code, msg.frm
-            qTextMsg chid, code
-            qTextMsg chid, "Enter this code in the login page"
+            of mychatidtD:
+              qTextMsg chid, "your chat id in Bale is: " & $chid
 
-          of mychatidtD:
-            qTextMsg chid, "your chat id in Bale is: " & $chid
+            else:
+              qTextMsg chid, "invalid message, choose from keyboard"
 
-          else:
-            qTextMsg chid, "invalid message, choose from keyboard"
-
+      sleep 500 # becuase Bale API produces duplicated update messsage
     except:
       echo "error: " & getCurrentExceptionMsg()
 
