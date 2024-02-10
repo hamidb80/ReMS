@@ -2,7 +2,7 @@ const
   messangerT* = "bale"
   userPassT* = "e-mail"
 
-when not defined js:
+when not (defined(js) or defined(frontend)):
   import std/[options, json]
   import checksums/sha1
 
@@ -47,11 +47,11 @@ when not defined js:
       user: some userId,
       secret: $pass)
 
-  proc getInvitation*(db: DbConn, 
-    secret, kind: string, 
+  proc getInvitation*(db: DbConn,
+    secret, kind: string,
     time: Unixtime, expiresAfterSec: Positive
   ): options.Option[Auth] =
-      
+
     db.find R, fsql"""
       SELECT *
       FROM Auth a
