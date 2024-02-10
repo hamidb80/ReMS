@@ -28,16 +28,20 @@ let
 
 var
   httpc = newHttpClient()
-  msgQueue = initDeque[Msg](100)
+  # msgQueue = initDeque[Msg](100)
 
 
 proc registerLoginCode(code: string, u: bale.User) =
   !!db.addInviteCode(messangerT, code, JsonNode u)
 
-template qTextMsg(i, c): untyped =
-  addLast msgQueue, Msg(chid: i, content: c)
+template sendMsg(chatId, msg): untyped {.dirty.} =
+  discard req(httpc, 
+    sendMessage(api, int chatid, msg, reply_markup = botKeyBoard))
 
-# proc dbCheck =
+# template qTextMsg(i, c): untyped =
+#   addLast msgQueue, Msg(chid: i, content: c)
+
+# proc notifCheck =
 #   let
 #     notifs = !!<db.getActiveNotifs()
 #     ids = notifs.mapIt(it.row_id)
@@ -48,15 +52,15 @@ template qTextMsg(i, c): untyped =
 
 #   !!db.markNotifsAsStale(ids)
 
-proc genSendMessages(api: string): proc() =
-  proc =
-    while 0 < msgQueue.len:
-      let m = popFirst msgQueue
-      try:
-        discard httpc.req api.sendMessage(int m.chid, m.content,
-            reply_markup = botKeyBoard)
-      except:
-        addLast msgQueue, m
+# proc genSendMessages(api: string): proc() =
+#   proc =
+#     while 0 < msgQueue.len:
+#       let m = popFirst msgQueue
+#       try:
+#         discard httpc.req api.sendMessage(int m.chid, m.content,
+#             reply_markup = botKeyBoard)
+#       except:
+#         addLast msgQueue, m
 
 proc genCheckUpdates(api: string): proc() =
   var skip = 0
@@ -73,21 +77,20 @@ proc genCheckUpdates(api: string): proc() =
 
             case text
             of startD:
-              qTextMsg chid, "Welcome! choose from keyboard"
+              sendMsg chid, "Welcome! choose from keyboard"
 
             of loginD:
               let code = randCode 4..6
               registerLoginCode code, msg.frm
-              qTextMsg chid, code
-              qTextMsg chid, "Enter this code in the login page"
+              sendMsg chid, code
+              sendMsg chid, "Enter this code in the login page"
 
             of mychatidtD:
-              qTextMsg chid, "your chat id in Bale is: " & $chid
+              sendMsg chid, "your chat id in Bale is: " & $chid
 
             else:
-              qTextMsg chid, "invalid message, choose from keyboard"
+              sendMsg chid, "invalid message, choose from keyboard"
 
-      sleep 500 # becuase Bale API produces duplicated update messsage
     except:
       echo "error: " & getCurrentExceptionMsg()
 
@@ -97,14 +100,14 @@ proc runBaleBot*(token: string) {.raises: [], noreturn.} =
 
     let
       api = baleBotBaseApi token
-      msgSender = genSendMessages api
+      # msgSender = genSendMessages api
       updateChecker = genCheckUpdates api
 
     while true:
       try:
-        msgSender()
+        # msgSender()
         updateChecker()
-        # dbCheck()
+        # notifCheck()
       except:
         discard
 
