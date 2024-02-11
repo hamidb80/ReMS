@@ -160,6 +160,7 @@ const
   minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
   ciriticalWidth = 460
+  pinchRatioLimit = 0.80 .. 1.2
 
   nonExistsTheme = c(0, 0, 0)
   fontFamilies: seq[FontTest] = @[
@@ -232,6 +233,7 @@ app.actionsShortcutRegistery = [
   akAreaSelect: sc"Ctrl"]
 
 # ----- Util
+template `<>`*(a, b): untyped = clamp(a, b)
 template `Δy`*(e): untyped = e.deltaY
 template `Δx`*(e): untyped = e.deltaX
 template `||`*(v): untyped = v.asScalar
@@ -775,7 +777,7 @@ proc moveStage(v: Vector) =
 proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
   ## zoom in/out with `real` position pinned
   let
-    s′ = clamp(newScale, minScale .. maxScale)
+    s′ = newScale <> minScale..maxScale
 
     w = app.stage.width
     h = app.stage.height
@@ -1279,7 +1281,7 @@ func distance(ts: seq[Touch]): float =
 proc zoom(s, Δy: float) =
   let
     ⋊s = exp(-Δy / 400)
-    s′ = clamp(s * ⋊s, minScale .. maxScale)
+    s′ = (s * ⋊s) <> minScale..maxScale
     Δs = s′ - s
     mm = app.stage.center
 
@@ -1988,8 +1990,9 @@ proc init* =
           if e.ctrlKey: # pinch-zoom
             let
               s = ||app.stage.scale
-              ⋊s = exp(-e.Δy / 100)
+              ⋊s =  exp(-e.Δy / 100) <> pinchRatioLimit
 
+            debugecho ⋊s
             changeScale mp, s * ⋊s, true
 
           else: # panning
