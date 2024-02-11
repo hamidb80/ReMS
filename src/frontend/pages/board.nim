@@ -160,7 +160,7 @@ const
   minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
   ciriticalWidth = 460
-  pinchRatioLimit = 0.80 .. 1.2
+  pinchRatioLimit = 0.75 .. 1.25
 
   nonExistsTheme = c(0, 0, 0)
   fontFamilies: seq[FontTest] = @[
@@ -1992,7 +1992,6 @@ proc init* =
               s = ||app.stage.scale
               ⋊s =  exp(-e.Δy / 100) <> pinchRatioLimit
 
-            debugecho ⋊s
             changeScale mp, s * ⋊s, true
 
           else: # panning
