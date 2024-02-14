@@ -90,6 +90,7 @@ type
     panKeyHold: bool
     zoomKeyHold: bool
 
+    pinPos: Vector
     lastTouches: seq[Touch]
     lastAbsoluteMousePos: Vector
     lastClientMousePos: Vector
@@ -753,6 +754,21 @@ proc setFocusedTheme(theme: ColorTheme) =
   if not done:
     app.theme = theme
 
+func `/`(v: Vector, f: float): Vector = 
+  vec2(v.x / f, v.y/f)
+
+func center(ps: seq[Vector]): Vector = 
+  var acc = vec2(0, 0)
+  for p in ps:
+    acc = acc + p
+  acc / toFloat len ps
+
+proc pos(t: Touch): Vector = 
+  result = vec2(toFloat t.clientX, toFloat t.clientY)
+  notify $result
+
+func center(s: seq[Touch]): Vector = 
+  center map(s, pos)
 
 func center(scale, offsetx, offsety, width, height: float): Vector =
   ## real coordinate of center of the canvas
@@ -1651,8 +1667,9 @@ proc createDom*(data: RouterData): VNode =
                         if sr.shift:
                           span(class = "badge bg-light"):
                             text "Shift"
-                        span(class = "badge bg-dark"):
-                          text $sr.code
+                        if sr.code notin {kcCtrl, kcShift}:
+                          span(class = "badge bg-dark"):
+                            text $sr.code
 
             if
               not app.isLocked and
@@ -1852,7 +1869,7 @@ proc init* =
       add layer
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
-        discard
+        app.pinPos = coordinate(center e.evt.touches, app.stage) 
 
       on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         let currentTouches = e.evt.touches
@@ -1866,12 +1883,14 @@ proc init* =
               r = clientPos app.lastTouches[0]
             moveStage e - r
 
-        of 2:
+        of 2: # pinch-zoom
           if app.lastTouches.len == 2: # to prevent unwanted situation
-            let diff = (distance app.lastTouches) - (distance currentTouches)
+            let 
+              diff = (distance app.lastTouches) - (distance currentTouches)
+              s = ||app.stage.scale
+              ⋊s = exp(-diff / 100) <> pinchRatioLimit
 
-            if diff != 0.0:
-              zoom ||app.stage.scale, diff
+            changeScale center currentTouches, s * ⋊s, true
 
         else:
           discard
@@ -1990,7 +2009,7 @@ proc init* =
           if e.ctrlKey: # pinch-zoom
             let
               s = ||app.stage.scale
-              ⋊s =  exp(-e.Δy / 100) <> pinchRatioLimit
+              ⋊s = exp(-e.Δy / 100) <> pinchRatioLimit # FIXME this line is common with touch, make it a function
 
             changeScale mp, s * ⋊s, true
 
