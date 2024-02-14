@@ -90,7 +90,6 @@ type
     panKeyHold: bool
     zoomKeyHold: bool
 
-    pinPos: Vector
     lastTouches: seq[Touch]
     lastAbsoluteMousePos: Vector
     lastClientMousePos: Vector
@@ -1868,7 +1867,7 @@ proc init* =
       add layer
 
       on "touchstart", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
-        app.pinPos = coordinate(center e.evt.touches, app.stage) 
+        discard
 
       on "touchmove", proc(e: JsObject as KonvaTouchEvent) {.caster.} =
         let currentTouches = e.evt.touches
