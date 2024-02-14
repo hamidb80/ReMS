@@ -33,15 +33,18 @@ proc loadHtml*(path: string): RequestHandler =
   proc(req: Request) =
     respFile "text/html", readfile apv distFolder / path, noCache
 
-func isFilename(s: string): bool =
+func noPathTraversal(s: string): bool =
   ## https://owasp.org/www-community/attacks/Path_Traversal
-  for c in s:
-    if c in invalidFilenameChars:
+  
+  for i, ch in s:
+    if 
+      ch == '.' and s[max(i-1, 0)] == '0' or
+      ch in {'&', ' ', '~'}:
       return false
   true
 
 proc loadDist*(filename: string): RequestHandler =
-  doAssert isFilename filename, "illegal file name"
+  doAssert noPathTraversal filename, "illegal file name"
 
   let
     p = projectHome / "dist" / apv filename
@@ -57,7 +60,7 @@ proc staticFileHandler*(req: Request) {.qparams.} =
     mime = mimeType ext
     fpath = distFolder / fname
 
-  if (fileExists fpath) and (isFilename fname):
+  if (fileExists fpath) and (noPathTraversal fname):
     respFile mime, readFile fpath, cache
   else:
     resp 404

@@ -7,6 +7,17 @@ import ../../common/package
 import ../../backend/routes
 
 
+const
+  konvaJsLib = "https://unpkg.com/konva@9.3.3/konva.min.js"
+  katexJsLib = "https://unpkg.com/katex@0.16.9/dist/katex.min.js"
+  katexCssLib = "https://unpkg.com/katex@0.16.9/dist/katex.min.css"
+  axiosJsLib = "https://unpkg.com/axios@1.6.7/dist/axios.min.js"
+  fontAwesomeCssLib = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  bootstrapCss = "https://bootswatch.com/5/litera/bootstrap.min.css"
+  bootstrapIcons = "https://unpkg.com/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  fontObserverJs = "https://unpkg.com/fontfaceobserver@2.3.0/fontfaceobserver.standalone.js"
+
+
 func normalizeOsName(url: string): string =
   for ch in url:
     result.add:
@@ -36,18 +47,18 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
     title: text pageTitle
-    extLink "icon", "./icon.png"
+    extLink "icon", "./favicon.png"
 
     # JS libraries
-    extJs "https://unpkg.com/konva@9/konva.min.js"
-    extJs "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
-    extJs "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
+    extJs konvaJsLib
+    extJs katexJsLib
+    extJs axiosJsLib
 
     # UI libraries
-    extCss "https://bootswatch.com/5/litera/bootstrap.min.css"
-    extCss "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
-    extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    extCss "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    extCss bootstrapCss
+    extCss katexCssLib
+    extCss fontAwesomeCssLib
+    extCss bootstrapIcons
     # extCss "https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
 
     # font
@@ -75,7 +86,7 @@ proc tags: VNode =
 
 proc boardEdit: VNode =
   commonPage "Board", [
-      extJs "https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.standalone.js",
+      extJs fontObserverJs,
       extJs(apv"./script-board.js", true)]
 
 proc notePreview: VNode =
@@ -133,24 +144,24 @@ proc index: VNode =
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Actions"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Explore", "", "planet.svg", get_explore_url()
-        blockk "Tags", "", "tag.svg", get_tags_url()
-        blockk "change colors", "", "palette.svg", get_palette_studio_url()
-        blockk "Login", "", "user.svg", get_login_url()
+        blockk "Explore", "", "icons/planet.svg", get_explore_url()
+        blockk "Tags", "", "icons/tag.svg", get_tags_url()
+        blockk "change colors", "", "icons/palette.svg", get_palette_studio_url()
+        blockk "Login", "", "icons/user.svg", get_login_url()
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "parts"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Notes", "", "pen-writing-on-paper.svg", ""
-        blockk "Files", "", "inbox-archive.svg", ""
-        blockk "Boards", "", "share-circle.svg", ""
+        blockk "Notes", "", "icons/pen-writing-on-paper.svg", ""
+        blockk "Files", "", "icons/inbox-archive.svg", ""
+        blockk "Boards", "", "icons/share-circle.svg", ""
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Save your Time", "", "clock-square.svg", ""
-        blockk "Remember", "", "repeat.svg", ""
-        blockk "Open Source", "", "hand-heart.svg", "https://github.com/hamidb80/rems"
+        blockk "Save your Time", "", "icons/clock-square.svg", ""
+        blockk "Remember", "", "icons/repeat.svg", ""
+        blockk "Open Source", "", "icons/hand-heart.svg", "https://github.com/hamidb80/rems"
 
       footer(class = "app-footer card text-white bg-primary rounded-0"):
         tdiv(class = "card-body"):
