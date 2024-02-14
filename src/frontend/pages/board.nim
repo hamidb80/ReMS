@@ -764,8 +764,7 @@ func center(ps: seq[Vector]): Vector =
   acc / toFloat len ps
 
 proc pos(t: Touch): Vector = 
-  result = vec2(toFloat t.clientX, toFloat t.clientY)
-  notify $result
+  vec2(toFloat t.clientX, toFloat t.clientY)
 
 func center(s: seq[Touch]): Vector = 
   center map(s, pos)
