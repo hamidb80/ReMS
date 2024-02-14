@@ -35,10 +35,10 @@ proc loadHtml*(path: string): RequestHandler =
 
 func noPathTraversal(s: string): bool =
   ## https://owasp.org/www-community/attacks/Path_Traversal
-  
+
   for i, ch in s:
-    if 
-      ch == '.' and s[max(i-1, 0)] == '0' or
+    if
+      ch == '.' and s[max(i-1, 0)] == '.' or
       ch in {'&', ' ', '~'}:
       return false
   true
