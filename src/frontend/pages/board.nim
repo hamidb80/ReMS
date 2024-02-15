@@ -8,7 +8,7 @@ import caster, questionable, prettyvec
 import ../jslib/[konva, fontfaceobserver]
 import ./editor/[components, core]
 import ../components/[snackbar]
-import ../utils/[ui, browser, js, api]
+import ../utils/[ui, browser, js, api, shortcuts]
 import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/database/[models], ../../backend/routes
@@ -123,10 +123,6 @@ type
     test: string
 
 
-  ShortCut = object
-    code: KeyCode
-    ctrl, shift: bool
-
   ActionKind = enum
     akDelete
     akCancel
@@ -170,43 +166,6 @@ const
 var
   app = AppData()
 
-
-func initShortCut(e: KeyboardEvent): ShortCut =
-  # release event is a little bit quirky
-  let c = KeyCode e.keyCode
-  ShortCut(
-    code: c,
-    ctrl: e.ctrlKey or c == kcCtrl,
-    shift: e.shiftKey or c == kcShift)
-
-func initShortCut(e: string): ShortCut =
-  for k in splitwhitespace toLowerAscii e:
-    case k
-    of "ctrl":
-      result.ctrl = true
-      result.code = kcCtrl
-    of "shift":
-      result.shift = true
-      result.code = kcShift
-    of "del":
-      result.code = kcDelete
-    of "esc":
-      result.code = kcEscape
-    of "spc":
-      result.code = kcSpace
-    of "tab":
-      result.code = kcTab
-    else:
-      if k.len == 1:
-        result.code =
-          case k[0]
-          of '0'..'9', 'a'..'z':
-            Keycode ord toupperAscii k[0]
-          else:
-            raise newException(ValueError, "not defined")
-
-func sc(e: string): ShortCut =
-  initShortCut e
 
 app.actionsShortcutRegistery = [
   akDelete: sc"DEL",
