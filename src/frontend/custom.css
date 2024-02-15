@@ -201,7 +201,7 @@ p {
   z-index: 3;
 }
 
-.mw-100{
+.mw-100 {
   max-width: 100%;
 }
 
@@ -359,4 +359,9 @@ p p {
 
 .tw-content .list-latin {
   list-style-type: lower-latin;
+}
+
+.top-left-center {
+  top: 50%;
+  left: 50%;
 }

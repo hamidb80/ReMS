@@ -17,12 +17,6 @@ import ../../backend/database/[models], ../../backend/routes
 randomize()
 
 type
-  Region = range[1..4]
-
-  Axis = enum
-    aVertical
-    aHorizontal
-
   NOption[T] = options.Option[T]
 
 type
@@ -54,6 +48,7 @@ type
     title: cstring
     maxNodeId: int
     isLocked: bool = true
+    loading: bool
 
     # konva states
     stage: Stage
@@ -168,7 +163,6 @@ const
 
 # FIXME do not make 2 types of nodes. only 1 type with optional image url
 # FIXME image node border radius is depend on font size
-# TODO add loading... before content loads
 # TODO define +/- buttons next to size selector to change size of all of the selected nodes to next level
 # TODO add a shortcut named 'guide connections', when clicked some arrows are displayed around it that if you click on them you will go to the correspoding neighbour node
 # TODO add "exploratory mode" where all nodes' content are hidden when you click they show up
@@ -316,58 +310,6 @@ proc select(e: Edge) =
   highlight e
   add app.selectedEdges, e
 
-
-func onBorder(axis: Axis; limit: float; θ: Degree): Vector =
-  case axis
-  of aVertical:
-    let
-      m = tan θ
-      y = m * limit
-
-    v(limit, -y)
-
-  of aHorizontal:
-    let
-      m⁻¹ = cot θ
-      x = m⁻¹ * limit
-
-    v(-x, limit)
-
-func onBorder(dd: (Axis, float); θ: Degree): Vector =
-  onBorder dd[0], dd[1], θ
-
-func rectSide(a: Area; r: Region): tuple[axis: Axis; limit: float] =
-  case r
-  of 1: (aVertical, a.x2)
-  of 3: (aVertical, a.x1)
-  of 2: (aHorizontal, a.y1)
-  of 4: (aHorizontal, a.y2)
-
-func normalize(θ: Degree): Degree =
-  let
-    d = θ.float
-    (i, f) = splitDecimal d
-    i′ = (i mod 360)
-
-  if d >= 0: Degree i′ + f
-  else: Degree 360 + i′ + f
-
-func arctan(v: Vector): Degree =
-  normalize arctan2(-v.y, v.x).radToDeg.Degree
-
-func whichRegion(θ: Degree; a: Area): Region =
-  ## divides the rectangle into 4 regions according to its diameters
-  let
-    d = a.topRight - a.center
-    λ = normalize arctan d
-  assert θ >= Degree 0.0
-  assert λ >= Degree 0.0
-
-  if θ <= λ: 1
-  elif θ <= Degree(180.0) - λ: 2
-  elif θ <= Degree(180.0) + λ: 3
-  elif θ <= Degree(360.0) - λ: 4
-  else: 1
 
 proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   let
@@ -753,15 +695,6 @@ proc setFocusedTheme(theme: ColorTheme) =
   if not done:
     app.theme = theme
 
-func `/`(v: Vector, f: float): Vector = 
-  vec2(v.x / f, v.y/f)
-
-func center(ps: seq[Vector]): Vector = 
-  var acc = vec2(0, 0)
-  for p in ps:
-    acc = acc + p
-  acc / toFloat len ps
-
 proc pos(t: Touch): Vector = 
   vec2(toFloat t.clientX, toFloat t.clientY)
 
@@ -912,6 +845,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc =
       if
+        app.isLocked or
         app.state != asNormal or
         vn notin app.selectedVisualNodes:
         stopDrag wrapper
@@ -1270,6 +1204,10 @@ proc fetchBoard(id: Id) =
   apiGetBoard id, proc(b: Board) =
     app.restore b.data
     app.title = b.title
+    setPageTitle b.title & " - Board"
+    app.loading = false
+    redraw()
+
 
 proc fetchTags(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -1333,6 +1271,10 @@ proc createDom*(data: RouterData): VNode =
     tdiv(class = "karax"):
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
         konva "board"
+
+      if app.loading:
+        tdiv(class="position-absolute top-left-center"):
+          text "loading..."
 
       footer(class = "position-absolute bottom-0 left-0 w-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
@@ -1424,7 +1366,6 @@ proc createDom*(data: RouterData): VNode =
 
             of fsPalette:
               for i, p in app.palettes:
-                # TODO active class should highlight
                 span(class = "mx-1 " & iff(i == app.selectedPalleteI, "active"),
                     onclick = genSelectPalette i):
                   text p.name
@@ -1696,6 +1637,7 @@ proc createDom*(data: RouterData): VNode =
                       inp.value = c""
 
       snackbar()
+
 
 proc fitStage(stage: Stage) =
   with stage:
@@ -2093,9 +2035,11 @@ proc init* =
       loadFonts fontFamilies,
       fetchTags()
     ], proc =
-      fetchBoard app.id
       setFocusedTheme sample (sample app.palettes).colorThemes
       redraw()
+
+      app.loading = true
+      fetchBoard app.id
 
 
 when isMainModule:

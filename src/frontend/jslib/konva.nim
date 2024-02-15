@@ -6,16 +6,8 @@ import prettyvec
 
 
 type
-  Vector* = Vec2Obj
-
-  Size* = object
-    width*, height*: float
-
   RectData* = object
     x*, y*, width*, height*: float
-
-  Area* = object
-    x1*, x2*, y1*, y2*: float
 
   Str = cstring
   Number = SomeNumber
@@ -88,23 +80,6 @@ proc toKonvaMethod(def: NimNode): NimNode =
 macro konva(def): untyped =
   ## adds `importjs` pragma automatically
   toKonvaMethod def
-
-# --- types ---
-
-func toFloat[F: Somefloat](f: F): F = f
-
-func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
-  Vector(x: x.toFloat, y: y.toFloat)
-
-func asScalar*(v: Vector): float =
-  assert v.x == v.y, $v
-  v.x
-
-func v*(s: Size): Vector =
-  v(s.width, s.height)
-
-converter toSize*(v: Vector): Size =
-  Size(width: v.x, height: v.y)
 
 # --- utils ---
 
@@ -443,28 +418,6 @@ proc toBlob*(wrapper: KonvaContainer, ratio: SomeNumber): Future[Blob]
 
 # --------- Helper
 
-func `-`*(a: Vector): Vector = 
-  v(-a.x, -a.y)
-
-func `*`*(a: seq[Vector], scale: float): seq[Vector] = 
-  mapit a, it * scale
-  
-
-# func closed*(a: seq[Vector]): seq[Vector] = 
-#   if a[0] == a[^1]: a
-#   else:
-#     var b = a
-#     add b, a[0]
-#     b
-
-# func scale*(a: seq[Vector]): seq[Vector] = 
-#   if a[0] == a[^1]: a
-#   else:
-#     var b = a
-#     add b, a[0]
-#     b
-
-
 func area*(k: KonvaObject): Area =
   let
     p = k.position
@@ -482,27 +435,6 @@ func area*(k: KonvaObject): Area =
     y1: min(y1, y2),
     y2: max(y1, y2))
 
-func topLeft*(a: Area): Vector = v(a.x1, a.y1)
-func topRight*(a: Area): Vector = v(a.x2, a.y1)
-func bottomLeft*(a: Area): Vector = v(a.x1, a.y2)
-func bottomRight*(a: Area): Vector = v(a.x2, a.y2)
-func center*(a: Area): Vector = v(a.x1+a.x2, a.y1+a.y2) / 2
-func `+`*(a: Area, v: Vector): Area =
-  Area(
-    x1: a.x1+v.x,
-    x2: a.x2+v.x,
-    y1: a.y1+v.y,
-    y2: a.y2+v.y)
-
 func center*(k: KonvaObject): Vector =
   k.position + v(k.size) / 2
 
-func contains*(a: Area, v: Vector): bool =
-  v.x in a.x1..a.x2 and
-  v.y in a.y1..a.y2
-
-func contains*(a, b: Area): bool =
-  a.x1 < b.x1 and
-  a.x2 > b.x2 and
-  a.y1 < b.y1 and
-  a.y2 > b.y2

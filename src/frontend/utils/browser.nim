@@ -175,6 +175,8 @@ func toInlineCss*[A, B: SomeString](
 proc el*(id: cstring): Element =
   getElementById document, id
 
+proc setPageTitle*(title: cstring) {.importjs: "(document.title = @)".}
+
 proc purge*(el: Element) =
   el.innerHTML = ""
 

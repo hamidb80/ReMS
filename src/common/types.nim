@@ -1,5 +1,6 @@
-import std/[times, tables, math, strutils, options]
+import std/[times, tables, math, strutils, options, sequtils]
 
+import prettyvec
 import ./conventions
 
 
@@ -33,7 +34,21 @@ type
   Radian* = distinct float
   Percent* = range[0.0 .. 100.0]
 
+  Axis* = enum
+    aVertical
+    aHorizontal
+
   Tenth* = distinct int
+
+  Vector* = Vec2Obj
+
+  Region = range[1..4]
+
+  Size* = object
+    width*, height*: float
+
+  Area* = object
+    x1*, x2*, y1*, y2*: float
 
   ColorChannel* = range[0..255]
   HexColorPack* = range[0..0xffffff_a] ## last part is for opacity
@@ -103,6 +118,9 @@ type
     ccGrabbing = "grabbing"
 
 
+func toFloat*[F: Somefloat](f: F): F = f
+
+
 func getFields*[T](t: typedesc[T]): seq[string] =
   for k, v in fieldPairs(default t):
     result.add k
@@ -113,12 +131,45 @@ converter toBytes*(s: Mb): int = s.int * 1024 * 1024
 func toUnixtime*(d: DateTime): UnixTime =
   d.toTime.toUnix.UnixTime
 
-proc unow*: UnixTime = 
+proc unow*: UnixTime =
   toUnixtime now()
 
 proc toDateTime*(u: UnixTime): DateTime =
   u.int64.fromUnix.utc
 
+
+func `°`*(θ: float): Degree = Degree θ
+func `°`*(θ: int): Degree = Degree toFloat θ
+
+
+func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
+  Vector(x: x.toFloat, y: y.toFloat)
+
+func v*(s: Size): Vector =
+  v(s.width, s.height)
+
+func center*(ps: seq[Vector]): Vector = 
+  var acc = vec2(0, 0)
+  for p in ps:
+    acc = acc + p
+  acc / toFloat len ps
+
+
+func asScalar*(v: Vector): float =
+  assert v.x == v.y, $v
+  v.x
+
+converter toSize*(v: Vector): Size =
+  Size(width: v.x, height: v.y)
+
+func normalize*(θ: Degree): Degree =
+  let
+    d = θ.float
+    (i, f) = splitDecimal d
+    i′ = (i mod 360)
+
+  if d >= 0: ° i′ + f
+  else: ° 360 + i′ + f
 
 func degToRad*(d: Degree): Radian =
   Radian degToRad d.float
@@ -132,14 +183,84 @@ func cot*(d: Degree): float =
 func `-`*(d: Degree): Degree =
   Degree -d.float
 
-# ----- Degree
-
 func `<`*(a, b: Degree): bool {.borrow.}
 func `==`*(a, b: Degree): bool {.borrow.}
 func `<=`*(a, b: Degree): bool {.borrow.}
 func `-`*(a, b: Degree): Degree {.borrow.}
 func `+`*(a, b: Degree): Degree {.borrow.}
 func `$`*(a: Degree): string {.borrow.}
+
+
+func `-`*(a: Vector): Vector =
+  v(-a.x, -a.y)
+func topLeft*(a: Area): Vector = v(a.x1, a.y1)
+func topRight*(a: Area): Vector = v(a.x2, a.y1)
+func bottomLeft*(a: Area): Vector = v(a.x1, a.y2)
+func bottomRight*(a: Area): Vector = v(a.x2, a.y2)
+func center*(a: Area): Vector = v(a.x1+a.x2, a.y1+a.y2) / 2
+func `+`*(a: Area, v: Vector): Area =
+  Area(
+    x1: a.x1+v.x,
+    x2: a.x2+v.x,
+    y1: a.y1+v.y,
+    y2: a.y2+v.y)
+
+func contains*(a: Area, v: Vector): bool =
+  v.x in a.x1..a.x2 and
+  v.y in a.y1..a.y2
+
+func contains*(a, b: Area): bool =
+  a.x1 < b.x1 and
+  a.x2 > b.x2 and
+  a.y1 < b.y1 and
+  a.y2 > b.y2
+
+func `*`*(a: seq[Vector], scale: float): seq[Vector] =
+  mapit a, it * scale
+
+func onBorder*(axis: Axis; limit: float; θ: Degree): Vector =
+  case axis
+  of aVertical:
+    let
+      m = tan θ
+      y = m * limit
+
+    v(limit, -y)
+
+  of aHorizontal:
+    let
+      m⁻¹ = cot θ
+      x = m⁻¹ * limit
+
+    v(-x, limit)
+
+func onBorder*(dd: (Axis, float); θ: Degree): Vector =
+  onBorder dd[0], dd[1], θ
+
+func rectSide*(a: Area; r: Region): tuple[axis: Axis; limit: float] =
+  case r
+  of 1: (aVertical, a.x2)
+  of 3: (aVertical, a.x1)
+  of 2: (aHorizontal, a.y1)
+  of 4: (aHorizontal, a.y2)
+
+func arctan*(v: Vector): Degree =
+  normalize Degree radToDeg arctan2(-v.y, v.x)
+
+func whichRegion*(θ: Degree; a: Area): Region =
+  ## divides the rectangle into 4 regions according to its diameters
+  let
+    d = a.topRight - a.center
+    λ = normalize arctan d
+  assert θ >= 0.°
+  assert λ >= 0.°
+
+  if θ <= λ: 1
+  elif θ <= 180.° - λ: 2
+  elif θ <= 180.° + λ: 3
+  elif θ <= 360.° - λ: 4
+  else: 1
+
 
 # ----- Tenth
 
@@ -195,12 +316,12 @@ func toColorString*(c: HexColorPack): Str =
   else:
     toRgba c
 
-func parseHexColorPack*(s: string): HexColorPack = 
-  let 
+func parseHexColorPack*(s: string): HexColorPack =
+  let
     hasPrefix = s[0] == '#'
     number = parseHexInt:
       if hasPrefix: s[1..^1]
-      else: s 
+      else: s
     size = s.len - iff(hasPrefix, 1, 0)
 
   case size
