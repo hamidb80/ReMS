@@ -35,6 +35,7 @@ then enter it in mobile
 - https://ogb.stanford.edu/
 - [Latex Editor](https://latexeditor.lagrida.com/)
 
-## Alternative Apps
+## Alternatives
 - [The Brain](https://thebrain.com/)
 - [Org Pad](https://orgpad.info/)
+- [obsidian excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
