@@ -34,3 +34,7 @@ then enter it in mobile
 ## Other useful contents 
 - https://ogb.stanford.edu/
 - [Latex Editor](https://latexeditor.lagrida.com/)
+
+## Alternative Apps
+- [The Brain](https://thebrain.com/)
+- [Org Pad](https://orgpad.info/)
