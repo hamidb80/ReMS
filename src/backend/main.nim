@@ -21,5 +21,10 @@ when isMainModule:
         spawn runBaleBot baleBotToken
         echo "Bale bot started ..."
 
-    echo "Run on port: ", webServerPort
-    runWebServer Port webServerPort
+
+    const host =
+        when defined localhost: "localhost"
+        else: "0.0.0.0"
+
+    echo "Run on http://", host, ':', webServerPort
+    runWebServer host, Port webServerPort

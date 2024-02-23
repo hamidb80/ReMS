@@ -10,6 +10,7 @@ bin           = @["rems"]
 
 # Dependencies
 
+# openssl  & libssl-dev
 requires "nim >= 2.0.0"
 
 requires "checksums" # for Nim 2
