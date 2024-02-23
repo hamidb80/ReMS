@@ -4,7 +4,6 @@ import ../../common/[types, datastructures]
 
 when defined js:
   import ponairi/pragmas
-  type SecureHash = string
 else:
   import ponairi
 
