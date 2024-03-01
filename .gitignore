@@ -1,7 +1,7 @@
 .vscode/
+
 dist/
 resources/
-tmp/
 temp/
 out/
 
@@ -11,5 +11,6 @@ play
 *.exe
 *.db
 *.sqlite3
-rems
 *.out
+
+rems
