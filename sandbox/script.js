@@ -34,38 +34,41 @@ function initCanvas(board) {
     let mousedown = false
 
     let ctx = new PIXI.Graphics()
+    container.addChild(ctx)
 
     for (const id in board.data.objects) {
         const obj = board.data.objects[id]
-        console.log(obj)
+        const style = new PIXI.TextStyle({
+            fontFamily: obj.font.family,
+            fontSize: obj.font.size,
+            fill: color(obj.theme.fg),
+            align: 'center',
+        })
+        const textMetrics = PIXI.TextMetrics.measureText(obj.data.text, style)
 
-        const i = 1
+        let t = new PIXI.Text(obj.data.text, style)
+        t.position.x = obj.position.x
+        t.position.y = obj.position.y
 
         ctx.beginFill(color(obj.theme.bg))
-        ctx.lineStyle(obj.font.size / 20 * i, color(obj.theme.st))
+        ctx.lineStyle(obj.font.size / 20, color(obj.theme.st))
         ctx.drawRect(
-            obj.position.x * i, obj.position.y * i,
-            obj.font.size * i * 2, obj.font.size * i * 2)
+            obj.position.x, obj.position.y,
+            textMetrics.width, textMetrics.height)
+
+        container.addChild(t)
     }
 
-    let mainLayer = container
-    mainLayer.addChild(ctx)
-
-
-    //Build object hierarchy
-    // graphicLayer.addChild(ctx)
-    // mainLayer.addChild(graphicLayer)
-    // stage.addChild(mainLayer)
 
     //Animate via WebAPI
     requestAnimationFrame(animate)
 
-    //Scale mainLayer
-    mainLayer.scale.set(1, 1)
+    //Scale container
+    container.scale.set(1, 1)
 
     function animate() {
         app.render()
-        // Recursive animation request, disabled for performance.
+        // XXX: Recursive animation request, disabled for performance.
         // requestAnimationFrame(animate)
     }
 
@@ -113,11 +116,11 @@ function initCanvas(board) {
             clientY = e.clientY
 
             // Change the main layer zoom offset x and y for use when mouse wheel listeners are fired.
-            offX = mainLayer.position.x + xPos
-            offY = mainLayer.position.y + yPos
+            offX = container.position.x + xPos
+            offY = container.position.y + yPos
 
             // Move the main layer based on above calucalations
-            mainLayer.position.set(offX, offY)
+            container.position.set(offX, offY)
 
             // Animate the container
             requestAnimationFrame(animate)
@@ -186,8 +189,8 @@ function initCanvas(board) {
         offY = (offY - y) * (currScale / old_scale) + y
 
         //Set the position and scale of the DisplayObjectContainer
-        mainLayer.scale.set(currScale, currScale)
-        mainLayer.position.set(offX, offY)
+        container.scale.set(currScale, currScale)
+        container.position.set(offX, offY)
 
         //Animate the container
         requestAnimationFrame(animate)
