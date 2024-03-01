@@ -1,3 +1,8 @@
+// TODO use text to svg path 
+// TODO separate emojis from text - 
+//      it is good idea to load custom image for each emoji to achieve
+//      platform independence emoji representation
+
 function color(hc) {
     return hc >> 4
 }
