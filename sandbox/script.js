@@ -3,12 +3,17 @@ function randInt(min, max) { // min and max included
     return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
+function color(hc) {
+    return hc >> 4
+}
+
 function initCanvas(board) {
     // You can use either PIXI.WebGLRenderer or PIXI.CanvasRenderer
     let app = new PIXI.Application({
         width: window.innerWidth,
         height: window.innerHeight,
         backgroundAlpha: 0,
+        antialias: true,
         // view: document.getElementById("boxes")
     })
 
@@ -19,33 +24,28 @@ function initCanvas(board) {
 
     //declare all letiables
     let body = document.body
-    let main_layer_zoom_scale = 1
-    let main_layer_zoom_scalemax = 10
-    let main_layer_zoom_scalemin = 1
-    let main_layer_zoom_offset_x = 0
-    let main_layer_zoom_offset_y = 0
+    let currScale = 1
+    let maxScale = 10
+    let minScale = 0.1
+    let offX = 0
+    let offY = 0
 
-
-    // let stage = new PIXI.Stage()
-    // let mainLayer = new PIXI.DisplayObjectContainer()
-    // let graphicLayer = new PIXI.DisplayObjectContainer()
 
     let mousedown = false
 
-    //Setup the stage properties
-    // stage.setBackgroundColor(0xcccccc)
-    // container.setBackgroundColor(0xcccccc)
-
     let ctx = new PIXI.Graphics()
 
-    for (let I = 0; I < 10000; I++) {
-        let x = randInt(0, 1000)
-        let y = randInt(0, 1000)
+    for (const id in board.data.objects) {
+        const obj = board.data.objects[id]
+        console.log(obj)
 
-        ctx.beginFill(0x000000)
-        ctx.lineStyle(2, 0xFF0000)
-        ctx.drawRect(x, y, 10, 10)
-        console.log(I)
+        const i = 1
+
+        ctx.beginFill(color(obj.theme.bg))
+        ctx.lineStyle(obj.font.size / 20 * i, color(obj.theme.st))
+        ctx.drawRect(
+            obj.position.x * i, obj.position.y * i,
+            obj.font.size * i * 2, obj.font.size * i * 2)
     }
 
     let mainLayer = container
@@ -113,11 +113,11 @@ function initCanvas(board) {
             clientY = e.clientY
 
             // Change the main layer zoom offset x and y for use when mouse wheel listeners are fired.
-            main_layer_zoom_offset_x = mainLayer.position.x + xPos
-            main_layer_zoom_offset_y = mainLayer.position.y + yPos
+            offX = mainLayer.position.x + xPos
+            offY = mainLayer.position.y + yPos
 
             // Move the main layer based on above calucalations
-            mainLayer.position.set(main_layer_zoom_offset_x, main_layer_zoom_offset_y)
+            mainLayer.position.set(offX, offY)
 
             // Animate the container
             requestAnimationFrame(animate)
@@ -136,7 +136,8 @@ function initCanvas(board) {
      */
     function wheelDistance(evt) {
         if (!evt) evt = event
-        let w = evt.wheelDelta, d = evt.detail
+        let w = evt.wheelDelta
+        let d = evt.detail
         if (d) {
             if (w) return w / d / 40 * d > 0 ? 1 : -1 // Opera
             else return -d / 3              // Firefox         TODO: do not /3 for OS X
@@ -166,26 +167,27 @@ function initCanvas(board) {
         let distance = wheelDistance(evt)
 
         // Set the old scale to be referenced later
-        let old_scale = main_layer_zoom_scale
+        let old_scale = currScale
 
         // Find the position of the clients mouse
         x = evt.clientX
         y = evt.clientY
 
         // Manipulate the scale based on direction
-        main_layer_zoom_scale = old_scale + direction
+        currScale = old_scale + distance * 0.1
+        console.log(distance, direction)
 
         //Check to see that the scale is not outside of the specified bounds
-        if (main_layer_zoom_scale > main_layer_zoom_scalemax) main_layer_zoom_scale = main_layer_zoom_scalemax
-        else if (main_layer_zoom_scale < main_layer_zoom_scalemin) main_layer_zoom_scale = main_layer_zoom_scalemin
+        if (currScale > maxScale) currScale = maxScale
+        else if (currScale < minScale) currScale = minScale
 
         // This is the magic. I didn't write this, but it is what allows the zoom to work.
-        main_layer_zoom_offset_x = (main_layer_zoom_offset_x - x) * (main_layer_zoom_scale / old_scale) + x
-        main_layer_zoom_offset_y = (main_layer_zoom_offset_y - y) * (main_layer_zoom_scale / old_scale) + y
+        offX = (offX - x) * (currScale / old_scale) + x
+        offY = (offY - y) * (currScale / old_scale) + y
 
         //Set the position and scale of the DisplayObjectContainer
-        mainLayer.scale.set(main_layer_zoom_scale, main_layer_zoom_scale)
-        mainLayer.position.set(main_layer_zoom_offset_x, main_layer_zoom_offset_y)
+        mainLayer.scale.set(currScale, currScale)
+        mainLayer.position.set(offX, offY)
 
         //Animate the container
         requestAnimationFrame(animate)
@@ -194,8 +196,8 @@ function initCanvas(board) {
 
 function fetchBoard() {
     fetch("/board.json")
-    .then(r => r.json())
-    .then(initCanvas)
+        .then(r => r.json())
+        .then(initCanvas)
 }
 
 console.log("hey")
