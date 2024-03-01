@@ -1,13 +1,8 @@
-
-function randInt(min, max) { // min and max included 
-    return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
 function color(hc) {
     return hc >> 4
 }
 
-function center(geo) {
+function geoCenter(geo) {
     return {
         x: geo.x + geo.w / 2,
         y: geo.y + geo.h / 2
@@ -36,8 +31,10 @@ function initCanvas(board) {
     const container = new PIXI.Container()
     app.stage.addChild(container)
 
-    let ctx = new PIXI.Graphics()
-    container.addChild(ctx)
+    let nodeCtx = new PIXI.Graphics()
+    let edgeCtx = new PIXI.Graphics()
+    container.addChild(edgeCtx)
+    container.addChild(nodeCtx)
 
     const padxf = 0.3
     const padyf = 0.2
@@ -67,9 +64,9 @@ function initCanvas(board) {
         t.position.x = obj.position.x + padx
         t.position.y = obj.position.y + pady
 
-        ctx.beginFill(color(obj.theme.bg))
-        ctx.lineStyle(s / 10, color(obj.theme.st))
-        ctx.drawRoundedRect(x, y, w, h, s / 4)
+        nodeCtx.beginFill(color(obj.theme.bg))
+        nodeCtx.lineStyle(s / 10, color(obj.theme.st))
+        nodeCtx.drawRoundedRect(x, y, w, h, s * 0.35)
 
         container.addChild(t)
     }
@@ -77,13 +74,13 @@ function initCanvas(board) {
     for (const edge of board.data.edges) {
         const p1 = edge.points[0]
         const p2 = edge.points[1]
-        const c1 = center(geo[p1])
-        const c2 = center(geo[p2])
+        const c1 = geoCenter(geo[p1])
+        const c2 = geoCenter(geo[p2])
 
-        ctx.beginFill()
-        ctx.lineStyle(edge.config.width / 5, color(edge.config.theme.bg))
-        ctx.moveTo(c1.x, c1.y)
-        ctx.lineTo(c2.x, c2.y)
+        edgeCtx.beginFill()
+        edgeCtx.lineStyle(edge.config.width / 10, color(edge.config.theme.st))
+        edgeCtx.moveTo(c1.x, c1.y)
+        edgeCtx.lineTo(c2.x, c2.y)
     }
 
     //Animate via WebAPI
@@ -157,43 +154,15 @@ function initCanvas(board) {
     body.addEventListener('mousewheel', zoom, false)     // Chrome/Safari/Opera
     body.addEventListener('DOMMouseScroll', zoom, false) // Firefox
 
-
-    /**
-     * Detect the amount of distance the wheel has traveled and normalize it based on browsers.
-     * @param  event
-     * @return integer
-     */
-    function wheelDistance(evt) {
-        if (!evt) evt = event
-        let w = evt.wheelDelta
-        let d = evt.detail
-        if (d) {
-            if (w) return w / d / 40 * d > 0 ? 1 : -1 // Opera
-            else return -d / 3              // Firefox         TODO: do not /3 for OS X
-        } else return w / 120             // IE/Safari/Chrome TODO: /3 for Chrome OS X
-    }
-
-    /**
-     * Detect the direction that the scroll wheel moved
-     * @param event
-     * @return integer
-     */
     function wheelDirection(evt) {
         if (!evt) evt = event
         return (evt.detail < 0) ? 1 : (evt.wheelDelta > 0) ? 1 : -1
     }
 
-    /**
-     * Zoom into the DisplayObjectContainer that acts as the container
-     * @param event
-     */
     function zoom(evt) {
 
         // Find the direction that was scrolled
         let direction = wheelDirection(evt)
-
-        // Find the normalized distance
-        let distance = wheelDistance(evt)
 
         // Set the old scale to be referenced later
         let old_scale = currScale
@@ -203,7 +172,7 @@ function initCanvas(board) {
         y = evt.clientY
 
         // Manipulate the scale based on direction
-        currScale = old_scale + distance * 0.1
+        currScale = old_scale + direction * 0.1
 
         //Check to see that the scale is not outside of the specified bounds
         if (currScale > maxScale) currScale = maxScale
@@ -228,5 +197,4 @@ function fetchBoard() {
         .then(initCanvas)
 }
 
-console.log("hey")
 fetchBoard()
