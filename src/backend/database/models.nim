@@ -72,7 +72,7 @@ type # database models
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Option[Id]         ## owner
+    owner* {.references: User.id.}: Option[Id]         ## owner
     name* {.uniqueIndex.}: Str
     color_themes*: seq[ColorTheme]
 
@@ -84,7 +84,9 @@ type # database models
     tvtDate
     tvtJson
 
-  TagLabel* = enum     ## special tags
+  TagLabel* = enum
+    tlCustom           ## user defined
+
     # -- hidden or special view component
     tlForwarded        ## a note that is forwarded from another user
     tlNoteComment      ## a note (as comment) that refers to main note (refers)
@@ -116,21 +118,16 @@ type # database models
     tlRememberIn       ##
     tlRemembered       ##
 
-  Tag* = object
-    ## most of the tags are primarily made for searching
-    ## purposes and have redundent data
-
+  PreDefinedTag* = object
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Option[Id] # NULL means global
-    label*: Option[TagLabel]
-    name*: Str
+    owner* {.references: User.id.}: Id
+    is_private*: bool
+    value_type*: TagValueType
+
+    # --- styles
     icon*: Str
     show_name*: bool
-    is_private*: bool
-    can_be_repeated*: bool
     theme*: ColorTheme
-    value_type*: TagValueType
-    # TODO tag with "open/closed enums" values or a range
 
   RelationState* = enum
     rsFresh
@@ -138,39 +135,45 @@ type # database models
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    tag* {.references: Tag.id, index.}: Id            ## originates from
-    kind* {.index.}: Option[int]                      ## sub label according to tag
+    
+    label*: TagLabel
+    tag* {.index.}: Str
+    is_private*: bool
+    
     user* {.references: User.id.}: Option[Id]         ## owner
-
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     node* {.references: Relation.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
-
-    fval*: Option[float]
-    ival*: Option[int]
-    sval*: Option[Str]
     refers*: Option[Id]                               ## arbitrary row id
+
+    sval*: Option[Str]
+    ival*: Option[int]
+    fval*: Option[float]
 
     info*: Str                                        ## additional information
     state*: RelationState
     timestamp*: UnixTime                              ## creation time
 
-  RelValuesByTagId* = NTable[Str, seq[Str]]
+  RelMinData* = object
+    label*: TagLabel
+    name*: string
+    value*: string
 
-  RelationsCache* = object ## one to one relation with Note/Board/Asset
+  RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
+    
+    user* {.references: User.id.}: Option[Id]
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
-    active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
+    
+    rels*: seq[RelMinData]
 
 type # view models
   UserCache* = object
     exp*: int
     account*: User
-    defaultTags*: array[TagLabel, Id]
 
   EntityClass* = enum
     ecNote = "note"
@@ -211,18 +214,18 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   NoteItemView* = object
     id*: Id
     data*: TreeNodeRaw[NativeJson]
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   BoardItemView* = object
     id*: Id
     title*: Str
     screenshot*: Option[Id]
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   LoginForm* = object
     username*: Str
@@ -246,9 +249,6 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
 
 func hasValue*(tv: TagValueType): bool =
   tv != tvtNone
-
-func hasValue*(t: Tag): bool =
-  hasValue t.value_type
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin
@@ -280,7 +280,7 @@ func `$`*(qo: QueryOperator): string =
   of qoNotEq: "!="
   of qoMoreEq: ">="
   of qoMore: ">"
-  else: "no operator"
+  else: raise newException(ValueError, "invalid operator: " & $int(qo))
 
 func `$`*(tvt: TagValueType): string =
   case tvt
