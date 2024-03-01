@@ -7,34 +7,41 @@ function color(hc) {
     return hc >> 4
 }
 
+function center(geo) {
+    return {
+        x: geo.x + geo.w / 2,
+        y: geo.y + geo.h / 2
+    }
+}
+
 function initCanvas(board) {
-    // You can use either PIXI.WebGLRenderer or PIXI.CanvasRenderer
-    let app = new PIXI.Application({
-        width: window.innerWidth,
-        height: window.innerHeight,
-        backgroundAlpha: 0,
-        antialias: true,
-        // view: document.getElementById("boxes")
-    })
-
-    document.getElementById("ROOT").append(app.view)
-
-    const container = new PIXI.Container()
-    app.stage.addChild(container)
-
-    //declare all letiables
     let body = document.body
+    let mousedown = false
+
     let currScale = 1
     let maxScale = 10
     let minScale = 0.1
     let offX = 0
     let offY = 0
 
+    // You can use either PIXI.WebGLRenderer or PIXI.CanvasRenderer
+    let app = new PIXI.Application({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundAlpha: 0,
+        antialias: true,
+        view: document.getElementById("boxes")
+    })
 
-    let mousedown = false
+    const container = new PIXI.Container()
+    app.stage.addChild(container)
 
     let ctx = new PIXI.Graphics()
     container.addChild(ctx)
+
+    const padxf = 0.3
+    const padyf = 0.2
+    let geo = {}
 
     for (const id in board.data.objects) {
         const obj = board.data.objects[id]
@@ -42,23 +49,40 @@ function initCanvas(board) {
             fontFamily: obj.font.family,
             fontSize: obj.font.size,
             fill: color(obj.theme.fg),
-            align: 'center',
         })
         const textMetrics = PIXI.TextMetrics.measureText(obj.data.text, style)
 
+        const padx = padxf * obj.font.size
+        const pady = padyf * obj.font.size
+        const w = textMetrics.width + padx * 2
+        const h = textMetrics.height + pady * 2
+        const x = obj.position.x
+        const y = obj.position.y
+
+        geo[id] = { x, y, w, h }
+
         let t = new PIXI.Text(obj.data.text, style)
-        t.position.x = obj.position.x
-        t.position.y = obj.position.y
+        t.position.x = obj.position.x + padx
+        t.position.y = obj.position.y + pady
 
         ctx.beginFill(color(obj.theme.bg))
-        ctx.lineStyle(obj.font.size / 20, color(obj.theme.st))
-        ctx.drawRect(
-            obj.position.x, obj.position.y,
-            textMetrics.width, textMetrics.height)
+        ctx.lineStyle(obj.font.size / 10, color(obj.theme.st))
+        ctx.drawRect(x, y, w, h)
 
         container.addChild(t)
     }
 
+    for (const edge of board.data.edges) {
+        const p1 = edge.points[0]
+        const p2 = edge.points[1]
+        const c1 = center(geo[p1])
+        const c2 = center(geo[p2])
+
+        ctx.beginFill()
+        ctx.lineStyle(edge.config.width / 5, color(edge.config.theme.bg))
+        ctx.moveTo(c1.x, c1.y)
+        ctx.lineTo(c2.x, c2.y)
+    }
 
     //Animate via WebAPI
     requestAnimationFrame(animate)
