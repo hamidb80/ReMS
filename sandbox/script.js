@@ -45,15 +45,17 @@ function initCanvas(board) {
 
     for (const id in board.data.objects) {
         const obj = board.data.objects[id]
+        const s = obj.font.size
+
         const style = new PIXI.TextStyle({
             fontFamily: obj.font.family,
-            fontSize: obj.font.size,
+            fontSize: s,
             fill: color(obj.theme.fg),
         })
         const textMetrics = PIXI.TextMetrics.measureText(obj.data.text, style)
 
-        const padx = padxf * obj.font.size
-        const pady = padyf * obj.font.size
+        const padx = padxf * s
+        const pady = padyf * s
         const w = textMetrics.width + padx * 2
         const h = textMetrics.height + pady * 2
         const x = obj.position.x
@@ -66,8 +68,8 @@ function initCanvas(board) {
         t.position.y = obj.position.y + pady
 
         ctx.beginFill(color(obj.theme.bg))
-        ctx.lineStyle(obj.font.size / 10, color(obj.theme.st))
-        ctx.drawRect(x, y, w, h)
+        ctx.lineStyle(s / 10, color(obj.theme.st))
+        ctx.drawRoundedRect(x, y, w, h, s / 4)
 
         container.addChild(t)
     }
@@ -202,7 +204,6 @@ function initCanvas(board) {
 
         // Manipulate the scale based on direction
         currScale = old_scale + distance * 0.1
-        console.log(distance, direction)
 
         //Check to see that the scale is not outside of the specified bounds
         if (currScale > maxScale) currScale = maxScale
