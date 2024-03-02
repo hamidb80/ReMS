@@ -16,6 +16,7 @@ const
   bootstrapCss = "https://bootswatch.com/5/litera/bootstrap.min.css"
   bootstrapIcons = "https://unpkg.com/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
   fontObserverJs = "https://unpkg.com/fontfaceobserver@2.3.0/fontfaceobserver.standalone.js"
+  fontsLink = "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
 
 
 func normalizeOsName(url: string): string =
@@ -65,7 +66,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
     link(rel = "preconnect", href = "https://fonts.gstatic.com",
         crossorigin = "")
-    extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
+    extCss fontsLink
 
     # custom
     extCss apv"./custom.css"

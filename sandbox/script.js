@@ -7,20 +7,43 @@ function color(hc) {
     return hc >> 4
 }
 
+function v(x, y) {
+    return { x, y }
+}
+
 function geoCenter(geo) {
-    return {
-        x: geo.x + geo.w / 2,
-        y: geo.y + geo.h / 2
-    }
+    return v(
+        geo.x + geo.w / 2,
+        geo.y + geo.h / 2
+    )
+}
+
+function cpos(touch) {
+    return v(touch.clientX, touch.clientY)
+}
+
+function lenOf(p1, p2) {
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y)
+}
+
+function distance(ts) {
+    let p1 = cpos(ts[0])
+    let p2 = cpos(ts[1])
+    return lenOf(p1, p2)
+}
+
+function wheelDirection(evt) {
+    if (!evt) evt = event
+    return (evt.detail < 0) ? 1 : (evt.wheelDelta > 0) ? 1 : -1
 }
 
 function initCanvas(board) {
     let body = document.body
     let mousedown = false
 
-    let currScale = 1
+    let currScale = 0.1
     let maxScale = 10
-    let minScale = 0.1
+    let minScale = 0.05
     let offX = 0
     let offY = 0
 
@@ -30,10 +53,16 @@ function initCanvas(board) {
         height: window.innerHeight,
         backgroundAlpha: 0,
         antialias: true,
-        view: document.getElementById("boxes")
+        view: document.getElementById("boxes"),
+        // XXX should be adaptive to user preference / monitor resolution
+        // resolution: 3, // for mobile
+        resolution: 1.5, // for laptop
+        // powerPreference: "high-performance",
+        // autoDensity: true,
     })
 
     const container = new PIXI.Container()
+    // container.filters = [new PIXI.FXAAFilter()]
     app.stage.addChild(container)
 
     let nodeCtx = new PIXI.Graphics()
@@ -44,6 +73,7 @@ function initCanvas(board) {
     const padxf = 0.3
     const padyf = 0.2
     let geo = {}
+    let lastTouches = []
 
     for (const id in board.data.objects) {
         const obj = board.data.objects[id]
@@ -52,6 +82,7 @@ function initCanvas(board) {
         const style = new PIXI.TextStyle({
             fontFamily: obj.font.family,
             fontSize: s,
+            padding: 8,
             fill: color(obj.theme.fg),
         })
         const textMetrics = PIXI.TextMetrics.measureText(obj.data.text, style)
@@ -77,10 +108,10 @@ function initCanvas(board) {
     }
 
     for (const edge of board.data.edges) {
-        const p1 = edge.points[0]
-        const p2 = edge.points[1]
-        const c1 = geoCenter(geo[p1])
-        const c2 = geoCenter(geo[p2])
+        const n1 = edge.points[0]
+        const n2 = edge.points[1]
+        const c1 = geoCenter(geo[n1])
+        const c2 = geoCenter(geo[n2])
 
         edgeCtx.beginFill()
         edgeCtx.lineStyle(edge.config.width / 10, color(edge.config.theme.st))
@@ -100,20 +131,20 @@ function initCanvas(board) {
         // requestAnimationFrame(animate)
     }
 
-    window.addEventListener('mousedown', function (e) {
+    window.addEventListener('pointerdown', function (e) {
         //Reset clientX and clientY to be used for relative location base panning
         clientX = -1
         clientY = -1
         mousedown = true
     })
 
-    window.addEventListener('mouseup', function (e) {
+    window.addEventListener('pointerup', function (e) {
         mousedown = false
     })
 
-    window.addEventListener('mousemove', function (e) {
+    window.addEventListener('pointermove', function (e) {
         // Check if the mouse button is down to activate panning
-        if (mousedown) {
+        if (mousedown && lastTouches.length != 2) {
 
             // If this is the first iteration through then set clientX and clientY to match the inital mouse position
             if (clientX == -1 && clientY == -1) {
@@ -156,28 +187,19 @@ function initCanvas(board) {
     })
 
     //Attach cross browser mouse wheel listeners
-    body.addEventListener('mousewheel', zoom, false)     // Chrome/Safari/Opera
-    body.addEventListener('DOMMouseScroll', zoom, false) // Firefox
+    body.addEventListener('mousewheel', zoomMouse, false)     // Chrome/Safari/Opera
+    body.addEventListener('DOMMouseScroll', zoomMouse, false) // Firefox
 
-    function wheelDirection(evt) {
-        if (!evt) evt = event
-        return (evt.detail < 0) ? 1 : (evt.wheelDelta > 0) ? 1 : -1
-    }
+    body.addEventListener('touchstart', e => {
+        lastTouches = e.touches
+    })
 
-    function zoom(evt) {
-
-        // Find the direction that was scrolled
-        let direction = wheelDirection(evt)
-
+    function zoomImpl(x, y, dir) {
         // Set the old scale to be referenced later
         let old_scale = currScale
 
-        // Find the position of the clients mouse
-        x = evt.clientX
-        y = evt.clientY
-
         // Manipulate the scale based on direction
-        currScale = old_scale + direction * 0.1
+        currScale = old_scale + dir * 0.1
 
         //Check to see that the scale is not outside of the specified bounds
         if (currScale > maxScale) currScale = maxScale
@@ -194,6 +216,30 @@ function initCanvas(board) {
         //Animate the container
         requestAnimationFrame(animate)
     }
+    function zoomMouse(evt) {
+        zoomImpl(evt.clientX, evt.clientY, wheelDirection(evt))
+    }
+
+    zoomImpl(offX, offY, -100)
+
+
+    body.addEventListener('touchmove', e => {
+        if (e.touches.length == 2 & lastTouches.length == 2) {
+            let diff = distance(lastTouches) - distance(e.touches)
+            try {
+                zoomImpl(
+                    window.innerWidth / 2,
+                    window.innerHeight / 2,
+                    diff * -0.01)
+            }
+            catch (e) {
+                alert("eror" + e.toString())
+                alert(e.lineNumber)
+            }
+        }
+        lastTouches = e.touches
+    }, false)
+
 }
 
 function fetchBoard() {
@@ -202,4 +248,11 @@ function fetchBoard() {
         .then(initCanvas)
 }
 
-fetchBoard()
+
+new FontFaceObserver("Vazirmatn")
+    .load("سلام", 5000)
+    .then(() => {
+        new FontFaceObserver("Mooli")
+            .load("wow", 5000)
+            .then(fetchBoard)
+    })
