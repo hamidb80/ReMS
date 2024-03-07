@@ -4,8 +4,8 @@
 
 # ReMS :: Remembering Management System
 
-![warning]
-the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
+> ![warning]
+> the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
 
 ## The motivators of this project
 I have found something is wrong with traditional education system,
