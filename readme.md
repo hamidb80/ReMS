@@ -4,7 +4,7 @@
 
 # ReMS :: Remembering Management System
 
-> ![WARNING]
+> [!WARNING]
 > the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
 
 ## The motivators of this project
