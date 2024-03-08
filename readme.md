@@ -18,6 +18,7 @@ and:
 - [OrgPad](https://orgpad.info/) -- [tech stack](https://orgpad.com/o/Cx0toaAblKpKUSZasDxsxK?token=DtN36_XBJGqKhdJk2pwl1Z)
 - [The Brain](https://thebrain.com/)
 - [obsidian excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
+- [turtl note taking app](https://turtlapp.com/)
 
 
 ## Development
