@@ -55,20 +55,25 @@ function initCanvas(board) {
         antialias: true,
         view: document.getElementById("boxes"),
         // XXX should be adaptive to user preference / monitor resolution
-        // resolution: 3, // for mobile
-        resolution: 1.5, // for laptop
+        resolution: 1.4, // for mobile
+        // resolution: 1.5, // for laptop
         // powerPreference: "high-performance",
         // autoDensity: true,
     })
 
+
+    // PIXI.settings.FILTER_MULTISAMPLE = PIXI.MSAA_QUALITY.HIGH
+    console.log(app.settings)
+
     const container = new PIXI.Container()
-    // container.filters = [new PIXI.FXAAFilter()]
     app.stage.addChild(container)
 
     let nodeCtx = new PIXI.Graphics()
     let edgeCtx = new PIXI.Graphics()
     container.addChild(edgeCtx)
     container.addChild(nodeCtx)
+
+    // edgeCtx.filters = [new PIXI.FXAAFilter()]
 
     const padxf = 0.3
     const padyf = 0.2
