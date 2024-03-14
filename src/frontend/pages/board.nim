@@ -183,7 +183,7 @@ app.actionsShortcutRegistery = [
   akFocus: sc"F",
   akDownload: sc"D",
   akCopyStyle: sc"K",
-  akAreaSelect: sc"Ctrl"]
+  akAreaSelect: sc"Alt"]
 
 # ----- Util
 template `<>`*(a, b): untyped = clamp(a, b)
@@ -1560,10 +1560,10 @@ proc createDom*(data: RouterData): VNode =
 
                       span:
                         if sr.ctrl:
-                          span(class = "badge bg-light"):
+                          span(class = "badge bg-dark"):
                             text "Ctrl"
                         if sr.shift:
-                          span(class = "badge bg-light"):
+                          span(class = "badge bg-dark"):
                             text "Shift"
                         if sr.code notin {kcCtrl, kcShift}:
                           span(class = "badge bg-dark"):
