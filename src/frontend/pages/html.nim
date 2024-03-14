@@ -1,21 +1,11 @@
-import std/[strutils, os, times]
+import std/[tables, strutils, os, times]
 
 import karax/[vdom, karaxdsl]
 
 import ../utils/ui
+import ./deps
 import ../../common/package
 import ../../backend/routes
-
-
-const
-  konvaJsLib = "https://unpkg.com/konva@9.3.3/konva.min.js"
-  katexJsLib = "https://unpkg.com/katex@0.16.9/dist/katex.min.js"
-  katexCssLib = "https://unpkg.com/katex@0.16.9/dist/katex.min.css"
-  axiosJsLib = "https://unpkg.com/axios@1.6.7/dist/axios.min.js"
-  fontAwesomeCssLib = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-  bootstrapCss = "https://bootswatch.com/5/litera/bootstrap.min.css"
-  bootstrapIcons = "https://unpkg.com/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-  fontObserverJs = "https://unpkg.com/fontfaceobserver@2.3.0/fontfaceobserver.standalone.js"
 
 
 func normalizeOsName(url: string): string =
@@ -25,21 +15,21 @@ func normalizeOsName(url: string): string =
       of 'a'..'z', 'A'..'Z', '0'..'9', '_', '-', '.': ch
       else: '-'
 
-proc resolveUrl(url: string): string =
-  if url.startsWith "http": # is from internet
-    url
-  else:
-    getDistUrl normalizeOsName url.splitPath.tail
+proc localize(url: string): string =
+  getDistUrl normalizeOsName url.splitPath.tail
 
+proc resolveLib(key: string): string =
+  assert key in extdeps
+  getDistUrl "lib" / key
 
 proc extLink(rel, url: string): VNode =
-  buildHtml link(rel = rel, href = resolveUrl url)
+  buildHtml link(rel = rel, href = url)
 
 proc extCss(url: string): VNode =
   buildHtml extLink("stylesheet", url)
 
 proc extJs(url: string, defered: bool = false): VNode =
-  result = buildHtml script(src = resolveUrl url, `defer` = defered)
+  result = buildHtml script(src = url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
   buildHtml head:
@@ -47,30 +37,30 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
     title: text pageTitle
-    extLink "icon", "./favicon.png"
+    extLink "icon", localize "./favicon.png"
 
     # JS libraries
-    extJs konvaJsLib
-    extJs katexJsLib
-    extJs axiosJsLib
+    extJs resolveLib"lib.konva.js"
+    extJs resolveLib"lib.katex.js"
+    extJs resolveLib"lib.axios.js"
 
     # UI libraries
-    extCss bootstrapCss
-    extCss katexCssLib
-    extCss fontAwesomeCssLib
-    extCss bootstrapIcons
-    # extCss "https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    extCss resolveLib"lib.katex.css"
+    extCss resolveLib"theme.bootstrap.css"
+    extCss extdeps["icons.boostrap.css"]
+    extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
     link(rel = "preconnect", href = "https://fonts.gstatic.com",
         crossorigin = "")
-    extCss "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
+    extCss extdeps["fonts.google.css"]
 
     # custom
-    extCss apv"./custom.css"
+    extCss localize apv"./custom.css"
 
-    for e in extra: e
+    for e in extra: 
+      e
 
 proc commonPage(title: string, deps: openarray[Vnode]): VNode =
   buildHtml html:
@@ -82,32 +72,32 @@ proc commonPage(title: string, deps: openarray[Vnode]): VNode =
 
 proc tags: VNode =
   commonPage "tag manager", [
-      extJs(apv"./script-tags.js", true)]
+      extJs(localize apv"./script-tags.js", true)]
 
 proc boardEdit: VNode =
   commonPage "Board", [
-      extJs fontObserverJs,
-      extJs(apv"./script-board.js", true)]
+      extJs resolveLib"lib.font-observer.js",
+      extJs(localize apv"./script-board.js", true)]
 
 proc notePreview: VNode =
   commonPage "Note preview", [
-      extJs(apv"./note-preview.js", true)]
+      extJs(localize apv"./note-preview.js", true)]
 
 proc noteEditor: VNode =
   commonPage "editor", [
-      extJs(apv"./script-editor.js", true)]
+      extJs(localize apv"./script-editor.js", true)]
 
 proc explore*: VNode =
   commonPage "explore", [
-      extJs(apv"./script-explore.js", true)]
+      extJs(localize apv"./script-explore.js", true)]
 
 proc login*: VNode =
   commonPage "login", [
-      extJs(apv"./script-login.js", true)]
+      extJs(localize apv"./script-login.js", true)]
 
 proc palette*: VNode =
   commonPage "login", [
-      extJs(apv"./palette-studio.js", true)]
+      extJs(localize apv"./palette-studio.js", true)]
 
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
