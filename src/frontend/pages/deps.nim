@@ -18,11 +18,11 @@ const
 
 when isMainModule:
     import std/[httpclient, os]
-    
+
     let c = newHttpClient()
 
     for d, url in extdeps:
         let path = "./assets/lib/" & d
         if not fileExists path:
-            downloadFile  c, url, path
-            echo "+ ", path 
+            downloadFile c, url, path
+            echo "+ ", path

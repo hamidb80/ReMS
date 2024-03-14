@@ -48,7 +48,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     extCss resolveLib"lib.katex.css"
     extCss resolveLib"theme.bootstrap.css"
     extCss extdeps["icons.boostrap.css"]
-    extCss "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    extCss extdeps["icons.fontawesome.css"]
 
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
@@ -59,7 +59,7 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     # custom
     extCss localize apv"./custom.css"
 
-    for e in extra: 
+    for e in extra:
       e
 
 proc commonPage(title: string, deps: openarray[Vnode]): VNode =
@@ -166,10 +166,10 @@ proc index: VNode =
           icon "fa-heart"
 
         tdiv(class = "card-footerer text-center p-1"):
-            text "version "
-            text packageVersion
-            text " - built at "
-            text $now()
+          text "version "
+          text packageVersion
+          text " - built at "
+          text $now()
 
 
 # -----
