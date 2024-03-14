@@ -1559,13 +1559,16 @@ proc createDom*(data: RouterData): VNode =
                         text $i
 
                       span:
+                        if sr.alt:
+                          span(class = "badge bg-dark"):
+                            text "Alt"
                         if sr.ctrl:
                           span(class = "badge bg-dark"):
                             text "Ctrl"
                         if sr.shift:
                           span(class = "badge bg-dark"):
                             text "Shift"
-                        if sr.code notin {kcCtrl, kcShift}:
+                        if sr.code notin {kcAlt, kcCtrl, kcShift}:
                           span(class = "badge bg-dark"):
                             text $sr.code
 

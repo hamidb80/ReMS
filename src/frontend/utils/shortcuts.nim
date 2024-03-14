@@ -7,7 +7,7 @@ import ./browser
 type
   ShortCut* = object
     code*: KeyCode
-    ctrl*, shift*: bool
+    alt*, ctrl*, shift*: bool
 
 
 func initShortCut*(e: KeyboardEvent): ShortCut =
@@ -15,12 +15,16 @@ func initShortCut*(e: KeyboardEvent): ShortCut =
   let c = KeyCode e.keyCode
   ShortCut(
     code: c,
+    alt: e.altKey or c == kcAlt,
     ctrl: e.ctrlKey or c == kcCtrl,
     shift: e.shiftKey or c == kcShift)
 
 func initShortCut*(e: string): ShortCut =
   for k in splitwhitespace toLowerAscii e:
     case k
+    of "alt":
+      result.alt = true
+      result.code = kcAlt
     of "ctrl":
       result.ctrl = true
       result.code = kcCtrl
