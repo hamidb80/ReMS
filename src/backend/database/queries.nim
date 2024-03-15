@@ -108,7 +108,7 @@ proc allTags*(db: DbConn): seq[Tag] =
 
 # proc findTagList(db: DbConn, ids: seq[Id]): seq[Tag] =
 #   db.find R, fsql"""
-#     SELECT * 
+#     SELECT *
 #     FROM Tag
 #     WHERE id IN [sqlize ids]
 #   """
@@ -221,6 +221,7 @@ template updateRelTagsGeneric*(
     for t in data:
       var r = Relation(
         field: some entityId,
+        label: t.label,
         timestamp: unow())
 
       setRelValue r, t.value
@@ -327,9 +328,9 @@ proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
 
     candidateCond =
       if m =? c.mode:
-        fmt"rel.label = {ord m}"
+        fmt"rel.mode = {ord m}"
       else:
-        fmt"rel.label = {c.label}"
+        fmt"rel.label = {dbValue c.label}"
 
     op =
       if c.operator == qoExists and c.value.len != 0:
