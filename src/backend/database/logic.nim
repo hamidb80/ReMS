@@ -20,8 +20,11 @@ template columnName*(t: type Asset): untyped = "asset"
 template columnName*(t: type Note):  untyped = "note"
 
 
-func hasValue*(tv: RelValueType): bool =
-  tv != rvtNone
+func hasValue*(rv: RelValueType): bool =
+  rv != rvtNone
+
+func hasValue*(t: Tag): bool =
+  t.valueType != rvtNone
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin

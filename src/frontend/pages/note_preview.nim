@@ -15,7 +15,7 @@ type
 
 var
   compTable = defaultComponents()
-  tags: Table[Id, Tag]
+  tags: Table[Str, Tag]
   note: NoteItemView
   html = c""
 
@@ -32,7 +32,7 @@ proc fetchTags(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
     apiGetTagsList proc(tagsList: seq[Tag]) =
       for t in tagsList:
-        tags[t.id] = t
+        tags[t.label] = t
       resolve()
 
 # ----- UI
@@ -48,10 +48,8 @@ proc notePreviewC(n: NoteItemView): VNode =
             text "loading..."
 
       tdiv(class = "m-2"):
-        for k, values in n.activeRelsValues:
-          for v in values:
-            let id = Id parseInt k
-            tagViewC tags[id], v, noop
+        for r in n.rels:
+          tagViewC tags[r.label], r.value, noop
 
 proc createDom: Vnode =
   echo "just redrawn"

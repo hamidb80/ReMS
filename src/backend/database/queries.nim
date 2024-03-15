@@ -10,11 +10,6 @@ import ./[models, logic]
 import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
-# TODO add auto generated tags
-
-func tagIds(data: seq[RelMinData]): seq[string] =
-  data.mapIt it.name
-
 # ------------------------------------
 
 template tn(tbl): untyped {.dirty.} =
@@ -331,10 +326,10 @@ proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
       else: "EXISTS"
 
     candidateCond =
-      if l =? c.label:
-        fmt"rel.label = {l.ord}"
+      if m =? c.mode:
+        fmt"rel.label = {ord m}"
       else:
-        fmt"rel.tag = {c.tagId}"
+        fmt"rel.label = {c.label}"
 
     op =
       if c.operator == qoExists and c.value.len != 0:
@@ -373,7 +368,7 @@ func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
       JOIN Relation r
       ON 
         r.{entity} = {fieldIdVar} AND
-        r.tag      = {sc.tagId}
+        r.label    = {sc.label}
       """,
       fmt"r.{cn sc.valueType}"
     )

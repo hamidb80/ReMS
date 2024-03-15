@@ -654,10 +654,10 @@ proc setFocusedTheme(theme: ColorTheme) =
   if not done:
     app.theme = theme
 
-proc pos(t: Touch): Vector = 
+proc pos(t: Touch): Vector =
   vec2(toFloat t.clientX, toFloat t.clientY)
 
-func center(s: seq[Touch]): Vector = 
+func center(s: seq[Touch]): Vector =
   center map(s, pos)
 
 func center(scale, offsetx, offsety, width, height: float): Vector =
@@ -895,7 +895,7 @@ proc deleteSelectedNodes =
   for ed in app.selectedEdges:
     let
       p = ed.data.points
-      conn = p[cpkHead]..p[cpkTail]
+      conn = p[ord cpkHead]..p[ord cpkTail]
 
     destroy app.edgeInfo[conn].konva.wrapper
     del app.edgeInfo, conn
@@ -923,8 +923,8 @@ proc restore(app: var AppData; data: BoardData) =
 
   for info in data.edges:
     let
-      id1 = info.points[cpkHead]
-      id2 = info.points[cpkTail]
+      id1 = info.points[ord cpkHead]
+      id2 = info.points[ord cpkTail]
       conn = id1..id2
       n1 = app.objects[conn.a]
       n2 = app.objects[conn.b]
@@ -949,8 +949,8 @@ proc newPoint(pos: Vector; r = 1.0): Circle =
 let compTable = defaultComponents()
 var
   noteHtmlContent: Table[Id, Option[cstring]]
-  noteRelTags: Table[Id, RelValuesByTagId]
-  tags: Table[Id, Tag]
+  noteRelTags: Table[Id, seq[RelMinData]]
+  tags: Table[Str, Tag]
 
 proc getMsg(id: Id) =
   noteHtmlContent[id] = none cstring
@@ -959,7 +959,7 @@ proc getMsg(id: Id) =
     deserizalize(compTable, n.data)
     .dthen proc(t: TwNode) =
       noteHtmlContent[id] = some t.dom.innerHtml
-      noteRelTags[id] = n.activeRelsValues
+      noteRelTags[id] = n.rels
       redraw()
 
 type MsgState = enum
@@ -991,10 +991,8 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
 
       if mid in noteRelTags:
         tdiv(class = "m-2"):
-          for k, values in noteRelTags[mid]:
-            for v in values:
-              let id = Id parseInt k
-              tagViewC tags[id], v, noop
+          for r in noteRelTags[mid]:
+            tagViewC tags[r.label], r.value, noop
 
 
       tdiv(class = "card-footer d-flex justify-content-center"):
@@ -1139,10 +1137,10 @@ proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
             app.footerState = fsOverview
 
 # FIXME duplicate fn from notes_list
-func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
-  for k, v in s:
-    let id = Id parseInt k
-    result[id] = v
+# func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
+#   for k, v in s:
+#     let id = Id parseInt k
+#     result[id] = v
 
 proc loadFonts(fontFamilies: seq[FontTest]): Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -1172,7 +1170,7 @@ proc fetchTags(): Future[void] =
   newPromise proc(resolve, reject: proc()) =
     apiGetTagsList proc(tagsList: seq[Tag]) =
       for t in tagsList:
-        tags[t.id] = t
+        tags[t.label] = t
       resolve()
 
 proc saveServer =
@@ -1232,7 +1230,7 @@ proc createDom*(data: RouterData): VNode =
         konva "board"
 
       if app.loading:
-        tdiv(class="position-absolute top-left-center"):
+        tdiv(class = "position-absolute top-left-center"):
           text "loading..."
 
       footer(class = "position-absolute bottom-0 left-0 w-100"):
@@ -1784,7 +1782,7 @@ proc init* =
 
         of 2: # pinch-zoom
           if app.lastTouches.len == 2: # to prevent unwanted situation
-            let 
+            let
               diff = (distance app.lastTouches) - (distance currentTouches)
               s = ||app.stage.scale
               ⋊s = exp(-diff / 100) <> pinchRatioLimit
@@ -1908,7 +1906,8 @@ proc init* =
           if e.ctrlKey: # pinch-zoom
             let
               s = ||app.stage.scale
-              ⋊s = exp(-e.Δy / 100) <> pinchRatioLimit # FIXME this line is common with touch, make it a function
+              ⋊s = exp(-e.Δy / 100) <>
+                  pinchRatioLimit # FIXME this line is common with touch, make it a function
 
             changeScale mp, s * ⋊s, true
 

@@ -120,11 +120,10 @@ type # database models
     owner* {.references: User.id.}: Id
 
     mode* {.index.}: RelMode
-    label*: string
+    label*: Str
 
     value_type*: RelValueType
     is_private*: bool
-    has_value*: bool
 
     # --- styles
     icon*: Str
@@ -156,9 +155,9 @@ type # database models
     timestamp*: UnixTime                              ## creation time
 
   RelMinData* = object
-    label*: RelMode
-    name*: string
-    value*: string
+    mode*: RelMode
+    label*: Str
+    value*: Str
 
   RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
@@ -194,8 +193,8 @@ type # view models
     qoSubStr    ## ~ substring check
 
   TagCriteria* = object
-    label*: Option[RelMode]
-    tagId*: Id
+    mode*: Option[RelMode]
+    label*: Str
     value_type*: RelValueType
     operator*: QueryOperator
     value*: Str
