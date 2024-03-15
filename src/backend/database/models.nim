@@ -76,53 +76,55 @@ type # database models
     name* {.uniqueIndex.}: Str
     color_themes*: seq[ColorTheme]
 
-  TagValueType* = enum
-    tvtNone
-    tvtStr
-    tvtFloat
-    tvtInt
-    tvtDate
-    tvtJson
+  RelValueType* = enum
+    rvtNone
+    rvtStr
+    rvtNumber
 
-  TagLabel* = enum
-    tlCustom           ## user defined
+  RelMode* = enum
+    rmCustom           ## user defined
 
     # -- hidden or special view component
-    tlForwarded        ## a note that is forwarded from another user
-    tlNoteComment      ## a note (as comment) that refers to main note (refers)
-    tlNoteCommentReply ## reply to another comment
+    rmForwarded        ## a note that is forwarded from another user
+    rmNoteComment      ## a note (as comment) that refers to main note (refers)
+    rmNoteCommentReply ## reply to another comment
 
-    tlBoardNode        ##
-    tlBoardNodeNote    ##
+    rmBoardNode        ##
+    rmBoardNodeNote    ##
 
-    tlFollows          ## user => refers (user.id)
-    tlNotification     ##
+    rmFollows          ## user => refers (user.id)
+    rmNotification     ##
 
     # -- visible
-    tlOwner            ## owner
-    tlTimestamp        ## creation time
-    tlSize             ## size in bytes
-    tlFileName         ## name of file
-    tlMime             ## mime type of a file
-    tlPrivate          ## everything is public except when it has private tag
+    rmOwner            ## owner
+    rmTimestamp        ## creation time
+    rmSize             ## size in bytes
+    rmFileName         ## name of file
+    rmMime             ## mime type of a file
+    rmPrivate          ## everything is public except when it has private tag
 
-    tlHasAccess        ## tag with username of the person as value - is used with private
-    tlNoteHighlight    ##
-    tlTextContent      ## raw text
-    tlBoardScreenShot  ## screenshots that are taken from boards
+    rmHasAccess        ## tag with username of the person as value - is used with private
+    rmNoteHighlight    ##
+    rmTextContent      ## raw text
+    rmBoardScreenShot  ## screenshots that are taken from boards
 
-    tlLike             ##
-    tlImportant        ##
-    tlLater            ##
+    rmLike             ##
+    rmImportant        ##
+    rmLater            ##
 
-    tlRememberIn       ##
-    tlRemembered       ##
+    rmRememberIn       ##
+    rmRemembered       ##
 
-  PreDefinedTag* = object
+  DefinedRel* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
+
+    mode* {.index.}: RelMode
+    label*: string
+
+    value_type*: RelValueType
     is_private*: bool
-    value_type*: TagValueType
+    has_value*: bool
 
     # --- styles
     icon*: Str
@@ -135,11 +137,8 @@ type # database models
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    
-    label*: TagLabel
-    tag* {.index.}: Str
     is_private*: bool
-    
+
     user* {.references: User.id.}: Option[Id]         ## owner
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
@@ -147,8 +146,9 @@ type # database models
     note* {.references: Note.id, index.}: Option[Id]
     refers*: Option[Id]                               ## arbitrary row id
 
+    mode*: RelMode
+    label* {.index.}: Str
     sval*: Option[Str]
-    ival*: Option[int]
     fval*: Option[float]
 
     info*: Str                                        ## additional information
@@ -156,7 +156,7 @@ type # database models
     timestamp*: UnixTime                              ## creation time
 
   RelMinData* = object
-    label*: TagLabel
+    label*: RelMode
     name*: string
     value*: string
 
@@ -194,9 +194,9 @@ type # view models
     qoSubStr    ## ~ substring check
 
   TagCriteria* = object
-    label*: Option[TagLabel]
+    label*: Option[RelMode]
     tagId*: Id
-    value_type*: TagValueType
+    value_type*: RelValueType
     operator*: QueryOperator
     value*: Str
 
@@ -247,21 +247,20 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     children: @[],
     data: newJNull())
 
-func hasValue*(tv: TagValueType): bool =
-  tv != tvtNone
+func hasValue*(tv: RelValueType): bool =
+  tv != rvtNone
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin
 
-func columnName*(vt: TagValueType): string =
+func columnName*(vt: RelValueType): string =
   case vt
-  of tvtNone: raise newException(ValueError, "'tvtNone' does not have column")
-  of tvtFloat: "fval"
-  of tvtInt, tvtDate: "ival"
-  of tvtJson, tvtStr: "sval"
+  of rvtNone: raise newException(ValueError, "'rvtNone' does not have column")
+  of rvtNumber: "fval"
+  of rvtStr: "sval"
 
-func isHidden*(lbl: TagLabel): bool =
-  lbl in tlForwarded .. tlNotification
+func isHidden*(lbl: RelMode): bool =
+  lbl in rmForwarded .. rmNotification
 
 func isInfix*(qo: QueryOperator): bool =
   qo in qoLess..qoSubStr
@@ -282,14 +281,11 @@ func `$`*(qo: QueryOperator): string =
   of qoMore: ">"
   else: raise newException(ValueError, "invalid operator: " & $int(qo))
 
-func `$`*(tvt: TagValueType): string =
-  case tvt
-  of tvtNone: "none"
-  of tvtStr: "text"
-  of tvtFloat: "float"
-  of tvtInt: "int"
-  of tvtDate: "date"
-  of tvtJson: "JSON"
+# func `$`*(tvt: RelValueType): string =
+#   case tvt
+#   of rvtNone: "none"
+#   of rvtStr: "text"
+#   of rvtNumber: "float"
 
 func `$`*(so: SortOrder): string =
   case so
