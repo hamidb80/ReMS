@@ -12,6 +12,11 @@ import ../../common/[types, datastructures, conventions]
 
 # ------------------------------------
 
+# proc inspect(s: SqlQuery): SqlQuery =
+#   echo "-----------------------"
+#   echo s.string
+#   s
+
 template tn(tbl): untyped {.dirty.} =
   tableName tbl
 
@@ -428,7 +433,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset,
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
-  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
+  db.find R, inspect exploreGenericQuery(ecNote, xqdata, offset, limit, user)
 
 proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
@@ -436,7 +441,7 @@ proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
 
 proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[AssetItemView] =
-  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
+  db.find R, inspect exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
 
 proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   db.find R, fsql"""

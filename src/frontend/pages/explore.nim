@@ -14,10 +14,6 @@ import ../../backend/database/[models, logic]
 import ./editor/[core, components]
 
 
-# TODO add tags for boards
-# TODO hide admin buttons for normal users
-# TODO add confirmation for deletation | the icon of delete button changes to check
-
 type
   UploadStatus = enum
     usInProgress
@@ -80,12 +76,9 @@ func iconClass(sc: SearchableClass): string =
   of scBoards: "fa-diagram-project"
   of scAssets: "fa-file"
 
-# TODO write a note laod manager component in a different file
 proc loadMsg(n: NoteItemView) =
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =
     msgCache[n.id] = t.dom.innerHtml
-    redraw()
-
 
 proc getExploreQuery: ExploreQuery =
   result = ExploreQuery(
@@ -99,40 +92,41 @@ proc fetchAssets: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scAssets]
     reset assets
-    apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
-        AssetItemView]) =
-      assets = ass
-      resolve()
+    apiExploreAssets getExploreQuery(), p*maxItems, maxItems, 
+      proc(ass: seq[AssetItemView]) =
+        assets = ass
+        resolve()
+        redraw()
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scBoards]
     reset boards
-    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
-        BoardItemView]) =
-      boards = bs
-      resolve()
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, 
+      proc(bs: seq[BoardItemView]) =
+        boards = bs
+        resolve()
+        redraw()
 
 proc resolveNotes =
   for n in notes:
     loadMsg n
 
   messagesResolved = true
+  redraw()
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scNotes]
     reset notes
-    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
-        NoteItemView]) =
-      notes = ns
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, 
+      proc(ns: seq[NoteItemView]) =
+        notes = ns
+        messagesResolved = false
 
-      messagesResolved = false
-
-      if selectedClass == scNotes:
-        resolveNotes()
-
-      resolve()
+        if selectedClass == scNotes:
+          resolveNotes()
+        resolve()
 
 proc fetchTags: Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -148,6 +142,7 @@ proc fetchUsers: Future[void] =
     apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
       users = us
       resolve()
+      redraw()
 
 
 proc startUpload(u: Upload) =
