@@ -14,7 +14,7 @@ type # database models
     urAdmin
 
   UserMode* = enum
-    umReal ## real user who signed up 
+    umReal ## real user who signed up
     umTest ## used for testing
 
   User* = object
@@ -36,7 +36,7 @@ type # database models
     str_val1*: string
     str_val2*: string
     int_val3*: int
-    info*: string ## additional information
+    info*: string           ## additional information
 
     created_at*: UnixTime
     activated*: bool
@@ -115,7 +115,7 @@ type # database models
     rmRememberIn       ##
     rmRemembered       ##
 
-  DefinedRel* = object
+  Tag* = object ## Relation Template
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
 
@@ -162,12 +162,12 @@ type # database models
 
   RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
-    
+
     user* {.references: User.id.}: Option[Id]
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
-    
+
     rels*: seq[RelMinData]
 
 type # view models
@@ -241,68 +241,17 @@ type # view models
     image*: Str
 
 
-func newNoteData*: TreeNodeRaw[JsonNode] =
-  TreeNodeRaw[JsonNode](
-    name: "root",
-    children: @[],
-    data: newJNull())
-
-func hasValue*(tv: RelValueType): bool =
-  tv != rvtNone
-
-func isAdmin*(u: User): bool =
-  u.role == urAdmin
-
-func columnName*(vt: RelValueType): string =
-  case vt
-  of rvtNone: raise newException(ValueError, "'rvtNone' does not have column")
-  of rvtNumber: "fval"
-  of rvtStr: "sval"
-
-func isHidden*(lbl: RelMode): bool =
-  lbl in rmForwarded .. rmNotification
-
-func isInfix*(qo: QueryOperator): bool =
-  qo in qoLess..qoSubStr
-
-func `[]`*[V](s: seq[V], i: ConnectionPointKind): V =
-  assert 2 == len s
-  s[ord i]
-
-func `$`*(qo: QueryOperator): string =
-  case qo
-  of qoExists: "??"
-  of qoNotExists: "?!"
-  of qoLess: "<"
-  of qoLessEq: "<="
-  of qoEq: "=="
-  of qoNotEq: "!="
-  of qoMoreEq: ">="
-  of qoMore: ">"
-  else: raise newException(ValueError, "invalid operator: " & $int(qo))
-
-# func `$`*(tvt: RelValueType): string =
-#   case tvt
-#   of rvtNone: "none"
-#   of rvtStr: "text"
-#   of rvtNumber: "float"
-
-func `$`*(so: SortOrder): string =
-  case so
-  of Descending: "DESC"
-  of Ascending: "ASC"
-
 when not defined js:
   import jsony
   include jsony_fix
 
   template defSqlJsonType(typename): untyped =
-    proc sqlType*(t: typedesc[typename]): string = 
+    proc sqlType*(t: typedesc[typename]): string =
       "TEXT"
-    
-    proc dbValue*(j: typename): DbValue = 
+
+    proc dbValue*(j: typename): DbValue =
       DbValue(kind: dvkString, s: toJson j)
-    
+
     proc to*(src: DbValue, dest: var typename) =
       dest = fromJson(src.s, typename)
 
@@ -312,6 +261,8 @@ when not defined js:
   defSqlJsonType NTable
   defSqlJsonType ColorTheme
   defSqlJsonType seq[ColorTheme]
+  defSqlJsonType RelMinData
+  defSqlJsonType seq[RelMinData]
 
   proc sqlType*(t: typedesc[Path]): string = "TEXT"
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)

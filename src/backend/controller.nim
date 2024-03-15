@@ -88,8 +88,8 @@ proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, userOnly
   !! db.updateAssetName(userc.account, id, name)
   resp OK
 
-proc updateAssetRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, userOnly.} =
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: seq[
+    RelMinData], userOnly.} =
   !! db.updateAssetRelTags(userc.account, id, data)
   resp OK
 
@@ -166,7 +166,7 @@ proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {
     resp OK
 
 proc updateNoteRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, userOnly.} =
+    jbody: seq[RelMinData], userOnly.} =
   !!db.updateNoteRelTags(userc.account, id, data)
   resp OK
 
@@ -192,7 +192,7 @@ proc updateBoardTitle*(req: Request) {.qparams: {id: int, title: string}, userOn
   resp OK
 
 proc updateBoardRelTags*(req: Request) {.qparams: {id: int},
-    jbody: RelValuesByTagId, userOnly.} =
+    jbody: seq[RelMinData], userOnly.} =
   !!db.updateBoardRelTags(userc.account, id, data)
   resp OK
 
@@ -204,8 +204,12 @@ proc deleteBoard*(req: Request) {.qparams: {id: int}, userOnly.} =
   resp OK
 
 
+proc listTags*(req: Request) =
+  !!respJson toJson db.allTags
+
 proc newTag*(req: Request) {.jbody: Tag, userOnly.} =
-  !!respJson toJson db.newTag(userc.account, data)
+  !!db.newTag(userc.account, data)
+  resp OK
 
 proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, userOnly.} =
   !!db.updateTag(userc.account, id, data)
@@ -214,9 +218,6 @@ proc updateTag*(req: Request) {.qparams: {id: int}, jbody: Tag, userOnly.} =
 proc deleteTag*(req: Request) {.qparams: {id: int}, userOnly.} =
   !!db.deleteTag(userc.account, id)
   resp OK
-
-proc listTags*(req: Request) =
-  !!respJson toJson db.listTags
 
 
 proc exploreNotes*(req: Request) {.qparams: {limit: Natural, offset: Natural},
