@@ -369,7 +369,7 @@ func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
       JOIN Relation r
       ON 
         r.{entity} = {fieldIdVar} AND
-        r.label    = {sc.label}
+        r.label    = {dbvalue sc.label}
       """,
       fmt"r.{cn sc.valueType}"
     )

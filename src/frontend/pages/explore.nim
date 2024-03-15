@@ -46,6 +46,7 @@ type
 const maxItems = 20
 let compTable = defaultComponents()
 var
+  me = none User
   lastPage: array[SearchableClass, Natural]
   appState = asNormal
   tags: Table[Str, Tag]
@@ -690,6 +691,11 @@ proc createDom: Vnode =
           icon "fa-search fa-xl me-3 ms-1"
           text "Explore"
 
+        if isNone me:
+          a(class = "btn btn-outline-primary", href = get_login_url()):
+            text "login "
+            icon "mx-2 fa-sign-in"
+
     tdiv(class = "px-1 px-sm-2 px-md-3 px-lg-4-4 py-2 my-2"):
       case appState
       of asNormal:
@@ -714,33 +720,32 @@ proc createDom: Vnode =
 
         case selectedClass
         of scUsers:
-          a(class = "btn btn-outline-primary w-100 mt-2", href = get_login_url()):
-            text "login "
-            icon "mx-2 fa-sign-in"
-
           input(`type` = "text", class = "form-control",
             placeholder = "id or name"):
             proc oninput(e: Event, v: Vnode) =
               userSearchStr = $e.target.value
 
         of scBoards:
-          a(class = "btn btn-outline-primary w-100 mt-2",
-              href = get_boards_new_url()):
-            text "new "
-            icon "mx-2 fa-plus"
+          if issome me:
+            a(class = "btn btn-outline-primary w-100 mt-2",
+                href = get_boards_new_url()):
+              text "new "
+              icon "mx-2 fa-plus"
 
           searchTagManager()
 
         of scNotes:
-          a(class = "btn btn-outline-primary w-100 mt-2",
-              href = get_notes_new_url()):
-            text "new "
-            icon "mx-2 fa-plus"
+          if issome me:
+            a(class = "btn btn-outline-primary w-100 mt-2",
+                href = get_notes_new_url()):
+              text "new "
+              icon "mx-2 fa-plus"
 
           searchTagManager()
 
         of scAssets:
-          assetUploader()
+          if issome me:
+            assetUploader()
           searchTagManager()
 
         tdiv(class = "my-1"):
@@ -755,8 +760,13 @@ proc createDom: Vnode =
           case selectedClass
           of scUsers:
             tdiv(class = "list-group my-4"):
-              for u in users:
+              if u =? me:
                 userItemC u
+                tdiv(class="mb-3")
+
+              for u in users:
+                if (isNone me) or (u.username != me.get.username):
+                  userItemC u
 
           of scNotes:
             tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
@@ -811,6 +821,10 @@ when isMainModule:
     case screenOrientation()
     of soPortrait: 1
     of soLandscape: 2
+
+  meApi proc (u: User) = 
+    me = some u
+    redraw()
 
   waitAll [fetchTags(), fetchUsers(), fetchNotes(), fetchBoards(), fetchAssets()], proc =
     redraw()
