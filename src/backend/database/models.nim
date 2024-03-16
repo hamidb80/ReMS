@@ -8,7 +8,9 @@ else:
   import ponairi
 
 
-type # database models
+type 
+  # ------------ database models ------------
+  
   UserRole* = enum
     urUser
     urAdmin
@@ -76,6 +78,21 @@ type # database models
     name* {.uniqueIndex.}: Str
     color_themes*: seq[ColorTheme]
 
+  Tag* = object ## Relation Template
+    id* {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}: Id
+
+    mode* {.index.}: RelMode
+    label*: Str
+
+    value_type*: RelValueType
+    is_private*: bool
+  
+    # --- styles
+    icon*: Str
+    show_name*: bool
+    theme*: ColorTheme
+
   RelValueType* = enum
     rvtNone
     rvtStr
@@ -115,22 +132,7 @@ type # database models
     rmRememberIn       ##
     rmRemembered       ##
 
-  Tag* = object ## Relation Template
-    id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Id
-
-    mode* {.index.}: RelMode
-    label*: Str
-
-    value_type*: RelValueType
-    is_private*: bool
-
-    # --- styles
-    icon*: Str
-    show_name*: bool
-    theme*: ColorTheme
-
-  RelationState* = enum
+  RelState* = enum
     rsFresh
     rsStale ## to mark as processed or expired by the system
 
@@ -151,13 +153,8 @@ type # database models
     fval*: Option[float]
 
     info*: Str                                        ## additional information
-    state*: RelationState
+    state*: RelState
     timestamp*: UnixTime                              ## creation time
-
-  RelMinData* = object
-    mode*: RelMode
-    label*: Str
-    value*: Str
 
   RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
@@ -169,7 +166,13 @@ type # database models
 
     rels*: seq[RelMinData]
 
-type # view models
+  RelMinData* = object ## minimum relation data
+    mode*: RelMode
+    label*: Str
+    value*: Str
+
+  # ------------ view models ------------
+
   UserCache* = object
     exp*: int
     account*: User

@@ -2,7 +2,7 @@
 
 import std/[times, json, options, strutils, strformat, sequtils, tables]
 
-import ponairi
+import ponairi, lowdb
 import questionable
 include jsony_fix
 
@@ -33,7 +33,9 @@ template `~>`(expr, action): untyped =
 
 
 func setRelValue(rel: var Relation, value: string) =
-  rel.sval = some value
+  rel.sval =
+    if value == "": none string
+    else: some value
   safeFail:
     rel.fval = some parseFloat value
 
@@ -105,11 +107,27 @@ proc listTagFor*(db: DbConn, u: User): seq[Tag] =
     WHERE t.owner = {u.id}
   """
 
+import print
 proc allTags*(db: DbConn): seq[Tag] =
-  db.find R, fsql"""
-    SELECT * 
-    FROM Tag t
-  """
+  let q = sql"""
+    SELECT 
+      id,
+      owner,
+      mode,
+      label,
+      value_type,
+      is_private,
+      icon,
+      show_name,
+      theme
+    FROM Tag"""
+
+  for r in db.getAllRows q:
+    {.cast(gcsafe).}:
+      {.cast(nosideeffect).}:
+        print r
+
+  db.find R, q
 
 # proc findTagList(db: DbConn, ids: seq[Id]): seq[Tag] =
 #   db.find R, fsql"""
@@ -433,7 +451,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset,
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
-  db.find R, inspect exploreGenericQuery(ecNote, xqdata, offset, limit, user)
+  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
 
 proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
@@ -441,7 +459,7 @@ proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
 
 proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset,
     limit: Natural, user: options.Option[Id]): seq[AssetItemView] =
-  db.find R, inspect exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
+  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
 
 proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   db.find R, fsql"""
