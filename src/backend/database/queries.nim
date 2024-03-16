@@ -2,7 +2,7 @@
 
 import std/[times, json, options, strutils, strformat, sequtils, tables]
 
-import ponairi, lowdb
+import ponairi
 import questionable
 include jsony_fix
 
@@ -107,7 +107,6 @@ proc listTagFor*(db: DbConn, u: User): seq[Tag] =
     WHERE t.owner = {u.id}
   """
 
-import print
 proc allTags*(db: DbConn): seq[Tag] =
   let q = sql"""
     SELECT 
@@ -121,11 +120,6 @@ proc allTags*(db: DbConn): seq[Tag] =
       show_name,
       theme
     FROM Tag"""
-
-  for r in db.getAllRows q:
-    {.cast(gcsafe).}:
-      {.cast(nosideeffect).}:
-        print r
 
   db.find R, q
 
