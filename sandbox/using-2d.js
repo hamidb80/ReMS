@@ -62,6 +62,8 @@ function initCanvas(board) {
     let dragStart = { x: 0, y: 0 }
     let initialPinchDistance = null
     let lastZoom = cameraZoom
+    let first = true
+    let geo = {}
 
     function draw() {
         canvas.width = window.innerWidth
@@ -76,31 +78,33 @@ function initCanvas(board) {
         function inside() {
             const padxf = 0.3
             const padyf = 0.2
-            let geo = {}
 
-            for (const id in board.data.objects) {
-                const obj = board.data.objects[id]
-                const s = obj.font.size
-                const t = obj.data.text
-                const f = obj.font.family
-                const fg = color(obj.theme.fg)
-                const bg = color(obj.theme.bg)
+            if (first) {
+                first = false
+                for (const id in board.data.objects) {
+                    const obj = board.data.objects[id]
+                    const s = obj.font.size
+                    const t = obj.data.text
+                    const f = obj.font.family
+                    const fg = color(obj.theme.fg)
+                    const bg = color(obj.theme.bg)
 
-                const style = new PIXI.TextStyle({
-                    fontFamily: f,
-                    fontSize: s,
-                    padding: 8
-                })
-                const textMetrics = PIXI.TextMetrics.measureText(t, style)
-                
-                const padx = padxf * s
-                const pady = padyf * s
-                const w = textMetrics.width + padx * 2
-                const h = textMetrics.height + pady * 2
-                const x = obj.position.x
-                const y = obj.position.y
+                    const style = new PIXI.TextStyle({
+                        fontFamily: f,
+                        fontSize: s,
+                        padding: 8
+                    })
+                    const textMetrics = PIXI.TextMetrics.measureText(t, style)
 
-                geo[id] = { x, y, padx, pady, w, h, fg, bg, t, s, f }
+                    const padx = padxf * s
+                    const pady = padyf * s
+                    const w = textMetrics.width + padx * 2
+                    const h = textMetrics.height + pady * 2
+                    const x = obj.position.x
+                    const y = obj.position.y
+
+                    geo[id] = { x, y, padx, pady, w, h, fg, bg, t, s, f }
+                }
             }
 
             for (const edge of board.data.edges) {
@@ -109,7 +113,6 @@ function initCanvas(board) {
                 const c1 = geoCenter(geo[n1])
                 const c2 = geoCenter(geo[n2])
                 const st = color(edge.config.theme.st)
-                console.log(st)
                 drawLine(ctx, c1.x, c1.y, c2.x, c2.y, edge.config.width / 10, st)
             }
 
