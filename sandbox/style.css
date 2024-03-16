@@ -9,6 +9,6 @@ canvas{
 }
 
 body{
-    /* overflow: hidden; */
+    overflow: hidden;
     background-color: #f8f9fa;
 }
