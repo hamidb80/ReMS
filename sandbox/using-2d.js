@@ -1,5 +1,5 @@
 function color(hc) {
-    return "#" + (hc >> 4).toString(16).padStart(6, '0')
+    return "#" + (hc >> 4).toString(16).padStart(6, '0').toUpperCase()
 }
 
 function v(x, y) {
@@ -30,22 +30,28 @@ function distance(ts) {
 // ------------------------------------------------
 
 function drawLine(ctx, x1, y1, x2, y2, width, color) {
+    ctx.save()
     ctx.strokeStyle = color
-    // ctx.lineWidth = width
+    ctx.lineWidth = width
     ctx.moveTo(x1, y1)
     ctx.lineTo(x2, y2)
     ctx.stroke()
+    ctx.restore()
 }
 
 function drawRect(ctx, x, y, width, height, color) {
+    ctx.save()
     ctx.fillStyle = color
     ctx.fillRect(x, y, width, height)
+    ctx.restore()
 }
 
 function drawText(ctx, text, x, y, size, font, color) {
+    ctx.save()
     ctx.fillStyle = color
     ctx.font = `${size}px ${font}`
     ctx.fillText(text, x, y)
+    ctx.restore()
 }
 
 function initCanvas(board) {
@@ -75,12 +81,39 @@ function initCanvas(board) {
         ctx.translate(-window.innerWidth / 2 + cameraOffset.x, -window.innerHeight / 2 + cameraOffset.y)
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
 
+        // konva settings
+        ctx.direction = "ltr"
+        ctx.fillStyle = "#000000"
+        ctx.filter = "none"
+        ctx.font = "10px sans-serif"
+        ctx.fontKerning = "auto"
+        ctx.fontStretch = "normal"
+        ctx.fontVariantCaps = "normal"
+        ctx.globalAlpha = 1
+        ctx.globalCompositeOperation = "source-over"
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = "low"
+        ctx.letterSpacing = "0px"
+        ctx.lineCap = "butt"
+        ctx.lineDashOffset = 0
+        ctx.lineJoin = "miter"
+        ctx.lineWidth = 1
+        ctx.miterLimit = 10
+        ctx.shadowBlur = 0
+        ctx.shadowColor = "rgba(0, 0, 0, 0)"
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
+        ctx.strokeStyle = "#000000"
+        ctx.textAlign = "start"
+        ctx.textBaseline = "alphabetic"
+        ctx.textRendering = "auto"
+        ctx.wordSpacing = "0px"
+
         function inside() {
             const padxf = 0.3
             const padyf = 0.2
 
-            if (first) {
-                first = false
+            if (first)
                 for (const id in board.data.objects) {
                     const obj = board.data.objects[id]
                     const s = obj.font.size
@@ -105,15 +138,16 @@ function initCanvas(board) {
 
                     geo[id] = { x, y, padx, pady, w, h, fg, bg, t, s, f }
                 }
-            }
+
 
             for (const edge of board.data.edges) {
                 const n1 = edge.points[0]
                 const n2 = edge.points[1]
                 const c1 = geoCenter(geo[n1])
                 const c2 = geoCenter(geo[n2])
+                const w = edge.config.width / 100
                 const st = color(edge.config.theme.st)
-                drawLine(ctx, c1.x, c1.y, c2.x, c2.y, edge.config.width / 10, st)
+                drawLine(ctx, c1.x, c1.y, c2.x, c2.y, w, st)
             }
 
             for (const id in geo) {
@@ -140,6 +174,7 @@ function initCanvas(board) {
 
         inside()
         requestAnimationFrame(draw)
+        first = false
     }
 
     // Gets the relevant location from a mouse or single touch event
@@ -165,6 +200,7 @@ function initCanvas(board) {
     }
 
     function onPointerMove(e) {
+        e.preventDefault()
         if (isDragging) {
             cameraOffset.x = getEventLocation(e).x / cameraZoom - dragStart.x
             cameraOffset.y = getEventLocation(e).y / cameraZoom - dragStart.y
