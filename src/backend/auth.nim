@@ -109,11 +109,8 @@ when not (defined(js) or defined(frontend)):
             u
 
         maybeUsr = !!<db.getUser(uid)
-        tags = !!<db.getLabeledTagIds()
 
-      UserCache(
-        account: get maybeUsr,
-        defaultTags: toEnumArr[TagLabel, Id](tags))
+      UserCache(account: get maybeUsr)
 
     else:
       raise newException(ValueError, "invalid code")
@@ -125,9 +122,7 @@ when not (defined(js) or defined(frontend)):
       a = get !!<db.getUserAuth(userPassT, u.id)
 
     if $(secureHash lf.password) == a.secret:
-      UserCache(
-        account: u,
-        defaultTags: toEnumArr[TagLabel, Id](!!<db.getLabeledTagIds()))
+      UserCache(account: u)
     else:
       # TODO add syntax sugar for errors
       raise newException(ValueError, "password is not valid")

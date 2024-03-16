@@ -10,13 +10,9 @@ import ../utils/[browser, js, ui, api]
 import ../jslib/[axios]
 import ../../common/[iter, types, datastructures, conventions]
 import ../../backend/routes
-import ../../backend/database/[models]
+import ../../backend/database/[models, logic]
 import ./editor/[core, components]
 
-
-# TODO add tags for boards
-# TODO hide admin buttons for normal users
-# TODO add confirmation for deletation | the icon of delete button changes to check
 
 type
   UploadStatus = enum
@@ -43,15 +39,13 @@ type
     scBoards = "boards"
     scAssets = "assets"
 
-  RelTagPath = tuple[tagid: Id, index: int]
-
 const maxItems = 20
 let compTable = defaultComponents()
 var
+  me = none User
   lastPage: array[SearchableClass, Natural]
   appState = asNormal
-  showGlobalTags = false
-  tags: Table[Id, Tag]
+  tags: Table[Str, Tag]
   msgCache: Table[Id, cstring]
   notes: seq[NoteItemView]
   boards: seq[BoardItemView]
@@ -61,10 +55,10 @@ var
   selectedCriteriaI = noIndex
   columnsCount = 1
   selectedClass = scUsers
-  currentRelTags: Table[Id, seq[cstring]]
+  currentRels: seq[RelMinData]
   selectedNoteId: Id
   selectedNoteIndex = noIndex
-  activeRelTag = none RelTagPath
+  activeRelTagIndex = noIndex
   userSearchStr = ""
   users: seq[User]
   assets: seq[AssetItemView]
@@ -82,23 +76,9 @@ func iconClass(sc: SearchableClass): string =
   of scBoards: "fa-diagram-project"
   of scAssets: "fa-file"
 
-func toJson(s: Table[Id, seq[cstring]]): JsObject =
-  result = newJsObject()
-  for k, v in s:
-    result[cstr int k] = v
-
-func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
-  for k, v in s:
-    let id = Id parseInt k
-    result[id] = v
-
-
-# TODO write a note laod manager component in a different file
 proc loadMsg(n: NoteItemView) =
   deserizalize(compTable, n.data).dthen proc(t: TwNode) =
     msgCache[n.id] = t.dom.innerHtml
-    redraw()
-
 
 proc getExploreQuery: ExploreQuery =
   result = ExploreQuery(
@@ -112,46 +92,47 @@ proc fetchAssets: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scAssets]
     reset assets
-    apiExploreAssets ExploreQuery(), p*maxItems, maxItems, proc(ass: seq[
-        AssetItemView]) =
-      assets = ass
-      resolve()
+    apiExploreAssets getExploreQuery(), p*maxItems, maxItems, 
+      proc(ass: seq[AssetItemView]) =
+        assets = ass
+        resolve()
+        redraw()
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scBoards]
     reset boards
-    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, proc(bs: seq[
-        BoardItemView]) =
-      boards = bs
-      resolve()
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, 
+      proc(bs: seq[BoardItemView]) =
+        boards = bs
+        resolve()
+        redraw()
 
 proc resolveNotes =
   for n in notes:
     loadMsg n
 
   messagesResolved = true
+  redraw()
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scNotes]
     reset notes
-    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, proc(ns: seq[
-        NoteItemView]) =
-      notes = ns
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, 
+      proc(ns: seq[NoteItemView]) =
+        notes = ns
+        messagesResolved = false
 
-      messagesResolved = false
-
-      if selectedClass == scNotes:
-        resolveNotes()
-
-      resolve()
+        if selectedClass == scNotes:
+          resolveNotes()
+        resolve()
 
 proc fetchTags: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     apiGetTagsList proc(tagsList: seq[Tag]) =
       for t in tagsList:
-        tags[t.id] = t
+        tags[t.label] = t
       resolve()
 
 proc fetchUsers: Future[void] =
@@ -161,6 +142,7 @@ proc fetchUsers: Future[void] =
     apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
       users = us
       resolve()
+      redraw()
 
 
 proc startUpload(u: Upload) =
@@ -270,7 +252,7 @@ proc genAssetDelete(id: Id, index: int): proc() =
 
 proc genAssetEditTags(a: AssetItemView, i: int): proc() =
   proc =
-    currentRelTags = fromJson a.activeRelsValues
+    currentRels = a.rels
     appState = asTagManager
 
 proc genAssetApplyBtn(id: Id, index: int): proc() =
@@ -351,10 +333,11 @@ proc assetItemComponent(index: int, a: AssetItemView,
 
       tdiv(class = "d-flex flex-row align-items-center"):
         tdiv:
-          for k, values in a.activeRelsValues:
-            for v in values:
-              let id = Id parseInt k
-              tagViewC tags[id], v, noop
+          for r in a.rels:
+            if r.label in tags:
+              tagViewC tags[r.label], r.value, noop
+            else:
+              text r.label
 
         button(class = "mx-2 btn btn-outline-dark",
             onclick = genSelectAsset(a, index)):
@@ -456,10 +439,8 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
             text "loading..."
 
       tdiv(class = "m-2"):
-        for k, values in n.activeRelsValues:
-          for v in values:
-            let id = Id parseInt k
-            tagViewC tags[id], v, noop
+        for r in n.rels:
+          tagViewC tags[r.label], r.value, noop
 
       tdiv(class = "card-footer d-flex justify-content-center"):
 
@@ -478,7 +459,7 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
           proc onclick =
             selectedNoteId = n.id
             selectedNoteIndex = i
-            currentRelTags = fromJson n.activeRelsValues
+            currentRels = n.rels
             appState = asTagManager
 
         a(class = "btn mx-1 btn-compact btn-outline-warning",
@@ -523,13 +504,13 @@ proc boardItemViewC(b: BoardItemView): VNode =
             deleteBoard b.id
             discard fetchBoards()
 
-proc genAddTagToList(id: Id): proc() =
+proc genAddTagToList(lbl: Str): proc() =
   proc =
-    add currentRelTags, id, c""
+    add currentRels, RelMinData(label: lbl, value: "")
 
-proc genActiveTagClick(tagId: Id, index: int): proc() =
+proc genActiveTagClick(index: int): proc() =
   proc =
-    activeRelTag = some (tagid, index)
+    activeRelTagIndex = index
 
 proc relTagManager(): Vnode =
   buildHTML:
@@ -537,81 +518,68 @@ proc relTagManager(): Vnode =
       h3(class = "mt-4"):
         text "Available Tags"
 
-      tdiv(class = "form-check"):
-        input(class = "form-check-input", type = "checkbox",
-            checked = showGlobalTags):
-          proc onchange(e: Event, n: VNode) =
-            showGlobalTags = e.target.checked
-
-        label(class = "form-check-label"):
-          text "show all tags"
-
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            if id notin currentRelTags or t.can_be_repeated:
-              if (isNone t.label) or showGlobalTags:
-                tagViewC t, "...", genAddTagToList id
+            tagViewC t, "...", genAddTagToList t.label
 
       h3(class = "mt-4"):
         text "Current Tags"
 
       tdiv(class = "card"):
         tdiv(class = "card-body"):
-          for id, vals in currentRelTags:
-            for index, v in vals:
-              tagViewC tags[id], v, genActiveTagClick(id, index)
+          for index, r in currentRels:
+            if r.label in tags:
+              tagViewC tags[r.label], r.value, genActiveTagClick index
+            else:
+              span:
+                text "# "
+                text r.label
 
-      if path =? activeRelTag:
-        let t = tags[path.tagid]
-        if t.hasValue:
+      if activeRelTagIndex != noIndex:
+        let r = currentRels[activeRelTagIndex]
+        if hasValue tags[r.label]:
           input(`type` = "text", class = "form-control",
             placeholder = "value ...",
-            value = currentRelTags[path.tagid][path.index], ):
+            value = r.value):
             proc oninput(e: Event, v: Vnode) =
-              currentRelTags[path.tagid][path.index] = e.target.value
+              currentRels[activeRelTagIndex].value = e.target.value
 
         button(class = "btn btn-danger w-100 mt-2 mb-4"):
           text "remove"
           icon "mx-2 fa-close"
 
           proc onclick =
-            reset activeRelTag
-
-            del currentRelTags[path.tagid], path.index
-            if currentRelTags[path.tagid].len == 0:
-              del currentRelTags, path.tagid
-
+            delete currentRels, activeRelTagIndex
+            activeRelTagIndex = noIndex
 
       button(class = "btn btn-primary w-100 mt-2"):
         text "save"
         icon "mx-2 fa-save"
 
         proc onclick =
-          let d = toJson currentRelTags
+          let d = cast[JsObject](currentRels)
 
           case selectedClass
           of scUsers: discard
+          of scBoards: discard
+
           of scNotes:
             apiUpdateNoteTags selectedNoteId, d, proc =
               notify "changes applied"
-              notes[selectedNoteIndex].activeRelsValues = cast[
-                  RelValuesByTagId](d)
-
-          of scBoards: discard
+              notes[selectedNoteIndex].rels = currentRels
+          
           of scAssets:
             apiUpdateAssetTags assets[selectedAssetIndex].id, d, proc =
+              assets[selectedAssetIndex].rels = currentRels
               notify "changes applied"
-              assets[selectedAssetIndex].activeRelsValues = cast[
-                  RelValuesByTagId](d)
-
 
       button(class = "btn btn-warning w-100 mt-2 mb-4"):
         text "cancel"
         icon "mx-2 fa-hand"
 
         proc onclick =
-          reset activeRelTag
+          reset activeRelTagIndex
           appState = asNormal
 
 proc doSearch =
@@ -622,7 +590,7 @@ proc doSearch =
   of scUsers: discard fetchUsers()
 
 
-proc genRoundOperator(i: int, vt: TagValueType): proc() =
+proc genRoundOperator(i: int, vt: RelValueType): proc() =
   proc =
     incRound searchCriterias[i].operator
 
@@ -630,7 +598,6 @@ proc genRoundOperator(i: int, vt: TagValueType): proc() =
 proc genAddSearchCriteria(t: Tag): proc() =
   proc =
     add searchCriterias, TagCriteria(
-      tagid: t.id,
       label: t.label,
       valuetype: t.valuetype,
       operator: qoExists,
@@ -640,8 +607,8 @@ proc genAddSearchCriteria(t: Tag): proc() =
 
 proc genSelectCriteria(i: int): proc() =
   proc =
-    if selectedCriteriaI == i:
-      if selectedSortCriteriaI == i:
+    if i == selectedCriteriaI:
+      if i == selectedSortCriteriaI:
         case sortOrder
         of Descending:
           sortOrder = Ascending
@@ -660,20 +627,10 @@ proc searchTagManager(): Vnode =
       h3(class = "mt-4"):
         text "Available Tags"
 
-      tdiv(class = "form-check"):
-        input(class = "form-check-input", type = "checkbox",
-            checked = showGlobalTags):
-          proc onchange(e: Event, n: VNode) =
-            showGlobalTags = e.target.checked
-
-        label(class = "form-check-label"):
-          text "show all tags"
-
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            if (isnone t.label) or showGlobalTags:
-              tagViewC t, "...", genAddSearchCriteria t
+            tagViewC t, "...", genAddSearchCriteria t
 
       h3(class = "mt-4"):
         text "Current Criterias"
@@ -683,9 +640,9 @@ proc searchTagManager(): Vnode =
           for i, cr in searchCriterias:
             tdiv:
               text "@ "
-              span(onclick = genRoundOperator(i, tags[cr.tagid].valueType)):
+              span(onclick = genRoundOperator(i, tags[cr.label].valueType)):
                 text $cr.operator
-              tagViewC tags[cr.tagid], cr.value, genSelectCriteria i
+              tagViewC tags[cr.label], cr.value, genSelectCriteria i
               if selectedSortCriteriaI == i:
                 case sortOrder
                 of Descending:
@@ -696,8 +653,7 @@ proc searchTagManager(): Vnode =
       if selectedCriteriaI != noIndex:
         let
           cr = searchCriterias[selectedCriteriaI]
-          tid = cr.tagid
-          t = tags[tid]
+          t = tags[cr.label]
 
         if t.hasValue:
           input(`type` = "text", class = "form-control",
@@ -730,6 +686,11 @@ proc createDom: Vnode =
           icon "fa-search fa-xl me-3 ms-1"
           text "Explore"
 
+        if isNone me:
+          a(class = "btn btn-outline-primary", href = get_login_url()):
+            text "login "
+            icon "mx-2 fa-sign-in"
+
     tdiv(class = "px-1 px-sm-2 px-md-3 px-lg-4-4 py-2 my-2"):
       case appState
       of asNormal:
@@ -754,33 +715,32 @@ proc createDom: Vnode =
 
         case selectedClass
         of scUsers:
-          a(class = "btn btn-outline-primary w-100 mt-2", href = get_login_url()):
-            text "login "
-            icon "mx-2 fa-sign-in"
-
           input(`type` = "text", class = "form-control",
             placeholder = "id or name"):
             proc oninput(e: Event, v: Vnode) =
               userSearchStr = $e.target.value
 
         of scBoards:
-          a(class = "btn btn-outline-primary w-100 mt-2",
-              href = get_boards_new_url()):
-            text "new "
-            icon "mx-2 fa-plus"
+          if issome me:
+            a(class = "btn btn-outline-primary w-100 mt-2",
+                href = get_boards_new_url()):
+              text "new "
+              icon "mx-2 fa-plus"
 
           searchTagManager()
 
         of scNotes:
-          a(class = "btn btn-outline-primary w-100 mt-2",
-              href = get_notes_new_url()):
-            text "new "
-            icon "mx-2 fa-plus"
+          if issome me:
+            a(class = "btn btn-outline-primary w-100 mt-2",
+                href = get_notes_new_url()):
+              text "new "
+              icon "mx-2 fa-plus"
 
           searchTagManager()
 
         of scAssets:
-          assetUploader()
+          if issome me:
+            assetUploader()
           searchTagManager()
 
         tdiv(class = "my-1"):
@@ -795,8 +755,13 @@ proc createDom: Vnode =
           case selectedClass
           of scUsers:
             tdiv(class = "list-group my-4"):
-              for u in users:
+              if u =? me:
                 userItemC u
+                tdiv(class="mb-3")
+
+              for u in users:
+                if (isNone me) or (u.username != me.get.username):
+                  userItemC u
 
           of scNotes:
             tdiv(class = "my-4 masonry-container masonry-" & $columnsCount):
@@ -851,6 +816,10 @@ when isMainModule:
     case screenOrientation()
     of soPortrait: 1
     of soLandscape: 2
+
+  meApi proc (u: User) = 
+    me = some u
+    redraw()
 
   waitAll [fetchTags(), fetchUsers(), fetchNotes(), fetchBoards(), fetchAssets()], proc =
     redraw()

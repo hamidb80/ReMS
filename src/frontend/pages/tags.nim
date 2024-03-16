@@ -4,7 +4,7 @@ import std/[dom, jsconsole, asyncjs]
 import karax/[karax, karaxdsl, vdom, vstyles]
 
 import ../components/[snackbar]
-import ../../backend/database/models
+import ../../backend/database/[models, logic]
 import ../../common/[conventions, datastructures, types]
 import ../utils/[browser, ui, api, js]
 
@@ -37,8 +37,8 @@ proc dummyTag: Tag =
     theme: sample colors,
     show_name: true,
     is_private: false,
-    value_type: tvtNone,
-    name: "name")
+    value_type: rvtNone,
+    label: "name")
 
 proc fetchDefaultPalette: Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -112,9 +112,9 @@ proc createDom: Vnode =
                 text "name: "
 
               input(`type` = "text", class = "form-control tag-input",
-                  value = currentTag.get.name):
+                  value = currentTag.get.label):
                 proc oninput(e: Event, v: Vnode) =
-                  currentTag.get.name = $e.target.value
+                  currentTag.get.label = e.target.value
 
             # icon
             tdiv(class = "form-check"):
@@ -146,8 +146,8 @@ proc createDom: Vnode =
             tdiv(class = "form-check form-switch"):
               checkbox currentTag.get.hasValue, proc (b: bool) =
                 currentTag.get.value_type =
-                  if b: tvtStr
-                  else: tvtNone
+                  if b: rvtStr
+                  else: rvtNone
 
               label(class = "form-check-label"):
                 text "has value"
@@ -158,12 +158,12 @@ proc createDom: Vnode =
                 text "value type"
 
               select(class = "form-select", disabled = not currentTag.get.hasValue):
-                for lbl in tvtStr..tvtJson:
+                for lbl in rvtStr..rvtNumber:
                   option(value = cstr lbl.ord, selected = currentTag.get.value_type == lbl):
                     text $lbl
 
                 proc onInput(e: Event, v: Vnode) =
-                  currentTag.get.value_type = TagValueType parseInt e.target.value
+                  currentTag.get.value_type = RelValueType parseInt e.target.value
 
             # background
             tdiv(class = "form-group d-inline-block mx-2"):

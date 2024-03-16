@@ -9,7 +9,6 @@ template R*: untyped {.dirty.} =
 func sqlize*[T](items: seq[T]): string =
   '(' & join(items, ", ") & ')'
 
-
 macro fsql*(str: static string): untyped =
     ## strformat for sql
     ## []: raw value
@@ -19,6 +18,7 @@ macro fsql*(str: static string): untyped =
         minLen = 2 * len str
         res = genSym(nskVar, "sqlFmtTemp")
     var 
+        opened = '.'
         lasti = -1
 
     result = newStmtList()
@@ -28,26 +28,31 @@ macro fsql*(str: static string): untyped =
     for i, ch in str:
         case ch
         of '[', '{':
-            let d = newLit str[lasti+1 .. i-1]
-            result.add quote do:
-                `res`.add `d`
+            if opened == '.':
+                let d = newLit str[lasti+1 .. i-1]
+                opened = ch
+                lasti = i
+                result.add quote do:
+                    `res`.add `d`
 
         of ']':
-            let d = parseExpr str[lasti+1 .. i-1]
-            result.add quote do:
-                `res`.add $`d`
+            if opened == '[':
+                let d = parseExpr str[lasti+1 .. i-1]
+                opened = '.'
+                lasti = i
+                result.add quote do:
+                    `res`.add $`d`
 
         of '}':
-            let d = parseExpr str[lasti+1 .. i-1]
-            result.add quote do:
-                `res`.add $dbvalue(`d`)
+            if opened == '{':
+                let d = parseExpr str[lasti+1 .. i-1]
+                opened = '.'
+                lasti = i
+                result.add quote do:
+                    `res`.add $dbvalue(`d`)
 
         else:
             discard
-
-        if ch in "[]{}":
-            lasti = i
-
     
     let d = str[lasti+1 .. str.len-1]
     result.add quote do:

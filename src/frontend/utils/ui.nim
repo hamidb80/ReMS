@@ -3,7 +3,7 @@ import std/[strformat]
 import karax/[karaxdsl, vdom, vstyles]
 
 import ../../common/types
-import ../../backend/database/[models]
+import ../../backend/database/[models, logic]
 
 when defined js:
   import karax/karax
@@ -50,7 +50,7 @@ proc tagViewC*(
       if t.showName or t.hasValue:
         span(dir = "auto", class = "ms-2"):
           if t.showName:
-            text t.name
+            text t.label
 
           if t.hasValue:
             text ": "

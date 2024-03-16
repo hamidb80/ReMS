@@ -1,11 +1,10 @@
-# to use for migration
-
 import std/[json, sequtils, os]
-import ./[models, dbconn]
-import ../config
-import ../../common/[types, datastructures]
+
 import ponairi
 
+import ../../config
+import ../../../common/[datastructures]
+import ../[models, dbconn]
 
 
 func fixx(n: sink NoteData): NoteData =

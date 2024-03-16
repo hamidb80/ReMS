@@ -60,9 +60,6 @@ proc addAdminUser*(db: DbConn) =
     let uid = db.newUser("admin", "admin user", true, umTest)
     db.addPassAuth(uid, defaultAdminPass)
 
-proc addCommonTags*(db: DbConn) =
-    db.insert commonTags()
-
 proc createTables*(db: DbConn) =
     db.create(
         User,
@@ -72,7 +69,7 @@ proc createTables*(db: DbConn) =
         Board,
         Tag,
         Relation,
-        RelationsCache,
+        RelsCache,
         Palette)
 
 proc initDb* =
@@ -81,7 +78,6 @@ proc initDb* =
     try:
         addAdminUser db
         defaultPalette db
-        addCommonTags db
     except:
         discard
 

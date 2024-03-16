@@ -8,13 +8,15 @@ else:
   import ponairi
 
 
-type # database models
+type 
+  # ------------ database models ------------
+  
   UserRole* = enum
     urUser
     urAdmin
 
   UserMode* = enum
-    umReal ## real user who signed up 
+    umReal ## real user who signed up
     umTest ## used for testing
 
   User* = object
@@ -36,7 +38,7 @@ type # database models
     str_val1*: string
     str_val2*: string
     int_val3*: int
-    info*: string ## additional information
+    info*: string           ## additional information
 
     created_at*: UnixTime
     activated*: bool
@@ -72,105 +74,108 @@ type # database models
 
   Palette* = object
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Option[Id]         ## owner
+    owner* {.references: User.id.}: Option[Id]         ## owner
     name* {.uniqueIndex.}: Str
     color_themes*: seq[ColorTheme]
 
-  TagValueType* = enum
-    tvtNone
-    tvtStr
-    tvtFloat
-    tvtInt
-    tvtDate
-    tvtJson
-
-  TagLabel* = enum     ## special tags
-    # -- hidden or special view component
-    tlForwarded        ## a note that is forwarded from another user
-    tlNoteComment      ## a note (as comment) that refers to main note (refers)
-    tlNoteCommentReply ## reply to another comment
-
-    tlBoardNode        ##
-    tlBoardNodeNote    ##
-
-    tlFollows          ## user => refers (user.id)
-    tlNotification     ##
-
-    # -- visible
-    tlOwner            ## owner
-    tlTimestamp        ## creation time
-    tlSize             ## size in bytes
-    tlFileName         ## name of file
-    tlMime             ## mime type of a file
-    tlPrivate          ## everything is public except when it has private tag
-
-    tlHasAccess        ## tag with username of the person as value - is used with private
-    tlNoteHighlight    ##
-    tlTextContent      ## raw text
-    tlBoardScreenShot  ## screenshots that are taken from boards
-
-    tlLike             ##
-    tlImportant        ##
-    tlLater            ##
-
-    tlRememberIn       ##
-    tlRemembered       ##
-
-  Tag* = object
-    ## most of the tags are primarily made for searching
-    ## purposes and have redundent data
-
+  Tag* = object ## Relation Template
     id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Option[Id] # NULL means global
-    label*: Option[TagLabel]
-    name*: Str
+    owner* {.references: User.id.}: Id
+
+    mode* {.index.}: RelMode
+    label*: Str
+
+    value_type*: RelValueType
+    is_private*: bool
+  
+    # --- styles
     icon*: Str
     show_name*: bool
-    is_private*: bool
-    can_be_repeated*: bool
     theme*: ColorTheme
-    value_type*: TagValueType
-    # TODO tag with "open/closed enums" values or a range
 
-  RelationState* = enum
+  RelValueType* = enum
+    rvtNone
+    rvtStr
+    rvtNumber
+
+  RelMode* = enum
+    rmCustom           ## user defined
+
+    # -- hidden or special view component
+    rmForwarded        ## a note that is forwarded from another user
+    rmNoteComment      ## a note (as comment) that refers to main note (refers)
+    rmNoteCommentReply ## reply to another comment
+
+    rmBoardNode        ##
+    rmBoardNodeNote    ##
+
+    rmFollows          ## user => refers (user.id)
+    rmNotification     ##
+
+    # -- visible
+    rmOwner            ## owner
+    rmTimestamp        ## creation time
+    rmSize             ## size in bytes
+    rmFileName         ## name of file
+    rmMime             ## mime type of a file
+    rmPrivate          ## everything is public except when it has private tag
+
+    rmHasAccess        ## tag with username of the person as value - is used with private
+    rmNoteHighlight    ##
+    rmTextContent      ## raw text
+    rmBoardScreenShot  ## screenshots that are taken from boards
+
+    rmLike             ##
+    rmImportant        ##
+    rmLater            ##
+
+    rmRememberIn       ##
+    rmRemembered       ##
+
+  RelState* = enum
     rsFresh
     rsStale ## to mark as processed or expired by the system
 
   Relation* = object
     id* {.primary, autoIncrement.}: Id
-    tag* {.references: Tag.id, index.}: Id            ## originates from
-    kind* {.index.}: Option[int]                      ## sub label according to tag
-    user* {.references: User.id.}: Option[Id]         ## owner
+    is_private*: bool
 
+    user* {.references: User.id.}: Option[Id]         ## owner
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     node* {.references: Relation.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
-
-    fval*: Option[float]
-    ival*: Option[int]
-    sval*: Option[Str]
     refers*: Option[Id]                               ## arbitrary row id
 
+    mode*: RelMode
+    label* {.index.}: Str
+    sval*: Option[Str]
+    fval*: Option[float]
+
     info*: Str                                        ## additional information
-    state*: RelationState
+    state*: RelState
     timestamp*: UnixTime                              ## creation time
 
-  RelValuesByTagId* = NTable[Str, seq[Str]]
-
-  RelationsCache* = object ## one to one relation with Note/Board/Asset
+  RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
-    user* {.references: User.id.}: Id
+
+    user* {.references: User.id.}: Option[Id]
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
     note* {.references: Note.id, index.}: Option[Id]
-    active_rels_values*: RelValuesByTagId ## active relation values grouped by tag id
 
-type # view models
+    rels*: seq[RelMinData]
+
+  RelMinData* = object ## minimum relation data
+    mode*: RelMode
+    label*: Str
+    value*: Str
+
+  # ------------ view models ------------
+
   UserCache* = object
     exp*: int
     account*: User
-    defaultTags*: array[TagLabel, Id]
 
   EntityClass* = enum
     ecNote = "note"
@@ -191,9 +196,9 @@ type # view models
     qoSubStr    ## ~ substring check
 
   TagCriteria* = object
-    label*: Option[TagLabel]
-    tagId*: Id
-    value_type*: TagValueType
+    mode*: Option[RelMode]
+    label*: Str
+    value_type*: RelValueType
     operator*: QueryOperator
     value*: Str
 
@@ -211,18 +216,18 @@ type # view models
     name*: Str
     mime*: Str
     size*: Bytes
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   NoteItemView* = object
     id*: Id
     data*: TreeNodeRaw[NativeJson]
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   BoardItemView* = object
     id*: Id
     title*: Str
     screenshot*: Option[Id]
-    active_rels_values*: RelValuesByTagId
+    rels*: seq[RelMinData]
 
   LoginForm* = object
     username*: Str
@@ -238,75 +243,17 @@ type # view models
     image*: Str
 
 
-func newNoteData*: TreeNodeRaw[JsonNode] =
-  TreeNodeRaw[JsonNode](
-    name: "root",
-    children: @[],
-    data: newJNull())
-
-func hasValue*(tv: TagValueType): bool =
-  tv != tvtNone
-
-func hasValue*(t: Tag): bool =
-  hasValue t.value_type
-
-func isAdmin*(u: User): bool =
-  u.role == urAdmin
-
-func columnName*(vt: TagValueType): string =
-  case vt
-  of tvtNone: raise newException(ValueError, "'tvtNone' does not have column")
-  of tvtFloat: "fval"
-  of tvtInt, tvtDate: "ival"
-  of tvtJson, tvtStr: "sval"
-
-func isHidden*(lbl: TagLabel): bool =
-  lbl in tlForwarded .. tlNotification
-
-func isInfix*(qo: QueryOperator): bool =
-  qo in qoLess..qoSubStr
-
-func `[]`*[V](s: seq[V], i: ConnectionPointKind): V =
-  assert 2 == len s
-  s[ord i]
-
-func `$`*(qo: QueryOperator): string =
-  case qo
-  of qoExists: "??"
-  of qoNotExists: "?!"
-  of qoLess: "<"
-  of qoLessEq: "<="
-  of qoEq: "=="
-  of qoNotEq: "!="
-  of qoMoreEq: ">="
-  of qoMore: ">"
-  else: "no operator"
-
-func `$`*(tvt: TagValueType): string =
-  case tvt
-  of tvtNone: "none"
-  of tvtStr: "text"
-  of tvtFloat: "float"
-  of tvtInt: "int"
-  of tvtDate: "date"
-  of tvtJson: "JSON"
-
-func `$`*(so: SortOrder): string =
-  case so
-  of Descending: "DESC"
-  of Ascending: "ASC"
-
 when not defined js:
   import jsony
   include jsony_fix
 
   template defSqlJsonType(typename): untyped =
-    proc sqlType*(t: typedesc[typename]): string = 
+    proc sqlType*(t: typedesc[typename]): string =
       "TEXT"
-    
-    proc dbValue*(j: typename): DbValue = 
+
+    proc dbValue*(j: typename): DbValue =
       DbValue(kind: dvkString, s: toJson j)
-    
+
     proc to*(src: DbValue, dest: var typename) =
       dest = fromJson(src.s, typename)
 
@@ -316,6 +263,8 @@ when not defined js:
   defSqlJsonType NTable
   defSqlJsonType ColorTheme
   defSqlJsonType seq[ColorTheme]
+  defSqlJsonType RelMinData
+  defSqlJsonType seq[RelMinData]
 
   proc sqlType*(t: typedesc[Path]): string = "TEXT"
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)
