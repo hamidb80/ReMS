@@ -108,27 +108,7 @@ proc listTagFor*(db: DbConn, u: User): seq[Tag] =
   """
 
 proc allTags*(db: DbConn): seq[Tag] =
-  let q = sql"""
-    SELECT 
-      id,
-      owner,
-      mode,
-      label,
-      value_type,
-      is_private,
-      icon,
-      show_name,
-      theme
-    FROM Tag"""
-
-  db.find R, q
-
-# proc findTagList(db: DbConn, ids: seq[Id]): seq[Tag] =
-#   db.find R, fsql"""
-#     SELECT *
-#     FROM Tag
-#     WHERE id IN [sqlize ids]
-#   """
+  db.find R, sql"SELECT * FROM Tag"
 
 proc addAsset*(db: DbConn, u: User, n: string, m: string, p: Path,
     s: Bytes): int64 =
