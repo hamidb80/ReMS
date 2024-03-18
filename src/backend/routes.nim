@@ -2,6 +2,7 @@ import std/[strformat]
 
 import ../common/types
 import ./utils/web
+import ./auth
 
 when not (defined(js) or defined(frontend)):
   # import ./auth
