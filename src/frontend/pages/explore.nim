@@ -5,8 +5,8 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable
 import caster
 
-import ../components/[snackbar]
-import ../utils/[browser, js, ui, api]
+import ../components/[snackbar, ui]
+import ../utils/[browser, js, api]
 import ../jslib/[axios]
 import ../../common/[iter, types, datastructures, conventions]
 import ../../backend/routes

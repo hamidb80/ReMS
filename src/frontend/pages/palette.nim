@@ -2,10 +2,10 @@ import std/[dom]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar]
+import ../components/[snackbar, ui]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
-import ../utils/[ui, api]
+import ../utils/[api]
 
 
 var

@@ -3,12 +3,10 @@ import std/[dom, options]
 import karax/[karax, karaxdsl, vdom]
 import questionable
 
-import ../components/[snackbar]
-import ../utils/[ui, api]
+import ../components/[snackbar, ui]
+import ../utils/[api]
 import ../../common/[conventions]
 import ../../backend/database/models
-
-# TODO merge tag manager and user manager and login & profile and pallete in one page
 
 type AppAction = enum
   aaBaleBot = "bale"
@@ -23,12 +21,6 @@ var
 proc genSetState(i: AppAction): proc() =
   proc =
     state = i
-
-# TODO form to change username/nickname
-# TODO see bale chat id
-# TODO enable login by password
-# TODO link to tag manager
-# TODO link to palette manager
 
 func iconname(aa: AppAction): string = 
   case aa

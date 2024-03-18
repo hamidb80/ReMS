@@ -3,8 +3,8 @@ import std/[dom, jsconsole, jsffi, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar]
-import ../utils/[browser, js, ui, api]
+import ../components/[snackbar, ui]
+import ../utils/[browser, js, api]
 import ../../common/[types, datastructures, conventions]
 import ../../backend/database/[models]
 import ./editor/[core, components]

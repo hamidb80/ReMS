@@ -2,7 +2,7 @@ import std/[tables, strutils, os, times]
 
 import karax/[vdom, karaxdsl]
 
-import ../utils/ui
+import ../components/ui
 import ./deps
 import ../../common/package
 import ../../backend/routes

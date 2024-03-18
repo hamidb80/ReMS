@@ -7,8 +7,8 @@ import caster, questionable, prettyvec
 
 import ../jslib/[konva, fontfaceobserver]
 import ./editor/[components, core]
-import ../components/[snackbar]
-import ../utils/[ui, browser, js, api, shortcuts]
+import ../components/[snackbar, ui]
+import ../utils/[browser, js, api, shortcuts]
 import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/database/[models], ../../backend/routes

@@ -3,10 +3,10 @@ import std/[dom, jsconsole, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar]
+import ../components/[snackbar, ui]
 import ../../backend/database/[models, logic]
 import ../../common/[conventions, datastructures, types]
-import ../utils/[browser, ui, api, js]
+import ../utils/[browser, api, js]
 
 
 randomize()
