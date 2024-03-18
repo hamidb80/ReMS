@@ -1007,16 +1007,16 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
     v.config.messageIdList.delete i
 
   var btns = @[
-    generalCardBtnLink("info", "fa-glasses", get_note_preview_url mid),
-    generalCardBtnAction("primary", "fa-sync", syncMsg)]
+    generalCardBtnLink("fa-glasses", "info", get_note_preview_url mid),
+    generalCardBtnAction("fa-sync", "primary", syncMsg)]
 
   if not app.isLocked:
     add btns, [
-      generalCardBtnAction("primary", "fa-copy", copyMsgId),
-      generalCardBtnLink("warning", "fa-pen", get_note_editor_url mid),
-      generalCardBtnAction("dark", "fa-chevron-up", moveUp),
-      generalCardBtnAction("dark", "fa-chevron-down", moveDown),
-      generalCardBtnAction("danger", "fa-close", delMsgFromLisp)]
+      generalCardBtnAction("fa-copy", "primary", copyMsgId),
+      generalCardBtnLink("fa-pen", "warning", get_note_editor_url mid),
+      generalCardBtnAction("fa-chevron-up", "dark", moveUp),
+      generalCardBtnAction("fa-chevron-down", "dark", moveDown),
+      generalCardBtnAction("fa-close", "danger", delMsgFromLisp)]
 
   generalCardView "", inner, getOrDefault(noteRelTags, mid, @[]), tags, btns
 
@@ -1118,12 +1118,6 @@ proc fontFamilySelectBtn(name: string; selectable: bool): Vnode =
           if selectable:
             setFocusedFontFamily name
             app.footerState = fsOverview
-
-# FIXME duplicate fn from notes_list
-# func fromJson(s: RelValuesByTagId): Table[Id, seq[cstring]] =
-#   for k, v in s:
-#     let id = Id parseInt k
-#     result[id] = v
 
 proc loadFonts(fontFamilies: seq[FontTest]): Future[void] =
   newPromise proc(resolve, reject: proc()) =

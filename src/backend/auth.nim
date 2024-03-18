@@ -28,11 +28,6 @@ when not (defined(js) or defined(frontend)):
   func len[E: enum](e: type E): Natural =
     len e.low .. e.high
 
-  proc toEnumArr[E: enum, V](s: seq[V]): array[E, V] =
-    assert len(E) == len(s)
-    for i, x in s:
-      result[E(i)] = x
-
   # ----- db queries -----------------------------------
 
   proc addInviteCode*(db: DbConn, loginPlatform, code: string, info: JsonNode) =
