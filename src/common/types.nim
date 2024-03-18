@@ -331,8 +331,6 @@ func parseHexColorPack*(s: string): HexColorPack =
 
 # TODO move it to js module
 when defined js:
-  import std/jsffi
-
   func initNTable*[K: cstring, V](): NTable[K, V] =
     newJsAssoc[K, V]()
 

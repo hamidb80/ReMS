@@ -3,7 +3,7 @@ import std/[dom, jsconsole, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple, pro]
 import ../../backend/database/[models, logic]
 import ../../common/[conventions, datastructures, types]
 import ../utils/[browser, api, js]

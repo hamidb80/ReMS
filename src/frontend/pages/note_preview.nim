@@ -3,15 +3,12 @@ import std/[dom, jsconsole, jsffi, asyncjs]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple, pro]
 import ../utils/[browser, js, api]
 import ../../common/[types, datastructures, conventions]
 import ../../backend/database/[models]
 import ./editor/[core, components]
 
-
-type
-  RelTagPath = tuple[tagid: Id, index: int]
 
 var
   compTable = defaultComponents()
@@ -38,18 +35,14 @@ proc fetchTags(): Future[void] =
 # ----- UI
 
 proc notePreviewC(n: NoteItemView): VNode =
-  buildHtml:
-    tdiv(class = "card my-3 masonry-item border rounded bg-white"):
-      tdiv(class = "card-body"):
-        tdiv(class = "tw-content"):
-          if html != "":
-            verbatim html
-          else:
-            text "loading..."
+  let inner = buildHTML:
+    tdiv(class = "tw-content"):
+      if html != "":
+        verbatim html
+      else:
+        text "loading..."
 
-      tdiv(class = "m-2"):
-        for r in n.rels:
-          tagViewC tags[r.label], r.value, noop
+  generalCardView "", inner, n.rels, tags, @[]
 
 proc createDom: Vnode =
   echo "just redrawn"

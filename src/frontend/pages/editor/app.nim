@@ -7,7 +7,7 @@ import questionable, caster
 import ../../../backend/database/[models]
 import ./[core, components, inputs]
 import ../../utils/[js, browser, api]
-import ../../components/[snackbar, ui]
+import ../../components/[snackbar, simple]
 import ../../../common/[conventions, datastructures, types, iter]
 
 

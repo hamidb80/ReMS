@@ -7,11 +7,12 @@ import caster, questionable, prettyvec
 
 import ../jslib/[konva, fontfaceobserver]
 import ./editor/[components, core]
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple, pro]
 import ../utils/[browser, js, api, shortcuts]
 import ../../common/[conventions, datastructures, types, iter]
 
-import ../../backend/database/[models], ../../backend/routes
+import ../../backend/database/[models]
+import ../../backend/routes
 
 
 randomize()
@@ -976,66 +977,48 @@ proc msgState(id: Id): MsgState =
 
 # TODO make it a separate component in a different file
 proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
-  buildHTML:
-    tdiv(class = "card mb-4"):
-      tdiv(class = "card-body"):
-        tdiv(class = "tw-content"):
-          case msgState mid
-          of msReady:
-            verbatim get noteHtmlContent[mid]
-          of msQueue:
-            text "Loading ..."
-          of msOut:
-            (getMsg mid)
-            text "Loading ..."
+  let
+    inner = buildHTML:
+      tdiv(class = "tw-content"):
+        case msgState mid
+        of msReady:
+          verbatim get noteHtmlContent[mid]
+        of msQueue:
+          text "Loading ..."
+        of msOut:
+          (getMsg mid)
+          text "Loading ..."
 
-      if mid in noteRelTags:
-        tdiv(class = "m-2"):
-          for r in noteRelTags[mid]:
-            tagViewC tags[r.label], r.value, noop
+  proc syncMsg =
+    getMsg mid
 
+  proc copyMsgId =
+    copyToClipboard $mid
 
-      tdiv(class = "card-footer d-flex justify-content-center"):
-        a(class = "btn mx-1 btn-compact btn-outline-info",
-            href = get_note_preview_url mid,
-            target = "_blank"):
-          icon "fa-glasses"
+  proc moveUp =
+    if 0 < i:
+      swap v.config.messageIdList[i], v.config.messageIdList[i-1]
 
-        button(class = "btn mx-1 btn-compact btn-outline-primary"):
-          icon "fa-sync"
-          proc onclick =
-            getMsg mid
+  proc moveDown =
+    if i < v.config.messageIdList.high:
+      swap v.config.messageIdList[i+1], v.config.messageIdList[i]
 
-        if not app.isLocked:
-          button(class = "btn mx-1 btn-compact btn-outline-primary"):
-            icon "fa-copy"
-            proc onclick =
-              copyToClipboard $mid
+  proc delMsgFromLisp =
+    v.config.messageIdList.delete i
 
-          a(class = "btn mx-1 btn-compact btn-outline-warning",
-              href = get_note_editor_url mid,
-              target = "_blank"):
-            icon "fa-pen"
+  var btns = @[
+    generalCardBtnLink("info", "fa-glasses", get_note_preview_url mid),
+    generalCardBtnAction("primary", "fa-sync", syncMsg)]
 
-          button(class = "btn mx-1 btn-compact btn-outline-dark"):
-            icon "fa-chevron-up"
-            proc onclick =
-              if 0 < i:
-                swap v.config.messageIdList[i], v.config.messageIdList[i-1]
-                redraw()
+  if not app.isLocked:
+    add btns, [
+      generalCardBtnAction("primary", "fa-copy", copyMsgId),
+      generalCardBtnLink("warning", "fa-pen", get_note_editor_url mid),
+      generalCardBtnAction("dark", "fa-chevron-up", moveUp),
+      generalCardBtnAction("dark", "fa-chevron-down", moveDown),
+      generalCardBtnAction("danger", "fa-close", delMsgFromLisp)]
 
-          button(class = "btn mx-1 btn-compact btn-outline-dark"):
-            icon "fa-chevron-down"
-            proc onclick =
-              if i < v.config.messageIdList.high:
-                swap v.config.messageIdList[i+1], v.config.messageIdList[i]
-                redraw()
-
-          button(class = "btn mx-1 btn-compact btn-outline-danger"):
-            icon "fa-close"
-            proc onclick =
-              v.config.messageIdList.delete i
-              redraw()
+  generalCardView "", inner, getOrDefault(noteRelTags, mid, @[]), tags, btns
 
 proc genSelectPalette(i: int): proc() =
   proc =
@@ -1340,7 +1323,7 @@ proc createDom*(data: RouterData): VNode =
                   colorSelectBtn(t, ct, true)
 
             of fsBorderShape:
-              let fc = getFocusedConnShape()
+              # let fc = getFocusedConnShape()
 
               for ct in ConnectionCenterShapeKind:
                 span(class = "mx-1", onclick = onclicker(ct)):

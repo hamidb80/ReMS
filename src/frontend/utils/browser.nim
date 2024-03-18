@@ -144,13 +144,13 @@ proc filesArray*(d: DataTransfer or Element or Node or Event):
 proc openNewTab*(link: cstring)
   {.importjs: "window.open(@)".}
 
-proc imageDataUrl(file: DFile): Future[cstring] =
-  newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
-    var reader = newFileReader()
-    reader.onload = (ev: Event) => resolve("ev.target.result") # resolve(ev.target.result)
-    reader.onerror = reject
-    reader.onabort = reject
-    readAsDataURL reader, file
+# proc imageDataUrl(file: DFile): Future[cstring] =
+#   newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
+#     var reader = newFileReader()
+#     reader.onload = (ev: Event) => resolve("ev.target.result") # resolve(ev.target.result)
+#     reader.onerror = reject
+#     reader.onabort = reject
+#     readAsDataURL reader, file
 
 proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
     (new URLSearchParams(window.location.search)).get(@)

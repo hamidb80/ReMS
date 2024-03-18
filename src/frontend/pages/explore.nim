@@ -5,7 +5,7 @@ import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable
 import caster
 
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple, pro]
 import ../utils/[browser, js, api]
 import ../jslib/[axios]
 import ../../common/[iter, types, datastructures, conventions]
@@ -92,21 +92,21 @@ proc fetchAssets: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scAssets]
     reset assets
-    apiExploreAssets getExploreQuery(), p*maxItems, maxItems, 
+    apiExploreAssets getExploreQuery(), p*maxItems, maxItems,
       proc(ass: seq[AssetItemView]) =
-        assets = ass
-        resolve()
-        redraw()
+      assets = ass
+      resolve()
+      redraw()
 
 proc fetchBoards: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scBoards]
     reset boards
-    apiExploreBoards getExploreQuery(), p*maxItems, maxItems, 
+    apiExploreBoards getExploreQuery(), p*maxItems, maxItems,
       proc(bs: seq[BoardItemView]) =
-        boards = bs
-        resolve()
-        redraw()
+      boards = bs
+      resolve()
+      redraw()
 
 proc resolveNotes =
   for n in notes:
@@ -119,14 +119,14 @@ proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
     let p = lastPage[scNotes]
     reset notes
-    apiExploreNotes getExploreQuery(), p*maxItems, maxItems, 
+    apiExploreNotes getExploreQuery(), p*maxItems, maxItems,
       proc(ns: seq[NoteItemView]) =
-        notes = ns
-        messagesResolved = false
+      notes = ns
+      messagesResolved = false
 
-        if selectedClass == scNotes:
-          resolveNotes()
-        resolve()
+      if selectedClass == scNotes:
+        resolveNotes()
+      resolve()
 
 proc fetchTags: Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -429,80 +429,77 @@ proc searchClassSetter(i: SearchableClass): proc() =
     reset wantToDelete
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
-  buildHtml:
-    tdiv(class = "card my-3 masonry-item border rounded bg-white"):
-      tdiv(class = "card-body"):
-        tdiv(class = "tw-content"):
-          if n.id in msgCache:
-            verbatim msgCache[n.id]
-          else:
-            text "loading..."
+  let
+    inner = buildHtml:
+      tdiv(class = "tw-content"):
+        if n.id in msgCache:
+          verbatim msgCache[n.id]
+        else:
+          text "loading..."
 
-      tdiv(class = "m-2"):
-        for r in n.rels:
-          tagViewC tags[r.label], r.value, noop
+    deleteIcon =
+      if n.id in wantToDelete: "fa-exclamation-circle"
+      else: "fa-trash"
 
-      tdiv(class = "card-footer d-flex justify-content-center"):
+  proc copyNoteId =
+    copyToClipboard $n.id
 
-        a(class = "btn mx-1 btn-compact btn-outline-info", target = "_blank",
-            href = get_note_preview_url(n.id)):
-          icon "fa-glasses"
+  proc goToTagManager =
+    selectedNoteId = n.id
+    selectedNoteIndex = i
+    currentRels = n.rels
+    appState = asTagManager
 
-        button(class = "btn mx-1 btn-compact btn-outline-primary"):
-          icon "fa-copy"
-          proc onclick =
-            copyToClipboard $n.id
+  proc deleteAct =
+    if n.id in wantToDelete:
+      deleteNote n.id
+    else:
+      add wantToDelete, n.id
 
-        button(class = "btn mx-1 btn-compact btn-outline-success"):
-          icon "fa-tags"
+  var btns = @[
+    generalCardBtnLink("fa-glasses", "info", get_note_preview_url n.id),
+    generalCardBtnAction("fa-copy", "primary", copyNoteId)]
 
-          proc onclick =
-            selectedNoteId = n.id
-            selectedNoteIndex = i
-            currentRels = n.rels
-            appState = asTagManager
+  if issome me:
+    add btns, [
+      generalCardBtnAction("fa-tags", "success", goToTagManager),
+      generalCardBtnLink("fa-pen", "warning", get_note_editor_url n.id),
+      generalCardBtnAction(deleteIcon, "danger", deleteAct)]
 
-        a(class = "btn mx-1 btn-compact btn-outline-warning",
-            href = get_note_editor_url(n.id)):
-          icon "fa-pen"
-
-        button(class = "btn mx-1 btn-compact btn-outline-danger"):
-          # TODO make buttons a separate component
-          let icn =
-            if n.id in wantToDelete: "fa-exclamation-circle"
-            else: "fa-trash"
-
-          icon icn
-
-          proc onclick =
-            echo n.id, wantToDelete, n.id in wantToDelete
-            if n.id in wantToDelete:
-              deleteNote n.id
-            else:
-              add wantToDelete, n.id
-
+  generalCardView "", inner, n.rels, tags, btns
+    
 proc boardItemViewC(b: BoardItemView): VNode =
-  buildHtml:
-    tdiv(class = "masonry-item card my-3 border rounded bg-white"):
+  let 
+    inner = buildHtml:
+      h3(dir = "auto"):
+        text b.title
+
+    url = 
       if issome b.screenshot:
-        tdiv(class = "d-flex bg-light card-img justify-content-center overflow-hidden"):
-          img(src = get_asset_short_hand_url b.screenshot.get)
+        get_asset_short_hand_url get b.screenshot
+      else: 
+        ""
 
-      tdiv(class = "card-body"):
-        h3(dir = "auto"):
-          text b.title
+    deleteIcon =
+      if b.id in wantToDelete: "fa-exclamation-circle"
+      else: "fa-trash"
+  
+  proc deleteBoardAct =
+    if b.id in wantToDelete:
+      deleteBoard b.id
+      discard fetchBoards()
+    else:
+      add wantToDelete, b.id
 
-      tdiv(class = "card-footer d-flex justify-content-center"):
-        a(class = "btn mx-1 btn-compact btn-outline-warning",
-            href = get_board_edit_url b.id):
-          icon "fa-pen"
 
-        button(class = "btn mx-1 btn-compact btn-outline-danger"):
-          icon "fa-close"
+  var btns = @[
+    generalCardBtnLink("fa-eye", "info", get_board_edit_url b.id)]
 
-          proc onclick(e: Event, v: Vnode) =
-            deleteBoard b.id
-            discard fetchBoards()
+  if issome me:
+    add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
+
+  generalCardView url, inner, b.rels, tags, btns
+    
 
 proc genAddTagToList(lbl: Str): proc() =
   proc =
@@ -568,7 +565,7 @@ proc relTagManager(): Vnode =
             apiUpdateNoteTags selectedNoteId, d, proc =
               notify "changes applied"
               notes[selectedNoteIndex].rels = currentRels
-          
+
           of scAssets:
             apiUpdateAssetTags assets[selectedAssetIndex].id, d, proc =
               assets[selectedAssetIndex].rels = currentRels
@@ -757,7 +754,7 @@ proc createDom: Vnode =
             tdiv(class = "list-group my-4"):
               if u =? me:
                 userItemC u
-                tdiv(class="mb-3")
+                tdiv(class = "mb-3")
 
               for u in users:
                 if (isNone me) or (u.username != me.get.username):
@@ -817,7 +814,7 @@ when isMainModule:
     of soPortrait: 1
     of soLandscape: 2
 
-  meApi proc (u: User) = 
+  meApi proc (u: User) =
     me = some u
     redraw()
 

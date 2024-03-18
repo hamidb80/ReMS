@@ -2,7 +2,7 @@ import std/[dom]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple]
 import ../../backend/database/models
 import ../../common/[conventions, datastructures, types]
 import ../utils/[api]

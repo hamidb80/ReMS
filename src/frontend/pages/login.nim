@@ -3,7 +3,7 @@ import std/[dom, options]
 import karax/[karax, karaxdsl, vdom]
 import questionable
 
-import ../components/[snackbar, ui]
+import ../components/[snackbar, simple]
 import ../utils/[api]
 import ../../common/[conventions]
 import ../../backend/database/models
