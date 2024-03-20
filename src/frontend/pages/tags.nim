@@ -158,7 +158,7 @@ proc createDom: Vnode =
                 text "value type"
 
               select(class = "form-select", disabled = not currentTag.get.hasValue):
-                for lbl in rvtStr..rvtNumber:
+                for lbl in rvtStr..rvtDate:
                   option(value = cstr lbl.ord, selected = currentTag.get.value_type == lbl):
                     text $lbl
 

@@ -33,11 +33,12 @@ template `~>`(expr, action): untyped =
 
 
 func setRelValue(rel: var Relation, value: string) =
-  rel.sval =
-    if value == "": none string
-    else: some value
-  safeFail:
-    rel.fval = some parseFloat value
+  let cleanedVal = strip value
+  if cleanedVal != "":
+    rel.sval = some cleanedVal
+    safeFail:
+      rel.fval = some parseFloat cleanedVal
+      rel.ival = some parseInt cleanedVal
 
 proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =
   db.find R, fsql"""

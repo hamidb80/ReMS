@@ -32,8 +32,9 @@ func isAdmin*(u: User): bool =
 func columnName*(vt: RelValueType): string =
   case vt
   of rvtNone: raise newException(ValueError, "'rvtNone' does not have column")
-  of rvtNumber: "fval"
   of rvtStr: "sval"
+  of rvtFloat: "fval"
+  of rvtDate, rvtInt: "ival"
 
 func isHidden*(lbl: RelMode): bool =
   lbl in rmForwarded .. rmNotification

@@ -96,7 +96,9 @@ type
   RelValueType* = enum
     rvtNone
     rvtStr
-    rvtNumber
+    rvtFloat
+    rvtInt
+    rvtDate
 
   RelMode* = enum
     rmCustom           ## user defined
@@ -151,6 +153,7 @@ type
     label* {.index.}: Str
     sval*: Option[Str]
     fval*: Option[float]
+    ival*: Option[int]
 
     info*: Str                                        ## additional information
     state*: RelState
