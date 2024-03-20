@@ -15,8 +15,8 @@ const
         "fonts.google.css": "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
     }
 
-
-assert defined(externalDeps) or defined(allInternal)
+when isMainModule:
+    assert defined(externalDeps) or defined(allInternal)
 
 when defined externalDeps:
     import std/[httpclient, os]
@@ -61,6 +61,7 @@ when defined allInternal:
                             else: assetUrl.splitPath.head.parseuri / suburl
                         fname = suburl.splitPath.tail
                         localPath = "./assets/lib/" & fname
+                        localUrl = "/dist?file=./lib/" & fname
 
                     add filesToDownload, (absUrl, localPath)
                     fmt"url({localUrl})"
