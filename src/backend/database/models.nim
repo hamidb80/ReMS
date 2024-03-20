@@ -283,8 +283,3 @@ when not defined js:
   proc dbValue*(p: Bytes): DbValue = DbValue(kind: dvkInt, i: p.int64)
   proc to*(src: DbValue, dest: var Bytes) =
     dest = src.i.Bytes
-
-  proc parseHook*(s: string, i: var int, v: var cstring) =
-    var temp: string
-    parseHook s, i, temp
-    v = cstring temp

@@ -66,7 +66,7 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     children: @[],
     data: newJNull())
 
-func setRelValue*(rel: var Relation, value: string) =
+func setRelValue*(rel: var Relation, value: string) {.noJs.} =
   let cleaned = strip value
   if cleaned != "":
     rel.sval = some cleaned

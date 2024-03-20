@@ -1,5 +1,3 @@
-## https://stackoverflow.com/questions/3498844/sqlite-string-contains-other-string-query
-
 import std/[times, json, options, strutils, strformat, sequtils, tables]
 
 import ponairi
@@ -10,12 +8,11 @@ import ./[models, logic]
 import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
-# ------------------------------------
 
-# proc inspect(s: SqlQuery): SqlQuery =
-#   echo "-----------------------"
-#   echo s.string
-#   s
+proc inspect(s: SqlQuery): SqlQuery =
+  echo "-----------------------"
+  echo s.string
+  s
 
 template tn(tbl): untyped {.dirty.} =
   tableName tbl

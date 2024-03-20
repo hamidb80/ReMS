@@ -1,4 +1,5 @@
 import std/strutils
+import std/macros
 
 
 const noIndex* = -1
@@ -49,3 +50,10 @@ template safeFail*(stmt): untyped =
 
 template `~>`*(expr, action): untyped =
   expr.mapIt action
+
+
+macro noJs*(procDef): untyped = 
+  ## discards under js
+  quote:
+    when not defined js:
+      `procDef`
