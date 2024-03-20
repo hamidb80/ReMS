@@ -24,22 +24,6 @@ template cn(tbl): untyped {.dirty.} =
   columnName tbl
 
 
-template safeFail(stmt): untyped =
-  try: stmt
-  except: discard
-
-template `~>`(expr, action): untyped =
-  expr.mapIt action
-
-
-func setRelValue(rel: var Relation, value: string) =
-  let cleanedVal = strip value
-  if cleanedVal != "":
-    rel.sval = some cleanedVal
-    safeFail:
-      rel.fval = some parseFloat cleanedVal
-      rel.ival = some parseInt cleanedVal
-
 proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =
   db.find R, fsql"""
     SELECT *

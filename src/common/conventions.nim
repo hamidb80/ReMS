@@ -42,3 +42,10 @@ template forceSafety*(code): untyped =
   {.cast(gcsafe).}:
     {.cast(nosideeffect).}:
       code
+
+template safeFail*(stmt): untyped =
+  try: stmt
+  except: discard
+
+template `~>`*(expr, action): untyped =
+  expr.mapIt action

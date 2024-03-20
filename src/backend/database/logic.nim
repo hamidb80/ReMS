@@ -1,7 +1,7 @@
-import std/[json, algorithm]
+import std/[json, algorithm, strutils, options]
 
 import ./models
-import ../../common/[types, datastructures]
+import ../../common/[types, datastructures, conventions]
 
 # ------------------------------------------
 
@@ -65,3 +65,11 @@ func newNoteData*: TreeNodeRaw[JsonNode] =
     name: "root",
     children: @[],
     data: newJNull())
+
+func setRelValue*(rel: var Relation, value: string) =
+  let cleaned = strip value
+  if cleaned != "":
+    rel.sval = some cleaned
+    safeFail:
+      rel.fval = some parseFloat cleaned
+      rel.ival = some parseInt cleaned
