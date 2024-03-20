@@ -5,6 +5,8 @@ resources/
 temp/
 out/
 
+assets/lib/*
+
 *.token
 play.*
 play

@@ -1,4 +1,4 @@
-import std/tables
+import std/[tables]
 
 const
     extdeps* = toTable {
@@ -18,11 +18,57 @@ const
 
 when isMainModule:
     import std/[httpclient, os]
+    # import ../../backend/routes
 
     let c = newHttpClient()
 
     for d, url in extdeps:
         let path = "./assets/lib/" & d
+        # let path = get_dist_url d
         if not fileExists path:
             downloadFile c, url, path
             echo "+ ", path
+
+when false:
+    ## downloads deps deeply
+
+    import std/[httpclient, strformat, strutils, nre, uri, os]
+
+    let c = newHttpClient()
+
+    func removeUrlQuery(s: string): string =
+        s.split("?")[0]
+
+    var filesToDownload: seq[tuple[url: Uri, path: string]]
+
+    for d, assetUrl in extdeps:
+        let assetPath = "./assets/lib/" & d
+
+        if not fileExists assetPath:
+            echo "+ ", assetUrl
+    
+            if assetPath.endsWith ".css":
+                let content = c.getContent assetUrl
+
+                proc repl(match: RegexMatch): string =
+                    let
+                        suburl = removeUrlQuery strip(match.captures[0], chars = {'"', '\''})
+                        absUrl =
+                            if "://" in suburl: parseuri suburl
+                            else: assetUrl.splitPath.head.parseuri / suburl
+                        fname = suburl.splitPath.tail
+                        localPath = "./assets/lib/" & fname
+
+                    add filesToDownload, (absUrl, localPath)
+                    fmt"url({localUrl})"
+
+                writeFile assetPath, content.replace(
+                    re"""url\(([a-zA-Z0-9\/.:"?_-]+)\)""", repl)
+
+            else:
+                downloadFile c, assetUrl, assetPath
+
+    for (url, path) in filesToDownload:
+        if not fileExists path:
+            echo "+ ", url
+            downloadFile c, url, path

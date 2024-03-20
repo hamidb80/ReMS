@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.43"
+version       = "0.0.44"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -57,7 +57,7 @@ task gentg, "":
 task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
 
-task download_deps, "downloads external dependencies":
+task ddeps, "downloads external dependencies":
   exec "nim -d:ssl r src/frontend/pages/deps.nim"
 
 task html, "generate index.html ./dist":
@@ -67,7 +67,7 @@ task html, "generate index.html ./dist":
 
 
 task make, "make all":
-  download_deps_task()
+  ddeps_task()
   html_task()
   genb_task()
   gened_task()

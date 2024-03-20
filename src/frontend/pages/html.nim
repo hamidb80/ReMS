@@ -1,4 +1,4 @@
-import std/[tables, strutils, os, times]
+import std/[tables, os, times]
 
 import karax/[vdom, karaxdsl]
 
