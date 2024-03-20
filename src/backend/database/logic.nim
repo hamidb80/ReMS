@@ -3,22 +3,17 @@ import std/[json, algorithm]
 import ./models
 import ../../common/[types, datastructures]
 
-
-func newNoteData*: TreeNodeRaw[JsonNode] =
-  TreeNodeRaw[JsonNode](
-    name: "root",
-    children: @[],
-    data: newJNull())
-
+# ------------------------------------------
 
 template tableName*(t: type Board): untyped = "Board"
 template tableName*(t: type Asset): untyped = "Asset"
-template tableName*(t: type Note):  untyped = "Note"
+template tableName*(t: type Note): untyped = "Note"
 
 template columnName*(t: type Board): untyped = "board"
 template columnName*(t: type Asset): untyped = "asset"
-template columnName*(t: type Note):  untyped = "note"
+template columnName*(t: type Note): untyped = "note"
 
+# ------------------------------------------
 
 func hasValue*(rv: RelValueType): bool =
   rv != rvtNone
@@ -62,3 +57,11 @@ func `$`*(so: SortOrder): string =
   case so
   of Descending: "DESC"
   of Ascending: "ASC"
+
+# ------------------------------------------
+
+func newNoteData*: TreeNodeRaw[JsonNode] =
+  TreeNodeRaw[JsonNode](
+    name: "root",
+    children: @[],
+    data: newJNull())
