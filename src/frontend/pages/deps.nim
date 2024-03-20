@@ -28,12 +28,10 @@ when defined externalDeps:
         let path = "./assets/lib/" & d
         # let path = get_dist_url d
         if not fileExists path:
-            downloadFile c, url, path
             echo "+ ", path
+            downloadFile c, url, path
 
 when defined allInternal:
-    ## downloads deps deeply
-
     import std/[httpclient, strformat, strutils, nre, uri, os]
 
     let c = newHttpClient()
