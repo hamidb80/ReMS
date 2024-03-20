@@ -16,7 +16,9 @@ const
     }
 
 
-when isMainModule:
+assert defined(externalDeps) or defined(allInternal)
+
+when defined externalDeps:
     import std/[httpclient, os]
     # import ../../backend/routes
 
@@ -29,7 +31,7 @@ when isMainModule:
             downloadFile c, url, path
             echo "+ ", path
 
-when false:
+when defined allInternal:
     ## downloads deps deeply
 
     import std/[httpclient, strformat, strutils, nre, uri, os]
@@ -46,13 +48,14 @@ when false:
 
         if not fileExists assetPath:
             echo "+ ", assetUrl
-    
+
             if assetPath.endsWith ".css":
                 let content = c.getContent assetUrl
 
                 proc repl(match: RegexMatch): string =
                     let
-                        suburl = removeUrlQuery strip(match.captures[0], chars = {'"', '\''})
+                        suburl = removeUrlQuery strip(match.captures[0],
+                                chars = {'"', '\''})
                         absUrl =
                             if "://" in suburl: parseuri suburl
                             else: assetUrl.splitPath.head.parseuri / suburl
