@@ -80,8 +80,9 @@ task make, "make all":
 
 task prepare, "define envorment vars only for test":
   mkdir "./dist"
-  mkdir getEnv("APP_DIR") / "resources"
   mkdir "./bin"
+  mkdir "./assets/lib"
+  mkdir getEnv("APP_DIR") / "resources"
 
 task db, "init db":
   exec "nim r src/backend/utils/db_init.nim"

@@ -6,6 +6,7 @@ temp/
 out/
 
 assets/lib/*
+!assets/lib/.gitignore
 
 *.token
 play.*
