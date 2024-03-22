@@ -102,7 +102,7 @@ proc generalCardView*(
       tdiv(class = "card-body"):
         content
 
-        tdiv(class = "m-2"):
+        tdiv(class = "my-1"):
           for r in rels:
             tagViewC tagsDB[r.label], r.value, noop
 
