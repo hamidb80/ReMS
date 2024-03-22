@@ -448,6 +448,7 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
     selectedNoteId = n.id
     selectedNoteIndex = i
     currentRels = n.rels
+    activeRelTagIndex = noIndex
     appState = asTagManager
 
   proc deleteAct =
@@ -467,23 +468,23 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
       generalCardBtnAction(deleteIcon, "danger", deleteAct)]
 
   generalCardView "", inner, n.rels, tags, btns
-    
+
 proc boardItemViewC(b: BoardItemView): VNode =
-  let 
+  let
     inner = buildHtml:
       h3(dir = "auto"):
         text b.title
 
-    url = 
+    url =
       if issome b.screenshot:
         get_asset_short_hand_url get b.screenshot
-      else: 
+      else:
         ""
 
     deleteIcon =
       if b.id in wantToDelete: "fa-exclamation-circle"
       else: "fa-trash"
-  
+
   proc deleteBoardAct =
     if b.id in wantToDelete:
       deleteBoard b.id
@@ -499,7 +500,7 @@ proc boardItemViewC(b: BoardItemView): VNode =
     add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
 
   generalCardView url, inner, b.rels, tags, btns
-    
+
 
 proc genAddTagToList(lbl: Str): proc() =
   proc =

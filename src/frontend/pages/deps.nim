@@ -20,6 +20,7 @@ when isMainModule:
 
 when defined externalDeps:
     import std/[httpclient, os]
+    # XXX why importing this cuases linker error here but not in html.nim ?
     # import ../../backend/routes
 
     let c = newHttpClient()
@@ -59,7 +60,7 @@ when defined allInternal:
                             else: assetUrl.splitPath.head.parseuri / suburl
                         fname = suburl.splitPath.tail
                         localPath = "./assets/lib/" & fname
-                        localUrl = "/dist?file=./lib/" & fname
+                        localUrl = "/dist/?file=/lib/" & fname
 
                     add filesToDownload, (absUrl, localPath)
                     fmt"url({localUrl})"

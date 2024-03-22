@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.45"
+version       = "0.0.46"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -58,7 +58,7 @@ task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
 
 task ddeps, "downloads external dependencies":
-  exec "nim -d:ssl -d:externalDeps r src/frontend/pages/deps.nim"
+  exec "nim -d:ssl -d:allInternal r src/frontend/pages/deps.nim"
 
 task html, "generate index.html ./dist":
   cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"

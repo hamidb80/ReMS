@@ -29,7 +29,7 @@ proc extCss(url: string): VNode =
   buildHtml extLink("stylesheet", url)
 
 proc extJs(url: string, defered: bool = false): VNode =
-  result = buildHtml script(src = url, `defer` = defered)
+  buildHtml script(src = url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
   buildHtml head:
@@ -47,8 +47,8 @@ proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
     # UI libraries
     extCss resolveLib"lib.katex.css"
     extCss resolveLib"theme.bootstrap.css"
-    extCss extdeps["icons.boostrap.css"]
-    extCss extdeps["icons.fontawesome.css"]
+    extCss resolveLib"icons.boostrap.css"
+    extCss resolveLib"icons.fontawesome.css"
 
     # font
     link(rel = "preconnect", href = "https://fonts.googleapis.com")
