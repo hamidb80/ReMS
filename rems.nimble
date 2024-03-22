@@ -94,4 +94,4 @@ task go, "runs server + bot":
   exec """nim -d:ssl --d:loginTestUser --passL:"-lcrypto" r ./src/backend/main.nim"""
 
 task done, "runs server + bot":
-  exec """nim -d:useMalloc -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
+  exec """nim --mm:arc -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
