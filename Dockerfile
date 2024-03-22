@@ -6,8 +6,10 @@ RUN apk add tzdata
 # set timezone to Iran
 RUN cp /usr/share/zoneinfo/Iran  /etc/localtime
 
-# install ssl library
+# install ssl package
 RUN apk add openssl-dev 
+# install pcre for RegEx
+RUN apk add pcre
 
 # prepare app
 WORKDIR /app
