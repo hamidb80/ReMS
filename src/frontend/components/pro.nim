@@ -39,7 +39,7 @@ proc tagViewC*(
 ): VNode =
   buildHtml:
     tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
-      badge border-1 solid-border rounded-pill pointer""",
+      badge border-1 solid-border rounded-pill pointer tag""",
       onclick = clickHandler,
       style = style(
       (StyleAttr.background, toColorString t.theme.bg),
@@ -102,7 +102,7 @@ proc generalCardView*(
       tdiv(class = "card-body"):
         content
 
-        tdiv(class = "my-1"):
+        tdiv(class = "mt-2 tag-list"):
           for r in rels:
             tagViewC tagsDB[r.label], r.value, noop
 

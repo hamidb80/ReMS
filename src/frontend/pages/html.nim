@@ -2,10 +2,10 @@ import std/[tables, os, times]
 
 import karax/[vdom, karaxdsl]
 
-import ../components/simple
-import ./deps
+import ../deps
 import ../../common/package
 import ../../backend/routes
+import ../components/simple
 
 
 func normalizeOsName(url: string): string =

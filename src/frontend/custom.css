@@ -4,15 +4,12 @@ body {
   --bs-body-font-family: "mooli", "Vazirmatn";
 }
 
-.btn {
-  --bs-btn-font-family: "mooli", "Vazirmatn";
-}
-
 p {
   font-family: var(--bs-body-font-family);
 }
 
 .btn {
+  --bs-btn-font-family: "mooli", "Vazirmatn";
   cursor: pointer;
 }
 

@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.48"
+version       = "0.0.49"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -58,17 +58,19 @@ task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
 
 task ddeps, "downloads external dependencies":
-  exec "nim -d:ssl -d:allInternal r src/frontend/pages/deps.nim"
+  exec "nim -d:ssl -d:allInternal r src/frontend/deps.nim"
 
 task html, "generate index.html ./dist":
-  cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"
-  cpDir "./assets/", "./dist/"
   exec fmt"nim -f -d:frontend r src/frontend/pages/html.nim"
 
+task dist, "copy files to dist directory":
+  cpfile "./src/frontend/custom.css", fmt"./dist/custom-{version}.css"
+  cpDir "./assets/", "./dist/"
 
 task make, "make all":
   ddeps_task()
   html_task()
+  dist_task()
   genb_task()
   gened_task()
   gentg_task()
