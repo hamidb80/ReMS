@@ -1,6 +1,6 @@
 ## https://andrejgajdos.com/how-to-create-a-link-preview/
 
-import std/[xmltree, strutils, uri]
+import std/[xmltree, strutils]
 
 import ../database/models
 import ../../common/conventions

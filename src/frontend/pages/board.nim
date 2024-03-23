@@ -1,3 +1,7 @@
+## Pinch Zoom: https://gist.github.com/Martin-Pitt/2756cf86dca90e179b4e75003d7a1a2b
+## Touch:      https://konvajs.org/docs/sandbox/Multi-touch_Scale_Stage.html
+
+
 import std/[with, math, stats, options, lenientops, strutils, strformat,
     sequtils, sets, tables, random]
 import std/[dom, jsconsole, jsffi, asyncjs, jsformdata, cstrutils, sugar]
