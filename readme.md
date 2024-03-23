@@ -35,10 +35,12 @@ I have found something is wrong with traditional education system:
 ## Similar Works
 - [OrgPad](https://orgpad.info/)
 - [Tiddly Map](https://tiddlymap.org/)
-- [hyperphysics](http://hyperphysics.phy-astr.gsu.edu/hbase/hframe.html)
+- [Margin Note](https://www.marginnote.com/)
+- [Hyper Physics](http://hyperphysics.phy-astr.gsu.edu/hbase/hframe.html)
 - [TheBrain: The Ultimate Digital Memory](https://www.thebrain.com/)
 - [lpsa.swarthmore.edu](https://lpsa.swarthmore.edu/TM/tmExplore/index.html?LPSA#t_lpsahome)
-- [CISCO academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
+- [CISCO Network Academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
+- [Hepta Base](https://heptabase.com/)
 
 ## UI
 - [SVG icons](https://www.svgrepo.com/collection/solar-bold-duotone-icons/) + [fontawesome](https://fontawesome.com/)
