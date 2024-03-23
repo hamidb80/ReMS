@@ -13,7 +13,7 @@ func linkPreviewData*(xn: XmlNode): LinkPreviewData =
 
             case el.tag
             of "title":
-                result.title = decodeUrl val
+                result.title = el.innerText
 
             of "meta":
                 case el.attr"name" or el.attr"property"
@@ -28,14 +28,12 @@ func linkPreviewData*(xn: XmlNode): LinkPreviewData =
                     result.desc = val
 
                 of "twitter:image:alt": discard
-
                 of "article:published_time": discard
                 of "twitter:card": discard
                 of "og:url": discard
                 else: discard
-
-            else:
-                discard
+            
+            else: discard
 
 func cropHead*(htmlPage: string): string =
     let
