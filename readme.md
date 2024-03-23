@@ -32,13 +32,9 @@ I have found something is wrong with traditional education system:
 - `Saved Messages` in telegram (or any other messanger)
 - Pinterest style (Masonry) layout
 
-## Related Projects
-You can find a lot of them in [alternativeto](https://alternativeto.net/), but I share some of my favorites
+## Similar Works
 - [OrgPad](https://orgpad.info/)
 - [Tiddly Map](https://tiddlymap.org/)
-- [The Brain](https://thebrain.com/)
-
-## Similar Works
 - [hyperphysics](http://hyperphysics.phy-astr.gsu.edu/hbase/hframe.html)
 - [TheBrain: The Ultimate Digital Memory](https://www.thebrain.com/)
 - [lpsa.swarthmore.edu](https://lpsa.swarthmore.edu/TM/tmExplore/index.html?LPSA#t_lpsahome)
