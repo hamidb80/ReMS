@@ -1,7 +1,6 @@
 # FROM nimlang/nim:2.0.2-alpine-onbuild
 FROM hub.hamdocker.ir/nimlang/nim:2.0.2-alpine-onbuild
 
-
 # install timezones database
 RUN apk add tzdata
 # set timezone to Iran
@@ -17,7 +16,6 @@ WORKDIR /app
 COPY . /app/
 
 RUN nimble prepare
-# RUN nimble db
 RUN nimble make
 RUN nimble done
 CMD ["./bin/main.exe", "--bale"]
