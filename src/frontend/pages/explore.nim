@@ -719,7 +719,7 @@ proc createDom: Vnode =
           text "Explore"
 
         if isNone me:
-          a(class = "btn btn-outline-primary", href = get_login_url()):
+          a(class = "btn btn-outline-primary", href = get_profile_url()):
             text "login "
             icon "mx-2 fa-sign-in"
 

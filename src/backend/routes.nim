@@ -18,7 +18,7 @@ dispatch router, ../controller:
   get "/", loadHtml"index.html" {.html.}
   get "/dist/"?(file: string), staticFileHandler {.file.}
 
-  get "/login/", loadHtml"login.html" {.html.}
+  get "/profile/", loadHtml"profile.html" {.html.}
   post "/api/login/"?(kind: string), loginDispatcher {.ok.}
   get "/api/logout/", logout {.ok.}
 
@@ -61,13 +61,11 @@ dispatch router, ../controller:
   put "/api/board/update/tags/"?(id: Id), updateBoardRelTags {.ok.}
   delete "/api/board/"?(id: Id), deleteBoard {.ok.}
 
-  get "/tags/", loadHtml"tags.html" {.html.}
   get "/api/tags/list/", listTags {.json: seq[Tag].}
   post "/api/tag/new/", newTag {.Id.}
   put "/api/tag/update/"?(id: Id), updateTag {.ok.}
   delete "/api/tag/"?(id: Id), deleteTag {.ok.}
 
-  get "/palette/studio/", loadHtml"palette.html" {.html.}
   get "/api/palette/"?(name: string), getPalette {.json: seq[ColorTheme].}
   get "/api/palettes/", listPalettes {.json: seq[Palette].}
   put "/api/update/palette/"?(name: string), updatePalette {.json: Palette.}

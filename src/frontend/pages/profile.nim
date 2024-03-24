@@ -1,35 +1,52 @@
-import std/[strutils, options, random]
-import std/[dom, jsconsole, asyncjs]
+import std/[dom, options, random, asyncjs]
 
-import karax/[karax, karaxdsl, vdom, vstyles]
+import karax/[karax, karaxdsl, vdom]
+import questionable
 
 import ../components/[snackbar, simple, pro]
-import ../../backend/database/[models, logic]
-import ../../common/[conventions, datastructures, types]
 import ../utils/[browser, api, js]
-
-
-randomize()
+import ../../common/[conventions, datastructures, types]
+import ../../backend/database/[models, logic]
 
 
 type
+  AppAction = enum
+    aaBaleBot = "bale"
+    aaLoginForm = "form"
+
   AppState = enum
     asInit
     asSelectIcon
 
 const
-  icons = splitlines staticRead "./icons.txt"
+  ttt = staticRead "./icons.txt"
+
+let
+  icons = splitlines ttt
   defaultIcon = icons[0]
 
 var
-  state = asInit
+  username: string
+  pass: string
+  state = aaBaleBot
+  user: options.Option[User]
+
+  tagState = asInit
   selectedTagI = noIndex
   currentTag = none Tag
   tags: seq[Tag]
   colors: seq[ColorTheme]
 
 
-# TODO show name of the icon on the bottom of it
+proc genSetState(i: AppAction): proc() =
+  proc =
+    state = i
+
+func iconname(aa: AppAction): string =
+  case aa
+  of aaBaleBot: "fa-robot"
+  of aaLoginForm: "fa-pen"
+
 
 proc dummyTag: Tag =
   Tag(
@@ -53,9 +70,13 @@ proc fetchTags: Future[void] =
       tags = ts
       resolve()
 
+proc fetchAll =
+  waitAll [fetchDefaultPalette(), fetchTags()], proc =
+    redraw()
+
 proc onIconSelected(icon: string) =
   currentTag.get.icon = icon
-  state = asInit
+  tagState = asInit
 
 proc genChangeSelectedTagi(i: int): proc() =
   proc =
@@ -65,7 +86,6 @@ proc genChangeSelectedTagi(i: int): proc() =
     else:
       selectedTagI = i
       currentTag = some tags[i]
-
 
 proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
@@ -78,13 +98,84 @@ proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
 proc createDom: Vnode =
   result = buildHtml tdiv:
     snackbar()
+
     nav(class = "navbar navbar-expand-lg bg-white"):
       tdiv(class = "container-fluid"):
         a(class = "navbar-brand", href = "#"):
-          icon "fa-hashtag fa-xl me-3 ms-1"
-          text "Tags"
+          icon("fa-user fa-xl me-3 ms-1")
+          text "Profile"
 
-    if issome currentTag:
+    if isNone user:
+      ul(class = "pagination pagination-lg d-flex justify-content-center mt-2"):
+        for i in AppAction:
+          li(class = "page-item " & iff(i == state, "active")):
+            a(class = "page-link", href = "#", onclick = genSetState i):
+              span(class = "me-2"):
+                text $i
+
+              icon iconname i
+
+    tdiv(class = "card border-secondary m-3 d-flex justify-content-center"):
+      if u =? user:
+        tdiv(class = "card-header"):
+          text u.nickname
+
+        button(class = "btn btn-danger w-100 mt-2 mb-4"):
+          text "logout"
+          icon "mx-2 fa-sign-out"
+
+          proc onclick =
+            logoutApi proc =
+              notify "logged out"
+              reset user
+              redraw()
+
+      else:
+        tdiv(class = "card-header"):
+          text "Login/signup Form"
+
+        tdiv(class = "card-body p-2"):
+          tdiv(class = "form-group"):
+            case state
+            of aaBaleBot: discard
+            of aaLoginForm:
+              label(class = "form-check-label"):
+                text "username: "
+
+              input(`type` = "text", class = "form-control",
+                  value = username):
+                proc oninput(e: Event, v: Vnode) =
+                  username = $e.target.value
+
+            label(class = "form-check-label"):
+              text "pass: "
+
+            input(`type` = "password", class = "form-control", value = pass):
+              proc oninput(e: Event, v: Vnode) =
+                pass = $e.target.value
+
+            button(class = "btn btn-success w-100 mt-2 mb-4"):
+              text "login"
+              icon "mx-2 fa-sign-in"
+
+              proc onclick =
+                proc success =
+                  notify "logged in :)"
+
+                  meApi proc(u: User) =
+                    user = some u
+                    redraw()
+
+                proc fail =
+                  notify "pass wrong :("
+
+                case state
+                of aaBaleBot:
+                  loginApi pass, success, fail
+                of aaLoginForm:
+                  loginApi username, pass, success, fail
+
+    if (isSome currentTag) and (isSome user):
       tdiv(class = "p-4 mx-4 my-2"):
         h6(class = "mb-3"):
           icon "fa-bars-staggered me-2"
@@ -100,10 +191,10 @@ proc createDom: Vnode =
           text "Config"
 
         tdiv(class = "form-control"):
-          if state == asSelectIcon:
+          if tagState == asSelectIcon:
             tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
               for c in icons:
-                iconSelectionBLock(c, onIconSelected)
+                iconSelectionBLock($c, onIconSelected)
 
           else:
             # name
@@ -126,7 +217,7 @@ proc createDom: Vnode =
                   icon "m-2 " & $currentTag.get.icon
 
                 proc onclick =
-                  state = asSelectIcon
+                  tagState = asSelectIcon
 
             tdiv(class = "form-check form-switch"):
               checkbox currentTag.get.is_private, proc (b: bool) =
@@ -157,9 +248,11 @@ proc createDom: Vnode =
               label(class = "form-label"):
                 text "value type"
 
-              select(class = "form-select", disabled = not currentTag.get.hasValue):
+              select(class = "form-select",
+                  disabled = not currentTag.get.hasValue):
                 for lbl in rvtStr..rvtDate:
-                  option(value = cstr lbl.ord, selected = currentTag.get.value_type == lbl):
+                  option(value = cstr lbl.ord,
+                      selected = currentTag.get.value_type == lbl):
                     text $lbl
 
                 proc onInput(e: Event, v: Vnode) =
@@ -221,9 +314,11 @@ proc createDom: Vnode =
 
 proc init* =
   setRenderer createDom
+  fetchAll()
 
-  waitAll [fetchDefaultPalette(), fetchTags()], proc =
+  meApi proc(u: User) =
+    user = some u
     redraw()
 
-
-when isMainModule: init()
+when isMainModule:
+  init()

@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.51"
+version       = "0.0.52"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
@@ -36,11 +36,8 @@ requires "karax == 1.3.0"
 import std/[os, strutils, strformat]
 
 
-task genps, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/palette-studio-{version}.js src/frontend/pages/palette"
-
-task genlg, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-login-{version}.js src/frontend/pages/login"
+task genpfp, "":
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-profile-{version}.js src/frontend/pages/profile"
 
 task gennp, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/note-preview-{version}.js src/frontend/pages/note_preview"
@@ -50,9 +47,6 @@ task genex, "":
 
 task genb, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board-{version}.js src/frontend/pages/board"
-
-task gentg, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-tags-{version}.js src/frontend/pages/tags"
 
 task gened, "":
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
@@ -73,11 +67,9 @@ task make, "make all":
   dist_task()
   genb_task()
   gened_task()
-  gentg_task()
   gennp_task()
   genex_task()
-  genlg_task()
-  genps_task()
+  genpfp_task()
 
 
 task prepare, "define envorment vars only for test":

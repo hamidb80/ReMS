@@ -91,13 +91,9 @@ proc explore*: VNode =
   commonPage "explore", [
       extJs(localize apv"./script-explore.js", true)]
 
-proc login*: VNode =
-  commonPage "login", [
-      extJs(localize apv"./script-login.js", true)]
-
-proc palette*: VNode =
-  commonPage "login", [
-      extJs(localize apv"./palette-studio.js", true)]
+proc profile*: VNode =
+  commonPage "profile", [
+      extJs(localize apv"./script-profile.js", true)]
 
 proc index: VNode =
   func tryBtnLink(link: string): VNode =
@@ -135,9 +131,7 @@ proc index: VNode =
         text "Actions"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
         blockk "Explore", "", "icons/planet.svg", get_explore_url()
-        blockk "Tags", "", "icons/tag.svg", get_tags_url()
-        blockk "change colors", "", "icons/palette.svg", get_palette_studio_url()
-        blockk "Login", "", "icons/user.svg", get_login_url()
+        blockk "Profile", "", "icons/user.svg", get_profile_url()
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "parts"
@@ -145,11 +139,13 @@ proc index: VNode =
         blockk "Notes", "", "icons/pen-writing-on-paper.svg", ""
         blockk "Files", "", "icons/inbox-archive.svg", ""
         blockk "Boards", "", "icons/share-circle.svg", ""
+        blockk "Tags", "", "icons/tag.svg", ""
 
       h3(class = "mt-4 mb-2 text-center w-100"):
         text "Features"
       tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Save your Time", "", "icons/clock-square.svg", ""
+        blockk "Save Time", "", "icons/clock-square.svg", ""
+        blockk "Colorful", "", "icons/palette.svg", ""
         blockk "Remember", "", "icons/repeat.svg", ""
         blockk "Open Source", "", "icons/hand-heart.svg", "https://github.com/hamidb80/rems"
 
@@ -180,10 +176,9 @@ func `$$`(vn: VNode): string =
 
 when isMainModule:
   writeFile apv "./dist/index.html", $$index()
-  writeFile apv "./dist/login.html", $$login()
+  writeFile apv "./dist/profile.html", $$profile()
   writeFile apv "./dist/tags.html", $$tags()
   writeFile apv "./dist/explore.html", $$explore()
   writeFile apv "./dist/board.html", $$boardEdit()
   writeFile apv "./dist/note-preview.html", $$notePreview()
   writeFile apv "./dist/editor.html", $$noteEditor()
-  writeFile apv "./dist/palette.html", $$palette()
