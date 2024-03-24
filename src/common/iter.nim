@@ -5,9 +5,8 @@ iterator ritems*[T](s: openArray[T]): T =
 
 func remove*[T](s: var seq[T], item: T) = 
   let i = s.find item
-  case i
-  of -1: discard
-  else: s.del i
+  if i != -1:
+    del s, i
 
 template deleteIt*(s: var seq, cond: untyped) = 
   for i, it {.inject.} in s:

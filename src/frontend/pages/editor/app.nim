@@ -13,15 +13,38 @@ import ../../../common/[conventions, datastructures, types, iter]
 
 type
   ViewMode = enum
-    vmBoth
-    vmEditor
-    vmPreview
+    vmBothHorizontal
+    vmBothVertical
+    vmEditorOnly
+    vmPreviewOnly
 
+  BlockStyles = tuple
+    wrapperCls: cstring
+    extenderCls: cstring
+    cssProperty: StyleAttr
+
+    editorCls: cstring
+    editorSize: int
+
+    contentCls: cstring
+    contentSize: int
+
+
+const
+  scrollStep = 100
+  renderResultId = "tw-render"
+  treeViewId = "tw-tree-view"
+  porpertySettingId = "tw-property-setting"
+  settingsAreaId = "tw-settings-area"
+  extenderId = "tw-extender"
+  editRootElementId = "tw-editor-root-element"
+  searchComponentInputId = "tw-search-component-input"
 
 var
   app = App(state: asTreeView)
   sidebarWidth = 300
-  viewmode = vmBoth
+  sidebarHeight = 300
+  viewMode = vmBothHorizontal
 
 
 register app, "raw-text-editor", rawTextEditor
@@ -40,11 +63,12 @@ regiterComponents app
 
 # ----- UI ------------------------------
 
-proc setSidebarWidth(w: int) =
-  sidebarWidth = clamp(w, 100 .. window.innerWidth - 200)
+proc setSideBarSize(x: int) =
+  sidebarWidth = clamp(x, 100 .. window.innerWidth - 200)
+  sidebarHeight = clamp(x, 100 .. window.innerHeight - 160)
 
 addEventListener window, "resize", proc =
-  setSidebarWidth sidebarWidth
+  setSideBarSize sidebarWidth
   redraw()
 
 proc saveServer =
@@ -143,34 +167,28 @@ proc recursiveList(data: TwNode): VNode =
   var treepath = newSeq[int]()
   recursiveListImpl data, treepath, app.focusedPath, app.selected
 
-const
-  treeViewId = "tw-tree-view"
-  porpertySettingId = "tw-property-setting"
-  settingsAreaId = "tw-settings-area"
-  extenderId = "tw-extender"
-  editRootElementId = "tw-editor-root-element"
-  searchComponentInputId = "tw-search-component-input"
-
 proc resetApp(root: TwNode) =
   app.tree = root
   app.focusedNode = root
   app.focusedPath = @[]
 
+proc blocksStyleCtrl(viewMode: ViewMode): BlockStyles =
+  let
+    w = StyleAttr.width
+    h = StyleAttr.height
 
-type BlockStyles = tuple
-  editorCls: cstring
-  editorWidth: int
-
-  contentCls: cstring
-  contentWidth: int
-
-proc blocksStyleCtrl(viewmode: ViewMode): BlockStyles =
-  case viewmode
-  of vmBoth: ("", sidebarWidth, "", window.innerWidth - sidebarwidth)
-  of vmEditor: ("", window.innerWidth, "d-none", 0)
-  of vmPreview: ("d-none", 50, "", window.innerWidth)
+  case viewMode
+  of vmBothHorizontal: ("flex-row", "h-100", w, "h-100 ", sidebarWidth, "",
+      window.innerWidth - sidebarwidth)
+  of vmBothVertical: ("flex-column", "w-100", h, "w-100 ", sidebarHeight, "",
+      window.innerHeight - sidebarwidth)
+  of vmEditorOnly: ("", "", w, "h-100 ", window.innerWidth, "d-none", 0)
+  of vmPreviewOnly: ("", "", w, "d-none", 0, "h-100", window.innerWidth)
 
 # ----- Events ------------------------------
+
+proc changeViewMove =
+  incRound viewMode
 
 proc prepareComponentSelection(parentNode: TwNode) =
   reset app.availableComponents
@@ -302,6 +320,9 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcN: # insert inside
       startInsertAtEnd()
 
+    of kcV:
+      changeViewMove()
+
     of kcOpenbracket: # insert before
       startInsertBefore()
 
@@ -321,21 +342,21 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       discard
 
     of kcJ:
-      let d = el"tw-render"
-      d.scrollTop = d.scrollTop + 60
+      let d = el renderResultId
+      d.scrollTop = d.scrollTop + scrollStep
 
     of kcK:
-      let d = el"tw-render"
-      d.scrollTop = d.scrollTop - 60
+      let d = el renderResultId
+      d.scrollTop = d.scrollTop - scrollStep
 
     of kcW: # scroll to into the content
       let
         n = app.focusedNode.dom
-        d = el"tw-render"
+        d = el renderResultId
         scroll = d.scrollTop
         offy = n.offsetTop
 
-      d.scrollTop = offy
+      d.scrollTop = offy - d.offsetTop
 
     of kcM: # mark
       discard
@@ -461,61 +482,53 @@ proc createDom: VNode =
     snackbar()
 
     tdiv(class = "w-100 h-screen-100 d-flex overflow-hidden"):
-      let bsc = blocksStyleCtrl viewmode
+      let bsc = blocksStyleCtrl viewMode
 
-      tdiv(id = "left-container",
-        class = "float-start h-100 d-flex flex-row mw-100",
-        style = style(StyleAttr.width, fmt"{bsc.editorWidth}px")):
+      aside(id = "tw-side-bar",
+        class = """d-flex flex-column 
+                h-100 bg-dark p-1 overflow-y-auto overflow-x-hidden"""):
 
-        aside(id = "tw-side-bar",
-          class = "h-100 bg-dark justify-contnent-center p-1 overflow-y-auto overflow-x-hidden"):
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = saveServer):
+          icon "fa-save fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-save fa-xl"
-            proc onclick =
-              saveServer()
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = startInsertAtEnd):
+          icon "fa-plus fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-plus fa-xl"
-            proc onclick =
-              startInsertAtEnd()
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = startInsertBefore):
+          icon "fa-chevron-up fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-chevron-up fa-xl"
-            proc onclick =
-              startInsertBefore()
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = startInsertAfter):
+          icon "fa-chevron-down fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-chevron-down fa-xl"
-            proc onclick =
-              startInsertAfter()
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = deleteSelectedNode):
+          icon "fa-trash fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-trash fa-xl"
-            proc onclick =
-              deleteSelectedNode()
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = changeViewMove):
+          icon "fa-eye fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-eye fa-xl"
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+          icon "fa-tag fa-xl"
 
-            proc onclick =
-              incRound viewMode
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+          icon "fa-close fa-xl"
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-tag fa-xl"
+          proc onclick =
+            app.state = asTreeView
 
-          button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
-            icon "fa-close fa-xl"
-
-            proc onclick =
-              app.state = asTreeView
-
+      tdiv(id = "editor-body", class = "d-flex " & bsc.wrapperCls):
         tdiv(id = settingsAreaId,
-          class = "overflow-hidden d-inline-block w-100 " & bsc.editorCls):
+          class = "overflow-hidden d-inline-block " & bsc.editorCls,
+          style = style(bsc.cssProperty, fmt"{bsc.editorSize}px")):
 
           if app.state == asTreeView:
             tdiv(id = treeViewId,
-              class = "overflow-y-scroll py-2 px-1 h-100"):
+              class = "overflow-y-scroll py-2 px-1 h-100 overflow-x-hidden"):
 
               recursiveList app.tree
 
@@ -555,12 +568,17 @@ proc createDom: VNode =
                     app.filteredComponents = app.availableComponents.filter(c =>
                         app.filterString in c.name.toLower.cstring)
 
-        tdiv(id = extenderId, class = "extender h-100 btn btn-secondary border-1 p-0 d-inline-block"):
+        tdiv(id = extenderId, class = "extender btn btn-secondary border-1 p-0 d-inline-block " &
+            bsc.extenderCls):
           proc onMouseDown =
             # setCursor ccresizex
 
             winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-              setSidebarWidth e.x
+              case viewMode
+              of vmBothHorizontal: setSideBarSize e.x
+              of vmBothVertical: setSideBarSize e.y
+              else: discard
+
               redraw()
 
             winel.onmouseup = proc(e: Event) =
@@ -568,11 +586,11 @@ proc createDom: VNode =
               reset winel.onmousemove
               reset winel.onmouseup
 
-      tdiv(id = "tw-render",
-        class = "tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block " &
-        bsc.contentCls,
-        style = style(StyleAttr.width, fmt"""{bsc.contentWidth}px""")):
-        verbatim fmt"<div id='{editRootElementId}'></div>"
+        tdiv(id = renderResultId,
+          class = "tw-content overflow-y-scroll p-3 float-start d-inline-block " &
+          bsc.contentCls,
+          style = style(bsc.cssProperty, fmt"{bsc.contentSize}px")):
+          verbatim fmt"<div id='{editRootElementId}'></div>"
 
 proc init* =
   let root = instantiate(rootComponent, nil)

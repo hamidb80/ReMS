@@ -124,11 +124,16 @@ p {
 
 .extender {
   width: 4px;
+  height: 4px;
   cursor: e-resize;
 }
 
 #tw-side-bar {
   width: 50px;
+}
+
+#editor-body {
+  width: calc(100% - 50px);
 }
 
 .inside {
