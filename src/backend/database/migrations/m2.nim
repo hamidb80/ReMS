@@ -15,7 +15,9 @@ when isMainModule:
     let
         olddb = newConn "old_db.sqlite3"
         newdb = newConn "db.sqlite3"
-        oldrelsq = sql"""
+
+    block include_data:
+        let oldrelsq = sql"""
             SELECT 
                 /* 0*/ r.id,
                 /* 1*/ r.tag,
@@ -50,74 +52,76 @@ when isMainModule:
             ON r.tag = t.id
         """
 
+        var
+            tagids = initHashset[int]()
+            rel_errs: seq[int]
 
-    var
-        tagids = initHashset[int]()
-        rel_errs: seq[int]
+        func str(v: DbValue): string =
+            if v.kind == dvkNull: ""
+            else: $v
 
-    func str(v: DbValue): string =
-        if v.kind == dvkNull: ""
-        else: $v
+        func `or`(a, b: string): string =
+            if a == "": b
+            else: a
 
-    func `or`(a, b: string): string =
-        if a == "": b
-        else: a
-
-    for r in rows(olddb, oldrelsq):
-        let sval = $r[9] or $r[8] or $r[10]
-        let q1 = fsql"""
-            INSERT INTO Relation
-                   (id    , is_private, user         , asset        , board        , node         , note         ,  refers      , mode, label  , sval  , fval         , info,  state  ,  timestamp)
-            VALUES ({r[0]}, 0         , {nuller r[3]}, {nuller r[4]}, {nuller r[5]}, {nuller r[6]}, {nuller r[7]}, {nuller r[8]}, 0   , {r[18]}, {sval}, {nuller r[9]}, ''  ,   {r[13]}, {r[14]}  )
-        """
-
-        try:
-            exec newdb, q1
-        except:
-            add rel_errs, r[0].i
-
-        let tid = r[15].i
-        if tid notin tagids:
-            let q2 = fsql"""
-                INSERT INTO Tag
-                (owner,   mode, label  , value_type, is_private, icon   , show_name, theme)
-                VALUES
-                ({r[16]}, 0   , {r[18]}, {r[24]}   , 0         , {r[19]}, 1        , {r[23]})
+        for r in rows(olddb, oldrelsq):
+            let sval = $r[9] or $r[8] or $r[10]
+            let q1 = fsql"""
+                INSERT INTO Relation
+                    (id    , is_private, user         , asset        , board        , node         , note         ,  refers      , mode, label  , sval  , fval         , info,  state  ,  timestamp)
+                VALUES ({r[0]}, 0         , {nuller r[3]}, {nuller r[4]}, {nuller r[5]}, {nuller r[6]}, {nuller r[7]}, {nuller r[8]}, 0   , {r[18]}, {sval}, {nuller r[9]}, ''  ,   {r[13]}, {r[14]}  )
             """
-            incl tagids, tid
-            exec newdb, q2
 
-    echo rel_errs
-
-    proc createRelsCache(field: string, rowid: int) =
-        var acc: seq[RelMinData]
-
-        for r in newdb.rows fsql"""
-            SELECT mode, label, sval, fval
-            FROM Relation r
-            WHERE r.[field] = {rowid}
-        """:
-            let v =
-                if r[2].kind == dvkNull:
-                    if r[3].kind == dvkNull: ""
-                    else: $r[3].f
-                else: r[2].s
-
-            add acc, RelMinData(
-                mode: rmCustom,
-                label: r[1].s,
-                value: v)
-
-        newdb.exec fsql"""
-            INSERT INTO RelsCache
-                   ([field], rels)
-            VALUES ({rowid}, {toJson acc})  
-        """
-
-    for t in ["Asset", "Note", "Board"]:
-        for (id, ) in newdb.find(seq[(int, )], fsql"SELECT id FROM [t]"):
             try:
-                createRelsCache toLowerAscii t, id
+                exec newdb, q1
             except:
-                echo t, " >> ", id
-                echo getCurrentExceptionMsg()
+                add rel_errs, r[0].i
+
+            let tid = r[15].i
+            if tid notin tagids:
+                let q2 = fsql"""
+                    INSERT INTO Tag
+                    (owner,   mode, label  , value_type, is_private, icon   , show_name, theme)
+                    VALUES
+                    ({r[16]}, 0   , {r[18]}, {r[24]}   , 0         , {r[19]}, 1        , {r[23]})
+                """
+                incl tagids, tid
+                exec newdb, q2
+
+        echo rel_errs
+
+    block relations_cache:
+        proc createRelsCache(field: string, rowid: int) =
+            var acc: seq[RelMinData]
+
+            for r in newdb.rows fsql"""
+                SELECT mode, label, sval, fval
+                FROM Relation r
+                WHERE r.[field] = {rowid}
+            """:
+                let v =
+                    if r[2].kind == dvkNull:
+                        if r[3].kind == dvkNull: ""
+                        else: $r[3].f
+                    else: r[2].s
+
+                add acc, RelMinData(
+                    mode: rmCustom,
+                    label: r[1].s,
+                    value: v)
+
+            echo toJson acc
+
+            newdb.exec fsql"""
+                INSERT INTO RelsCache
+                    ([field], rels)
+                VALUES ({rowid}, {toJson acc})  
+            """
+
+        for t in ["Asset", "Note", "Board"]:
+            for (id, ) in newdb.find(seq[(int, )], fsql"SELECT id FROM [t]"):
+                try:
+                    createRelsCache toLowerAscii t, id
+                except:
+                    echo t, " >> ", id
+                    echo getCurrentExceptionMsg()

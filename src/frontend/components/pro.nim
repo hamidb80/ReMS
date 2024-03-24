@@ -66,7 +66,7 @@ proc tagViewC*(
 ): VNode =
   let tag =
     if label in tagsDB: tagsDB[label]
-    else: defaultTag(label)
+    else: defaultTag label
 
   tagViewC tag, value, clickHandler
 

@@ -335,9 +335,7 @@ proc assetItemComponent(index: int, a: AssetItemView,
         tdiv:
           for r in a.rels:
             if r.label in tags:
-              tagViewC tags[r.label], r.value, noop
-            else:
-              text r.label
+              tagViewC tags, r.label, r.value, noop
 
         button(class = "mx-2 btn btn-outline-dark",
             onclick = genSelectAsset(a, index)):
@@ -519,7 +517,10 @@ proc relTagManager(): Vnode =
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            tagViewC t, "...", genAddTagToList t.label
+            let val =
+              if hasValue t: "..."
+              else: ""
+            tagViewC t, val, genAddTagToList t.label
           tagViewC defaultTag "...", "", genAddTagToList "..."
 
       h3(class = "mt-4"):
@@ -643,9 +644,11 @@ proc searchTagManager(): Vnode =
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
-            tagViewC t, "...", genAddSearchCriteria t
-
-          tagViewC defaultTag "...", "...", genAddSearchCriteria("...", "")
+            let val =
+              if hasValue t: "..."
+              else: ""
+            tagViewC t, val, genAddSearchCriteria t
+          tagViewC defaultTag "...", "", genAddSearchCriteria("...", "")
 
       h3(class = "mt-4"):
         text "Current Criterias"
