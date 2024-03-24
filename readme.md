@@ -41,6 +41,8 @@ I have found something is wrong with traditional education system:
 - [CISCO Network Academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
 - [Hepta Base](https://heptabase.com/) + [Margin Note](https://www.marginnote.com/)
 
+[Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? no I didn't find them useful ...
+
 ## UI
 - [SVG icons](https://www.svgrepo.com/collection/solar-bold-duotone-icons/) + [fontawesome](https://fontawesome.com/)
 - [Bootstrap Litera Theme](https://bootswatch.com/litera)
