@@ -520,6 +520,7 @@ proc relTagManager(): Vnode =
         tdiv(class = "card-body"):
           for id, t in tags:
             tagViewC t, "...", genAddTagToList t.label
+          tagViewC defaultTag "...", "", genAddTagToList "..."
 
       h3(class = "mt-4"):
         text "Current Tags"
@@ -530,7 +531,7 @@ proc relTagManager(): Vnode =
             tagViewC tags, r.label, r.value, genActiveTagClick index
 
       if activeRelTagIndex != noIndex:
-        let 
+        let
           r = currentRels[activeRelTagIndex]
           exists = r.label in tags
 
@@ -598,16 +599,24 @@ proc genRoundOperator(i: int, vt: RelValueType): proc() =
   proc =
     incRound searchCriterias[i].operator
 
+proc genAddSearchCriteriaImpl(tc: TagCriteria): proc() =
+  proc =
+    add searchCriterias, tc
+    selectedCriteriaI = searchCriterias.high
+
+proc genAddSearchCriteria(lbl, val: Str): proc() =
+  genAddSearchCriteriaImpl TagCriteria(
+    label: lbl,
+    valuetype: rvtNone,
+    operator: qoExists,
+    value: val)
 
 proc genAddSearchCriteria(t: Tag): proc() =
-  proc =
-    add searchCriterias, TagCriteria(
-      label: t.label,
-      valuetype: t.valuetype,
-      operator: qoExists,
-      value: "")
-
-    selectedCriteriaI = searchCriterias.high
+  genAddSearchCriteriaImpl TagCriteria(
+    label: t.label,
+    valuetype: t.valuetype,
+    operator: qoExists,
+    value: "")
 
 proc genSelectCriteria(i: int): proc() =
   proc =
@@ -636,6 +645,8 @@ proc searchTagManager(): Vnode =
           for id, t in tags:
             tagViewC t, "...", genAddSearchCriteria t
 
+          tagViewC defaultTag "...", "...", genAddSearchCriteria("...", "")
+
       h3(class = "mt-4"):
         text "Current Criterias"
 
@@ -643,10 +654,14 @@ proc searchTagManager(): Vnode =
         tdiv(class = "card-body"):
           for i, cr in searchCriterias:
             tdiv:
+              let vtype =
+                if cr.label in tags: tags[cr.label].valueType
+                else: rvtNone
+
               text "@ "
-              span(onclick = genRoundOperator(i, tags[cr.label].valueType)):
+              span(onclick = genRoundOperator(i, vtype)):
                 text $cr.operator
-              tagViewC tags[cr.label], cr.value, genSelectCriteria i
+              tagViewC tags, cr.label, cr.value, genSelectCriteria i
               if selectedSortCriteriaI == i:
                 case sortOrder
                 of Descending:
@@ -657,9 +672,19 @@ proc searchTagManager(): Vnode =
       if selectedCriteriaI != noIndex:
         let
           cr = searchCriterias[selectedCriteriaI]
-          t = tags[cr.label]
+          exists = cr.label in tags
+          hasValue =
+            if exists: hasValue tags[cr.label]
+            else: true
 
-        if t.hasValue:
+        if not exists:
+          input(`type` = "text", class = "form-control",
+            placeholder = "label ...",
+            value = cr.label):
+            proc oninput(e: Event, v: Vnode) =
+              searchCriterias[selectedCriteriaI].label = e.target.value
+
+        if hasValue:
           input(`type` = "text", class = "form-control",
             placeholder = "value ...",
             value = cr.value):
