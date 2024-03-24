@@ -305,24 +305,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         add app.focusedPath, 0
         app.focusedNode = app.focusedNode.children[0]
 
-    of kcPageDown: # 10 more down
-      discard
-
-    of kcPageUp: # 10 more up
-      discard
-
-    of kcHome:
-      discard
-
-    of kcEnd:
-      discard
-
-    of kcN: # insert inside
-      startInsertAtEnd()
-
-    of kcV:
-      changeViewMove()
-
     of kcOpenbracket: # insert before
       startInsertBefore()
 
@@ -332,20 +314,34 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcDelete: # delete node
       deleteSelectedNode()
 
+    of kcEnter:
+      if app.state == asTreeView:
+        app.state = asSetting
+
+
+    of kcN: # insert inside
+      startInsertAtEnd()
+
+    of kcV:
+      changeViewMove()
+
+    of kcY: # cut
+      discard
+
+    of kcP: # paste
+      discard
+
     of kcT:
       negate app.focusedNode.data.visibleChildren
 
     of kcQ: # to query children of focued node like XPath like VIM editor
       discard
 
-    of kcY: # go to the last pathTree state
-      discard
-
-    of kcJ:
+    of kcJ: # go down
       let d = el renderResultId
       d.scrollTop = d.scrollTop + scrollStep
 
-    of kcK:
+    of kcK: # go up
       let d = el renderResultId
       d.scrollTop = d.scrollTop - scrollStep
 
@@ -379,13 +375,10 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       deserizalize(app.components, serialize app)
       .dthen(afterLoad)
 
-    of kcC: # cut
-      discard
-
-    of kcP: # cut
-      discard
-
     of kcU: # undo
+      discard
+
+    of kcR: # redo
       discard
 
     of kcO: # opens file
@@ -401,13 +394,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         deserizalize(app.components, data, some app.tree.dom)
         .then(done)
         .dcatch () => notify "could not load the file"
-
-    of kcR: # redo
-      discard
-
-    of kcEnter:
-      if app.state == asTreeView:
-        app.state = asSetting
 
     else: discard
 
