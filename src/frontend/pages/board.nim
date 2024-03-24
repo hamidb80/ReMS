@@ -153,6 +153,7 @@ type
 const
   # TODO read these from css
   # TODO define maximum map [boarders to not go further if not nessesarry]
+  zoomStep = 200
   minScale = 0.05 # minimum amount of scale
   maxScale = 20.0
   ciriticalWidth = 460
@@ -1208,7 +1209,7 @@ proc createDom*(data: RouterData): VNode =
   buildHtml:
     tdiv(class = "karax"):
       main(class = "board-wrapper bg-light overflow-hidden h-100 w-100"):
-        konva "board"
+        verbatimElement "board"
 
       if app.loading:
         tdiv(class = "position-absolute top-left-center"):
@@ -1217,10 +1218,10 @@ proc createDom*(data: RouterData): VNode =
       footer(class = "position-absolute bottom-0 left-0 w-100"):
         tdiv(class = "zoom-bar btn-group position-absolute bg-white border border-secondary border-start-0 rounded-right rounded-0"):
           sidebarBtn "fa-minus", "", proc =
-            zoom ||app.stage.scale, +200
+            zoom ||app.stage.scale, +zoomStep
 
           sidebarBtn "fa-plus", "", proc =
-            zoom ||app.stage.scale, -200
+            zoom ||app.stage.scale, -zoomStep
 
 
         if not app.isLocked:

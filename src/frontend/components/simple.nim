@@ -11,7 +11,7 @@ func iconr*(class: string): VNode =
   buildHtml:
     bold(class = "fa-regular " & class)
 
-func konva*(id: string): VNode =
+func verbatimElement*(id: string): VNode =
   verbatim fmt"""
     <div id="{id}"></div>
   """

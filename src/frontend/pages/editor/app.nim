@@ -590,7 +590,8 @@ proc createDom: VNode =
           class = "tw-content overflow-y-scroll p-3 float-start d-inline-block " &
           bsc.contentCls,
           style = style(bsc.cssProperty, fmt"{bsc.contentSize}px")):
-          verbatim fmt"<div id='{editRootElementId}'></div>"
+        
+          verbatimElement editRootElementId
 
 proc init* =
   let root = instantiate(rootComponent, nil)
