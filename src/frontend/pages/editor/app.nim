@@ -244,6 +244,7 @@ proc deleteSelectedNode =
     detachNode f, i
     app.focusedNode = f
 
+
 proc moveToUp =
   if app.focusedPath.len > 0:
     if app.focusedPath[^1] == 0:
@@ -252,7 +253,6 @@ proc moveToUp =
       dec app.focusedPath[^1]
       app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
 
-
 proc moveToDown =
   if app.focusedPath.len > 0:
     if app.focusedPath[^1] + 1 == app.focusedNode.father.children.len:
@@ -260,7 +260,6 @@ proc moveToDown =
     else:
       app.focusedPath[^1].inc
       app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
-
 
 proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   let lastFocus = app.focusedNode
@@ -300,7 +299,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcEnd:
       discard
 
-    of kcn: # insert inside
+    of kcN: # insert inside
       startInsertAtEnd()
 
     of kcOpenbracket: # insert before
@@ -312,7 +311,8 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcDelete: # delete node
       deleteSelectedNode()
 
-    of kcT: negate app.focusedNode.data.visibleChildren
+    of kcT:
+      negate app.focusedNode.data.visibleChildren
 
     of kcQ: # to query children of focued node like XPath like VIM editor
       discard
@@ -320,13 +320,30 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcY: # go to the last pathTree state
       discard
 
+    of kcJ:
+      let d = el"tw-render"
+      d.scrollTop = d.scrollTop + 60
+
+    of kcK:
+      let d = el"tw-render"
+      d.scrollTop = d.scrollTop - 60
+
+    of kcW: # scroll to into the content
+      let
+        n = app.focusedNode.dom
+        d = el"tw-render"
+        scroll = d.scrollTop
+        offy = n.offsetTop
+
+      d.scrollTop = offy
+
     of kcM: # mark
       discard
 
     of kcA: # show actions of focused element
       discard
 
-    of kcK: # download as JSON
+    of kcD: # download as JSON
       downloadFile "data.json", "application/json",
         stringify forceJsObject serialize app
 
@@ -493,11 +510,11 @@ proc createDom: VNode =
             proc onclick =
               app.state = asTreeView
 
-        tdiv(id = settingsAreaId, 
+        tdiv(id = settingsAreaId,
           class = "overflow-hidden d-inline-block w-100 " & bsc.editorCls):
 
           if app.state == asTreeView:
-            tdiv(id = treeViewId, 
+            tdiv(id = treeViewId,
               class = "overflow-y-scroll py-2 px-1 h-100"):
 
               recursiveList app.tree
@@ -551,8 +568,9 @@ proc createDom: VNode =
               reset winel.onmousemove
               reset winel.onmouseup
 
-      tdiv(id = "tw-render", 
-        class = "tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block " & bsc.contentCls,
+      tdiv(id = "tw-render",
+        class = "tw-content h-100 overflow-y-scroll p-3 float-start d-inline-block " &
+        bsc.contentCls,
         style = style(StyleAttr.width, fmt"""{bsc.contentWidth}px""")):
         verbatim fmt"<div id='{editRootElementId}'></div>"
 

@@ -144,7 +144,7 @@ type
     akFocus
     akDownload
     akCopyStyle
-    akAreaSelect
+    akAreaSelectToggle
 
 
   ActionsShortcutRegistery =
@@ -188,7 +188,7 @@ app.actionsShortcutRegistery = [
   akFocus: sc"F",
   akDownload: sc"D",
   akCopyStyle: sc"K",
-  akAreaSelect: sc"Alt"]
+  akAreaSelectToggle: sc"M"]
 
 # ----- Util
 template `<>`*(a, b): untyped = clamp(a, b)
@@ -1703,17 +1703,14 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
         updateEdgeShape app.tempEdge, e.data.config.centerShape
 
 
-    of akAreaSelect:
-      app.areaSelectKeyHold = true
+    of akAreaSelectToggle:
+      negate app.areaSelectKeyHold
 
     else:
       discard
 
   of released:
     case ac:
-
-    of akAreaSelect:
-      app.areaSelectKeyHold = false
 
     of akZoomMode:
       app.zoomKeyHold = false
