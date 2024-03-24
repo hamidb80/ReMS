@@ -31,12 +31,13 @@ proc checkbox*(active: bool, changeHandler: proc(b: bool)): VNode =
       proc oninput(e: dom.Event, v: VNode) =
         changeHandler e.target.checked
 
-# TODO check for show name
 proc tagViewC*(
   t: Tag,
-  value: SomeString,
+  value: Str,
   clickHandler: proc()
 ): VNode =
+  let hasValue = value != ""
+
   buildHtml:
     tdiv(class = """d-inline-flex align-items-center py-2 px-3 mx-2 my-1 
       badge border-1 solid-border rounded-pill pointer tag""",
@@ -48,14 +49,26 @@ proc tagViewC*(
     )):
       icon $t.icon
 
-      if t.showName or t.hasValue:
+      if t.showName or hasValue:
         span(dir = "auto", class = "ms-2"):
           if t.showName:
             text t.label
 
-          if t.hasValue:
+          if hasValue:
             text ": "
             text value
+
+proc tagViewC*(
+  tagsDB: Table[Str, Tag],
+  label: Str,
+  value: Str,
+  clickHandler: proc()
+): VNode =
+  let tag =
+    if label in tagsDB: tagsDB[label]
+    else: defaultTag(label)
+
+  tagViewC tag, value, clickHandler
 
 func generalCardBtnLink*(icon, colorClass, url: string): GeneralCardButton =
   GeneralCardButton(
@@ -81,7 +94,7 @@ proc generalCardButtonView(b: GeneralCardButton): VNode =
     of gcbkLink:
       a(class = cls, target = "_blank", href = b.url):
         icon b.icon
-    
+
     of gcbkAction:
       button(class = cls, onclick = b.action):
         icon b.icon
@@ -104,7 +117,7 @@ proc generalCardView*(
 
         tdiv(class = "mt-2 tag-list"):
           for r in rels:
-            tagViewC tagsDB[r.label], r.value, noop
+            tagViewC tagsDB, r.label, r.value, noop
 
       if btns.len != 0:
         tdiv(class = "card-footer d-flex justify-content-center"):

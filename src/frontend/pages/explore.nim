@@ -527,16 +527,22 @@ proc relTagManager(): Vnode =
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for index, r in currentRels:
-            if r.label in tags:
-              tagViewC tags[r.label], r.value, genActiveTagClick index
-            else:
-              span:
-                text "# "
-                text r.label
+            tagViewC tags, r.label, r.value, genActiveTagClick index
 
       if activeRelTagIndex != noIndex:
-        let r = currentRels[activeRelTagIndex]
-        if hasValue tags[r.label]:
+        let 
+          r = currentRels[activeRelTagIndex]
+          exists = r.label in tags
+
+        if not exists:
+          input(`type` = "text", class = "form-control",
+            placeholder = "name",
+            value = r.label):
+            proc oninput(e: Event, v: Vnode) =
+              currentRels[activeRelTagIndex].label = e.target.value
+
+
+        if (not exists) or (hasValue tags[r.label]):
           input(`type` = "text", class = "form-control",
             placeholder = "value ...",
             value = r.value):
