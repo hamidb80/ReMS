@@ -10,8 +10,6 @@ RUN cp /usr/share/zoneinfo/Iran  /etc/localtime
 RUN apk add openssl-dev 
 # install pcre for RegEx
 RUN apk add pcre
-# update git
-RUN apk add git
 
 # prepare app
 WORKDIR /app
