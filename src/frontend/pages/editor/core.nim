@@ -26,7 +26,6 @@ type
   TwNodeMode* = enum
     tmInteractive      ## for interaction
     tmOutputGeneration ## for serialization
-    # tmDebug            ## for debug
 
   TwNodeStatusCode* = enum
     tsNothing
@@ -161,7 +160,6 @@ type
     imAppend
 
   App* = object
-    version*: string
     state*: AppState
 
     editors*: Table[cstring, EditorInit]

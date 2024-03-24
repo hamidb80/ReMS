@@ -286,6 +286,10 @@ p {
   opacity: 0.5;
 }
 
+#tw-settings-area{
+  overflow-y: auto;
+}
+
 .tw-include-external.tw-focus-hover>*,
 .tw-grid.tw-focus-hover>*,
 .tw-include-external.tw-mouse-hover>*,

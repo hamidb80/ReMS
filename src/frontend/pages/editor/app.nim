@@ -509,7 +509,7 @@ proc createDom: VNode =
 
       tdiv(id = "editor-body", class = "d-flex " & bsc.wrapperCls):
         tdiv(id = settingsAreaId,
-          class = "overflow-hidden d-inline-block " & bsc.editorCls,
+          class = "d-inline-block " & bsc.editorCls,
           style = style(bsc.cssProperty, fmt"{bsc.editorSize}px")):
 
           if app.state == asTreeView:
@@ -576,7 +576,7 @@ proc createDom: VNode =
           class = "tw-content overflow-y-scroll p-3 float-start d-inline-block " &
           bsc.contentCls,
           style = style(bsc.cssProperty, fmt"{bsc.contentSize}px")):
-        
+
           verbatimElement editRootElementId
 
 proc init* =

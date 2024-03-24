@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.52"
+version       = "0.0.53"
 author        = "hamidb80"
 description   = "Remebering Management System"
 license       = "MIT"
