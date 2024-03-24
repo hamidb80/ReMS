@@ -183,7 +183,10 @@ proc createDom: Vnode =
 
         tdiv(class = "d-flex flex-row flex-wrap"):
           for i, t in tags:
-            tagViewC t, "...", genChangeSelectedTagi i
+            let val = 
+              if hasValue t: "..."
+              else: ""
+            tagViewC t, val, genChangeSelectedTagi i
 
       tdiv(class = "p-4 mx-4 my-2"):
         h6(class = "mb-3"):
