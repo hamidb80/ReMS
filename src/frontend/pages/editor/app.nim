@@ -45,17 +45,6 @@ var
   sidebarHeight = 300
   viewMode = vmBothHorizontal
 
-
-register app, "raw-text-editor", rawTextEditor
-register app, "linear-text-editor", textInput
-register app, "file-upload-on-paste", fileLinkOrUploadOnPasteInput
-register app, "checkbox-editor", checkBoxEditor
-register app, "option-selector", selectEditor
-
-
-app.components = defaultComponents()
-regiterComponents app
-
 # TODO app ability to copy node path
 # TODO ability to add/remove tags here
 # TODO import to a specific node not replace the whole tree!
@@ -65,10 +54,6 @@ regiterComponents app
 proc setSideBarSize(x: int) =
   sidebarWidth = clamp(x, 100 .. window.innerWidth - 200)
   sidebarHeight = clamp(x, 100 .. window.innerHeight - 160)
-
-addEventListener window, "resize", proc =
-  setSideBarSize sidebarWidth
-  redraw()
 
 proc saveServer =
   let id = parseInt getWindowQueryParam "id"
@@ -592,6 +577,20 @@ proc createDom: VNode =
           verbatimElement editRootElementId
 
 proc init* =
+  register app, "raw-text-editor", rawTextEditor
+  register app, "linear-text-editor", textInput
+  register app, "file-upload-on-paste", fileLinkOrUploadOnPasteInput
+  register app, "checkbox-editor", checkBoxEditor
+  register app, "option-selector", selectEditor
+
+  app.components = defaultComponents()
+  regiterComponents app
+
+  addEventListener window, "resize", proc =
+    setSideBarSize sidebarWidth
+    redraw()
+
+
   let root = instantiate(rootComponent, nil)
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
