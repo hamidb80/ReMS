@@ -10,7 +10,6 @@ import ../../utils/[js, browser, api]
 import ../../components/[snackbar, simple]
 import ../../../common/[conventions, datastructures, types, iter]
 
-
 type
   ViewMode = enum
     vmBothHorizontal
@@ -187,6 +186,9 @@ proc blocksStyleCtrl(viewMode: ViewMode): BlockStyles =
 
 # ----- Events ------------------------------
 
+proc switchToTreeView =
+  app.state = asTreeView
+
 proc changeViewMove =
   incRound viewMode
 
@@ -251,15 +253,29 @@ proc createInstance(listIndex: int) =
   app.focusedNode = newNode
   app.state = asTreeView
 
-proc deleteSelectedNode =
-  if not isRoot app.focusedNode:
+proc deleteSelectedNode(n: TwNode, path: TreePath) =
+  if not isRoot n:
     let
-      n = app.focusedNode
-      i = app.focusedPath.pop
+      i = path[^1]
       f = n.father
-
     die n
     detachNode f, i
+
+proc deleteSelectedNodes =
+  let
+    n = app.focusedNode
+    f = n.father
+
+  if 0 != len app.selected:
+    for e in app.selected:
+      let d = app.tree.follow e
+      deleteSelectedNode d, e
+      # TODO where shoud put the parent?
+    reset app.selected
+
+  else:
+    deleteSelectedNode n, app.focusedPath
+    app.focusedPath.npop
     app.focusedNode = f
 
 
@@ -312,7 +328,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       startInsertAfter()
 
     of kcDelete: # delete node
-      deleteSelectedNode()
+      deleteSelectedNodes()
 
     of kcEnter:
       if app.state == asTreeView:
@@ -322,14 +338,14 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcN: # insert inside
       startInsertAtEnd()
 
-    of kcV:
+    of kcV: # change view mode
       changeViewMove()
 
-    of kcY: # cut
-      discard
-
-    of kcP: # paste
-      discard
+    of kcM: # mark
+      if app.focusedPath in app.selected:
+        app.selected.excl app.focusedPath
+      else:
+        app.selected.incl app.focusedPath
 
     of kcT:
       negate app.focusedNode.data.visibleChildren
@@ -353,9 +369,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         offy = n.offsetTop
 
       d.scrollTop = offy - d.offsetTop
-
-    of kcM: # mark
-      discard
 
     of kcA: # show actions of focused element
       discard
@@ -444,7 +457,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
 # ----- Init ------------------------------
 
-# FIXME add a API module to handle all these dirty codes ..., and also to not repeat yourself
 proc fetchNote(id: Id) =
   proc done(tw: TwNode) =
     resetApp tw
@@ -491,21 +503,20 @@ proc createDom: VNode =
           icon "fa-chevron-down fa-xl"
 
         button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = deleteSelectedNode):
+            onclick = deleteSelectedNodes):
           icon "fa-trash fa-xl"
 
         button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
             onclick = changeViewMove):
           icon "fa-eye fa-xl"
 
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = noop):
           icon "fa-tag fa-xl"
 
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3"):
+        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+            onclick = switchToTreeView):
           icon "fa-close fa-xl"
-
-          proc onclick =
-            app.state = asTreeView
 
       tdiv(id = "editor-body", class = "d-flex " & bsc.wrapperCls):
         tdiv(id = settingsAreaId,
@@ -551,6 +562,7 @@ proc createDom: VNode =
                   proc oninput(e: Event, v: VNode) =
                     app.listIndex = 0
                     app.filterString = e.target.value.toLower
+                    # TODO here you should change
                     app.filteredComponents = app.availableComponents.filter(c =>
                         app.filterString in c.name.toLower.cstring)
 

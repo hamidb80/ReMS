@@ -51,6 +51,9 @@ type
     children*: seq[TreeNodeRaw[D]]
     data*: D
 
+  TreeNode[D] = concept t
+    t.children is seq[typeof t]
+
   TreePath* = seq[int]
 
 func isLeaf*(tn: TreeNodeRec or TreeNodeRaw): bool =
@@ -59,10 +62,11 @@ func isLeaf*(tn: TreeNodeRec or TreeNodeRaw): bool =
 func isRoot*(tn: TreeNodeRec): bool =
   tn.father == nil
 
-func follow*[T](n: TreeNodeRaw[T], path: seq[int]): TreeNodeRaw[T] =
+func follow*[D](n: TreeNode[D], path: TreePath): auto =
   result = n
   for i in path:
     result = result.children[i]
+
 
 type
   ColorTheme* = object

@@ -171,7 +171,8 @@ type
     focusedPath*: TreePath
     focusedNode*: TwNode
 
-    availableComponents*, filteredComponents*: seq[Component]
+    availableComponents*: seq[Component]
+    filteredComponents*: seq[Component] # TODO change it to filtered options [components/actions] or create actions separately
     filterString*: cstring
     listIndex*: int              ## used for keep tracking of selected component
     insertionMode*: InsertionMode
