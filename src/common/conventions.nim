@@ -26,6 +26,9 @@ proc negate*(b: var bool) =
 template str*(smth): untyped =
   $smth
 
+template last*(smth): untyped =
+  smth[^1]
+
 proc noop* =
   discard
 

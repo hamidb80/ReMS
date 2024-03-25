@@ -18,6 +18,52 @@ type
   ColorChannel = range[0 .. 255]
   Degree = range[0.0 .. 360.0]
 
+type 
+  FontVariant* = enum
+    fvVormal = "normal"
+    fvSmallCaps = "small-caps"
+
+  LineCap* = enum
+    lcButt = "butt"
+    lcRound = "round"
+    lcSquare = "square"
+
+  LineJoin* = enum
+    ljMiter = "miter"
+    ljRound = "round"
+    ljBevel = "bevel"
+
+  TransformsOption* = enum
+    toAll = "all"
+    toNone = "none"
+    toPosition = "position"
+
+  VerticalAlign* = enum
+    vaTop = "top"
+    vaMiddle = "middle"
+    vaBottom = "bottom"
+
+  HorizontalAlign* = enum
+    hzLeft = "left"
+    hzCenter = "center"
+    hzRight = "right"
+
+  WrapOption* = enum
+    woWord = "word"
+    woChar = "char"
+    woNone = "none"
+
+  FontStyle* = enum
+    fsNormal = "normal"
+    fsBold = "bold"
+    fsItalic = "italic"
+    fsItalicBold = "italic bold"
+
+  TextDecoration* = enum
+    tdNothing = ""
+    tdLineThrough = "line-through"
+    tdUnderline = "underline"
+
 
 type
   KonvaObject* = ref object of JsRoot

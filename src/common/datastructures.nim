@@ -67,6 +67,14 @@ func follow*[D](n: TreeNode[D], path: TreePath): auto =
   for i in path:
     result = result.children[i]
 
+func `<`*(a, b: TreePath): bool =
+  let mlen = min(len a, len b)
+
+  for i in 0..mlen:
+    if a[i] < b[i]: return true
+    elif a[i] > b[i]: return false
+
+  a.len < b.len
 
 type
   ColorTheme* = object
@@ -75,8 +83,6 @@ type
   FontConfig* = object
     family*: Str
     size*: int
-    style*: FontStyle
-    # lineHeight: Float
 
   VirtualNodeDataKind* = enum
     vndkText

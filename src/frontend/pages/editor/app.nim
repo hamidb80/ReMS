@@ -1,4 +1,4 @@
-import std/[sequtils, strutils, sets, with, strformat, sugar, tables, math]
+import std/[sequtils, strutils, sets, with, strformat, sugar, algorithm, tables, math]
 import std/[dom, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -215,6 +215,37 @@ proc startInsertAfter =
   app.insertionMode = imAfter
   prepareComponentSelection app.focusedNode.father
 
+proc moveSelectedNodes =
+  let
+    paths = app.selected.toseq.sorted
+    h = paths.high
+    i = app.focusedPath[^1]
+
+  var nodes = newSeq[TwNode](paths.len)
+
+  for i, p in reversed paths: # iterating in reverse order prevents index error
+    let
+      n = app.tree.follow p
+      f = n.father
+      ip = p.last
+
+    detachNode f, ip
+    nodes[h-i] = n
+
+  for n in nodes:
+    case app.insertionMode
+    of imAppend:
+      let size = app.focusedNode.children.len
+      app.focusedNode.attach n, size
+
+    of imAfter:
+      app.focusedNode.father.attach n, i+1
+
+    of imBefore:
+      app.focusedNode.father.attach n, i
+
+  reset app.selected
+
 proc createInstance(listIndex: int) =
   var newNode = instantiate(app.filteredComponents[listIndex], app.components)
   discard render newNode
@@ -252,7 +283,7 @@ proc deleteSelectedNodes =
     f = n.father
 
   if 0 != len app.selected:
-    for e in app.selected:
+    for e in app.selected.toseq.sorted.reversed:
       let d = app.tree.follow e
       deleteSelectedNode d, e
       # TODO where shoud put the parent?
@@ -318,6 +349,9 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcEnter:
       if app.state == asTreeView:
         app.state = asSetting
+
+    of kcEscape:
+      reset app.selected
 
 
     of kcN: # insert inside
@@ -396,14 +430,12 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     else: discard
 
   of asSetting:
-
     case e.keyCode.KeyCode
     of kcEscape:
-      if app.state == asSetting:
-        if document.activeElement == document.body:
-          app.state = asTreeView
-        else:
-          blur document.activeElement
+      if document.activeElement == document.body:
+        app.state = asTreeView
+      else:
+        blur document.activeElement
 
     else: discard
 
@@ -534,9 +566,16 @@ proc createDom: VNode =
           elif app.state == asSelectComponent:
             tdiv(class = "d-flex flex-column h-100"):
               ul(class = "list-group rounded-0 overflow-y-scroll h-100"):
+
+                if app.selected.len != 0:
+                  li(class = """list-group-item d-flex justify-content-between align-items-center rounded-0
+                      btn btn-white mb-3 mt-1""", onclick = moveSelectedNodes):
+                    span: text "add marked nodes"
+                    italic(class = "fa-paste")
+
                 for i, c in app.filteredComponents:
-                  li(class = "list-group-item d-flex justify-content-between align-items-center btn btn-white rounded-0 " &
-                      iff(app.listIndex == i, "active"),
+                  li(class = """list-group-item d-flex justify-content-between align-items-center rounded-0
+                      btn btn-white """ & iff(app.listIndex == i, "active"),
                       onclick = genSelectComponent(i)):
                     span: text c.name
                     italic(class = c.icon)
