@@ -245,6 +245,8 @@ proc moveSelectedNodes =
       app.focusedNode.father.attach n, i
 
   reset app.selected
+  app.state = asTreeView
+
 
 proc createInstance(listIndex: int) =
   var newNode = instantiate(app.filteredComponents[listIndex], app.components)
@@ -456,6 +458,9 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
     of kcEnter:
       createInstance app.listIndex
 
+    of kcX:
+      moveSelectedNodes()
+
     else:
       discard
 
@@ -569,14 +574,15 @@ proc createDom: VNode =
 
                 if app.selected.len != 0:
                   li(class = """list-group-item d-flex justify-content-between align-items-center rounded-0
-                      btn btn-white mb-3 mt-1""", onclick = moveSelectedNodes):
-                    span: text "add marked nodes"
-                    italic(class = "fa-paste")
+                      btn btn-outline-info mb-3 mt-1""",
+                      onclick = moveSelectedNodes):
+                    span: text "press X to paste marked nodes"
+                    iconr "fa-paste"
 
                 for i, c in app.filteredComponents:
-                  li(class = """list-group-item d-flex justify-content-between align-items-center rounded-0
-                      btn btn-white """ & iff(app.listIndex == i, "active"),
-                      onclick = genSelectComponent(i)):
+                  li(class = """list-group-item d-flex justify-content-between align-items-center 
+                    rounded-0 btn """ & iff(app.listIndex == i, "active"),
+                    onclick = genSelectComponent(i)):
                     span: text c.name
                     italic(class = c.icon)
 
