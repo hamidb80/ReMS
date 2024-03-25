@@ -25,6 +25,8 @@ I have found something is wrong with traditional education system:
 - [what good is learning if I don't remember it?](https://files.eric.ed.gov/fulltext/EJ1055665.pdf)
 - active learning vs passing learning / scout young
 - [spatial web browsing](https://maggieappleton.com/spatial-web)
+- [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/)
+- [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx)
 
 ## Inspirations
 - Board of [OrgPad](https://orgpad.info/)
