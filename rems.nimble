@@ -22,6 +22,8 @@ requires "caster"
 requires "questionable"
 requires "prettyvec"
 
+requires "https://hamgit.ir/hr.bolouri/zippy" # it is the dependency of mummy and the PASS that I use have some problem downloading it ...
+
 requires "mummy" # 0.3.2
 requires "jsony" # 1.1.5
 requires "ponairi" # 0.3.2
