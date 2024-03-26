@@ -66,8 +66,10 @@ proc isSeeingContent(n: TwNode): bool =
     d = el renderResultId
     h = n.dom.offsetHeight
     o = n.dom.offsetTop - d.offsetTop
+    view = (0 ..< d.offsetHeight) + d.scrollTop
+    content = (o ..< o+h)
 
-  d.scrollTop in (o .. o+h)
+  intersects view, content
 
 proc changeFocusNode(n: TwNode) =
   app.focusedNode = n

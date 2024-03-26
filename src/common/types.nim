@@ -102,7 +102,7 @@ func v*[N1, N2: SomeNumber](x: N1, y: N2): Vector =
 func v*(s: Size): Vector =
   v(s.width, s.height)
 
-func center*(ps: seq[Vector]): Vector = 
+func center*(ps: seq[Vector]): Vector =
   var acc = vec2(0, 0)
   for p in ps:
     acc = acc + p
@@ -282,6 +282,15 @@ func parseHexColorPack*(s: string): HexColorPack =
   of 6: opaque HexColor number
   of 7: HexColorPack number
   else: raise newException(ValueError, "invalid length, expected 6 or 7 but got: " & $number)
+
+func `+`*[T](s: Slice[T], m: T): Slice[T] =
+  s.a+m .. s.b+m
+
+func intersects*[T](a, b: Slice[T]): bool =
+  a.a in b or 
+  a.b in b or
+  b.a in a or
+  b.b in a
 
 # TODO move it to js module
 when defined js:
