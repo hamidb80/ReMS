@@ -1,4 +1,4 @@
-import std/[options, sequtils, tables, algorithm]
+import std/[options, sequtils, tables, algorithm, random]
 import std/[dom, jsffi, asyncjs, jsformdata]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
@@ -13,6 +13,7 @@ import ../../backend/routes
 import ../../backend/database/[models, logic]
 import ./editor/[core, components]
 
+randomize()
 
 type
   UploadStatus = enum
@@ -32,6 +33,7 @@ type
   AppState = enum
     asNormal
     asTagManager
+    asTagSettings
 
   SearchableClass = enum
     scUsers = "users"
@@ -67,6 +69,55 @@ var
   wantToDelete: seq[int]
   assetNameTemp = c""
   messagesResolved = true
+
+
+type AppState2 = enum
+  asInit
+  asSelectIcon
+
+var
+  tagsList: seq[Tag]
+  tagState = asInit
+  selectedTagI = noIndex
+  currentTag = none Tag
+  colors: seq[ColorTheme]
+
+const
+  ttt = staticRead "./icons.txt"
+
+let
+  icons = splitlines ttt
+  defaultIcon = icons[0]
+
+
+proc dummyTag: Tag =
+  result = Tag(
+    icon: defaultIcon,
+    theme: colors[0], # sample colors,
+    show_name: true,
+    is_private: false,
+    value_type: rvtNone,
+    label: "name")
+
+proc onIconSelected(icon: string) =
+  currentTag.get.icon = icon
+  tagState = asInit
+
+proc genChangeSelectedTagi(i: int): proc() =
+  proc =
+    if selectedTagI == i:
+      selectedTagI = noIndex
+      currentTag = some dummyTag()
+    else:
+      selectedTagI = i
+      currentTag = some tagsList[i]
+
+proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
+  buildHtml:
+    tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-1 p-2"):
+      icon " m-2 " & icon
+      proc onclick =
+        setIcon icon
 
 
 func iconClass(sc: SearchableClass): string =
@@ -130,7 +181,8 @@ proc fetchNotes: Future[void] =
 
 proc fetchTags: Future[void] =
   newPromise proc(resolve, reject: proc()) =
-    apiGetTagsList proc(tagsList: seq[Tag]) =
+    apiGetTagsList proc(ts: seq[Tag]) =
+      tagsList = ts
       for t in tagsList:
         tags[t.label] = t
       resolve()
@@ -641,6 +693,11 @@ proc searchTagManager(): Vnode =
       h3(class = "mt-4"):
         text "Available Tags"
 
+        tdiv(class = "mx-4 btn btn-outline-white"):
+          proc onclick =
+            appState = asTagSettings
+          icon "fa-cog fa-xl"
+
       tdiv(class = "card"):
         tdiv(class = "card-body"):
           for id, t in tags:
@@ -840,6 +897,161 @@ proc createDom: Vnode =
       of asTagManager:
         relTagManager()
 
+      of asTagSettings:
+        tdiv(class = "p-4 mx-4 my-2"):
+          h6(class = "mb-3"):
+            icon "fa-bars-staggered me-2"
+            text "All Tags"
+
+          tdiv(class = "d-flex flex-row flex-wrap"):
+            for i, t in tagsList:
+              let val =
+                if hasValue t: "..."
+                else: ""
+              tagViewC t, val, genChangeSelectedTagi i
+
+        tdiv(class = "p-4 mx-4 my-2"):
+          h6(class = "mb-3"):
+            icon "fa-gear me-2"
+            text "Config"
+
+          tdiv(class = "form-control"):
+            if tagState == asSelectIcon:
+              tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
+                for c in icons:
+                  iconSelectionBLock($c, onIconSelected)
+
+            else:
+              echo currentTag
+              # name
+              tdiv(class = "form-group d-inline-block mx-2"):
+                label(class = "form-check-label"):
+                  text "name: "
+
+                input(`type` = "text", class = "form-control tag-input",
+                    value = currentTag.get.label):
+                  proc oninput(e: Event, v: Vnode) =
+                    currentTag.get.label = e.target.value
+
+              # icon
+              tdiv(class = "form-check"):
+                label(class = "form-check-label"):
+                  text "icon: "
+
+                tdiv(class = "d-inline-block"):
+                  tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
+                    icon "m-2 " & $currentTag.get.icon
+
+                  proc onclick =
+                    tagState = asSelectIcon
+
+              tdiv(class = "form-check form-switch"):
+                checkbox currentTag.get.is_private, proc (b: bool) =
+                  currentTag.get.is_private = b
+
+                label(class = "form-check-label"):
+                  text "is private"
+
+              tdiv(class = "form-check form-switch"):
+                checkbox currentTag.get.show_name, proc (b: bool) =
+                  currentTag.get.show_name = b
+
+                label(class = "form-check-label"):
+                  text "show name"
+
+              # has value
+              tdiv(class = "form-check form-switch"):
+                checkbox currentTag.get.hasValue, proc (b: bool) =
+                  currentTag.get.value_type =
+                    if b: rvtStr
+                    else: rvtNone
+
+                label(class = "form-check-label"):
+                  text "has value"
+
+              # value type
+              tdiv(class = "form-group my-2"):
+                label(class = "form-label"):
+                  text "value type"
+
+                select(class = "form-select",
+                    disabled = not currentTag.get.hasValue):
+                  for lbl in rvtStr..rvtDate:
+                    option(value = cstr lbl.ord,
+                        selected = currentTag.get.value_type == lbl):
+                      text $lbl
+
+                  proc onInput(e: Event, v: Vnode) =
+                    currentTag.get.value_type = RelValueType parseInt e.target.value
+
+              # background
+              tdiv(class = "form-group d-inline-block mx-2"):
+                label(class = "form-check-label"):
+                  text "background color: "
+
+                input(`type` = "color",
+                    class = "form-control",
+                    value = toColorString currentTag.get.theme.bg):
+                  proc oninput(e: Event, v: Vnode) =
+                    currentTag.get.theme.bg = parseHexColorPack $e.target.value
+
+              # foreground
+              tdiv(class = "form-group d-inline-block mx-2"):
+                label(class = "form-check-label"):
+                  text "foreground color: "
+
+                input(`type` = "color",
+                    class = "form-control",
+                    value = toColorString currentTag.get.theme.fg):
+                  proc oninput(e: Event, v: Vnode) =
+                    currentTag.get.theme.fg = parseHexColorPack $e.target.value
+
+              tdiv(class = "my-2"):
+                tagViewC get currentTag, "...", noop
+
+            if selectedTagI == noIndex:
+              button(class = "btn btn-success w-100 mt-2 mb-4"):
+                text "add"
+                icon "mx-2 fa-plus"
+
+                proc onclick =
+                  apiCreateNewTag currentTag.get, proc =
+                    notify "tag created"
+                    waitAll [fetchTags()], proc = redraw()
+
+            else:
+              button(class = "btn btn-primary w-100 mt-2"):
+                text "update"
+                icon "mx-2 fa-sync"
+
+                proc onclick =
+                  apiUpdateTag currentTag.get, proc =
+                    notify "tag updated"
+                    waitAll [fetchTags()], proc = redraw()
+
+              button(class = "btn btn-danger w-100 mt-2 mb-4"):
+                text "delete"
+                icon "mx-2 fa-trash"
+
+                proc onclick =
+                  apiDeleteTag currentTag.get.id, proc =
+                    notify "tag deleted"
+                    waitAll [fetchTags()], proc = redraw()
+
+            button(class = "btn btn-warning w-100 mt-2 mb-4"):
+              icon "fa-hand mx-2"
+              text "close"
+
+              proc onclick =
+                appState = asNormal
+
+
+proc fetchDefaultPalette: Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    apiGetPalette "default", proc(cs: seq[ColorTheme]) =
+      colors = cs
+      currentTag = some dummyTag()
+      resolve()
 
 when isMainModule:
   setRenderer createDom
@@ -853,7 +1065,9 @@ when isMainModule:
     me = some u
     redraw()
 
-  waitAll [fetchTags(), fetchUsers(), fetchNotes(), fetchBoards(), fetchAssets()], proc =
+  waitAll [fetchTags(), fetchUsers(),
+    fetchNotes(), fetchBoards(), fetchAssets(), fetchDefaultPalette()], proc =
+    currentTag = some dummyTag()
     redraw()
 
   document.body.addEventListener "paste":
