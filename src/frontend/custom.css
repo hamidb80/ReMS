@@ -128,6 +128,19 @@ p {
   cursor: e-resize;
 }
 
+.extender-body {
+  width: 40px;
+  height: 40px;
+}
+
+.x-translate-center {
+  transform: translateX(-50%);
+}
+
+.y-translate-center {
+  transform: translateY(-50%);
+}
+
 #tw-side-bar {
   width: 50px;
 }
@@ -265,16 +278,20 @@ p {
   cursor: pointer;
 }
 
-.tw-focus-hover {
-  background-color: #9dadff4f;
-}
-
 .tw-mouse-hover {
   background-color: #00720f4f;
 }
 
+.tw-focus-hover {
+  background-color: #9dadff4f;
+}
+
 .tw-custom-html.tw-focus-hover>* {
   opacity: 0.5;
+}
+
+.tw-tree-indicator {
+  height: 4px;
 }
 
 .tw-latex {
@@ -286,7 +303,7 @@ p {
   opacity: 0.5;
 }
 
-#tw-settings-area{
+#tw-settings-area {
   overflow-y: auto;
 }
 

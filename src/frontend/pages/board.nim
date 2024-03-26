@@ -1162,13 +1162,6 @@ proc saveServer =
   apiUpdateBoardContent app.id, data, success
 
 
-func clientPos(t: Touch): Vector =
-  v(t.clientX, t.clientY)
-
-func distance(ts: seq[Touch]): float =
-  assert 2 == len ts
-  len (clientPos ts[0]) - (clientPos ts[1])
-
 proc zoom(s, Δy: float) =
   let
     ⋊s = exp(-Δy / 400)
@@ -1191,6 +1184,38 @@ proc gotoCenterOfBoard =
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
 
+var rendered = false
+
+proc registerHandleEvents =
+  proc onPointerDown =
+    echo "down"
+
+    # setCursor ccresizex
+    proc movimpl(x, y: int) {.caster.} =
+      reconsiderSideBarWidth window.innerWidth - x
+      redraw()
+
+    proc movMouse(e: Event as MouseEvent) {.caster.} =
+      movimpl e.x, e.y
+
+    proc moveTouch(ev: Event as TouchEvent) {.caster.} =
+      let t = clientPos ev.touches[0]
+      movimpl |t.x, |t.y
+
+    proc up =
+      # setCursor ccNone
+      winel.removeEventListener "mousemove", movMouse
+      winel.removeEventListener "touchmove", moveTouch
+
+    winel.addEventListener "mousemove", movMouse
+    winel.addEventListener "mouseup", up
+
+    winel.addEventListener "touchmove", moveTouch
+    winel.addEventListener "touchend", up
+
+  ".extender-body".ql.addEventlistener "mousedown", onPointerDown
+  ".extender-body".ql.addEventlistener "touchstart", onPointerDown
+
 
 proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
   buildHtml button(
@@ -1205,6 +1230,9 @@ proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
   let freeze = winel.onmousemove != nil
+
+  defer:
+    rendered = true
 
   buildHtml:
     tdiv(class = "karax"):
@@ -1372,211 +1400,204 @@ proc createDom*(data: RouterData): VNode =
           if not app.isLocked:
             sidebarBtn "fa-save fa-lg", "", saveServer
 
-      if app.sidebarVisible:
-        aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
-            iff(freeze, "user-select-none ") &
-            iff(app.sidebarWidth < ciriticalWidth, "icons-only "),
-            style = style(
-              StyleAttr.width, c fmt"{app.sidebarWidth}px")):
+      aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
+          iff(freeze, "user-select-none ") &
+          iff(app.sidebarWidth < ciriticalWidth, "icons-only ") &
+          iff(not app.sidebarVisible, "d-none"),
+          style = style(
+            StyleAttr.width, c fmt"{app.sidebarWidth}px")):
 
-          tdiv(class = "extender h-100 btn btn-light p-0"):
-            proc onMouseDown =
-              setCursor ccresizex
+        tdiv(class = "extender h-100 btn btn-light p-0"):
+          tdiv(class = "extender-body d-flex rounded-circle justify-content-center align-items-center x-translate-center mt-4 bg-primary text-white"):
+            if not rendered:
+              discard setTimeout(1000, registerHandleEvents)
+            icon "fa-left-right"
 
-              winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
-                reconsiderSideBarWidth window.innerWidth - e.x
-                redraw()
+        tdiv(class = "d-flex flex-column w-100"):
+          header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
 
-              winel.onmouseup = proc(e: Event) =
-                setCursor ccNone
-                reset winel.onmousemove
-                reset winel.onmouseup
+            tdiv(class = "d-flex flex-row"):
+              tdiv(class = "nav-item",
+                  onclick = sidebarStateMutator ssMessagesView):
+                span(class = "nav-link px-3 pointer" &
+                    iff(app.sidebarState == ssMessagesView, " active")):
+                  span(class = "caption"):
+                    text "Messages "
+                  icon "fa-message"
 
-          tdiv(class = "d-flex flex-column w-100"):
-            header(class = "nav nav-tabs d-flex flex-row justify-content-between align-items-end bg-light mb-2"):
-
-              tdiv(class = "d-flex flex-row"):
+              if not app.isLocked:
                 tdiv(class = "nav-item",
-                    onclick = sidebarStateMutator ssMessagesView):
+                    onclick = sidebarStateMutator ssPropertiesView):
                   span(class = "nav-link px-3 pointer" &
-                      iff(app.sidebarState == ssMessagesView, " active")):
-                    span(class = "caption"):
-                      text "Messages "
-                    icon "fa-message"
+                    iff(app.sidebarState == ssPropertiesView, " active")):
 
-                if not app.isLocked:
-                  tdiv(class = "nav-item",
-                      onclick = sidebarStateMutator ssPropertiesView):
-                    span(class = "nav-link px-3 pointer" &
-                      iff(app.sidebarState == ssPropertiesView, " active")):
-
-                      if app.selectedVisualNodes.len == 0:
-                        span(class = "caption"):
-                          text "board "
-                        icon "fa-play"
-
-                      else:
-                        span(class = "caption"):
-                          text "Properties "
-                        icon "fa-circle-info"
-
-                  tdiv(class = "nav-item",
-                      onclick = sidebarStateMutator ssShortcuts):
-                    span(class = "nav-link px-3 pointer" &
-                      iff(app.sidebarState == ssShortcuts, " active")):
+                    if app.selectedVisualNodes.len == 0:
                       span(class = "caption"):
-                        text "Shortcuts "
-                      icon "fa-keyboard"
+                        text "board "
+                      icon "fa-play"
 
-              tdiv(class = "nav-item d-flex flex-row px-2"):
-                span(class = "nav-link px-1 pointer", onclick = maximize):
-                  invisibleText()
+                    else:
+                      span(class = "caption"):
+                        text "Properties "
+                      icon "fa-circle-info"
 
-                  icon(
-                      if isMaximized(): "fa-window-minimize"
-                      else: "fa-window-maximize")
+                tdiv(class = "nav-item",
+                    onclick = sidebarStateMutator ssShortcuts):
+                  span(class = "nav-link px-3 pointer" &
+                    iff(app.sidebarState == ssShortcuts, " active")):
+                    span(class = "caption"):
+                      text "Shortcuts "
+                    icon "fa-keyboard"
 
-                span(class = "nav-link px-1 pointer"):
-                  invisibleText()
-                  icon "fa-close"
+            tdiv(class = "nav-item d-flex flex-row px-2"):
+              span(class = "nav-link px-1 pointer", onclick = maximize):
+                invisibleText()
 
-                  proc onclick =
-                    closeSideBar()
+                icon(
+                    if isMaximized(): "fa-window-minimize"
+                    else: "fa-window-maximize")
 
-            main(class = "p-2 content-wrapper h-100"):
-              case app.sidebarState
-              of ssMessagesView:
-                if app.selectedVisualNodes.len == 1:
-                  let sv = app.selectedVisualNodes[0]
+              span(class = "nav-link px-1 pointer"):
+                invisibleText()
+                icon "fa-close"
 
-                  if sv.config.messageIdList.len == 0:
-                    text "no messages!"
-                  else:
-                    for i, mid in sv.config.messageIdList:
-                      msgComp sv, i, mid
+                proc onclick =
+                  closeSideBar()
 
-              of ssPropertiesView:
-                if app.selectedVisualNodes.len == 1:
-                  let vn = app.selectedVisualNodes[0]
-                  tdiv(class = "form-group"):
-                    fieldset(class = "form-group"):
-                      legend(class = "mt-4"):
-                        text "Type Of Node"
+          main(class = "p-2 content-wrapper h-100"):
+            case app.sidebarState
+            of ssMessagesView:
+              if app.selectedVisualNodes.len == 1:
+                let sv = app.selectedVisualNodes[0]
 
-                      tdiv(class = "form-check"):
-                        input(`type` = "radio",
-                            class = "form-check-input",
-                            value = "option1",
-                            onclick = setDataText,
-                            checked = vn.config.data.kind == vndkText,
-                            name = "kindOfData")
-
-                        label(class = "form-check-label"):
-                          text "Text Node"
-
-                      tdiv(class = "form-check"):
-                        input(`type` = "radio",
-                            class = "form-check-input",
-                            value = "option2",
-                            onclick = setDataImage,
-                            checked = vn.config.data.kind == vndkImage,
-                            name = "kindOfData")
-
-                        label(class = "form-check-label"):
-                          text "Image Node"
-
-                  case vn.config.data.kind
-                  of vndkText:
-                    input(`type` = "text", class = "form-control",
-                        placeholder = "text ...", value = vn.config.data.text):
-
-                      proc oninput(e: Event; v: Vnode) =
-                        let s = e.target.value
-                        setText vn, s
-
-                  of vndkImage:
-                    input(`type` = "text", class = "form-control",
-                        placeholder = "URL", value = vn.config.data.url, name = "url"):
-
-                      proc oninput(e: Event; v: Vnode) =
-                        let s = e.target.value
-                        setImageUrl vn, s
-
-                    label(class = "form-label"):
-                      text "scale"
-                    input(`type` = "range", id = "scale-range",
-                        class = "form-range", value = "1.0", min = "0.01",
-                            max = "3.0", step = "0.01"):
-                      proc onchange(e: Event; v: Vnode) =
-                        let s = e.target.value
-                        scaleImage vn, parseFloat s
-
+                if sv.config.messageIdList.len == 0:
+                  text "no messages!"
                 else:
-                  label(class = "form-label"):
-                    text "Title"
+                  for i, mid in sv.config.messageIdList:
+                    msgComp sv, i, mid
 
+            of ssPropertiesView:
+              if app.selectedVisualNodes.len == 1:
+                let vn = app.selectedVisualNodes[0]
+                tdiv(class = "form-group"):
+                  fieldset(class = "form-group"):
+                    legend(class = "mt-4"):
+                      text "Type Of Node"
+
+                    tdiv(class = "form-check"):
+                      input(`type` = "radio",
+                          class = "form-check-input",
+                          value = "option1",
+                          onclick = setDataText,
+                          checked = vn.config.data.kind == vndkText,
+                          name = "kindOfData")
+
+                      label(class = "form-check-label"):
+                        text "Text Node"
+
+                    tdiv(class = "form-check"):
+                      input(`type` = "radio",
+                          class = "form-check-input",
+                          value = "option2",
+                          onclick = setDataImage,
+                          checked = vn.config.data.kind == vndkImage,
+                          name = "kindOfData")
+
+                      label(class = "form-check-label"):
+                        text "Image Node"
+
+                case vn.config.data.kind
+                of vndkText:
                   input(`type` = "text", class = "form-control",
-                        placeholder = "title", value = app.title):
+                      placeholder = "text ...", value = vn.config.data.text):
 
                     proc oninput(e: Event; v: Vnode) =
                       let s = e.target.value
-                      app.title = s
+                      setText vn, s
 
-                  button(class = "btn btn-primary m-2"):
-                    text "update"
-                    icon "fa-sync ms-2"
+                of vndkImage:
+                  input(`type` = "text", class = "form-control",
+                      placeholder = "URL", value = vn.config.data.url, name = "url"):
 
-                    proc onclick =
-                      apiUpdateBoardTitle app.id, $app.title, proc =
-                        notify "title updated!"
+                    proc oninput(e: Event; v: Vnode) =
+                      let s = e.target.value
+                      setImageUrl vn, s
+
+                  label(class = "form-label"):
+                    text "scale"
+                  input(`type` = "range", id = "scale-range",
+                      class = "form-range", value = "1.0", min = "0.01",
+                          max = "3.0", step = "0.01"):
+                    proc onchange(e: Event; v: Vnode) =
+                      let s = e.target.value
+                      scaleImage vn, parseFloat s
+
+              else:
+                label(class = "form-label"):
+                  text "Title"
+
+                input(`type` = "text", class = "form-control",
+                      placeholder = "title", value = app.title):
+
+                  proc oninput(e: Event; v: Vnode) =
+                    let s = e.target.value
+                    app.title = s
+
+                button(class = "btn btn-primary m-2"):
+                  text "update"
+                  icon "fa-sync ms-2"
+
+                  proc onclick =
+                    apiUpdateBoardTitle app.id, $app.title, proc =
+                      notify "title updated!"
 
 
-              of ssShortcuts:
-                ul(class = "list-group"):
-                  for i, sr in app.actionsShortcutRegistery:
-                    li(class = "list-group-item d-flex justify-content-between align-items-center"):
-                      span(class = "text-muted"):
-                        text $i
+            of ssShortcuts:
+              ul(class = "list-group"):
+                for i, sr in app.actionsShortcutRegistery:
+                  li(class = "list-group-item d-flex justify-content-between align-items-center"):
+                    span(class = "text-muted"):
+                      text $i
 
-                      span:
-                        if sr.alt:
-                          span(class = "badge bg-dark"):
-                            text "Alt"
-                        if sr.ctrl:
-                          span(class = "badge bg-dark"):
-                            text "Ctrl"
-                        if sr.shift:
-                          span(class = "badge bg-dark"):
-                            text "Shift"
-                        if sr.code notin {kcAlt, kcCtrl, kcShift}:
-                          span(class = "badge bg-dark"):
-                            text $sr.code
+                    span:
+                      if sr.alt:
+                        span(class = "badge bg-dark"):
+                          text "Alt"
+                      if sr.ctrl:
+                        span(class = "badge bg-dark"):
+                          text "Ctrl"
+                      if sr.shift:
+                        span(class = "badge bg-dark"):
+                          text "Shift"
+                      if sr.code notin {kcAlt, kcCtrl, kcShift}:
+                        span(class = "badge bg-dark"):
+                          text $sr.code
 
-            if
-              not app.isLocked and
-              app.sidebarState == ssMessagesView and
-              app.selectedVisualNodes.len > 0:
+          if
+            not app.isLocked and
+            app.sidebarState == ssMessagesView and
+            app.selectedVisualNodes.len > 0:
 
-              footer(class = "mt-2"):
-                tdiv(class = "input-group"):
-                  input(`type` = "text", id = "new-message-input",
-                      class = "form-control form-control-sm")
+            footer(class = "mt-2"):
+              tdiv(class = "input-group"):
+                input(`type` = "text", id = "new-message-input",
+                    class = "form-control form-control-sm")
 
-                  button(class = "input-group-text btn btn-primary"):
-                    icon "fa-pen"
-                    proc onClick =
-                      apiNewNote proc(id: Id) =
-                        addToMessages id
-                        openNewTab get_note_editor_url(id)
-
-                  button(class = "input-group-text btn btn-primary"):
-                    icon "fa-add"
-                    proc onClick =
-                      let
-                        inp = el"new-message-input"
-                        id = parseInt inp.value
+                button(class = "input-group-text btn btn-primary"):
+                  icon "fa-pen"
+                  proc onClick =
+                    apiNewNote proc(id: Id) =
                       addToMessages id
-                      inp.value = c""
+                      openNewTab get_note_editor_url(id)
+
+                button(class = "input-group-text btn btn-primary"):
+                  icon "fa-add"
+                  proc onClick =
+                    let
+                      inp = el"new-message-input"
+                      id = parseInt inp.value
+                    addToMessages id
+                    inp.value = c""
 
       snackbar()
 
@@ -1980,7 +2001,6 @@ proc init* =
 
       app.loading = true
       fetchBoard app.id
-
 
 when isMainModule:
   init()

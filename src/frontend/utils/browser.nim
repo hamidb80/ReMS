@@ -1,7 +1,11 @@
 import std/[dom, asyncjs, jsformdata]
 import std/[sugar, with]
+
+import prettyvec
+
 import ./js
 import ../../common/[types]
+
 
 type
   ProgressEvent* = ref object of Event
@@ -111,7 +115,7 @@ type
     kcForwardSlash = (191, "/")
     kcOpenbracket = (219, "[")
     kcBackSlash = (220, "\\")
-    kcCloseBraket = (221, "]")
+    kcClosedBracket = (221, "]")
     kcSingleQuote = (222, "'")
 
 
@@ -144,6 +148,13 @@ proc filesArray*(d: DataTransfer or Element or Node or Event):
 proc openNewTab*(link: cstring)
   {.importjs: "window.open(@)".}
 
+func clientPos*(t: Touch): Vector =
+  v(t.clientX, t.clientY)
+
+func distance*(ts: seq[Touch]): float =
+  assert 2 == len ts
+  len (clientPos ts[0]) - (clientPos ts[1])
+
 # proc imageDataUrl(file: DFile): Future[cstring] =
 #   newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
 #     var reader = newFileReader()
@@ -171,6 +182,9 @@ func toInlineCss*[A, B: SomeString](
     add result, ": "
     add result, v
     add result, ";"
+
+proc ql*(q: cstring): Element =
+  querySelector document, q
 
 proc el*(id: cstring): Element =
   getElementById document, id
@@ -251,10 +265,10 @@ proc selectFile*(action: proc(s: cstring)) =
   appendTemp fileInput, () => fileInput.click
 
 
-proc copyToClipboard*(t: cstring) 
+proc copyToClipboard*(t: cstring)
   {.importjs: "navigator.clipboard.writeText(@);".}
 
-proc text*(e: ClipboardEvent): cstring 
+proc text*(e: ClipboardEvent): cstring
   {.importjs: "  #.clipboardData.getData('text/plain')".}
 
 proc redirect*(url: cstring)

@@ -155,9 +155,9 @@ type
     asSetting
 
   InsertionMode* = enum
+    imAppend
     imBefore
     imAfter
-    imAppend
 
   App* = object
     state*: AppState

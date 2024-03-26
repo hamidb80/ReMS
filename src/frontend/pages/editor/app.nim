@@ -3,6 +3,7 @@ import std/[dom, jsffi]
 
 import karax/[karax, karaxdsl, vdom, vstyles]
 import questionable, caster
+import prettyvec
 
 import ../../../backend/database/[models]
 import ./[core, components, inputs]
@@ -51,6 +52,29 @@ var
 
 # ----- UI ------------------------------
 
+proc scrollContentTo(n: TwNode) =
+  let
+    n = app.focusedNode.dom
+    d = el renderResultId
+    scroll = d.scrollTop
+    offy = n.offsetTop
+
+  d.scrollTop = offy - d.offsetTop
+
+proc isSeeingContent(n: TwNode): bool =
+  let
+    d = el renderResultId
+    h = n.dom.offsetHeight
+    o = n.dom.offsetTop - d.offsetTop
+
+  d.scrollTop in (o .. o+h)
+
+proc changeFocusNode(n: TwNode) =
+  app.focusedNode = n
+  if not isSeeingContent app.focusedNode:
+    scrollContentTo app.focusedNode
+
+
 proc setSideBarSize(x: int) =
   sidebarWidth = clamp(x, 100 .. window.innerWidth - 200)
   sidebarHeight = clamp(x, 100 .. window.innerHeight - 160)
@@ -60,9 +84,9 @@ proc saveServer =
   apiUpdateNoteContent id, serialize app, proc =
     notify "note updated!"
 
-func cls(path, hover: TreePath, selected: HashSet[TreePath],
+func cls(hovered: bool, path: TreePath, selected: HashSet[TreePath],
     active: string): string =
-  if path == hover: active
+  if hovered: active
   elif path in selected: "bg-info"
   else: "bg-light"
 
@@ -75,6 +99,7 @@ proc recursiveListImpl(
   hover: TreePath,
   selected: Hashset[TreePath]
 ): VNode =
+  let hovered = hover == path
 
   buildHtml tdiv(id = pathId path, class = "tw-pointer"):
     let
@@ -103,7 +128,11 @@ proc recursiveListImpl(
         else: ""
 
 
-    h6(class = "badge text-start px-2 w-100 " & cls(path, hover, selected, c)):
+    tdiv(class = "tw-tree-indicator w-100 " &
+      iff(hovered and app.insertionMode == imBefore, "bg-primary"))
+
+    h6(class = "badge text-start px-2 w-100 my-0 " & cls(
+        hovered and app.insertionMode == imAppend, path, selected, c)):
       proc onMouseEnter = node.hover()
       proc onMouseLeave = node.unhover()
 
@@ -121,7 +150,7 @@ proc recursiveListImpl(
           italic(class = "mx-2 " & node.data.component.icon)
           text node.data.component.name
 
-        span(class = "me-2 " & iff(path == hover, "", t)):
+        span(class = "me-2 " & iff(hovered, "", t)):
           if s.code != tsNothing:
             text s.msg
             italic(class = i & " mx-1")
@@ -133,8 +162,9 @@ proc recursiveListImpl(
         proc onclick =
           blur app.focusedNode
           app.focusedPath = p
-          app.focusedNode = node
+          changeFocusNode node
           focus app.focusedNode
+          app.insertionMode = imAppend
           redraw()
 
         proc ondblclick =
@@ -146,6 +176,9 @@ proc recursiveListImpl(
         tdiv(class = "branch ms-4"):
           recursiveListImpl n, path, hover, selected
         (path.npop)
+
+    tdiv(class = "tw-tree-indicator w-100 " &
+      iff(hovered and app.insertionMode == imAfter, "bg-primary"))
 
 proc recursiveList(data: TwNode): VNode =
   var treepath = newSeq[int]()
@@ -177,7 +210,12 @@ proc switchToTreeView =
 proc changeViewMove =
   incRound viewMode
 
-proc prepareComponentSelection(parentNode: TwNode) =
+proc prepareComponentSelection(node: TwNode) =
+  let parentNode =
+    case app.insertionMode
+    of imAppend: node
+    else: node.father
+
   reset app.availableComponents
   reset app.listIndex
 
@@ -202,18 +240,19 @@ proc setState(newState: AppState) =
 
 proc startInsertAtEnd =
   setState asSelectComponent
-  app.insertionMode = imAppend
   prepareComponentSelection app.focusedNode
 
-proc startInsertBefore =
-  setState asSelectComponent
-  app.insertionMode = imBefore
-  prepareComponentSelection app.focusedNode.father
+proc changeInsertionMode(mode: InsertionMode) =
+  app.insertionMode =
+    case app.insertionMode
+    of imAppend: mode
+    else: imAppend
 
-proc startInsertAfter =
-  setState asSelectComponent
-  app.insertionMode = imAfter
-  prepareComponentSelection app.focusedNode.father
+proc setInsertBefore =
+  changeInsertionMode imBefore
+
+proc setInsertAfter =
+  changeInsertionMode imAfter
 
 proc moveSelectedNodes =
   let
@@ -270,6 +309,7 @@ proc createInstance(listIndex: int) =
   newNode.mounted(mbUser, tmInteractive)
   app.focusedNode = newNode
   app.state = asTreeView
+  app.insertionMode = imAppend
 
 proc deleteSelectedNode(n: TwNode, path: TreePath) =
   if not isRoot n:
@@ -294,8 +334,7 @@ proc deleteSelectedNodes =
   else:
     deleteSelectedNode n, app.focusedPath
     app.focusedPath.npop
-    app.focusedNode = f
-
+    changeFocusNode f
 
 proc moveToUp =
   if app.focusedPath.len > 0:
@@ -303,7 +342,7 @@ proc moveToUp =
       discard
     else:
       dec app.focusedPath[^1]
-      app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+      changeFocusNode app.focusedNode.father.children[app.focusedPath[^1]]
 
 proc moveToDown =
   if app.focusedPath.len > 0:
@@ -311,7 +350,7 @@ proc moveToDown =
       discard
     else:
       app.focusedPath[^1].inc
-      app.focusedNode = app.focusedNode.father.children[app.focusedPath[^1]]
+      changeFocusNode app.focusedNode.father.children[app.focusedPath[^1]]
 
 proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
   let lastFocus = app.focusedNode
@@ -327,29 +366,29 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       preventDefault e
       moveToDown()
 
-    of kcArrowLeft: # goes inside
+    of kcArrowLeft: # goes outside
       if app.focusedPath.len > 0:
         app.focusedPath.npop
-        app.focusedNode = app.focusedNode.father
+        changeFocusNode app.focusedNode.father
 
-    of kcArrowRight: # goes outside
+    of kcArrowRight: # goes inside
       if app.focusedNode.isLeaf or not app.focusedNode.data.visibleChildren:
         discard
       else:
         add app.focusedPath, 0
-        app.focusedNode = app.focusedNode.children[0]
+        changeFocusNode app.focusedNode.children[0]
 
     of kcOpenbracket: # insert before
-      startInsertBefore()
+      setInsertBefore()
 
-    of kcCloseBraket: # insert after
-      startInsertAfter()
+    of kcClosedBracket: # insert after
+      setInsertAfter()
 
     of kcDelete: # delete node
       deleteSelectedNodes()
 
     of kcEnter:
-      if app.state == asTreeView:
+      if app.state == asTreeView and app.insertionMode == imAppend:
         app.state = asSetting
 
     of kcEscape:
@@ -383,13 +422,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
       d.scrollTop = d.scrollTop - scrollStep
 
     of kcW: # scroll to into the content
-      let
-        n = app.focusedNode.dom
-        d = el renderResultId
-        scroll = d.scrollTop
-        offy = n.offsetTop
-
-      d.scrollTop = offy - d.offsetTop
+      scrollContentTo app.focusedNode
 
     of kcA: # show actions of focused element
       discard
@@ -476,7 +509,6 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     w.scrollTop = t.offsetTop - 160
 
-
 # ----- Init ------------------------------
 
 proc fetchNote(id: Id) =
@@ -497,6 +529,12 @@ proc genSelectComponent(i: int): proc() =
   proc =
     createInstance i
 
+proc sidebtn(icn: string, action: proc()): VNode =
+  buildHtml button(
+    class = "btn btn-outline-primary my-1 rounded px-2 py-3",
+    onclick = action):
+    icon "fa-xl " & icn
+
 proc createDom: VNode =
   buildHtml tdiv:
     snackbar()
@@ -508,37 +546,14 @@ proc createDom: VNode =
         class = """d-flex flex-column 
                 h-100 bg-dark p-1 overflow-y-auto overflow-x-hidden"""):
 
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = saveServer):
-          icon "fa-save fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = startInsertAtEnd):
-          icon "fa-plus fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = startInsertBefore):
-          icon "fa-chevron-up fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = startInsertAfter):
-          icon "fa-chevron-down fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = deleteSelectedNodes):
-          icon "fa-trash fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = changeViewMove):
-          icon "fa-eye fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = noop):
-          icon "fa-tag fa-xl"
-
-        button(class = "btn btn-outline-primary my-1 rounded px-2 py-3",
-            onclick = switchToTreeView):
-          icon "fa-close fa-xl"
+        sidebtn "fa-save", saveServer
+        sidebtn "fa-plus", startInsertAtEnd
+        sidebtn "fa-chevron-up", setInsertBefore
+        sidebtn "fa-chevron-down", setInsertAfter
+        sidebtn "fa-trash", deleteSelectedNodes
+        sidebtn "fa-eye", changeViewMove
+        sidebtn "fa-tag", noop
+        sidebtn "fa-close", switchToTreeView
 
       tdiv(id = "editor-body", class = "d-flex " & bsc.wrapperCls):
         tdiv(id = settingsAreaId,
@@ -598,21 +613,22 @@ proc createDom: VNode =
 
         tdiv(id = extenderId, class = "extender btn btn-secondary border-1 p-0 d-inline-block " &
             bsc.extenderCls):
-          proc onMouseDown =
-            # setCursor ccresizex
 
-            winel.onmousemove = proc(e: Event as MouseEvent) {.caster.} =
+          let
+            t =
               case viewMode
-              of vmBothHorizontal: setSideBarSize e.x
-              of vmBothVertical: setSideBarSize e.y
-              else: discard
+              of vmBothHorizontal: "x-translate-center my-2"
+              of vmBothVertical: "y-translate-center mx-4"
+              else: "d-none"
 
-              redraw()
+            icn =
+              case viewMode
+              of vmBothHorizontal: "fa-left-right"
+              of vmBothVertical: "fa-up-down"
+              else: ""
 
-            winel.onmouseup = proc(e: Event) =
-              # setCursor ccNone
-              reset winel.onmousemove
-              reset winel.onmouseup
+          tdiv(class = "extender-body d-flex rounded-circle justify-content-center align-items-center bg-primary " & t):
+            icon icn
 
         tdiv(id = renderResultId,
           class = "tw-content overflow-y-scroll p-3 float-start d-inline-block " &
@@ -620,6 +636,7 @@ proc createDom: VNode =
           style = style(bsc.cssProperty, fmt"{bsc.contentSize}px")):
 
           verbatimElement editRootElementId
+
 
 proc init* =
   register app, "raw-text-editor", rawTextEditor
@@ -643,6 +660,37 @@ proc init* =
   setRenderer createDom
   settimeout 500, proc =
     fetchNote parseInt getWindowQueryParam "id"
+
+    proc onPointerDown =
+      # setCursor ccresizex
+      proc movimpl(x, y: int) {.caster.} =
+        case viewMode
+        of vmBothHorizontal: setSideBarSize x
+        of vmBothVertical: setSideBarSize y
+        else: discard
+        redraw()
+
+      proc movMouse(e: Event as MouseEvent) {.caster.} =
+        movimpl e.x, e.y
+
+      proc moveTouch(ev: Event as TouchEvent) {.caster.} =
+        let t = clientPos ev.touches[0]
+        movimpl |t.x, |t.y
+
+      proc up =
+        # setCursor ccNone
+        winel.removeEventListener "mousemove", movMouse
+        winel.removeEventListener "touchmove", moveTouch
+
+
+      winel.addEventListener "mousemove", movMouse
+      winel.addEventListener "mouseup", up
+
+      winel.addEventListener "touchmove", moveTouch
+      winel.addEventListener "touchend", up
+
+    ".extender-body".ql.addEventlistener "mousedown", onPointerDown
+    ".extender-body".ql.addEventlistener "touchstart", onPointerDown
 
   with document.documentElement:
     addEventListener "keydown", keyboardListener
