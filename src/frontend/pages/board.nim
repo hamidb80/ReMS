@@ -48,11 +48,16 @@ type
     asNormal
     asPan
 
+  SelectMode = enum
+    smSingle
+    smAreaNodes
+    smAreaEdges
+
   AppData = object
     id: Id ## current board id that is editing
     title: cstring
     maxNodeId: int
-    isLocked: bool = true
+    locked: bool = true
     loading: bool
 
     # konva states
@@ -85,7 +90,7 @@ type
     sidebarWidth: Natural
     sidebarVisible: bool
 
-    areaSelectKeyHold: bool
+    selectMode: SelectMode
     panKeyHold: bool
     zoomKeyHold: bool
 
@@ -143,7 +148,7 @@ type
     akFocus
     akDownload
     akCopyStyle
-    akAreaSelectToggle
+    akAreaSelectOptions
 
 
   ActionsShortcutRegistery =
@@ -188,7 +193,7 @@ app.actionsShortcutRegistery = [
   akFocus: sc"F",
   akDownload: sc"D",
   akCopyStyle: sc"K",
-  akAreaSelectToggle: sc"M"]
+  akAreaSelectOptions: sc"M"]
 
 # ----- Util
 template `<>`*(a, b): untyped = clamp(a, b)
@@ -274,6 +279,12 @@ proc select(e: Edge) =
   highlight e
   add app.selectedEdges, e
 
+
+proc newPoint(pos: Vector; r = 1.0): Circle =
+  result = newCircle()
+  with result:
+    radius = r
+    position = pos
 
 proc updateEdgePos(e: Edge; a1: Area; c1: Vector; a2: Area; c2: Vector) =
   let
@@ -425,6 +436,10 @@ proc redrawConnectionsTo(uid: Id) =
       n2 = app.objects[k.b]
 
     updateEdgePos ei, n1.area, n1.center, n2.area, n2.center
+
+proc changeSelectionMode =
+  incRound app.selectMode
+  redraw()
 
 proc updateEdgeShape(e: Edge; cs: ConnectionCenterShapeKind) =
   e.data.config.centerShape = cs
@@ -847,7 +862,7 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
 
     on "dragstart", proc =
       if
-        app.isLocked or
+        app.locked or
         app.state != asNormal or
         vn notin app.selectedVisualNodes:
         stopDrag wrapper
@@ -982,12 +997,6 @@ proc restore(app: var AppData; data: BoardData) =
     addEdgeEvents e
 
 
-proc newPoint(pos: Vector; r = 1.0): Circle =
-  result = newCircle()
-  with result:
-    radius = r
-    position = pos
-
 # ----- UI
 let compTable = defaultComponents()
 var
@@ -1052,7 +1061,7 @@ proc msgComp(v: VisualNode; i: int; mid: Id): VNode =
     generalCardBtnLink("fa-glasses", "info", get_note_preview_url mid),
     generalCardBtnAction("fa-sync", "primary", syncMsg)]
 
-  if not app.isLocked:
+  if not app.locked:
     add btns, [
       generalCardBtnAction("fa-copy", "primary", copyMsgId),
       generalCardBtnLink("fa-pen", "warning", get_note_editor_url mid),
@@ -1116,7 +1125,7 @@ proc openSideBar =
   reconsiderSideBarWidth()
 
 proc toggleLock =
-  negate app.isLocked
+  negate app.locked
 
 proc sidebarStateMutator*(to: SidebarState): proc =
   proc =
@@ -1225,8 +1234,6 @@ var rendered = false
 
 proc registerHandleEvents =
   proc onPointerDown =
-    echo "down"
-
     # setCursor ccresizex
     proc movimpl(x, y: int) {.caster.} =
       reconsiderSideBarWidth window.innerWidth - x
@@ -1289,7 +1296,7 @@ proc createDom*(data: RouterData): VNode =
             zoom ||app.stage.scale, -zoomStep
 
 
-        if not app.isLocked:
+        if not app.locked:
           tdiv(class = "inside user-select-none bg-white border-top border-dark-subtle d-flex align-items-center",
                 style = style(StyleAttr.width, cstring $iff(
                 app.sidebarvisible,
@@ -1404,19 +1411,28 @@ proc createDom*(data: RouterData): VNode =
           m = app.selectedEdges.len
 
         if n >= 1 or m >= 1: # if something was selected
-          if not app.isLocked:
+          if not app.locked:
             sidebarBtn "fa-trash", "", deleteSelectedNodes
           sidebarBtn "fa-ban", "", proc =
             unselect()
             app.boardstate = bsFree
             # app.state = asNormal
+        
         else:
           let iconName =
-            if app.isLocked: "fa-lock"
+            if app.locked: "fa-lock"
             else: "fa-lock-open"
 
           sidebarBtn iconName, "", toggleLock
 
+        if not app.locked:
+          let icn =
+            case app.selectMode
+            of smSingle: "fa-crosshairs"
+            of smAreaNodes: "fa-square-plus"
+            of smAreaEdges: "fa-circle-plus"
+
+          sidebarBtn icn, "", changeSelectionMode
 
         if n > 1:
           sidebarBtn "", $n, noop
@@ -1424,7 +1440,7 @@ proc createDom*(data: RouterData): VNode =
         elif n == 1:
           let vn = app.selectedVisualNodes[0]
 
-          if not app.isLocked:
+          if not app.locked:
             sidebarBtn "fa-circle-nodes", "", proc =
               startAddConns [vn]
 
@@ -1433,13 +1449,13 @@ proc createDom*(data: RouterData): VNode =
             app.sidebarState = ssMessagesView
 
         else:
-          if m == 0 and not app.isLocked:
+          if m == 0 and not app.locked:
             sidebarBtn "fa-plus fa-lg", "", startPuttingNode
 
           # TODO show shortcut and name via a tooltip
           sidebarBtn "fa-expand fa-lg", "", gotoCenterOfBoard
 
-          if not app.isLocked:
+          if not app.locked:
             sidebarBtn "fa-save fa-lg", "", saveServer
 
       aside(class = "side-bar position-absolute shadow-sm border bg-white h-100 d-flex flex-row " &
@@ -1467,7 +1483,7 @@ proc createDom*(data: RouterData): VNode =
                     text "Messages "
                   icon "fa-message"
 
-              if not app.isLocked:
+              if not app.locked:
                 tdiv(class = "nav-item",
                     onclick = sidebarStateMutator ssPropertiesView):
                   span(class = "nav-link px-3 pointer" &
@@ -1616,7 +1632,7 @@ proc createDom*(data: RouterData): VNode =
                           text $sr.code
 
           if
-            not app.isLocked and
+            not app.locked and
             app.sidebarState == ssMessagesView and
             app.selectedVisualNodes.len > 0:
 
@@ -1671,15 +1687,16 @@ proc initCenterPin: KonvaShape =
     stroke = "black"
     strokeWidth = 2
 
-proc searchShortcut(sc: ShortCut): NOption[ActionKind] =
-  for ac, sh in app.actionsShortcutRegistery:
-    if sh == sc:
-      return some ac
 
 type
   KeyState = enum
     pressed
     released
+
+proc searchShortcut(sc: ShortCut): NOption[ActionKind] =
+  for ac, sh in app.actionsShortcutRegistery:
+    if sh == sc:
+      return some ac
 
 proc takeAction(ac: ActionKind; ks: KeyState) =
   case ks:
@@ -1726,7 +1743,7 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
         redraw()
 
     of akToggleLock:
-      negate app.isLocked
+      negate app.locked
       redraw()
 
     of akCreateNode:
@@ -1766,8 +1783,8 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
       else:
         notify "nothing to copy style from"
 
-    of akAreaSelectToggle:
-      negate app.areaSelectKeyHold
+    of akAreaSelectOptions:
+      changeSelectionMode()
 
     else:
       discard
@@ -1843,7 +1860,7 @@ proc init* =
       on "mousedown", proc(ke: JsObject as KonvaMouseEvent) {.caster.} =
         app.leftClicked = true
 
-        if app.areaSelectKeyHold:
+        if app.selectMode != smSingle:
           let
             m = v(ke.evt.x, ke.evt.y)
             currentMousePos = coordinate(m, app.stage)
@@ -1865,7 +1882,7 @@ proc init* =
             Δy = m.y - app.lastClientMousePos.y
           zoom s, Δy
 
-        elif app.areaSelectKeyHold:
+        elif app.selectMode != smSingle:
           let
             a = app.areaSelectionNode.position
             b = currentMousePos
@@ -1901,11 +1918,31 @@ proc init* =
         app.lastClientMousePos = m
 
       on "mouseup", proc =
-        if visible app.areaSelectionNode:
-          let selectedArea = area app.areaSelectionNode
+        let selectedArea = area app.areaSelectionNode
+
+        case app.selectMode
+        of smSingle: discard
+        of smAreaNodes: 
           for _, vn in app.objects:
             if vn.area in selectedArea:
               select vn
+
+          setTimeout 100, proc =
+            case app.boardState
+            of bsAddNode:
+              if app.state == asNormal:
+                app.boardState = bsFree
+                app.objects[app.tempNode.config.id] = app.tempNode
+                app.mainGroup.add app.tempNode.konva.wrapper
+                app.tempNode = nil
+                # unselect()
+            else:
+              discard
+
+        of smAreaEdges: 
+          for _, e in app.edgeInfo:
+            if e.konva.shape.area in selectedArea:
+              select e
 
         setTimeout 100, proc =
           case app.boardState
@@ -2037,6 +2074,7 @@ proc init* =
 
       app.loading = true
       fetchBoard app.id
+
 
 when isMainModule:
   init()
