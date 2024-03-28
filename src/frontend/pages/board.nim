@@ -19,8 +19,6 @@ import ../../backend/database/[models]
 import ../../backend/routes
 
 
-randomize()
-
 type
   NOption[T] = options.Option[T]
 
@@ -2077,4 +2075,5 @@ proc init* =
 
 
 when isMainModule:
+  randomize()
   init()

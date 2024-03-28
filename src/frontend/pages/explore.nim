@@ -13,7 +13,6 @@ import ../../backend/routes
 import ../../backend/database/[models, logic]
 import ./editor/[core, components]
 
-randomize()
 
 type
   UploadStatus = enum
@@ -1054,6 +1053,7 @@ proc fetchDefaultPalette: Future[void] =
       resolve()
 
 when isMainModule:
+  randomize()
   setRenderer createDom
 
   columnsCount =
