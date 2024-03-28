@@ -80,7 +80,6 @@ type
 
     palettes: seq[Palette]
     selectedPalleteI: int
-    selectedCenterShape: ConnectionCenterShapeKind
     theme: ColorTheme
 
     sidebarWidth: Natural
@@ -480,7 +479,6 @@ proc setFocusedFontFamily(fn: string) =
       v.config.font.family = fn
       redrawSizeNode v, v.config.font
 
-
 proc newEdge(head, tail: Id; c: EdgeConfig): Edge =
   var k = EdgeKonvaNodes(
     wrapper: newGroup(),
@@ -635,16 +633,16 @@ proc getFocusedTheme: ColorTheme =
   else: app.theme
 
 proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
-  if 0 < app.selectedEdges.len:
+  case len app.selectedEdges
+  of 0:
+    app.edge.centerShape = cs
+  else:
     for e in app.selectedEdges:
       updateEdgeShape e, cs
-  else:
-    app.selectedCenterShape = cs
-    updateEdgeShape app.tempEdges[0], cs
 
 proc getFocusedConnShape: ConnectionCenterShapeKind =
   if app.selectedEdges.len == 1: app.selectedEdges[0].data.config.centerShape
-  else: app.selectedCenterShape
+  else: app.edge.centerShape
 
 proc setFocusedTheme(theme: ColorTheme) =
   var done = false
@@ -710,6 +708,31 @@ proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
     moveStage d * s′
 
 
+proc changeEdgeDirection(e: Edge) =
+  let
+    conn = e.data.points
+    a = conn[0]
+    b = conn[1]
+    eee = newEdge(b, a, e.data.config)
+
+  removeConn app.edgeGraph, a..b
+  destroy e.konva.wrapper
+  del app.edgeInfo, a..b
+
+  addConn app.edgeGraph, b..a
+  add app.bottomGroup, eee.konva.wrapper
+  app.edgeInfo[b..a] = eee
+
+  updateEdgeTheme eee, e.data.config.theme
+  updateEdgeWidth eee, e.data.config.width
+  updateEdgeShape eee, e.data.config.centerShape
+  redrawConnectionsTo a
+
+proc changeEdgesDirection(es: openarray[Edge]) =
+  for e in es:
+    changeEdgeDirection e
+
+
 proc removeTempEdges =
   for e in app.tempEdges:
     destroy e.konva.wrapper
@@ -728,8 +751,8 @@ proc startAddConns(vns: openArray[VisualNode]) =
 
   for vn in vns:
     let e = newEdge(vn.config.id, -1, app.edge)
-    app.tempEdges.add e
-    app.bottomGroup.add e.konva.wrapper
+    add app.tempEdges, e
+    add app.bottomGroup, e.konva.wrapper
     startAddConnImpl vn, e, app.lastClientMousePos
 
   app.boardState = bsMakeConnection
@@ -1293,7 +1316,6 @@ proc createDom*(data: RouterData): VNode =
 
                 proc onclick =
                   app.footerState = fsColor
-                  redraw()
 
               if app.selectedEdges.len == 0:
 
@@ -1303,14 +1325,20 @@ proc createDom*(data: RouterData): VNode =
 
                   proc onclick =
                     app.footerState = fsFontFamily
-                    redraw()
 
                 tdiv(class = "d-inline-flex mx-2 pointer"):
                   span: text $font.size
 
                   proc onclick =
                     app.footerState = fsFontSize
-                    redraw()
+
+              else:
+
+                tdiv(class = "d-inline-flex mx-2 pointer"):
+                  span: text "change direction"
+
+                  proc onclick =
+                    changeEdgesDirection app.selectedEdges
 
               tdiv(class = "d-inline-flex mx-2 pointer"):
                 bold: text "connection: "
