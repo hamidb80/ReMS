@@ -483,4 +483,3 @@ func area*(k: KonvaObject): Area =
 
 func center*(k: KonvaObject): Vector =
   k.position + v(k.size) / 2
-

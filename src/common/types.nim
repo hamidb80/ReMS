@@ -145,19 +145,22 @@ func `+`*(a, b: Degree): Degree {.borrow.}
 func `$`*(a: Degree): string {.borrow.}
 
 
-func `-`*(a: Vector): Vector =
-  v(-a.x, -a.y)
+func `-`*(a: Vector): Vector = v(-a.x, -a.y)
 func topLeft*(a: Area): Vector = v(a.x1, a.y1)
 func topRight*(a: Area): Vector = v(a.x2, a.y1)
 func bottomLeft*(a: Area): Vector = v(a.x1, a.y2)
 func bottomRight*(a: Area): Vector = v(a.x2, a.y2)
 func center*(a: Area): Vector = v(a.x1+a.x2, a.y1+a.y2) / 2
+
 func `+`*(a: Area, v: Vector): Area =
   Area(
     x1: a.x1+v.x,
     x2: a.x2+v.x,
     y1: a.y1+v.y,
     y2: a.y2+v.y)
+
+func area*(v: Vector): Area = 
+  Area() + v
 
 func contains*(a: Area, v: Vector): bool =
   v.x in a.x1..a.x2 and
@@ -287,10 +290,11 @@ func `+`*[T](s: Slice[T], m: T): Slice[T] =
   s.a+m .. s.b+m
 
 func intersects*[T](a, b: Slice[T]): bool =
-  a.a in b or 
+  a.a in b or
   a.b in b or
   b.a in a or
   b.b in a
+
 
 # TODO move it to js module
 when defined js:

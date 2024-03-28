@@ -61,7 +61,7 @@ type
     mainGroup: Group
     bottomGroup: Group
 
-    tempEdge: Edge
+    tempEdges: seq[Edge]
     tempNode: VisualNode
     areaSelectionNode: KonvaShape
 
@@ -640,7 +640,7 @@ proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
       updateEdgeShape e, cs
   else:
     app.selectedCenterShape = cs
-    updateEdgeShape app.tempEdge, cs
+    updateEdgeShape app.tempEdges[0], cs
 
 proc getFocusedConnShape: ConnectionCenterShapeKind =
   if app.selectedEdges.len == 1: app.selectedEdges[0].data.config.centerShape
@@ -709,14 +709,28 @@ proc changeScale(mouse🖱️: Vector; newScale: float; changePosition: bool) =
 
     moveStage d * s′
 
-proc startAddConn(vn: VisualNode) =
+
+proc removeTempEdges =
+  for e in app.tempEdges:
+    destroy e.konva.wrapper
+  reset app.tempEdges
+
+proc startAddConnImpl(vn: VisualNode; tempEdge: Edge; mouse: Vector) =
   let w = vn.konva.wrapper
 
   highlight vn
-  show app.tempEdge.konva.wrapper
-  updateEdgePos app.tempEdge, w.area, w.center, w.area, w.center
-  updateEdgeTheme app.tempEdge, getFocusedTheme()
-  updateEdgeWidth app.tempEdge, getFocusedEdgeWidth()
+  updateEdgePos tempEdge, w.area, w.center, area mouse, mouse
+  updateEdgeTheme tempEdge, getFocusedTheme()
+  updateEdgeWidth tempEdge, getFocusedEdgeWidth()
+
+proc startAddConns(vns: openArray[VisualNode]) =
+  removeTempEdges()
+
+  for vn in vns:
+    let e = newEdge(vn.config.id, -1, app.edge)
+    app.tempEdges.add e
+    app.bottomGroup.add e.konva.wrapper
+    startAddConnImpl vn, e, app.lastClientMousePos
 
   app.boardState = bsMakeConnection
 
@@ -757,26 +771,26 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
         select vn
 
     of bsMakeConnection:
-      let sv = app.selectedVisualNodes[0]
-      if sv == vn: discard
-      else:
-        let
-          id1 = cfg.id
-          id2 = sv.config.id
-          conn = id1..id2
+      for i, sv in app.selectedVisualNodes:
+        if sv == vn: discard
+        else:
+          let
+            id1 = cfg.id
+            id2 = sv.config.id
+            conn = id1..id2
+            # ei = newEdge(id1, id2, app.edge)
+            ei = cloneEdge(id1, id2, app.tempEdges[i])
 
-        var ei = cloneEdge(id1, id2, app.tempEdge)
+          if conn notin app.edgeInfo:
+            add app.bottomGroup, ei.konva.wrapper
+            addConn app.edgeGraph, conn
+            app.edgeInfo[conn] = ei
+            app.boardState = bsFree
+            # select ei
+            removeHighlight sv
+            redrawConnectionsTo sv.config.id
 
-        if conn notin app.edgeInfo:
-          app.bottomGroup.add ei.konva.wrapper
-          app.edgeGraph.addConn conn
-          app.edgeInfo[conn] = ei
-          app.boardState = bsFree
-          select ei
-          hide app.tempEdge.konva.wrapper
-          removeHighlight sv
-          redrawConnectionsTo sv.config.id
-
+      removeTempEdges()
     else:
       discard
 
@@ -1384,7 +1398,7 @@ proc createDom*(data: RouterData): VNode =
 
           if not app.isLocked:
             sidebarBtn "fa-circle-nodes", "", proc =
-              startAddConn vn
+              startAddConns [vn]
 
           sidebarBtn "fa-message", $vn.config.messageIdList.len, proc =
             openSideBar()
@@ -1654,7 +1668,6 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
       app.footerState = fsOverview
       app.state = asNormal
 
-      hide app.tempEdge.konva.wrapper
       unselect()
       redraw()
 
@@ -1692,8 +1705,7 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
       startPuttingNode()
 
     of akCreateConnection:
-      if app.selectedVisualNodes.len == 1:
-        startAddConn app.selectedVisualNodes[0]
+      startAddConns app.selectedVisualNodes
 
     of akSave:
       saveServer()
@@ -1722,8 +1734,9 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
 
         app.theme = e.data.config.theme
         app.edge = e.data.config
-        updateEdgeShape app.tempEdge, e.data.config.centerShape
 
+      else:
+        notify "nothing to copy style from"
 
     of akAreaSelectToggle:
       negate app.areaSelectKeyHold
@@ -1758,7 +1771,6 @@ proc init* =
       hoverGroup = newGroup()
       mainGroup = newGroup()
       bottomGroup = newGroup()
-      tempEdge = newEdge(-1, -1, EdgeConfig())
       areaSelectionNode = initAreaSelector()
       # transformer = newTransformer()
       # tempNode: VisualNode
@@ -1840,16 +1852,15 @@ proc init* =
         else:
           case app.boardState
           of bsMakeConnection:
-            let
-              v = app.hoverVisualNode
-              n1 = app.selectedVisualNodes[0]
+            let v = app.hoverVisualNode
 
-            if ?v:
-              let n2 = !v
-              updateEdgePos app.tempEdge, n1.area, n1.center, n2.area, n2.center
-            else:
-              let t = newPoint currentMousePos
-              updateEdgePos app.tempEdge, n1.area, n1.center, t.area, t.position
+            for i, n1 in app.selectedVisualNodes:
+              if ?v:
+                let n2 = !v
+                updateEdgePos app.tempEdges[i], n1.area, n1.center, n2.area, n2.center
+              else:
+                let t = newPoint currentMousePos
+                updateEdgePos app.tempEdges[i], n1.area, n1.center, t.area, t.position
 
           of bsAddNode:
             app.tempNode.konva.wrapper.position = currentMousePos
@@ -1889,7 +1900,6 @@ proc init* =
     with layer:
       add initCenterPin()
       add app.bottomGroup
-      add app.tempEdge.konva.wrapper
       add app.mainGroup
       add app.hoverGroup
 
@@ -1945,7 +1955,6 @@ proc init* =
           if s =? searchShortcut initShortCut e:
             takeAction s, released
 
-
           if app.pressedKeys.len == 0:
             setCursor ccNone
             app.state = asNormal
@@ -1985,7 +1994,6 @@ proc init* =
       app.edge.width = 10.Tenth
 
     block init:
-      hide app.tempEdge.konva.wrapper
       moveStage app.stage.center
       redraw()
 
