@@ -736,12 +736,11 @@ proc searchTagManager(): Vnode =
             if exists: hasValue tags[cr.label]
             else: true
 
-        if not exists:
-          input(`type` = "text", class = "form-control",
-            placeholder = "label ...",
-            value = cr.label):
-            proc oninput(e: Event, v: Vnode) =
-              searchCriterias[selectedCriteriaI].label = e.target.value
+        input(`type` = "text", class = "form-control",
+          placeholder = "label ...",
+          value = cr.label):
+          proc oninput(e: Event, v: Vnode) =
+            searchCriterias[selectedCriteriaI].label = e.target.value
 
         if hasValue:
           input(`type` = "text", class = "form-control",
@@ -921,7 +920,6 @@ proc createDom: Vnode =
                   iconSelectionBLock($c, onIconSelected)
 
             else:
-              echo currentTag
               # name
               tdiv(class = "form-group d-inline-block mx-2"):
                 label(class = "form-check-label"):
@@ -1006,7 +1004,12 @@ proc createDom: Vnode =
                     currentTag.get.theme.fg = parseHexColorPack $e.target.value
 
               tdiv(class = "my-2"):
-                tagViewC get currentTag, "...", noop
+                let
+                  t = get currentTag
+                  val =
+                    if t.hasValue: "..."
+                    else: ""
+                tagViewC get currentTag, val, noop
 
             if selectedTagI == noIndex:
               button(class = "btn btn-success w-100 mt-2 mb-4"):

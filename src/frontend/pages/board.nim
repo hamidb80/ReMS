@@ -270,13 +270,18 @@ proc select(vn: VisualNode) =
   add app.selectedVisualNodes, vn
   highlight vn
 
-proc select(e: Edge) =
-  if app.selectedVisualNodes.len != 0:
-    unselect()
-
+proc selectImpl(e: Edge) =
   highlight e
   add app.selectedEdges, e
 
+proc select(e: Edge) =
+  if app.selectedVisualNodes.len != 0:
+    unselect()
+  selectImpl e
+
+proc select(es: seq[Edge]) =
+  for e in es:
+    selectImpl e
 
 proc newPoint(pos: Vector; r = 1.0): Circle =
   result = newCircle()
@@ -760,6 +765,7 @@ proc startAddConns(vns: openArray[VisualNode]) =
     add app.bottomGroup, e.konva.wrapper
     startAddConnImpl vn, e, app.lastClientMousePos
 
+  app.selectMode = smSingle
   app.boardState = bsMakeConnection
 
 proc createNode(cfg: VisualNodeConfig): VisualNode =
@@ -799,6 +805,8 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
         select vn
 
     of bsMakeConnection:
+      var edges: seq[Edge]
+
       for i, sv in app.selectedVisualNodes:
         if sv == vn: discard
         else:
@@ -806,19 +814,20 @@ proc createNode(cfg: VisualNodeConfig): VisualNode =
             id1 = cfg.id
             id2 = sv.config.id
             conn = id1..id2
-            # ei = newEdge(id1, id2, app.edge)
             ei = cloneEdge(id1, id2, app.tempEdges[i])
+
+          add edges, ei
 
           if conn notin app.edgeInfo:
             add app.bottomGroup, ei.konva.wrapper
             addConn app.edgeGraph, conn
             app.edgeInfo[conn] = ei
             app.boardState = bsFree
-            # select ei
             removeHighlight sv
             redrawConnectionsTo sv.config.id
 
       removeTempEdges()
+      select edges
     else:
       discard
 
