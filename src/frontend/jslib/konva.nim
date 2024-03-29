@@ -465,6 +465,7 @@ proc toBlob*(wrapper: KonvaContainer, ratio: SomeNumber): Future[Blob]
 # --------- Helper
 
 func area*(k: KonvaObject): Area =
+  ## local area
   let
     p = k.position
     s = k.size

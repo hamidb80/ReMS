@@ -327,19 +327,19 @@ const
     vec2(+1.7, 0),
     ] * 2.8
 
-func newDiomand(): Line =
+func newDiomand: Line =
   result = newLine()
   with result:
     points = diomandPoints
     closed = true
 
-func newTriangle(): Line =
+func newTriangle: Line =
   result = newLine()
   with result:
     points = trianglePoints
     closed = true
 
-func newDoubleTriangle(): Line =
+func newDoubleTriangle: Line =
   result = newLine()
   with result:
     points = doubleTrianglePoints
@@ -423,10 +423,8 @@ proc redrawConnectionsTo(uid: Id) =
       c1 = id..uid
       c2 = uid..id
 
-      dir = c1 in app.edgeInfo
-
       k =
-        if dir: c1
+        if c1 in app.edgeInfo: c1
         else: c2
 
       ei = app.edgeInfo[k]
@@ -480,8 +478,8 @@ proc redrawSizeNode(v: VisualNode; font: FontConfig) =
 
 proc getFocusedFontFamily: FontConfig =
   case app.selectedVisualNodes.len
-  of 1: app.selectedVisualNodes[0].config.font
-  else: app.font
+  of 0: app.font
+  else: app.selectedVisualNodes[0].config.font
 
 proc setFocusedFontFamily(fn: string) =
   case app.selectedVisualNodes.len
@@ -635,14 +633,12 @@ proc setFocusedEdgeWidth(w: Tenth) =
 
 proc getFocusedEdgeWidth: Tenth =
   case app.selectedEdges.len
-  of 0:
-    app.edge.width
-  else:
-    app.selectedEdges[0].data.config.width
+  of 0: app.edge.width
+  else: app.selectedEdges[0].data.config.width
 
 proc getFocusedTheme: ColorTheme =
-  if app.selectedVisualNodes.len == 1: app.selectedVisualNodes[0].config.theme
-  elif app.selectedEdges.len == 1: app.selectedEdges[0].data.config.theme
+  if app.selectedVisualNodes.len != 0: app.selectedVisualNodes[0].config.theme
+  elif app.selectedEdges.len != 0: app.selectedEdges[0].data.config.theme
   else: app.theme
 
 proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
@@ -654,8 +650,9 @@ proc setFocusedConnShape(cs: ConnectionCenterShapeKind) =
       updateEdgeShape e, cs
 
 proc getFocusedConnShape: ConnectionCenterShapeKind =
-  if app.selectedEdges.len == 1: app.selectedEdges[0].data.config.centerShape
-  else: app.edge.centerShape
+  case app.selectedEdges.len
+  of 0: app.edge.centerShape
+  else: app.selectedEdges[0].data.config.centerShape
 
 proc setFocusedTheme(theme: ColorTheme) =
   var done = false
@@ -726,22 +723,17 @@ proc changeEdgeDirection(e: Edge) =
     conn = e.data.points
     a = conn[0]
     b = conn[1]
-    eee = newEdge(b, a, e.data.config)
 
   removeConn app.edgeGraph, a..b
-  destroy e.konva.wrapper
   del app.edgeInfo, a..b
 
   addConn app.edgeGraph, b..a
-  add app.bottomGroup, eee.konva.wrapper
-  app.edgeInfo[b..a] = eee
+  app.edgeInfo[b..a] = e
+  e.data.points = @[b, a]
 
-  updateEdgeTheme eee, e.data.config.theme
-  updateEdgeWidth eee, e.data.config.width
-  updateEdgeShape eee, e.data.config.centerShape
   redrawConnectionsTo a
 
-proc changeEdgesDirection(es: openarray[Edge]) =
+proc changeEdgesDirection(es: openArray[Edge]) =
   for e in es:
     changeEdgeDirection e
 
@@ -1415,7 +1407,7 @@ proc createDom*(data: RouterData): VNode =
             unselect()
             app.boardstate = bsFree
             # app.state = asNormal
-        
+
         else:
           let iconName =
             if app.locked: "fa-lock"
@@ -1920,7 +1912,7 @@ proc init* =
 
         case app.selectMode
         of smSingle: discard
-        of smAreaNodes: 
+        of smAreaNodes:
           for _, vn in app.objects:
             if vn.area in selectedArea:
               select vn
@@ -1937,7 +1929,7 @@ proc init* =
             else:
               discard
 
-        of smAreaEdges: 
+        of smAreaEdges:
           for _, e in app.edgeInfo:
             if e.konva.shape.area in selectedArea:
               select e
@@ -1956,6 +1948,7 @@ proc init* =
 
         app.leftClicked = false
         app.areaSelectionNode.visible = false
+        redraw()
 
     with app.hoverGroup:
       add app.areaSelectionNode
