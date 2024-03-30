@@ -40,7 +40,7 @@ type
     scBoards = "boards"
     scAssets = "assets"
 
-const maxItems = 20
+const maxItems = 30
 let compTable = defaultComponents()
 var
   me = none User
@@ -130,9 +130,11 @@ func iconClass(sc: SearchableClass): string =
   of scBoards: "fa-diagram-project"
   of scAssets: "fa-file"
 
-proc loadMsg(n: NoteItemView) =
-  deserizalize(compTable, n.data).dthen proc(t: TwNode) =
-    msgCache[n.id] = t.dom.innerHtml
+proc loadMsg(n: NoteItemView): Future[void] =
+  newPromise proc(resolve, reject: proc()) =
+    deserizalize(compTable, n.data).dthen proc(t: TwNode) =
+      msgCache[n.id] = t.dom.innerHtml
+      resolve()
 
 proc getExploreQuery: ExploreQuery =
   result = ExploreQuery(
@@ -162,12 +164,15 @@ proc fetchBoards: Future[void] =
       resolve()
       redraw()
 
+proc resolveNote(n: NoteItemView) =
+  n.loadMsg.dthen proc =
+    redraw()
+
 proc resolveNotes =
   for n in notes:
-    loadMsg n
+    resolveNote n
 
   messagesResolved = true
-  redraw()
 
 proc fetchNotes: Future[void] =
   newPromise proc(resolve, reject: proc()) =
@@ -512,6 +517,7 @@ proc notePreviewC(n: NoteItemView, i: int): VNode =
 
   var btns = @[
     generalCardBtnLink("fa-glasses", "info", get_note_preview_url n.id),
+    generalCardBtnAction("fa-sync", "primary", proc = resolveNote n),
     generalCardBtnAction("fa-copy", "primary", copyNoteId)]
 
   if issome me:

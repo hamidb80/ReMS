@@ -42,6 +42,7 @@ proc notePreviewC(n: NoteItemView): VNode =
       else:
         text "loading..."
 
+  # TODO add buttons like reload, edit, tags, ...
   generalCardView "", inner, n.rels, tags, @[]
 
 proc createDom: Vnode =
