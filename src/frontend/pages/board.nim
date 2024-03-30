@@ -1229,35 +1229,41 @@ proc gotoCenterOfBoard =
       else: 0
   app.stage.center = v(0, 0) + v(w/2, 0) * 1/s
 
-var rendered = false
+
+proc onPointerDown(e: Event) =
+  preventDefault e
+
+  proc movimpl(x, y: int) {.caster.} =
+    reconsiderSideBarWidth window.innerWidth - x
+    redraw()
+
+  proc movMouse(e: Event as MouseEvent) {.caster.} =
+    preventDefault e
+    movimpl e.x, e.y
+
+  proc moveTouch(ev: Event as TouchEvent) {.caster.} =
+    preventDefault e
+    let t = clientPos ev.touches[0]
+    movimpl |t.x, |t.y
+
+  proc up =
+    winel.removeEventListener "mousemove", movMouse
+    winel.removeEventListener "touchmove", moveTouch
+
+  winel.addEventListener "mousemove", movMouse
+  winel.addEventListener "touchmove", moveTouch
+  winel.addEventListener "mouseup", up
+  winel.addEventListener "touchend", up
+
+proc reloadEventListener(e: Element; evt: cstring; act: proc(e: Event)) =
+  removeEventListener e, evt, act
+  addEventlistener e, evt, act
 
 proc registerHandleEvents =
-  proc onPointerDown =
-    # setCursor ccresizex
-    proc movimpl(x, y: int) {.caster.} =
-      reconsiderSideBarWidth window.innerWidth - x
-      redraw()
-
-    proc movMouse(e: Event as MouseEvent) {.caster.} =
-      movimpl e.x, e.y
-
-    proc moveTouch(ev: Event as TouchEvent) {.caster.} =
-      let t = clientPos ev.touches[0]
-      movimpl |t.x, |t.y
-
-    proc up =
-      # setCursor ccNone
-      winel.removeEventListener "mousemove", movMouse
-      winel.removeEventListener "touchmove", moveTouch
-
-    winel.addEventListener "mousemove", movMouse
-    winel.addEventListener "mouseup", up
-
-    winel.addEventListener "touchmove", moveTouch
-    winel.addEventListener "touchend", up
-
-  ".extender-body".ql.addEventlistener "mousedown", onPointerDown
-  ".extender-body".ql.addEventlistener "touchstart", onPointerDown
+  let el = ql ".extender-body"
+  if el != nil:
+    el.reloadEventListener "mousedown", onPointerDown
+    el.reloadEventListener "touchstart", onPointerDown
 
 
 proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
@@ -1273,9 +1279,7 @@ proc sidebarBtn(iconClass, note: string; action: proc()): Vnode =
 proc createDom*(data: RouterData): VNode =
   console.info "just updated the whole virtual DOM"
   let freeze = winel.onmousemove != nil
-
-  defer:
-    rendered = true
+  registerHandleEvents()
 
   buildHtml:
     tdiv(class = "karax"):
@@ -1466,8 +1470,6 @@ proc createDom*(data: RouterData): VNode =
 
         tdiv(class = "extender h-100 btn btn-light p-0"):
           tdiv(class = "extender-body d-flex rounded-circle justify-content-center align-items-center x-translate-center mt-4 bg-primary text-white"):
-            if not rendered:
-              discard setTimeout(1000, registerHandleEvents)
             icon "fa-left-right"
 
         tdiv(class = "d-flex flex-column w-100"):

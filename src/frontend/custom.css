@@ -131,6 +131,8 @@ p {
 .extender-body {
   width: 40px;
   height: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .x-translate-center {
