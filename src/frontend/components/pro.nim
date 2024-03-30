@@ -2,7 +2,7 @@ import std/[tables, dom, jsffi]
 
 import karax/[karaxdsl, vdom, vstyles, karax]
 
-import ../../common/[types, conventions]
+import ../../common/[types, conventions, str]
 import ../../backend/database/[models, logic]
 import ./simple
 
@@ -31,6 +31,7 @@ proc checkbox*(active: bool, changeHandler: proc(b: bool)): VNode =
       proc oninput(e: dom.Event, v: VNode) =
         changeHandler e.target.checked
 
+
 proc tagViewC*(
   t: Tag,
   value: Str,
@@ -47,7 +48,11 @@ proc tagViewC*(
       (StyleAttr.color, toColorString t.theme.fg),
       (StyleAttr.borderColor, toColorString t.theme.fg),
     )):
-      icon $t.icon
+      if isAscii t.icon[0]:
+        icon $t.icon
+      else:
+        span:
+          text t.icon
 
       if t.showName or hasValue:
         span(dir = "auto", class = "ms-2"):

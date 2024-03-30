@@ -8,7 +8,7 @@ import caster
 import ../components/[snackbar, simple, pro]
 import ../utils/[browser, js, api]
 import ../jslib/[axios]
-import ../../common/[iter, types, datastructures, conventions]
+import ../../common/[iter, types, datastructures, conventions, str]
 import ../../backend/routes
 import ../../backend/database/[models, logic]
 import ./editor/[core, components]
@@ -111,10 +111,14 @@ proc genChangeSelectedTagi(i: int): proc() =
       selectedTagI = i
       currentTag = some tagsList[i]
 
-proc iconSelectionBLock(icon: string, setIcon: proc(icon: string)): VNode =
+proc iconSelectionBlock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
     tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-1 p-2"):
-      icon " m-2 " & icon
+      if icon.len > 0 and isAscii icon[0]:
+        icon " m-2 " & icon
+      else:
+        span:
+          text icon
       proc onclick =
         setIcon icon
 
@@ -914,12 +918,22 @@ proc createDom: Vnode =
             text "Config"
 
           tdiv(class = "form-control"):
-            if tagState == asSelectIcon:
+            case tagState
+            of asSelectIcon:
               tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
                 for c in icons:
-                  iconSelectionBLock($c, onIconSelected)
+                  iconSelectionBlock($c, onIconSelected)
 
-            else:
+              iconSelectionBlock($currentTag.get.icon, onIconSelected)
+
+              input(`type` = "text", class = "form-control",
+                placeholder = "icon class or emoji",
+                value = currentTag.get.icon):
+                proc oninput(e: Event, v: Vnode) =
+                  currentTag.get.icon = e.target.value
+
+
+            of asInit:
               # name
               tdiv(class = "form-group d-inline-block mx-2"):
                 label(class = "form-check-label"):
@@ -936,10 +950,7 @@ proc createDom: Vnode =
                   text "icon: "
 
                 tdiv(class = "d-inline-block"):
-                  tdiv(class = "btn btn-lg btn-outline-dark rounded-2 m-2 p-2"):
-                    icon "m-2 " & $currentTag.get.icon
-
-                  proc onclick =
+                  iconSelectionBlock $currentTag.get.icon, proc(s: string) =
                     tagState = asSelectIcon
 
               tdiv(class = "form-check form-switch"):

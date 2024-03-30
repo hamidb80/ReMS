@@ -6,3 +6,6 @@ func wrap*(s: string, c: char): string =
 
 func strip*(s: string, c: char): string =
     s.strip(chars = {c})
+
+func isAscii*(c: char): bool = 
+  c.ord in 0 .. 127
