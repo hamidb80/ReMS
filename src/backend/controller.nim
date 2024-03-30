@@ -253,4 +253,4 @@ proc fetchGithubCode*(req: Request) {.qparams: {url: string}.} =
   respJson toJson parseGithubJsFile download url
 
 proc fetchLinkPreivewData*(req: Request) {.qparams: {url: string}.} =
-  respJson toJson linkPreviewData parseHtml cropHead download url, cache
+  respJson toJson linkPreviewData parseHtml cropHead download url
