@@ -1242,7 +1242,7 @@ defComponent linearMdComponent,
 defComponent titleComponent,
   "title",
   "bi bi-type-h1",
-  @["global", "title", "block"],
+  @["global", "inline", "block"],
   initTitle
 
 defComponent verticalSpaceComponent,
