@@ -55,7 +55,8 @@ template defHooks(body): untyped {.dirty.} =
 
   result = hooks
 
-template defComponent(ident, identstr, icone, tagss, initproc: untyped, gn = false): untyped =
+template defComponent(ident, identstr, icone, tagss, initproc: untyped,
+    gn = false): untyped =
   let ident* = Component(
     name: identstr,
     icon: icone,
@@ -255,7 +256,7 @@ proc initParagraph: Hooks =
     mounted = genMounted:
       if mode == tmInteractive and by == mbUser:
         let ct = hooks.componentsTable()
-        attachInstance ct["raw-text"], hooks, ct
+        attachInstance ct["linear markdown"], hooks, ct
 
     settings = () => @[
       SettingsPart(
@@ -643,7 +644,7 @@ proc initVideo: Hooks =
           name: "linear-text-editor",
           input: toJs height(),
           updateCallback: mutState(setHeight, cstring))),
-          
+
       SettingsPart(
         field: "loop?",
         icon: "bi bi-repeat",
@@ -686,7 +687,7 @@ proc initList: Hooks =
         of "decimal": "list-decimal"
         else: "list-disc"
 
-      ul.className = "tw-content-list w-100"
+      ul.className = "tw-list w-100"
       add ul.classList, c
 
     attachNode = proc(child: TwNode, at: Index) =
@@ -993,6 +994,8 @@ proc initGrid: Hooks =
     (height, seth) = genState c""
     (maxWidth, setmw) = genState c""
     (maxHeight, setmh) = genState c""
+    (verticalSpaceItems, setvsi) = genState 0
+    (horzontalSpaceItems, sethsi) = genState 0
 
   template sss(namee, icone: string, refVal, setter): untyped =
     SettingsPart(
@@ -1014,6 +1017,8 @@ proc initGrid: Hooks =
       "height": height(),
       "maxWidth": maxWidth(),
       "maxHeight": maxHeight(),
+      "verticalSpaceItems": verticalSpaceItems(),
+      "horzontalSpaceItems": horzontalSpaceItems(),
       }
 
     restore = proc(input: JsObject) =
@@ -1023,6 +1028,8 @@ proc initGrid: Hooks =
       seth input["height"].to cstring
       setmw input["maxWidth"].to cstring
       setmh input["maxHeight"].to cstring
+      setvsi getDefault(input, "verticalSpaceItems", 0) ~~ int
+      sethsi getDefault(input, "horzontalSpaceItems", 0) ~~ int
 
     render = genRender:
       setAttr el, "style", fmt"""
@@ -1034,13 +1041,47 @@ proc initGrid: Hooks =
         max-height: {maxHeight()};
       """
 
+      let
+        myc = " items-my-" & $verticalSpaceItems()
+        mxc = " items-mx-" & $horzontalSpaceItems()
+
+      el.setAttr "class", "tw-grid" & myc & mxc
+
     settings = () => @[
       sss("margin", "bi bi-border-inner", margin, setm),
       sss("padding", "bi bi-border-outer", padding, setp),
       sss("width", "bi bi-arrows", width, setw),
       sss("height", "bi bi-arrows-vertical", height, seth),
       sss("max width", "bi bi-arrows", maxWidth, setmw),
-      sss("max height", "bi bi-arrows-vertical", maxHeight, setmh)]
+      sss("max height", "bi bi-arrows-vertical", maxHeight, setmh),
+      SettingsPart(
+        field: "vertical space between components",
+        icon: "bi bi-signpost-fill",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": verticalSpaceItems(),
+            "data": [
+              [0, "0"],
+              [1, "1"],
+              [2, "2"],
+              [3, "3"],
+              [4, "4"]]},
+          updateCallback: mutState(setvsi, int))),
+      SettingsPart(
+        field: "horizontal space between components",
+        icon: "bi bi-signpost-fill",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": horzontalSpaceItems(),
+            "data": [
+              [0, "0"],
+              [1, "1"],
+              [2, "2"],
+              [3, "3"],
+              [4, "4"]]},
+          updateCallback: mutState(sethsi, int)))]
 
 # TODO
 proc initConfig: Hooks =

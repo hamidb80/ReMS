@@ -273,16 +273,18 @@ proc moveSelectedNodes =
     detachNode f, ip
     nodes[h-i] = n
 
-  for n in nodes:
-    case app.insertionMode
-    of imAppend:
+  case app.insertionMode
+  of imAppend:
+    for n in nodes:
       let size = app.focusedNode.children.len
       app.focusedNode.attach n, size
 
-    of imAfter:
+  of imAfter:
+    for n in ritems nodes:
       app.focusedNode.father.attach n, i+1
 
-    of imBefore:
+  of imBefore:
+    for n in ritems nodes:
       app.focusedNode.father.attach n, i
 
   reset app.selected
@@ -324,6 +326,7 @@ proc deleteSelectedNode(n: TwNode, path: TreePath) =
 proc deleteSelectedNodes =
   let
     n = app.focusedNode
+    i = app.focusedPath.last
     f = n.father
 
   if 0 != len app.selected:
@@ -336,7 +339,13 @@ proc deleteSelectedNodes =
   else:
     deleteSelectedNode n, app.focusedPath
     app.focusedPath.npop
-    changeFocusNode f
+
+    if 0 == f.children.len:
+      changeFocusNode f
+    else:
+      let i2 = clamp(i-1, 0, f.children.high)
+      app.focusedPath.add i2
+      changeFocusNode f.children[i2]
 
 proc moveToUp =
   if app.focusedPath.len > 0:
@@ -374,9 +383,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
         changeFocusNode app.focusedNode.father
 
     of kcArrowRight: # goes inside
-      if app.focusedNode.isLeaf or not app.focusedNode.data.visibleChildren:
-        discard
-      else:
+      if not app.focusedNode.isLeaf and app.focusedNode.data.visibleChildren:
         add app.focusedPath, 0
         changeFocusNode app.focusedNode.children[0]
 
@@ -395,7 +402,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     of kcEscape:
       reset app.selected
-
+      reset app.insertionMode
 
     of kcN: # insert inside
       startInsertAtEnd()
@@ -525,7 +532,7 @@ proc fetchNote(id: Id) =
       notify "failed to fetch note data"
 
   apiGetNote id, whenGet, proc =
-    echo "whaaat", getcurrentExceptionmsg()
+    echo "error when fetching note", getcurrentExceptionmsg()
 
 proc genSelectComponent(i: int): proc() =
   proc =
@@ -537,7 +544,45 @@ proc sidebtn(icn: string, action: proc()): VNode =
     onclick = action):
     icon "fa-xl " & icn
 
+proc registerHandleEvents =
+  proc onPointerDown(e: Event) =
+    # setCursor ccresizex
+    proc movimpl(x, y: int) {.caster.} =
+      case viewMode
+      of vmBothHorizontal: setSideBarSize x
+      of vmBothVertical: setSideBarSize y
+      else: discard
+      redraw()
+
+    proc movMouse(e: Event as MouseEvent) {.caster.} =
+      movimpl e.x, e.y
+
+    proc moveTouch(ev: Event as TouchEvent) {.caster.} =
+      let t = clientPos ev.touches[0]
+      movimpl |t.x, |t.y
+
+    proc up =
+      # setCursor ccNone
+      winel.removeEventListener "mousemove", movMouse
+      winel.removeEventListener "touchmove", moveTouch
+
+    winel.addEventListener "mousemove", movMouse
+    winel.addEventListener "touchmove", moveTouch
+
+    winel.addEventListener "mouseup", up
+    winel.addEventListener "touchend", up
+
+  let el = ".extender-body".ql
+  if el != nil:
+    el.removeEventListener "mousedown", onPointerDown
+    el.removeEventListener "touchstart", onPointerDown
+
+    el.addEventlistener "mousedown", onPointerDown
+    el.addEventlistener "touchstart", onPointerDown
+
 proc createDom: VNode =
+  registerHandleEvents()
+
   buildHtml tdiv:
     snackbar()
 
@@ -654,45 +699,14 @@ proc init* =
     setSideBarSize sidebarWidth
     redraw()
 
-
   let root = instantiate(rootComponent, nil)
   root.data.hooks.dom = () => el editRootElementId
   resetApp root
 
   setRenderer createDom
-  settimeout 500, proc =
+
+  window.addEventListener "load", proc =
     fetchNote parseInt getWindowQueryParam "id"
-
-    proc onPointerDown =
-      # setCursor ccresizex
-      proc movimpl(x, y: int) {.caster.} =
-        case viewMode
-        of vmBothHorizontal: setSideBarSize x
-        of vmBothVertical: setSideBarSize y
-        else: discard
-        redraw()
-
-      proc movMouse(e: Event as MouseEvent) {.caster.} =
-        movimpl e.x, e.y
-
-      proc moveTouch(ev: Event as TouchEvent) {.caster.} =
-        let t = clientPos ev.touches[0]
-        movimpl |t.x, |t.y
-
-      proc up =
-        # setCursor ccNone
-        winel.removeEventListener "mousemove", movMouse
-        winel.removeEventListener "touchmove", moveTouch
-
-
-      winel.addEventListener "mousemove", movMouse
-      winel.addEventListener "mouseup", up
-
-      winel.addEventListener "touchmove", moveTouch
-      winel.addEventListener "touchend", up
-
-    ".extender-body".ql.addEventlistener "mousedown", onPointerDown
-    ".extender-body".ql.addEventlistener "touchstart", onPointerDown
 
   with document.documentElement:
     addEventListener "keydown", keyboardListener
