@@ -279,10 +279,6 @@ p {
   max-width: 100%;
 }
 
-.tw-list > li > * {
-  display: inline-flex;
-}
-
 .tw-image-wrapper, .tw-video-wrapper {
   text-align: center;
 }

@@ -122,7 +122,6 @@ proc iconSelectionBlock(icon: string, setIcon: proc(icon: string)): VNode =
       proc onclick =
         setIcon icon
 
-
 func iconClass(sc: SearchableClass): string =
   case sc
   of scUsers: "fa-users"

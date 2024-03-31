@@ -919,19 +919,6 @@ proc initLinkPreivew: Hooks =
         result
 
     settings = () => @[
-      # SettingsPart(
-        #   field: "",
-        #   icon: "bi bi-signpost-fill",
-        #   editorData: () => EditorInitData(
-        #     name: "option-selector",
-        #     input: <* {
-        #       "default": dir(),
-        #       "data": [
-        #         ["auto", "auto"],
-        #         ["ltr", "ltr"],
-        #         ["rtl", "rtl"]]},
-        #     updateCallback: mutState(setDir, cstring))),
-
       SettingsPart(
         field: "link",
         icon: "bi bi-link-45deg",
