@@ -926,18 +926,18 @@ proc createDom: Vnode =
           tdiv(class = "form-control"):
             case tagState
             of asSelectIcon:
+              tdiv(class = "input-group mb-4"):
+                iconSelectionBlock($currentTag.get.icon, onIconSelected)
+
+                input(`type` = "text", class = "form-control",
+                  placeholder = "icon class or emoji",
+                  value = currentTag.get.icon):
+                  proc oninput(e: Event, v: Vnode) =
+                    currentTag.get.icon = e.target.value
+
               tdiv(class = "d-flex flex-row flex-wrap justify-content-between"):
                 for c in icons:
                   iconSelectionBlock($c, onIconSelected)
-
-              iconSelectionBlock($currentTag.get.icon, onIconSelected)
-
-              input(`type` = "text", class = "form-control",
-                placeholder = "icon class or emoji",
-                value = currentTag.get.icon):
-                proc oninput(e: Event, v: Vnode) =
-                  currentTag.get.icon = e.target.value
-
 
             of asInit:
               # name
