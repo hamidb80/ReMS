@@ -139,12 +139,9 @@ proc attach*(father, child: TwNode, at: int) =
   child.father = father
   father.attachNode child, at
 
-proc destroyChildren*(father: TwNode) =
-  for ch in mitems father.children:
-    ch.father = nil
-
-  reset father.children
-
+proc clearChildren*(father: TwNode) =
+  for i in 1 .. father.children.len:
+    father.detachNode 0
 
 # ---------------------
 

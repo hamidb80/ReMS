@@ -273,18 +273,17 @@ proc moveSelectedNodes =
     detachNode f, ip
     nodes[h-i] = n
 
-  case app.insertionMode
-  of imAppend:
-    for n in nodes:
-      let size = app.focusedNode.children.len
-      app.focusedNode.attach n, size
+  let endi = app.focusedNode.children.len
 
-  of imAfter:
-    for n in ritems nodes:
+  for n in ritems nodes:
+    case app.insertionMode
+    of imAppend:
+      app.focusedNode.attach n, endi
+
+    of imAfter:
       app.focusedNode.father.attach n, i+1
 
-  of imBefore:
-    for n in ritems nodes:
+    of imBefore:
       app.focusedNode.father.attach n, i
 
   reset app.selected

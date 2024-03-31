@@ -167,8 +167,8 @@ proc initRawText: Hooks =
       "spaceAround": spaceAround()}
 
     restore = proc(input: JsObject) =
-      cSet input["content"].to cstring
-      spSet input["spaceAround"].to bool
+      cSet getOrDefault(input, "content", cstring"")
+      spSet getOrDefault(input, "spaceAround", true)
 
     render = genRender:
       el.innerText =
@@ -203,6 +203,8 @@ proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
           let ct = hooks.componentsTable()
           attachInstance ct["raw-text"], hooks, ct
 
+# TODO add highlight
+# TODO add spoiler
 let
   initBold = wrapperTextElement("b", onlyInlines)
   initItalic = wrapperTextElement("i", onlyInlines)
@@ -540,7 +542,6 @@ proc initLinearMarkdown: Hooks =
           input: toJs content(),
           updateCallback: contentSetter))]
 
-
 proc initImage: Hooks =
   let
     hooks = Hooks()
@@ -780,7 +781,7 @@ proc initTableRow: Hooks =
     detachNode = proc(at: Index) =
       dettachNodeDefault hooks.self(), at, true
 
-# TODO add border config
+# TODO add border settings
 proc initTable: Hooks =
   let el = createElement "table"
 
@@ -813,7 +814,6 @@ proc initCustomHtml: Hooks =
           input: toJs content(),
           updateCallback: mutState(cset, cstring)))]
 
-# TODO highlight
 proc initGithubGist: Hooks =
   let
     wrapperEl = createElement("div", {"class": "tw-gh-code"})
@@ -912,44 +912,75 @@ proc initLinkPreivew: Hooks =
   var lastUrl = c""
   let
     mainEl = createElement("div", {"class": "tw-link-preview card my-3 bg-light border-primary"})
-    titleEl = createElement("div", {"class": "tw-link-preview-title card-header",
-        "dir": "auto"})
-    titleTextEl = createElement("a", {
+
+    titleWrapperEl = createElement("div", {
+      "class": "tw-link-preview-title card-header", "dir": "auto"})
+    titleLinkEl = createElement("a", {
         "class": "tw-link-preview-title-text card-link",
         "target": "_blank"})
+
     detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
-    descEl = createElement("div", {"class": "tw-link-preview-desc card-text text-muted",
-        "dir": "auto"})
+    descEl = createElement("div", {
+      "class": "tw-link-preview-desc card-text text-muted",
+      "dir": "auto"})
+
     photoWrapperEl = createElement("div", {
         "class": "tw-link-preview-img-wrapper mt-4 text-center"})
     photoEl = createElement("img", {"class": "tw-link-preview-img rounded"})
 
     (url, uset) = genstate c""
+    (imagesrc, isrcset) = genstate c""
 
-  append titleEl, titleTextEl
+  append titleWrapperEl, titleLinkEl
   append photoWrapperEl, photoEl
   append detailsEl, descEl, photoWrapperEl
-  append mainEl, titleEl, detailsEl
+  append mainEl, titleWrapperEl, detailsEl
 
   defHooks:
     dom = () => mainEl
     acceptsAsChild = noTags
-    capture = () => <*{"url": url()}
+
+    capture = () => <*{
+      "url": url(),
+      "image": imagesrc(),
+    }
+
     restore = proc(j: JsObject) =
-      uset j["url"].to cstring
+      uset getDefault(j, "url", cstring"")
+      isrcset getDefault(j, "image", cstring"")
+
+      lasturl = imagesrc()
+
+    refresh = proc =
+      setAttr titleLinkEl, "href", url()
+      setAttr photoEl, "src", imagesrc
 
     render = genRender:
+      hooks.refresh()
+
       if lastUrl != url():
         some newPromise proc(resolve, fail: proc()) =
           apiGetLinkPreviewData $url(), proc(resp: LinkPreviewData) =
-            destroyChildren hooks.self()
-
-            titleTextEl.innerText = resp.title
-            descEl.innerText = resp.desc
-            setAttr titleTextEl, "href", url()
-            setAttr photoEl, "src", resp.image
-
             lastUrl = url()
+            isrcset resp.image
+
+            let tw = hooks.self()
+            clearChildren tw
+
+            hooks.refresh()
+
+            titleLinkEl.innerText = resp.title
+            descEl.innerText = resp.desc
+
+            let
+              ct = hooks.componentsTable()
+              title = attachInstance(ct["paragraph"], hooks, ct)
+              desc = attachInstance(ct["paragraph"], hooks, ct)
+
+            # TODO
+            title.children[0].restore {"content": resp.title}
+            desc.children[0].restore {"content": resp.desc}
+
             resolve()
       else:
         result
@@ -1007,7 +1038,7 @@ proc initMoreCollapse: Hooks =
 
       dettachNodeDefault hooks.self(), at, false
 
-# TODO /flex+justify+alignment + margin between each element
+# TODO add flex/justify/alignment settings
 proc initGrid: Hooks =
   let
     el = createElement("div", {"class": "tw-grid"})
@@ -1045,14 +1076,14 @@ proc initGrid: Hooks =
       }
 
     restore = proc(input: JsObject) =
-      setm input["margin"].to cstring
-      setp input["padding"].to cstring
-      setw input["width"].to cstring
-      seth input["height"].to cstring
-      setmw input["maxWidth"].to cstring
-      setmh input["maxHeight"].to cstring
-      setvsi getDefault(input, "verticalSpaceItems", 0) ~~ int
-      sethsi getDefault(input, "horzontalSpaceItems", 0) ~~ int
+      setm getDefault(input, "margin", cstring"")
+      setp getDefault(input, "padding", cstring"")
+      setw getDefault(input, "width", cstring"")
+      seth getDefault(input, "height", cstring"")
+      setmw getDefault(input, "maxWidth", cstring"")
+      setmh getDefault(input, "maxHeight", cstring"")
+      setvsi getDefault(input, "verticalSpaceItems", 0)
+      sethsi getDefault(input, "horzontalSpaceItems", 0)
 
     render = genRender:
       setAttr el, "style", fmt"""
@@ -1105,30 +1136,6 @@ proc initGrid: Hooks =
               [3, "3"],
               [4, "4"]]},
           updateCallback: mutState(sethsi, int)))]
-
-# TODO
-proc initConfig: Hooks =
-  let
-    el = createElement "div"
-    (status, setstatus) = genState c""
-
-  defHooks:
-    dom = () => el
-    acceptsAsChild = anyTag
-    status = () => (tsNothing, "")
-    # capture = () => tojs configIni()
-    # restore = (j: JsObject) => setConfig j.to cstring
-    # render = genRender:  discard
-    mounted = genMounted: discard
-
-    settings = () => @[
-      SettingsPart(
-        field: "pin",
-        icon: "bi bi-pin",
-        editorData: () => EditorInitData(
-          name: "raw-text-editor",
-          input: toJs status(),
-          updateCallback: mutState(setStatus, cstring)))]
 
 proc initQuote: Hooks =
   let
@@ -1287,12 +1294,6 @@ defComponent customHtmlComponent,
   @["global", "block", "inline"],
   initCustomHtml
 
-defComponent configComponent,
-  "config",
-  "bi bi-gear-fill",
-  @[],
-  initConfig
-
 defComponent githubGistComponent,
   "github",
   "bi bi-github",
@@ -1346,7 +1347,6 @@ proc defaultComponents*: ComponentsTable =
   new result
   add result, [
     rootComponent,
-    configComponent,
     rawTextComponent,
     paragraphComponent,
     linkComponent,
