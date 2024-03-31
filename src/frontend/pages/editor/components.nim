@@ -18,6 +18,7 @@ const
   twFocusClass = "tw-focus-hover"
   twHoverClass = "tw-mouse-hover"
   displayInlineClass = "d-inline"
+  trottleMs = 100
 
 template errProc(returnType, msg): untyped =
   proc(): returnType =
@@ -207,12 +208,48 @@ let
   initItalic = wrapperTextElement("i", onlyInlines)
   initUnderline = wrapperTextElement("u", onlyInlines)
   initStrikethrough = wrapperTextElement("s", onlyInlines)
-  initTitleH1 = wrapperTextElement("h1", anyTag)
-  initTitleH2 = wrapperTextElement("h2", anyTag)
-  initTitleH3 = wrapperTextElement("h3", anyTag)
-  initTitleH4 = wrapperTextElement("h4", anyTag)
-  initTitleH5 = wrapperTextElement("h5", anyTag)
-  initTitleH6 = wrapperTextElement("h6", anyTag)
+
+proc initTitle: Hooks =
+  let
+    el = createElement "div"
+    (priority, pset) = genState 1
+
+  defHooks:
+    dom = () => el
+    acceptsAsChild = onlyInlines
+
+    capture = () => <*{
+      "priority": priority()}
+
+    restore = proc(j: JsObject) =
+      if isObject j:
+        pset getDefault(j, c"priority", 1) ~~ int
+
+    render = genRender:
+      el.className = "tw-title h" & $priority()
+
+    mounted = genMounted:
+      if mode == tmInteractive and by == mbUser:
+        let ct = hooks.componentsTable()
+        attachInstance ct["paragraph"], hooks, ct
+
+    settings = () => @[
+      SettingsPart(
+        field: "text direction",
+        icon: "bi bi-paragraph",
+        editorData: () => EditorInitData(
+          name: "option-selector",
+          input: <* {
+            "default": priority(),
+            "data": [
+              [1, "h1"],
+              [2, "h2"],
+              [3, "h3"],
+              [4, "h4"],
+              [5, "h5"],
+              [6, "h6"]]},
+          updateCallback: mutState(pset, int))),
+        ]
 
 proc initParagraph: Hooks =
   let
@@ -407,7 +444,6 @@ proc initLatex: Hooks =
           input: toJs inline(),
           updateCallback: mutState(iset, bool)))]
 
-const mdRerenderAfter = 100
 proc initLinearMarkdown: Hooks =
   let
     el = createElement("div", {"class": "tw-linear-markdown " &
@@ -423,7 +459,7 @@ proc initLinearMarkdown: Hooks =
       discard result.render()
 
     clearTimeout id
-    id = settimeout(after, mdRerenderAfter)
+    id = settimeout(after, trottleMs)
 
   proc inss(comp: Component, ct: ComponentsTable): TwNode =
     result = instantiate(comp, ct)
@@ -1203,41 +1239,11 @@ defComponent linearMdComponent,
   initLinearMarkdown,
   true
 
-defComponent h1Component,
-  "h1",
+defComponent titleComponent,
+  "title",
   "bi bi-type-h1",
   @["global", "title", "block"],
-  initTitleH1
-
-defComponent h2Component,
-  "h2",
-  "bi bi-type-h2",
-  @["global", "title", "block"],
-  initTitleH2
-
-defComponent h3Component,
-  "h3",
-  "bi bi-type-h3",
-  @["global", "title", "block"],
-  initTitleH3
-
-defComponent h4Component,
-  "h4",
-  "bi bi-type-h4",
-  @["global", "title", "block"],
-  initTitleH4
-
-defComponent h5Component,
-  "h5",
-  "bi bi-type-h5",
-  @["global", "title", "block"],
-  initTitleH5
-
-defComponent h6Component,
-  "h6",
-  "bi bi-type-h6",
-  @["global", "title", "block"],
-  initTitleH6
+  initTitle
 
 defComponent verticalSpaceComponent,
   "vertical-space",
@@ -1349,12 +1355,7 @@ proc defaultComponents*: ComponentsTable =
     strikethroughComponent,
     latexComponent,
     linearMdComponent,
-    h1Component,
-    h2Component,
-    h3Component,
-    h4Component,
-    h5Component,
-    h6Component,
+    titleComponent,
     verticalSpaceComponent,
     imageComponent,
     videoComponent,
