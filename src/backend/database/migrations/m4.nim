@@ -1,37 +1,45 @@
 import std/[json, sequtils, os, options]
 
+import htmlparser
 import ponairi
 
 import ../../config
 import ../../../common/[datastructures]
 import ../[models, dbconn]
 
+import std/httpclient
+import ../../utils/link_preview
 
-func fixx(n: sink NoteData): NoteData =
-    let lvl = 
-        case n.name
-        of "h1": 1
-        of "h2": 2
-        of "h3": 3
-        of "h4": 4
-        of "h5": 5
-        of "h6": 6
-        else:   0 
+let c = newHttpclient()
 
-    case lvl
-    of 1..6:
-        n.name = "title"
+proc fixx(n: sink NoteData): NoteData =
+    case n.name
+    of "link preview":
+        let url = getstr n.data["url"]
+        echo ">> ", url
+
+        let d = 
+            try:
+                linkPreviewData parseHtml cropHead c.getContent url
+            except:
+                LinkPreviewData(
+                    title: url,
+                    desc: "",
+                    image: "")
+
         n.data = %* {
-            "priority": lvl}
+            "url": url,
+            "title": d.title,
+            "desc": d.desc,
+            "image": d.image,
+            }
 
-        debugecho lvl
-    
     else:
         for n2 in n.children.mitems:
             n2 = fixx n2
     n
 
-func fixx(n: sink Note): Note =
+proc fixx(n: sink Note): Note =
     n.data = fixx n.data
     n
 

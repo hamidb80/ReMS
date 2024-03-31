@@ -167,8 +167,8 @@ proc initRawText: Hooks =
       "spaceAround": spaceAround()}
 
     restore = proc(input: JsObject) =
-      cSet getOrDefault(input, "content", cstring"")
-      spSet getOrDefault(input, "spaceAround", true)
+      cSet getDefault(input, "content", cstring"")
+      spSet getDefault(input, "spaceAround", true)
 
     render = genRender:
       el.innerText =
@@ -929,7 +929,9 @@ proc initLinkPreivew: Hooks =
     photoEl = createElement("img", {"class": "tw-link-preview-img rounded"})
 
     (url, uset) = genstate c""
-    (imagesrc, isrcset) = genstate c""
+    (title, tset) = genstate c""
+    (desc, dset) = genstate c""
+    (imagesrc, iset) = genstate c""
 
   append titleWrapperEl, titleLinkEl
   append photoWrapperEl, photoEl
@@ -942,18 +944,24 @@ proc initLinkPreivew: Hooks =
 
     capture = () => <*{
       "url": url(),
+      "title": title(),
+      "desc": desc(),
       "image": imagesrc(),
     }
 
     restore = proc(j: JsObject) =
       uset getDefault(j, "url", cstring"")
-      isrcset getDefault(j, "image", cstring"")
+      tset getDefault(j, "title", cstring"")
+      dset getDefault(j, "desc", cstring"")
+      iset getDefault(j, "image", cstring"")
 
       lasturl = imagesrc()
 
     refresh = proc =
       setAttr titleLinkEl, "href", url()
-      setAttr photoEl, "src", imagesrc
+      setAttr photoEl, "src", imagesrc()
+      titleLinkEl.innerText = title()
+      descEl.innerText = desc()
 
     render = genRender:
       hooks.refresh()
@@ -962,25 +970,15 @@ proc initLinkPreivew: Hooks =
         some newPromise proc(resolve, fail: proc()) =
           apiGetLinkPreviewData $url(), proc(resp: LinkPreviewData) =
             lastUrl = url()
-            isrcset resp.image
+
+            iset resp.image
+            tset resp.title
+            dset resp.desc
 
             let tw = hooks.self()
             clearChildren tw
 
             hooks.refresh()
-
-            titleLinkEl.innerText = resp.title
-            descEl.innerText = resp.desc
-
-            let
-              ct = hooks.componentsTable()
-              title = attachInstance(ct["paragraph"], hooks, ct)
-              desc = attachInstance(ct["paragraph"], hooks, ct)
-
-            # TODO
-            title.children[0].restore {"content": resp.title}
-            desc.children[0].restore {"content": resp.desc}
-
             resolve()
       else:
         result
@@ -990,9 +988,34 @@ proc initLinkPreivew: Hooks =
         field: "link",
         icon: "bi bi-link-45deg",
         editorData: () => EditorInitData(
-          name: "raw-text-editor",
+          name: "linear-text-editor",
           input: toJs url(),
-          updateCallback: mutState(uset, cstring)))]
+          updateCallback: mutState(uset, cstring))),
+
+      SettingsPart(
+        field: "title",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs title(),
+          updateCallback: mutState(tset, cstring))),
+
+      SettingsPart(
+        field: "description",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "raw-text-editor",
+          input: toJs desc(),
+          updateCallback: mutState(dset, cstring))),
+
+      SettingsPart(
+        field: "image link",
+        icon: "bi bi-link-45deg",
+        editorData: () => EditorInitData(
+          name: "linear-text-editor",
+          input: toJs imagesrc(),
+          updateCallback: mutState(iset, cstring))),
+      ]
 
 proc initMoreCollapse: Hooks =
   let
