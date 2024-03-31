@@ -1187,7 +1187,7 @@ defComponent rootComponent,
 defComponent paragraphComponent,
   "paragraph",
   "bi bi-paragraph",
-  @["global", "text", "block"],
+  @["global", "text", "inline", "block"],
   initParagraph
 
 defComponent rawTextComponent,
