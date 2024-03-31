@@ -967,17 +967,13 @@ proc initLinkPreivew: Hooks =
       hooks.refresh()
 
       if lastUrl != url():
+        lastUrl = url()
+
         some newPromise proc(resolve, fail: proc()) =
           apiGetLinkPreviewData $url(), proc(resp: LinkPreviewData) =
-            lastUrl = url()
-
             iset resp.image
             tset resp.title
             dset resp.desc
-
-            let tw = hooks.self()
-            clearChildren tw
-
             hooks.refresh()
             resolve()
       else:
