@@ -543,34 +543,34 @@ proc sidebtn(icn: string, action: proc()): VNode =
     onclick = action):
     icon "fa-xl " & icn
 
+proc onPointerDown(e: Event) =
+  # setCursor ccresizex
+  proc movimpl(x, y: int) {.caster.} =
+    case viewMode
+    of vmBothHorizontal: setSideBarSize x
+    of vmBothVertical: setSideBarSize y
+    else: discard
+    redraw()
+
+  proc movMouse(e: Event as MouseEvent) {.caster.} =
+    movimpl e.x, e.y
+
+  proc moveTouch(ev: Event as TouchEvent) {.caster.} =
+    let t = clientPos ev.touches[0]
+    movimpl |t.x, |t.y
+
+  proc up =
+    # setCursor ccNone
+    winel.removeEventListener "mousemove", movMouse
+    winel.removeEventListener "touchmove", moveTouch
+
+  winel.addEventListener "mousemove", movMouse
+  winel.addEventListener "touchmove", moveTouch
+
+  winel.addEventListener "mouseup", up
+  winel.addEventListener "touchend", up
+  
 proc registerHandleEvents =
-  proc onPointerDown(e: Event) =
-    # setCursor ccresizex
-    proc movimpl(x, y: int) {.caster.} =
-      case viewMode
-      of vmBothHorizontal: setSideBarSize x
-      of vmBothVertical: setSideBarSize y
-      else: discard
-      redraw()
-
-    proc movMouse(e: Event as MouseEvent) {.caster.} =
-      movimpl e.x, e.y
-
-    proc moveTouch(ev: Event as TouchEvent) {.caster.} =
-      let t = clientPos ev.touches[0]
-      movimpl |t.x, |t.y
-
-    proc up =
-      # setCursor ccNone
-      winel.removeEventListener "mousemove", movMouse
-      winel.removeEventListener "touchmove", moveTouch
-
-    winel.addEventListener "mousemove", movMouse
-    winel.addEventListener "touchmove", moveTouch
-
-    winel.addEventListener "mouseup", up
-    winel.addEventListener "touchend", up
-
   let el = ".extender-body".ql
   if el != nil:
     el.removeEventListener "mousedown", onPointerDown
