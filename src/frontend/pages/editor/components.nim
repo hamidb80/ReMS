@@ -955,7 +955,7 @@ proc initLinkPreivew: Hooks =
       dset getDefault(j, "desc", cstring"")
       iset getDefault(j, "image", cstring"")
 
-      lasturl = imagesrc()
+      lasturl = url()
 
     refresh = proc =
       setAttr titleLinkEl, "href", url()
