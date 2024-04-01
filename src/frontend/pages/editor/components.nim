@@ -493,8 +493,11 @@ proc initLinearMarkdown: Hooks =
 
     discard render result
 
-  proc genElemFor(hooks: Hooks, str: cstring, modes: set[
-      LinearMarkdownMode]): TwNode =
+  proc genElemFor(
+    hooks: Hooks,
+    str: cstring,
+    modes: set[LinearMarkdownMode]
+  ): TwNode =
     let localmodes = modes - {lmmCode, lmmLatex}
     result =
       if lmmCode in modes:

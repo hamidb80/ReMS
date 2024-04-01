@@ -103,6 +103,7 @@ when isMainModule:
     let
         t = """
             Hey *man* how are _you_?
+            _L_*e*tter by $l$=e=tter
             *~WTF~ yes* and 
             `my_cdoe` 
             $LATEX \sin$

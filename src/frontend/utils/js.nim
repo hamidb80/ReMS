@@ -65,7 +65,7 @@ func isKeyOf(key: cstring, t: JsAssoc): bool
   {.importjs: "(# in #)".}
 
 func getDefault*[T](o: JsObject, k: cstring, default: T): T
-  {.importjs: "(#[#] || #)".}
+  {.importjs: "(#[#] ?? #)".}
 
 func contains*(str, sub: cstring): bool
   {.importjs: "(#.indexOf(#) !== -1)".}
