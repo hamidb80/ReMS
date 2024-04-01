@@ -394,6 +394,17 @@ p p {
   list-style-position: inside;
 }
 
+.tw-text-spoiler {
+  background-color: gray;
+  color: gray;
+}
+
+.tw-text-spoiler:hover {
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
 /* https://mehdix.ir/css-list-style-type.html */
 
 @counter-style abjad {

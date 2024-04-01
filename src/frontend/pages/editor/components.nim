@@ -192,9 +192,9 @@ proc initRawText: Hooks =
           input: spaceAround().toJs,
           updateCallback: mutState(spSet, bool)))]
 
-proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
+proc wrapperTextElement(tag, cls: string, aac: () -> seq[cstring]): () -> Hooks =
   proc: Hooks =
-    let el = createElement tag
+    let el = createElement(tag, {"class": cls})
     defHooks:
       dom = () => el
       acceptsAsChild = aac
@@ -204,11 +204,12 @@ proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
           attachInstance ct["raw-text"], hooks, ct
 
 let
-  initBold = wrapperTextElement("b", onlyInlines)
-  initItalic = wrapperTextElement("i", onlyInlines)
-  initUnderline = wrapperTextElement("u", onlyInlines)
-  initStrikethrough = wrapperTextElement("s", onlyInlines)
-  initHighlight = wrapperTextElement("mark", onlyInlines)
+  initBold = wrapperTextElement("b", "tw-bold", onlyInlines)
+  initItalic = wrapperTextElement("i", "tw-italic", onlyInlines)
+  initUnderline = wrapperTextElement("u", "tw-underline", onlyInlines)
+  initStrikethrough = wrapperTextElement("s", "tw-strikethrough", onlyInlines)
+  initSpoiler = wrapperTextElement("span", "tw-text-spoiler", onlyInlines)
+  initHighlight = wrapperTextElement("mark", "tw-text-highlight", onlyInlines)
 
 proc initTitle: Hooks =
   let
@@ -478,8 +479,8 @@ proc initLinearMarkdown: Hooks =
         of lmmStrikeThrough: "strike through"
         of lmmLatex: "latex"
         of lmmCode: "raw code"
-        # of lmmSpoiler: "spoiler"
-        of lmmHighlight: "highlight"
+        of lmmSpoiler: "text spoiler"
+        of lmmHighlight: "text highlight"
 
     result = inss(ct[ename], ct)
 
@@ -1257,15 +1258,16 @@ defComponent strikethroughComponent,
   initStrikethrough
 
 defComponent textHighlightComponent,
-  "highlight",
+  "text highlight",
   "bi bi-type-strikethrough",
   @["global", "inline"],
   initHighlight
 
-# defComponent textSpoilerComponent,
-#   "spoiler",
-#   "bi bi-type-strikethrough",
-#   @["global", "inline"],
+defComponent textSpoilerComponent,
+  "text spoiler",
+  "bi bi-type-strikethrough",
+  @["global", "inline"],
+  initSpoiler
 
 defComponent latexComponent,
   "latex",
@@ -1388,7 +1390,7 @@ proc defaultComponents*: ComponentsTable =
     italicComponent,
     strikethroughComponent,
     textHighlightComponent,
-    # textSpoilerComponent,
+    textSpoilerComponent,
     latexComponent,
     linearMdComponent,
     titleComponent,

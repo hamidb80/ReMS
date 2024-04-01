@@ -13,7 +13,7 @@ type
         lmmStrikeThrough
         lmmLatex
         lmmCode
-        # lmmSpoiler
+        lmmSpoiler
         lmmHighlight
 
     LinearMarkdownNode* = object
@@ -85,9 +85,9 @@ func parseLinearMarkdown*(s: string): seq[LinearMarkdownNode] =
         of '$':
             checkStack i, lmmLatex
 
-        # of '|':
-        #     notCodeOrLatex:
-        #         checkStack i, lmmSpoiler
+        of '|':
+            notCodeOrLatex:
+                checkStack i, lmmSpoiler
 
         of '=':
             notCodeOrLatex:
