@@ -150,7 +150,7 @@ proc initRoot: Hooks =
     unhover = noop
     focus = noop
     blur = noop
-    acceptsAsChild = genAllowedTags @[c"block", c"config"]
+    acceptsAsChild = genAllowedTags @[c"block"]
 
 proc initRawText: Hooks =
   let
@@ -203,13 +203,12 @@ proc wrapperTextElement(tag: string, aac: () -> seq[cstring]): () -> Hooks =
           let ct = hooks.componentsTable()
           attachInstance ct["raw-text"], hooks, ct
 
-# TODO add highlight
-# TODO add spoiler
 let
   initBold = wrapperTextElement("b", onlyInlines)
   initItalic = wrapperTextElement("i", onlyInlines)
   initUnderline = wrapperTextElement("u", onlyInlines)
   initStrikethrough = wrapperTextElement("s", onlyInlines)
+  initHighlight = wrapperTextElement("mark", onlyInlines)
 
 proc initTitle: Hooks =
   let
@@ -479,6 +478,8 @@ proc initLinearMarkdown: Hooks =
         of lmmStrikeThrough: "strike through"
         of lmmLatex: "latex"
         of lmmCode: "raw code"
+        # of lmmSpoiler: "spoiler"
+        of lmmHighlight: "highlight"
 
     result = inss(ct[ename], ct)
 
@@ -1252,6 +1253,17 @@ defComponent strikethroughComponent,
   @["global", "inline"],
   initStrikethrough
 
+defComponent textHighlightComponent,
+  "highlight",
+  "bi bi-type-strikethrough",
+  @["global", "inline"],
+  initHighlight
+
+# defComponent textSpoilerComponent,
+#   "spoiler",
+#   "bi bi-type-strikethrough",
+#   @["global", "inline"],
+
 defComponent latexComponent,
   "latex",
   "bi bi-regex",
@@ -1372,6 +1384,8 @@ proc defaultComponents*: ComponentsTable =
     boldComponent,
     italicComponent,
     strikethroughComponent,
+    textHighlightComponent,
+    # textSpoilerComponent,
     latexComponent,
     linearMdComponent,
     titleComponent,

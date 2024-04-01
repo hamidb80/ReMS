@@ -1,5 +1,6 @@
 ## "linear markdown" is a subset of markdown that only supports these features:
-##      normal text, italic, bold, under line, strike through, latex, code
+##      normal text, italic, bold, under line, strike through, 
+##      latex, code, spoiler, highlight
 
 # import std/jsffi
 
@@ -12,6 +13,8 @@ type
         lmmStrikeThrough
         lmmLatex
         lmmCode
+        # lmmSpoiler
+        lmmHighlight
 
     LinearMarkdownNode* = object
         slice*: Slice[int]
@@ -54,32 +57,41 @@ func parseLinearMarkdown*(s: string): seq[LinearMarkdownNode] =
     template notCodeOrLatex(body): untyped =
         if lmmCode notin modes and lmmLatex notin modes:
             body
-        
+
 
     for i, c in s:
         case c
+        # TODO
         # of '\\': # escape
-        of '*': # bold
+        of '*':
             notCodeOrLatex:
                 checkStack i, lmmBold
 
-        of '_': # italic
+        of '_':
             notCodeOrLatex:
                 checkStack i, lmmItalic
 
-        of '#': # underline
+        of '#':
             notCodeOrLatex:
                 checkStack i, lmmUnderline
 
-        of '~': # strike through
+        of '~':
             notCodeOrLatex:
                 checkStack i, lmmStrikeThrough
 
-        of '`': # code
+        of '`':
             checkStack i, lmmCode
 
-        of '$': # latex
+        of '$':
             checkStack i, lmmLatex
+
+        # of '|':
+        #     notCodeOrLatex:
+        #         checkStack i, lmmSpoiler
+
+        of '=':
+            notCodeOrLatex:
+                checkStack i, lmmHighlight
 
         else: # not a special char
             discard
@@ -88,16 +100,19 @@ func parseLinearMarkdown*(s: string): seq[LinearMarkdownNode] =
         add result, genobj head .. high s
 
 when isMainModule:
-    let 
+    let
         t = """
             Hey *man* how are _you_?
             *~WTF~ yes* and 
             `my_cdoe` 
-            $LATEX \sin$ 
-            the end...
+            $LATEX \sin$
+            = roses are red = 
+            | violets are blue |
+            I want Palestine be free
+            God make it so
         """
         d = parseLinearMarkdown t
-    
+
     echo t
     for p in d:
         echo p

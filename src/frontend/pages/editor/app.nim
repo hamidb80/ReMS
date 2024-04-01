@@ -223,7 +223,7 @@ proc prepareComponentSelection(node: TwNode) =
 
   var acc = newJsSet()
   for t in parentNode.acceptsAsChild:
-    for cname in app.componentsByTags[t]:
+    for cname in app.componentsByTags.getOrDefault t:
       acc.incl cname
 
   for cname in acc:
