@@ -42,53 +42,53 @@ p {
 }
 
 
-.items-my-0 > * {
+.items-my-0>* {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.items-my-1 > * {
+.items-my-1>* {
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
 
-.items-my-2 > * {
+.items-my-2>* {
   margin-top: 1.4rem;
   margin-bottom: 1.4rem;
 }
 
-.items-my-3 > * {
+.items-my-3>* {
   margin-top: 2rem;
   margin-bottom: 2rem;
 }
 
-.items-my-4 > * {
+.items-my-4>* {
   margin-top: 3rem;
   margin-bottom: 3rem;
 }
 
 
-.items-mx-0 > * {
+.items-mx-0>* {
   margin-left: 0;
   margin-right: 0;
 }
 
-.items-mx-1 > * {
+.items-mx-1>* {
   margin-left: 1rem;
   margin-right: 1rem;
 }
 
-.items-mx-2 > * {
+.items-mx-2>* {
   margin-left: 1.4rem;
   margin-right: 1.4rem;
 }
 
-.items-mx-3 > * {
+.items-mx-3>* {
   margin-left: 2rem;
   margin-right: 2rem;
 }
 
-.items-mx-4 > * {
+.items-mx-4>* {
   margin-left: 3rem;
   margin-right: 3rem;
 }
@@ -390,15 +390,8 @@ p p {
   direction: ltr;
 }
 
-
-.tw-content .tw-content-list {
-  display: table;
-  padding-left: 1em;
+.tw-list {
   list-style-position: inside;
-}
-
-.tw-content p {
-  display: block;
 }
 
 /* https://mehdix.ir/css-list-style-type.html */
