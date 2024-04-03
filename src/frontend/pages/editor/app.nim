@@ -32,6 +32,7 @@ type
 
 const
   hoverTimeout = 5000
+  waitBeforeHoverFirstInput = 100
   scrollStep = 100
   renderResultId = "tw-render"
   treeViewId = "tw-tree-view"
@@ -52,6 +53,15 @@ var
 # TODO import to a specific node not replace the whole tree!
 
 # ----- UI ------------------------------
+
+proc gotoSettingsImpl =
+  let firstInputs = settingsAreaId.el.querySelectorAll("input, textarea, select")
+  if firstInputs.len != 0:
+    firstInputs[0].focus
+
+proc gotoSettings =
+  app.state = asSetting
+  discard setTimeout(waitBeforeHoverFirstInput, gotoSettingsImpl)
 
 proc scrollContentTo(n: TwNode) =
   let
@@ -174,7 +184,7 @@ proc recursiveListImpl(
           redraw()
 
         proc ondblclick =
-          app.state = asSetting
+          gotoSettings()
 
     if node.data.visibleChildren:
       for i, n in node.children:
@@ -401,7 +411,7 @@ proc keyboardListener(e: Event as KeyboardEvent) {.caster.} =
 
     of kcEnter:
       if app.state == asTreeView and app.insertionMode == imAppend:
-        app.state = asSetting
+        gotoSettings()
 
     of kcEscape:
       reset app.selected
