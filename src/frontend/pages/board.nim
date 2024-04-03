@@ -1707,8 +1707,15 @@ proc takeAction(ac: ActionKind; ks: KeyState) =
       deleteSelectedNodes()
 
     of akCancel:
-      if app.boardState == bsAddNode:
+      case app.boardState
+      of bsAddNode:
         destroy app.tempNode.konva.wrapper
+
+      of bsMakeConnection:
+        removeTempEdges()
+
+      else:
+        discard
 
       app.boardState = bsFree
       app.footerState = fsOverview
