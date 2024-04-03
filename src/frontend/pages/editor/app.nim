@@ -31,6 +31,7 @@ type
 
 
 const
+  hoverTimeout = 5000
   scrollStep = 100
   renderResultId = "tw-render"
   treeViewId = "tw-tree-view"
@@ -98,10 +99,10 @@ func pathId(path: TreePath): string =
 proc recursiveListImpl(
   node: TwNode,
   path: var TreePath,
-  hover: TreePath,
-  selected: Hashset[TreePath]
+  active: TreePath,
+  selected: Hashset[TreePath],
 ): VNode =
-  let hovered = hover == path
+  let hovered = active == path
 
   buildHtml tdiv(id = pathId path, class = "tw-pointer"):
     let
@@ -135,8 +136,11 @@ proc recursiveListImpl(
 
     h6(class = "badge text-start px-2 w-100 my-0 " & cls(
         hovered and app.insertionMode == imAppend, path, selected, c)):
-      proc onMouseEnter = node.hover()
-      proc onMouseLeave = node.unhover()
+      proc unhov = node.unhover()
+      proc onMouseLeave = unhov()
+      proc onMouseEnter =
+        node.hover()
+        discard setTimeout(hoverTimeout, unhov)
 
       italic(class =
         if node.isLeaf: "bi bi-asterisk"
@@ -176,7 +180,7 @@ proc recursiveListImpl(
       for i, n in node.children:
         (path.add i)
         tdiv(class = "branch ms-4"):
-          recursiveListImpl n, path, hover, selected
+          recursiveListImpl n, path, active, selected
         (path.npop)
 
     tdiv(class = "tw-tree-indicator w-100 " &
@@ -569,7 +573,7 @@ proc onPointerDown(e: Event) =
 
   winel.addEventListener "mouseup", up
   winel.addEventListener "touchend", up
-  
+
 proc registerHandleEvents =
   let el = ".extender-body".ql
   if el != nil:
