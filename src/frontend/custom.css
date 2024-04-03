@@ -391,6 +391,7 @@ p p {
 }
 
 .tw-list {
+  display: block;
   list-style-position: inside;
 }
 
