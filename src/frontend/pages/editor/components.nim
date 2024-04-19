@@ -381,7 +381,7 @@ proc initHorizontalLine: Hooks =
 
 proc initLink: Hooks =
   let
-    el = createElement "a"
+    el = createElement("a", {"class": "text-decoration-none"})
     (url, setUrl) = genState c""
 
   defHooks:
@@ -921,7 +921,7 @@ proc initLinkPreivew: Hooks =
     titleWrapperEl = createElement("div", {
       "class": "tw-link-preview-title card-header", "dir": "auto"})
     titleLinkEl = createElement("a", {
-        "class": "tw-link-preview-title-text card-link",
+        "class": "tw-link-preview-title-text card-link text-decoration-none",
         "target": "_blank"})
 
     detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
