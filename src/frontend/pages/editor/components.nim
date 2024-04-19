@@ -963,11 +963,16 @@ proc initLinkPreivew: Hooks =
       lasturl = url()
 
     refresh = proc =
-      setAttr titleLinkEl, "href", url()
-      setAttr photoEl, "src", imagesrc()
       titleLinkEl.innerText = title()
       descEl.innerText = desc()
-
+      setAttr titleLinkEl, "href", url()
+      setAttr photoEl, "src", imagesrc()
+      
+      if imagesrc() == "":
+        photoEl.classList.add "d-none"
+      else:
+        photoEl.classList.remove "d-none"
+      
     render = genRender:
       hooks.refresh()
 
