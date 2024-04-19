@@ -1084,8 +1084,8 @@ when isMainModule:
     me = some u
     redraw()
 
-  waitAll [fetchTags(), fetchUsers(),
-    fetchNotes(), fetchBoards(), fetchAssets(), fetchDefaultPalette()], proc =
+  waitAll [fetchTags(), fetchUsers(), fetchBoards(), fetchAssets(),
+      fetchDefaultPalette()], proc =
     currentTag = some dummyTag()
     redraw()
 
