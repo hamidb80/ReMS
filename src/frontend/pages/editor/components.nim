@@ -969,9 +969,9 @@ proc initLinkPreivew: Hooks =
       setAttr photoEl, "src", imagesrc()
       
       if imagesrc() == "":
-        photoEl.classList.add "d-none"
+        photoWrapperEl.classList.add "d-none"
       else:
-        photoEl.classList.remove "d-none"
+        photoWrapperEl.classList.remove "d-none"
       
     render = genRender:
       hooks.refresh()
