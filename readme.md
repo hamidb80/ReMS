@@ -40,11 +40,33 @@ I have found something is wrong with traditional education system:
 - [CISCO Network Academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
 - [Hepta Base](https://heptabase.com/) + [Margin Note](https://www.marginnote.com/)
 
-[Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? no I didn't find them useful ...
+[Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
 
-## UI
+## Philosophy
+> Software is not just some code, software is made to meet some needs, software is the way its creators think, software has history, software is something to be cherished, software is something alive -- me
+
+the ReMS (Remembering Management System) philosophy is to result in least amount of distraction, for example the .
+
+### the system should
+- help you to ***remember better***
+- help you to ***connect the the things that you know***
+- help you to ***grasp the overall idea***
+
+### the system should not
+- notes "automatically loaded" like Intagram feeds ::do not create distraction. user should search for what he/she is lookig for
+- ***limit you** to just books or highlights from web using a custom extension.
+
+### How to get the most benefit from this sotfware
+I had hard time to figure out what is the best way that using this software can benefit.
+
+At first I thought that it is replacement for highlighting and tradiotional way of studying.
+
+
+
+## things that helped me along the way
+### UI
 - [SVG icons](https://www.svgrepo.com/collection/solar-bold-duotone-icons/) + [fontawesome](https://fontawesome.com/)
 - [Bootstrap Litera Theme](https://bootswatch.com/litera)
 
-## General
+### General
 - [LaTex editor](https://latexeditor.lagrida.com/)
