@@ -24,6 +24,7 @@ I have found something is wrong with traditional education system:
 - active learning vs passing learning / scout young
 - [spatial web browsing](https://maggieappleton.com/spatial-web)
 - [libre texts](https://libretexts.org/) + [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/) +  [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx)
+- [Pendulum Equations](https://www.cfm.brown.edu/people/dobrush/am34/Mathematica/ch3/pendulum.html)
 
 ## Inspirations
 - Board of [OrgPad](https://orgpad.info/)
@@ -43,7 +44,7 @@ I have found something is wrong with traditional education system:
 [Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
 
 ## Philosophy
-> Software is not just some code, software is made to meet some needs, software is the way its creators think, software has history, software is something to be cherished, software is something alive -- me
+> Software is not just some code, software is made to meet some needs, software is the way its creators think, software has history, software is something alive -- me
 
 the ReMS (Remembering Management System) philosophy is to result in least amount of distraction, for example the .
 
