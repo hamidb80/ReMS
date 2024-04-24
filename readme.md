@@ -12,10 +12,6 @@ explore boards:
 ![Screenshot from 2024-03-14 21-37-49](https://github.com/hamidb80/ReMS/assets/33871336/7c7a3f4b-77fd-46c4-ba86-cd2bb11bd7e5)
 board page:
 ![Screenshot from 2024-03-14 21-39-09](https://github.com/hamidb80/ReMS/assets/33871336/129ed27d-a15e-4098-939d-6bec5f6f4f84)
-edit note:
-![Screenshot from 2024-03-14 21-41-05](https://github.com/hamidb80/ReMS/assets/33871336/a5efc5b5-d1f8-407f-a16c-98965c15c1be)
-edit note:
-![Screenshot from 2024-03-14 21-42-29](https://github.com/hamidb80/ReMS/assets/33871336/4b490a20-6b37-48ca-b8fe-fd1c6d66e34c)
 
 
 ## The motivators of this project
@@ -44,30 +40,50 @@ I have found something is wrong with traditional education system:
 [Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
 
 ## Philosophy
-> Software is not just some code, software is made to meet some needs, software is the way its creators think, software has history, software is something alive -- me
+> Software is not just some code, software is made to meet some needs, software has history, software is the way its creators think,s software is something alive -- me
 
 the ReMS (Remembering Management System) philosophy is to result in least amount of distraction, for example the .
 
 ### the system should
-- help you to ***remember better***
-- help you to ***connect the the things that you know***
-- help you to ***grasp the overall idea***
+1. help you to ***remember better***
+2. help you to ***connect the the things that you know***
+3. help you to ***grasp the overall idea***
+4. be a place to ***connect*** all the ***resources*** on the internet
 
 ### the system should not
-- notes "automatically loaded" like Intagram feeds ::do not create distraction. user should search for what he/she is lookig for
-- ***limit you** to just books or highlights from web using a custom extension.
+1. ***distract you*** :: e.g. automatically load notes (like Intagram feeds). the user him/herself decides what to look for. user can still see feeds but this behaviour is must be taken by choice every time.
+2. ***limit you*** to just uploaded books or highlights from web using a custom extension.
 
-### How to get the most benefit from this sotfware
-I had hard time to figure out what is the best way that using this software can benefit.
+### How to get benefit from this sotfware
+At first I thought that this software is replacement for tradiotional way of studying. I thought it is new generation of studying and others are now obsolete. But then I thought of great scientists/engineers in history that knew/did a lot, but have been using none of these tools.
 
-At first I thought that it is replacement for highlighting and tradiotional way of studying.
+I had hard time to figure out what is the best way that using this software can benefit. the best way is that you should read/watch/listen to a peice of knowledge and really engage yourself. then at the end of session/part/chapter, you should try to create a graph and summary of the contents that you know. otherwise it will be distracting and time consuming without much gain...
 
+## Design Choices
+> life is not inherently wrong or right, life is what you choose it to be ... -- [how to master your life](https://oliveremberton.com/2013/how-to-master-your-life/)
 
+Every choice you make has its upsides and downsides. for example if your friends are gossiping about other one or saying dirty words, you can mention them that it is wrong, they probably get a little mad at you or chances are that they not like you as before, but at least your ego is not blaming on you [because you did what is right]. or you can gossip just like them and laugh at their dirty talks and you know, just have some fun! your ego will be neutral if you do it more and more. So, depending on your purpose [in above example, doing what is right or not being alone by having bad¹ friends] you make your choice.
 
-## things that helped me along the way
-### UI
+### Note Editor
+I've seen a lot of content editors, like WYSIWYG and markdown or combination of both. I liked block based editors like Jupyter-notebook more, Notion/Obsidian/Logseq editors seemed wierd and limited. the major drawback for markdown was right-to-left languages. since my primary language is Persian and write content for Persian readers, it is a major drawback. yes I know that I can wrap everything in `<div dir="rtl">...</div>` and there are other markup languages, but they seem bloat.
+
+So I imagined a editor like `inspect elements` of web browsers, simply store contents in tree manner.
+
+edit note:
+![Screenshot from 2024-03-14 21-41-05](https://github.com/hamidb80/ReMS/assets/33871336/a5efc5b5-d1f8-407f-a16c-98965c15c1be)
+edit note:
+![Screenshot from 2024-03-14 21-42-29](https://github.com/hamidb80/ReMS/assets/33871336/4b490a20-6b37-48ca-b8fe-fd1c6d66e34c)
+
+**foot notes:**
+1. maybe they are not bad, but just unaware of their actions. as Jesus said: hate the sin, love the sinner
+
+## Why Nim
+[Nim](https://nim-lang.org/) is simple and consice programming language [much much simpler than Python]. Nim made it a lot easier to build my app as an indie programming in less time possible. Lack of a big community didn't feel problematic.
+
+## UI
 - [SVG icons](https://www.svgrepo.com/collection/solar-bold-duotone-icons/) + [fontawesome](https://fontawesome.com/)
 - [Bootstrap Litera Theme](https://bootswatch.com/litera)
 
-### General
+## Other useful things
 - [LaTex editor](https://latexeditor.lagrida.com/)
+- [unicode superscript generator](https://lingojam.com/SuperscriptGenerator)
