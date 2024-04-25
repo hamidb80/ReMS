@@ -1,6 +1,7 @@
 > People are asleep, they wake up when they die - Muhammad the prophet (PBUH)
 
 # ReMS :: Remembering Management System
+I know the name is wierd, I might change it.
 
 > [!WARNING]
 > the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
@@ -37,7 +38,7 @@ I have found something is wrong with traditional education system:
 [Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
 
 ## Philosophy
-> Software is not just some code, software is made to meet some needs, software has history, software is the way its creators think,s software is something alive -- me
+> Software is not just some code, software is made to meet some needs, software has history, software is the way its creators think, software is something alive -- me
 
 the ReMS (Remembering Management System) philosophy is to result in least amount of distraction, for example the .
 
@@ -49,7 +50,8 @@ the ReMS (Remembering Management System) philosophy is to result in least amount
 
 ### the system should not
 1. ***distract you*** :: e.g. automatically load notes (like Intagram feeds). the user him/herself decides what to look for. user can still see feeds but this behaviour is must be taken by choice every time.
-2. ***limit you*** to just uploaded books or highlights from web using a custom extension.
+2. ***limit you*** to just uploaded contents, or create a monopoly like Twitter/Facebook. I like [open digital gardens](https://maggieappleton.com/garden-history).
+3. need registeration for basic tasks (e.g. viewing notes and boards)
 
 ### How to get benefit from this sotfware
 At first I thought that this software is replacement for tradiotional way of studying. I thought it is new generation of studying and others are now obsolete. But then I thought of great scientists/engineers in history that knew/did a lot, but have been using none of these tools.
