@@ -5,13 +5,7 @@
 > [!WARNING]
 > the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
 
-## Demos
-explore notes:
-![Screenshot from 2024-03-14 21-36-38](https://github.com/hamidb80/ReMS/assets/33871336/4b7f6b65-25fd-40b5-b2ec-8f1601072b2e)
-explore boards:
-![Screenshot from 2024-03-14 21-37-49](https://github.com/hamidb80/ReMS/assets/33871336/7c7a3f4b-77fd-46c4-ba86-cd2bb11bd7e5)
-board page:
-![Screenshot from 2024-03-14 21-39-09](https://github.com/hamidb80/ReMS/assets/33871336/129ed27d-a15e-4098-939d-6bec5f6f4f84)
+## Demo
 
 
 ## The motivators of this project
@@ -19,14 +13,14 @@ I have found something is wrong with traditional education system:
 - [what good is learning if I don't remember it?](https://files.eric.ed.gov/fulltext/EJ1055665.pdf)
 - active learning vs passing learning / scout young
 - [spatial web browsing](https://maggieappleton.com/spatial-web)
-- [libre texts](https://libretexts.org/) + [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/) +  [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx)
-- [Pendulum Equations](https://www.cfm.brown.edu/people/dobrush/am34/Mathematica/ch3/pendulum.html)
+- [libre texts](https://libretexts.org/) + [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/) +  [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx) + [Pendulum Equations](https://www.cfm.brown.edu/people/dobrush/am34/Mathematica/ch3/pendulum.html)
 
 ## Inspirations
 - Board of [OrgPad](https://orgpad.info/)
 - Github's colorful issue tags and the ability to search by language, date, ...
 - `Saved Messages` in telegram (or any other messanger)
 - Pinterest style (Masonry) layout
+- Google Keep
 
 ## Similar Works
 - [OrgPad](https://orgpad.info/)
@@ -69,10 +63,8 @@ I've seen a lot of content editors, like WYSIWYG and markdown or combination of 
 
 So I imagined a editor like `inspect elements` of web browsers, simply store contents in tree manner.
 
-edit note:
-![Screenshot from 2024-03-14 21-41-05](https://github.com/hamidb80/ReMS/assets/33871336/a5efc5b5-d1f8-407f-a16c-98965c15c1be)
-edit note:
-![Screenshot from 2024-03-14 21-42-29](https://github.com/hamidb80/ReMS/assets/33871336/4b490a20-6b37-48ca-b8fe-fd1c6d66e34c)
+#### Demo
+
 
 **foot notes:**
 1. maybe they are not bad, but just unaware of their actions. as Jesus said: hate the sin, love the sinner
