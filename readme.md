@@ -6,6 +6,9 @@
 > the project is under active development. I will make a tutorial and demo about it when it hit version 1.0
 
 ## Demo
+https://github.com/hamidb80/ReMS/assets/33871336/e0a85a69-1881-4540-8a53-f5951df85682
+
+https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa302d5d0
 
 
 ## The motivators of this project
@@ -64,7 +67,7 @@ I've seen a lot of content editors, like WYSIWYG and markdown or combination of 
 So I imagined a editor like `inspect elements` of web browsers, simply store contents in tree manner.
 
 #### Demo
-
+https://github.com/hamidb80/ReMS/assets/33871336/151177cb-b5f4-4324-ade0-569e61f8cd25
 
 **foot notes:**
 1. maybe they are not bad, but just unaware of their actions. as Jesus said: hate the sin, love the sinner
