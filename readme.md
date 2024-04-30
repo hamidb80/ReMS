@@ -40,8 +40,6 @@ I have found something is wrong with traditional education system:
 ## Philosophy
 > Software is not just some code, software is made to meet some needs, software has history, software is the way its creators think, software is something alive -- me
 
-the ReMS (Remembering Management System) philosophy is to result in least amount of distraction, for example the .
-
 ### the system should
 1. help you to ***remember better***
 2. help you to ***connect the the things that you know***
@@ -64,15 +62,28 @@ I had hard time to figure out what is the best way that using this software can 
 Every choice you make has its upsides and downsides. for example if your friends are gossiping about other one or saying dirty words, you can mention them that it is wrong, they probably get a little mad at you or chances are that they not like you as before, but at least your ego is not blaming on you [because you did what is right]. or you can gossip just like them and laugh at their dirty talks and you know, just have some fun! your ego will be neutral if you do it more and more. So, depending on your purpose [in above example, doing what is right or not being alone by having bad¹ friends] you make your choice.
 
 ### Note Editor
-I've seen a lot of content editors, like WYSIWYG and markdown or combination of both. I liked block based editors like Jupyter-notebook more, Notion/Obsidian/Logseq editors seemed wierd and limited. the major drawback for markdown was right-to-left languages. since my primary language is Persian and write content for Persian readers, it is a major drawback. yes I know that I can wrap everything in `<div dir="rtl">...</div>` and there are other markup languages, but they seem bloat.
+I've seen a lot of content editors, like WYSIWYG and markdown or combination of both. I liked block based editors like Jupyter-notebook more, Notion/Obsidian/Logseq editors seemed wierd and limited. the major drawback for markdown was right-to-left languages. since my primary language is Persian and I write content for Persian readers, it is a major drawback. yes I know that I can wrap everything in `<div dir="rtl">...</div>` or I can useother markup languages, but they seem both unnecessary and bloat.
 
 So I imagined a editor like `inspect elements` of web browsers, simply store contents in tree manner.
 
 #### Demo
 https://github.com/hamidb80/ReMS/assets/33871336/151177cb-b5f4-4324-ade0-569e61f8cd25
 
-**foot notes:**
-1. maybe they are not bad, but just unaware of their actions. as Jesus said: hate the sin, love the sinner
+## Current State
+I think the software now reached its minimum viable product [or MVP]. but ... 
+
+### Things I wanna improve
+- the graph viewer is slow specially on larger graphs. I think I have to use WebGL like [sigmajs](https://www.sigmajs.org/)
+- the graph editor is not intuitive i.e. it has poor user experience IMHO.
+
+### Things I wanna add
+- the ability to see each note is used in which graphs.
+- remembering utils (spaced repetition)
+
+### Things I doubt about
+using a SPA framework (e.g. React, Karax) is fun, you don't care much about updating your states, 
+but they seems limiting when it comes to interactive components & their states in notes. they does not seem worth it. 
+I wish I had more time to think about them...
 
 ## Why Nim
 [Nim](https://nim-lang.org/) is simple and consice programming language [much much simpler than Python]. Nim made it a lot easier to build my app as an indie programming in less time possible. Lack of a big community didn't feel problematic.
