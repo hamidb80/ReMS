@@ -63,6 +63,8 @@ I had hard time to figure out what is the best way that using this software can 
 
 Every choice you make has its upsides and downsides. for example if your friends are gossiping about other one or saying dirty words, you can mention them that it is wrong, they probably get a little mad at you or chances are that they not like you as before, but at least your ego is not blaming on you [because you did what is right]. or you can gossip just like them and laugh at their dirty talks and you know, just have some fun! your ego will be neutral if you do it more and more. So, depending on your purpose [in above example, doing what is right or not being alone by having bad¹ friends] you make your choice.
 
+¹ maybe they are not bad, but just unaware of their actions, as Jesus said: "hate the sin, love the sinner".
+
 ### Note Editor
 I've seen a lot of content editors, like WYSIWYG and markdown or combination of both. I liked block based editors like Jupyter-notebook more, Notion/Obsidian/Logseq editors seemed wierd and limited. the major drawback for markdown was right-to-left languages. since my primary language is Persian and I write content for Persian readers, it is a major drawback. yes I know that I can wrap everything in `<div dir="rtl">...</div>` or I can useother markup languages, but they seem both unnecessary and bloat.
 
