@@ -938,10 +938,13 @@ proc initLinkPreivew: Hooks =
     (desc, dset) = genstate c""
     (imagesrc, iset) = genstate c""
 
-  append titleWrapperEl, titleLinkEl
-  append photoWrapperEl, photoEl
-  append detailsEl, descEl, photoWrapperEl
-  append mainEl, titleWrapperEl, detailsEl
+  appendTree mainEl:
+    titleWrapperEl: 
+      titleLinkEl
+    detailsEl:
+      descEl
+      photoWrapperEl:
+        photoEl
 
   defHooks:
     dom = () => mainEl
@@ -964,14 +967,18 @@ proc initLinkPreivew: Hooks =
 
     refresh = proc =
       titleLinkEl.innerText = title()
-      descEl.innerText = desc()
+      descEl     .innerText = desc()
+
       setAttr titleLinkEl, "href", url()
-      setAttr photoEl, "src", imagesrc()
+      setAttr photoEl,     "src",  imagesrc()
       
-      if imagesrc() == "":
-        photoWrapperEl.classList.add "d-none"
-      else:
-        photoWrapperEl.classList.remove "d-none"
+      let 
+        hasImage = imagesrc() != ""
+        hasDesc  = desc()     != ""
+
+      photoWrapperEl.clsx not hasImage             , "d-none"
+      descEl        .clsx not hasDesc              , "d-none"
+      detailsEl     .clsx not (hasDesc or hasImage), "d-none"
       
     render = genRender:
       hooks.refresh()
@@ -1030,7 +1037,6 @@ proc initMoreCollapse: Hooks =
         "class": "tw-more-summary text-center"})
     mainEl = createElement("main", {"class": "tw-more-body"})
 
-  # TODO add option to center the summary element
   append wrapperEl, summaryEl, mainEl
 
   defHooks:

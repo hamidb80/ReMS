@@ -1,5 +1,6 @@
 import std/[dom, asyncjs, jsformdata]
-import std/[sugar, with]
+import std/[sugar, with, macros]
+import macroplus
 
 import prettyvec
 
@@ -274,8 +275,49 @@ proc text*(e: ClipboardEvent): cstring
 proc redirect*(url: cstring)
   {.importjs: "location.href = #;".}
 
-# proc clsx
+proc clsx*(el: Element, cond: bool, cls: cstring) = 
+  if cond:
+    el.classList.add cls
+  else:
+    el.classList.remove cls
 
+import std/macros
+import macroplus
+
+
+proc appendTreeImpl(root, body: NimNode, acc: var NimNode)= 
+    case kind body
+    of nnkStmtList: 
+        for node in body:
+            appendTreeImpl root, node, acc
+    
+    of nnkCall: 
+        for node in body[CallArgs]:
+            appendTreeImpl body[CallIdent], node, acc
+        appendTreeImpl root, body[CallIdent], acc
+
+    of nnkIdent: 
+        add acc, quote do:
+            `root`.append `body`
+
+    else: 
+        doAssert false
+
+macro appendTree*(root, body): untyped = 
+    runnableExamples:
+      appendTree mainEl:
+          el1
+          el2:
+              el2_1:
+                  el2_1_1
+          el3:
+              el3_1
+              el3_2
+              el3_3  
+
+    result = newStmtList()
+    appendTreeImpl root, body, result
+  
 type
   ScreenOrient* = enum
     soPortrait
