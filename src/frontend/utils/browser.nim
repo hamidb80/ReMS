@@ -119,6 +119,10 @@ type
     kcClosedBracket = (221, "]")
     kcSingleQuote = (222, "'")
 
+  ScreenOrient* = enum
+    soPortrait
+    soLandscape
+
 
 converter toInt*(k: KeyCode): int = k.int
 
@@ -155,14 +159,6 @@ func clientPos*(t: Touch): Vector =
 func distance*(ts: seq[Touch]): float =
   assert 2 == len ts
   len (clientPos ts[0]) - (clientPos ts[1])
-
-# proc imageDataUrl(file: DFile): Future[cstring] =
-#   newPromise proc(resolve: proc(t: cstring); reject: proc(e: Event)) =
-#     var reader = newFileReader()
-#     reader.onload = (ev: Event) => resolve("ev.target.result") # resolve(ev.target.result)
-#     reader.onerror = reject
-#     reader.onabort = reject
-#     readAsDataURL reader, file
 
 proc getWindowQueryParam*(param: cstring): cstring {.importjs: """
     (new URLSearchParams(window.location.search)).get(@)
@@ -281,10 +277,6 @@ proc clsx*(el: Element, cond: bool, cls: cstring) =
   else:
     el.classList.remove cls
 
-import std/macros
-import macroplus
-
-
 proc appendTreeImpl(root, body: NimNode, acc: var NimNode)= 
     case kind body
     of nnkStmtList: 
@@ -318,10 +310,6 @@ macro appendTree*(root, body): untyped =
     result = newStmtList()
     appendTreeImpl root, body, result
   
-type
-  ScreenOrient* = enum
-    soPortrait
-    soLandscape
 
 proc screenOrientation*: ScreenOrient =
   if window.innerWidth > window.innerHeight: soLandscape
