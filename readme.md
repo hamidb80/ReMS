@@ -19,7 +19,7 @@ https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa30
 - [what good is learning if I don't remember it?](https://files.eric.ed.gov/fulltext/EJ1055665.pdf)
 - active learning vs passing learning / scout young
 - [spatial web browsing](https://maggieappleton.com/spatial-web)
-- [libre texts](https://libretexts.org/) + [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/) +  [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx) + [Pendulum Equations](https://www.cfm.brown.edu/people/dobrush/am34/Mathematica/ch3/pendulum.html) + [learn me a bitcoin](https://learnmeabitcoin.com/technical/transaction/input/vout/)
+- [libre texts](https://libretexts.org/) + [HELM :: Helping Engineers Learn Mathematics Workbooks](https://www.lboro.ac.uk/departments/mlsc/student-resources/helm-workbooks/) +  [differential equations web tutorial](https://tutorial.math.lamar.edu/classes/de/de.aspx) + [Pendulum Equations](https://www.cfm.brown.edu/people/dobrush/am34/Mathematica/ch3/pendulum.html) + [learn me a bitcoin](https://learnmeabitcoin.com/technical/transaction/input/vout/) + [A* exaplined](https://www.redblobgames.com/pathfinding/a-star/introduction.html)
 
 ### Ideas from other softwares
 - Github's colorful issue tags and the ability to search by language, date, ...
