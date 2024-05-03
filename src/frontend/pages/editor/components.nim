@@ -15,10 +15,10 @@ import ../../../backend/database/[models]
 # ----- Utils -----------
 
 const
-  twFocusClass = "tw-focus-hover"
-  twHoverClass = "tw-mouse-hover"
+  twFocusClass       = "tw-focus-hover"
+  twHoverClass       = "tw-mouse-hover"
   displayInlineClass = "d-inline"
-  trottleMs = 100
+  trottleMs          = 100
 
 template errProc(returnType, msg): untyped =
   proc(): returnType =
@@ -204,12 +204,12 @@ proc wrapperTextElement(tag, cls: string, aac: () -> seq[cstring]): () -> Hooks 
           attachInstance ct["raw-text"], hooks, ct
 
 let
-  initBold = wrapperTextElement("b", "tw-bold", onlyInlines)
-  initItalic = wrapperTextElement("i", "tw-italic", onlyInlines)
-  initUnderline = wrapperTextElement("u", "tw-underline", onlyInlines)
-  initStrikethrough = wrapperTextElement("s", "tw-strikethrough", onlyInlines)
-  initSpoiler = wrapperTextElement("span", "tw-text-spoiler", onlyInlines)
-  initHighlight = wrapperTextElement("mark", "tw-text-highlight", onlyInlines)
+  initBold          = wrapperTextElement("b",    "tw-bold",           onlyInlines)
+  initItalic        = wrapperTextElement("i",    "tw-italic",         onlyInlines)
+  initUnderline     = wrapperTextElement("u",    "tw-underline",      onlyInlines)
+  initStrikethrough = wrapperTextElement("s",    "tw-strikethrough",  onlyInlines)
+  initSpoiler       = wrapperTextElement("span", "tw-text-spoiler",   onlyInlines)
+  initHighlight     = wrapperTextElement("mark", "tw-text-highlight", onlyInlines)
 
 proc initTitle: Hooks =
   let
@@ -473,14 +473,14 @@ proc initLinearMarkdown: Hooks =
       ct = hooks.componentsTable()
       ename =
         case mode
-        of lmmItalic: "italic"
-        of lmmBold: "bold"
-        of lmmUnderline: "underline"
+        of lmmItalic:        "italic"
+        of lmmBold:          "bold"
+        of lmmUnderline:     "underline"
         of lmmStrikeThrough: "strike through"
-        of lmmLatex: "latex"
-        of lmmCode: "raw code"
-        of lmmSpoiler: "text spoiler"
-        of lmmHighlight: "text highlight"
+        of lmmLatex:         "latex"
+        of lmmCode:          "raw code"
+        of lmmSpoiler:       "text spoiler"
+        of lmmHighlight:     "text highlight"
 
     result = inss(ct[ename], ct)
 
