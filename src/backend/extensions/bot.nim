@@ -92,7 +92,7 @@ proc genCheckUpdates(api: string): proc() =
               sendMsg chid, "invalid message, choose from keyboard"
 
     except:
-      echo "error: " & getCurrentExceptionMsg()
+      echo "[Bale Bot error]: " & getCurrentExceptionMsg()
 
 
 proc runBaleBot*(token: string) {.raises: [], noreturn.} =

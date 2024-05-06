@@ -23,8 +23,7 @@ func linkPreviewData*(xn: XmlNode): LinkPreviewData =
                 of "og:image", "twitter:image":
                     result.image = val
 
-                of "description", "og:description",
-                        "twitter:description":
+                of "description", "og:description", "twitter:description":
                     result.desc = val
 
                 of "twitter:image:alt": discard
@@ -37,6 +36,6 @@ func linkPreviewData*(xn: XmlNode): LinkPreviewData =
 
 func cropHead*(htmlPage: string): string =
     let
-        head = htmlPage.find "<head>"
-        tail = htmlPage.findlen "</head>"
+        head = htmlPage.find "<head"
+        tial = htmlPage.findlen "</head>"
     htmlPage[head ..< tail]
