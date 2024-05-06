@@ -37,5 +37,5 @@ func linkPreviewData*(xn: XmlNode): LinkPreviewData =
 func cropHead*(htmlPage: string): string =
     let
         head = htmlPage.find "<head"
-        tial = htmlPage.findlen "</head>"
+        tail = htmlPage.findlen "</head>"
     htmlPage[head ..< tail]
