@@ -37,21 +37,25 @@ requires "karax == 1.3.0"
 # Tasks
 import std/[os, strutils, strformat]
 
+proc compileJs(inn, outt: string) = 
+  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/{outt} {inn}"
+
 
 task genpfp, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-profile-{version}.js src/frontend/pages/profile"
+  compileJs "src/frontend/pages/profile",         fmt"script-profile-{version}.js"
 
 task gennp, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/note-preview-{version}.js src/frontend/pages/note_preview"
+  compileJs "src/frontend/pages/note_preview",    fmt"note-preview-{version}.js"
 
 task genex, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-explore-{version}.js src/frontend/pages/explore"
+  compileJs "src/frontend/pages/explore",         fmt"script-explore-{version}.js"
 
 task genb, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-board-{version}.js src/frontend/pages/board"
+  compileJs "src/frontend/pages/board",           fmt"script-board-{version}.js"
 
 task gened, "":
-  exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/script-editor-{version}.js src/frontend/pages/editor/app"
+  compileJs "src/frontend/pages/editor/app",      fmt"script-editor-{version}.js"
+
 
 task ddeps, "downloads external dependencies":
   exec "nim -d:ssl -d:allInternal r src/frontend/deps.nim"
@@ -87,7 +91,7 @@ task bot, "bale bot":
   exec "nim -d:bale_debug -d:ssl r src/backend/bot"
 
 task go, "runs server + bot":
-  exec """nim --mm:arc -d:ssl --d:loginTestUser --passL:"-lcrypto" r ./src/backend/main.nim"""
+  exec """nim --mm:arc -d:ssl --d:loginTestUser --passL:'-lcrypto' r ./src/backend/main.nim"""
 
 task done, "runs server + bot":
-  exec """nim --mm:arc -d:ssl --passL:"-lcrypto" -o:./bin/main.exe c ./src/backend/main.nim"""
+  exec """nim --mm:arc -d:ssl --passL:'-lcrypto' -o:./bin/main.exe c ./src/backend/main.nim"""
