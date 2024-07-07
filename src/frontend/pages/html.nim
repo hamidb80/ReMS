@@ -32,7 +32,7 @@ proc extJs(url: string, defered: bool = false): VNode =
   buildHtml script(src = url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
-  buildHtml head:
+  buildHtml head:e
     meta(charset = "UTF-8")
     meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
@@ -95,79 +95,6 @@ proc profile*: VNode =
   commonPage "profile", [
       extJs(localize apv"./script-profile.js", true)]
 
-proc index: VNode =
-  func tryBtnLink(link: string): VNode =
-    buildHtml:
-      a(class = "btn btn-primary", href = link):
-        text "Open"
-
-  func blockk(title, desc, icon, link: string): VNode =
-    buildHtml:
-      tdiv(class = "p-3 my-4 card"):
-        tdiv(class = "card-body d-flex flex-row justify-content-between"):
-          tdiv(class = "d-flex flex-column align-items-center justify-content-evenly me-3 minw-30"):
-            h3(class = "text-center"):
-              text title
-            img(src = getDistUrl icon)
-
-            if link != "":
-              tdiv(class = "mt-2"):
-                tryBtnLink link
-
-          tdiv:
-            text desc
-
-  buildHtml html:
-    commonHead "intro", []
-
-    body(class = "bg-light"):
-      h1(class = "my-4 text-center w-100"):
-        italic(class = "text-primary"):
-          bold:
-            text "Remember"
-        text " Better With Us"
-
-      h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Actions"
-      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Explore", "", "icons/planet.svg", get_explore_url()
-        blockk "Profile", "", "icons/user.svg", get_profile_url()
-
-      h3(class = "mt-4 mb-2 text-center w-100"):
-        text "parts"
-      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Notes", "", "icons/pen-writing-on-paper.svg", ""
-        blockk "Files", "", "icons/inbox-archive.svg", ""
-        blockk "Boards", "", "icons/share-circle.svg", ""
-        blockk "Tags", "", "icons/tag.svg", ""
-
-      h3(class = "mt-4 mb-2 text-center w-100"):
-        text "Features"
-      tdiv(class = "d-flex flex-wrap justify-content-evenly"):
-        blockk "Save Time", "", "icons/clock-square.svg", ""
-        blockk "Colorful", "", "icons/palette.svg", ""
-        blockk "Remember", "", "icons/repeat.svg", ""
-        blockk "Open Source", "", "icons/hand-heart.svg", "https://github.com/hamidb80/rems"
-
-      footer(class = "app-footer card text-white bg-primary rounded-0"):
-        tdiv(class = "card-body"):
-          h4(class = "card-title"):
-            text "Still waiting?"
-
-          p(class = "card-text"):
-            text "WTF man? Just click on `explore` and have fun remembering!"
-
-        tdiv(class = "card-footer text-center"):
-          text "created with passion "
-          icon "fa-heart"
-
-        tdiv(class = "card-footerer text-center p-1"):
-          text "version "
-          text packageVersion
-          text " - built at "
-          text $now()
-
-
 # -----
 
 func `$$`(vn: VNode): string =
@@ -175,7 +102,6 @@ func `$$`(vn: VNode): string =
   "<!DOCTYPE html>\n" & $vn
 
 when isMainModule:
-  writeFile apv "./dist/index.html", $$index()
   writeFile apv "./dist/profile.html", $$profile()
   writeFile apv "./dist/tags.html", $$tags()
   writeFile apv "./dist/explore.html", $$explore()

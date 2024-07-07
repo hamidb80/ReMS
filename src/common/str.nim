@@ -9,3 +9,6 @@ func strip*(s: string, c: char): string =
 
 func isAscii*(c: char): bool = 
   c.ord in 0 .. 127
+
+template toStr*(smth): untyped = $smth
+    

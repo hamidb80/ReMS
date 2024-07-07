@@ -28,15 +28,18 @@ func parseq*(t: typedesc[string], s: string): string =
 
 
 proc dispatchInfo(entry: NimNode): tuple[
-  httpmethod, url, handler: NimNode,
-  args, pragmas: seq[NimNode]
+  httpmethod, url: NimNode,
+  name: string,
+  args: seq[NimNode]
 ] =
+  debugecho treerepr entry
   expectKind entry, nnkCommand
   expectLen entry, 3
 
-  result.httpmethod = entry[CommandIdent]
+  result.httpmethod         = entry[CommandIdent]
+  result.name               = entry[CommandArgs[0]].strval
   (result.url, result.args) = block:
-    let a1 = entry[CommandArgs[0]]
+    let a1 = entry[CommandArgs[1]]
 
     case a1.kind
     of nnkStrLit: (a1, @[])
@@ -45,11 +48,7 @@ proc dispatchInfo(entry: NimNode): tuple[
       (a1[1], a1[2][0..^1])
     else:
       raise newException(ValueError, "?")
-  (result.handler, result.pragmas) = block:
-    let a2 = entry[CommandArgs[1]]
-    expectKind a2, nnkPragmaExpr
-    (a2[0], a2[1..^1])
-
+  
   expectKind result.httpmethod, nnkIdent
 
 
@@ -57,64 +56,63 @@ func toIdentDef(e: NimNode): NimNode =
   expectKind e, nnkExprColonExpr
   newIdentDefs(e[0], e[1])
 
-macro dispatch*(router, viewModule, body): untyped =
+
+func nimFriendly(name: string): string = 
+    replace name, "-", "_"
+
+func toUrlVarName(name: string): string = 
+    name.nimFriendly & "_raw_url"
+
+func toUrlProcName(name: string): string = 
+    name.nimFriendly & "_url"
+
+
+macro u*(s): untyped = 
+  ident toUrlProcName strval s
+
+macro ur*(s): untyped = 
+  ident toUrlVarName  strval s
+
+macro defUrls*(body): untyped =
   expectKind body, nnkStmtList
-  var
-    urls = newStmtList()
-    rout = newStmtList()
+  result = newStmtList()
 
   for s in body:
     let
       a = dispatchInfo s
       m = a.httpmethod
-      h = a.handler
+      n = a.name
       u = a.url
 
-    if m.strVal == "config":
-      let config = ident u.strval.strip(chars = {']', '['}).replace(" ", "") & "Handler"
-      rout.add quote do:
-        router.`config` = `h`
+      url            = u.strVal
+      procname       = ident toUrlProcName n
+      urlVarName     = ident toUrlVarName  n
+      procbody       = block:
+        if a.args.len == 0: newlit url
+        else:
+          var patt = url & "?"
 
-    else:
-      let
-        normalizedName = a.url.strVal.replace("-", "/").split("/").join("_")
-        # absPage = ident normalizedName.strip('_') & "_page_url"
-        url = u.strVal
-        procname = ident a.httpMethod.strVal & normalizedName & "url"
+          for i, r in a.args:
+            if i != 0:
+              patt.add '&'
 
-        procbody = block:
-          if a.args.len == 0: newlit url
-          else:
-            var patt = url & "?"
+            let n = r[IdentDefName].strVal
+            patt.add n
+            patt.add '='
+            patt.add '{'
+            patt.add "safeUrl "
+            patt.add n
+            patt.add '}'
 
-            for i, r in a.args:
-              if i != 0:
-                patt.add '&'
+          newTree(nnkCommand, ident"fmt", newLit patt)
 
-              let n = r[IdentDefName].strVal
-              patt.add n
-              patt.add '='
-              patt.add '{'
-              patt.add "safeUrl "
-              patt.add n
-              patt.add '}'
-
-            newTree(nnkCommand, ident"fmt", newLit patt)
-
-      urls.add newproc(
+    result.add newConstStmt(exported urlVarName, newlit url)
+    result.add newproc(
           exported(procname),
           @[ident"string"] & a.args.map(toIdentDef),
           procbody)
 
-      # urls.add newConstStmt(exported absPage, u)
-      rout.add quote do:
-        `router`.`m`(`u`, `h`)
-
-  result = quote:
-    `urls`
-    when not (defined(js) or defined(frontend)):
-      import `viewModule`
-      `rout`
+  debugecho repr result
 
 func firstArgument(procdef: NimNode): NimNode =
   procdef.params[1][IdentDefName]

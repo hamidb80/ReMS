@@ -12,7 +12,10 @@ const
         "theme.bootstrap.css": "https://bootswatch.com/5/litera/bootstrap.min.css",
         "icons.boostrap.css": "https://unpkg.com/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css",
         "icons.fontawesome.css": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-        "fonts.google.css": "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap"
+        "fonts.google.css": "https://fonts.googleapis.com/css2?family=Mooli&family=Vazirmatn:wght@400&family=Ubuntu+Mono&display=swap",
+
+        "lib.unpoly.js":  "https://cdn.jsdelivr.net/npm/unpoly@3.8.0/unpoly.min.js",
+        "lib.unpoly.css": "https://cdn.jsdelivr.net/npm/unpoly@3.8.0/unpoly.min.css",
     }
 
 when isMainModule:
@@ -41,9 +44,10 @@ when defined allInternal:
         s.split("?")[0]
 
     var filesToDownload: seq[tuple[url: Uri, path: string]]
+    const libDir = "./assets/lib/"
 
     for d, assetUrl in extdeps:
-        let assetPath = "./assets/lib/" & d
+        let assetPath = libDir & d
 
         if not fileExists assetPath:
             echo "+ ", assetUrl

@@ -14,6 +14,7 @@ import ../common/[types, path, datastructures, conventions, package]
 import ./utils/[web, github, link_preview, auth]
 import ./database/[models, queries, dbconn]
 import ./[routes, config]
+import ./views/partials
 
 include ./database/jsony_fix
 
@@ -74,6 +75,9 @@ proc download*(url: string): string =
 
 # ------- main
 
+proc landingPageHandler*(req: Request) =
+  req.respond 200, emptyHttpHeaders(), landingPageHtml()
+
 proc getMe*(req: Request) {.userOnly.} =
   respJson toJson userc.account
 
@@ -128,7 +132,7 @@ proc assetShorthand*(req: Request) =
     notFoundHandler req
   else:
     let assetid = req.uri[qi+1..^1]
-    redirect get_assets_download_url parseInt assetid, cache
+    redirect u"download-asset"(parseInt assetid), cache
 
 proc assetsDownload*(req: Request) {.qparams: {id: int}.} =
   let
@@ -144,7 +148,7 @@ proc deleteAsset*(req: Request) {.qparams: {id: int}, userOnly.} =
 
 proc newNote*(req: Request) {.userOnly.} =
   let id = forceSafety !!<db.newNote(userc.account)
-  redirect get_note_editor_url id
+  redirect note_editor_url id
 
 proc newNoteApi*(req: Request) {.userOnly.} =
   let id = forceSafety !!<db.newNote(userc.account)
@@ -177,7 +181,7 @@ proc deleteNote*(req: Request) {.qparams: {id: int}, userOnly.} =
 
 proc newBoard*(req: Request) {.userOnly.} =
   let id = !!<db.newBoard(userc.account)
-  redirect get_board_edit_url id
+  redirect board_editor_url id
 
 proc updateBoardContent*(req: Request) {.qparams: {id: int}, jbody: BoardData, userOnly.} =
   !!db.updateBoardContent(userc.account, id, data)
