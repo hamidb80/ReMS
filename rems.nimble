@@ -41,9 +41,6 @@ proc compileJs(inn, outt: string) =
   exec fmt"nim -d:nimExperimentalAsyncjsThen js -o:./dist/{outt} {inn}"
 
 
-task genpfp, "":
-  compileJs "src/frontend/pages/profile",         fmt"script-profile-{version}.js"
-
 task gennp, "":
   compileJs "src/frontend/pages/note_preview",    fmt"note-preview-{version}.js"
 
@@ -75,7 +72,6 @@ task make, "make all":
   gened_task()
   gennp_task()
   genex_task()
-  genpfp_task()
 
 
 task prepare, "define envorment vars only for test":

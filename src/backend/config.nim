@@ -1,15 +1,22 @@
 import std/[os, strutils]
 
+import ../common/path
+
 
 proc getEnvSafe(varname: string): string =
     result = getEnv varname
     if isEmptyOrWhitespace result:
         raise newException(ValueError, "the enviroment variable '" & varname & "' is not set")
 
+
+const 
+    distFolder* = projectHome / "dist"
+
 let
     appDir* = getEnvSafe "APP_DIR"
     appSaveDir* = appDir / "resources"
     appDbPath* = appDir / "db.sqlite3"
+
 
     defaultAdminPass* = getEnvSafe "DEFAULT_ADMIN_PASS"
 

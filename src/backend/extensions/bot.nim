@@ -1,4 +1,4 @@
-import std/[options, json, sequtils, httpclient, deques, os]
+import std/[options, json, httpclient]
 
 import questionable
 import bale, bale/helper/stdhttpclient

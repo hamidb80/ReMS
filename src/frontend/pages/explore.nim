@@ -9,7 +9,7 @@ import ../components/[snackbar, simple, pro]
 import ../utils/[browser, js, api]
 import ../jslib/[axios]
 import ../../common/[iter, types, datastructures, conventions, str]
-import ../../backend/routes
+import ../../backend/urls
 import ../../backend/database/[models, logic]
 import ./editor/[core, components]
 

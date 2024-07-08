@@ -4,7 +4,7 @@ import karax/[vdom, karaxdsl]
 
 import ../deps
 import ../../common/package
-import ../../backend/routes
+import ../../backend/urls
 import ../components/simple
 
 
@@ -16,11 +16,11 @@ func normalizeOsName(url: string): string =
       else: '-'
 
 proc localize(url: string): string =
-  getDistUrl normalizeOsName url.splitPath.tail
+  dist_url normalizeOsName url.splitPath.tail
 
 proc resolveLib(key: string): string =
   assert key in extdeps
-  getDistUrl "lib" / key
+  dist_url "lib" / key
 
 proc extLink(rel, url: string): VNode =
   buildHtml link(rel = rel, href = url)
@@ -32,7 +32,7 @@ proc extJs(url: string, defered: bool = false): VNode =
   buildHtml script(src = url, `defer` = defered)
 
 proc commonHead(pageTitle: string, extra: openArray[VNode]): VNode =
-  buildHtml head:e
+  buildHtml head:
     meta(charset = "UTF-8")
     meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
@@ -102,7 +102,6 @@ func `$$`(vn: VNode): string =
   "<!DOCTYPE html>\n" & $vn
 
 when isMainModule:
-  writeFile apv "./dist/profile.html", $$profile()
   writeFile apv "./dist/tags.html", $$tags()
   writeFile apv "./dist/explore.html", $$explore()
   writeFile apv "./dist/board.html", $$boardEdit()

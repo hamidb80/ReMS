@@ -1,7 +1,8 @@
 import std/[macros, uri, strutils, sequtils, tables]
-import ../../common/conventions
 
 import macroplus
+
+import ../../common/[conventions, str]
 
 
 func safeUrl*(i: SomeNumber or bool): string {.inline.} =
@@ -27,30 +28,11 @@ func parseq*(t: typedesc[string], s: string): string =
   s
 
 
-proc dispatchInfo(entry: NimNode): tuple[
-  httpmethod, url: NimNode,
-  name: string,
-  args: seq[NimNode]
-] =
-  debugecho treerepr entry
-  expectKind entry, nnkCommand
-  expectLen entry, 3
-
-  result.httpmethod         = entry[CommandIdent]
-  result.name               = entry[CommandArgs[0]].strval
-  (result.url, result.args) = block:
-    let a1 = entry[CommandArgs[1]]
-
-    case a1.kind
-    of nnkStrLit: (a1, @[])
-    of nnkInfix:
-      assert a1[InfixIdent] == ident"?"
-      (a1[1], a1[2][0..^1])
-    else:
-      raise newException(ValueError, "?")
-  
-  expectKind result.httpmethod, nnkIdent
-
+proc dispatchInfo(entry: NimNode): tuple[url: NimNode, args: seq[NimNode]] =
+  case entry.kind
+  of nnkStrLit: (entry, @[])
+  of nnkInfix:  (entry[1], entry[2][0..^1])
+  else:         raise newException(ValueError, "?")
 
 func toIdentDef(e: NimNode): NimNode =
   expectKind e, nnkExprColonExpr
@@ -58,7 +40,7 @@ func toIdentDef(e: NimNode): NimNode =
 
 
 func nimFriendly(name: string): string = 
-    replace name, "-", "_"
+    replaceChar name, '-', '_'
 
 func toUrlVarName(name: string): string = 
     name.nimFriendly & "_raw_url"
@@ -67,52 +49,49 @@ func toUrlProcName(name: string): string =
     name.nimFriendly & "_url"
 
 
-macro u*(s): untyped = 
-  ident toUrlProcName strval s
+macro u*(nnode): untyped = 
+  ## ident of correspoding var which stores raw url
+  ident toUrlProcName strval nnode
 
-macro ur*(s): untyped = 
-  ident toUrlVarName  strval s
+macro ur*(nnode): untyped = 
+  ## ident of correspoding function which computes url
+  ident toUrlVarName  strval nnode
 
-macro defUrls*(body): untyped =
-  expectKind body, nnkStmtList
+macro defUrl*(nameLit, path): untyped =
   result = newStmtList()
 
-  for s in body:
-    let
-      a = dispatchInfo s
-      m = a.httpmethod
-      n = a.name
-      u = a.url
+  let
+    name           = strval namelit
+    dinfo          = dispatchInfo path
+    url            = strVal dinfo.url
+    procname       = ident toUrlProcName name
+    urlVarName     = ident toUrlVarName  name
+    procbody       = block:
+      if dinfo.args.len == 0: newlit url
+      else:
+        var patt = url & "?"
 
-      url            = u.strVal
-      procname       = ident toUrlProcName n
-      urlVarName     = ident toUrlVarName  n
-      procbody       = block:
-        if a.args.len == 0: newlit url
-        else:
-          var patt = url & "?"
+        for i, r in dinfo.args:
+          if i != 0:
+            patt.add '&'
 
-          for i, r in a.args:
-            if i != 0:
-              patt.add '&'
+          let n = r[IdentDefName].strVal
+          patt.add n
+          patt.add '='
+          patt.add '{'
+          patt.add "safeUrl "
+          patt.add n
+          patt.add '}'
 
-            let n = r[IdentDefName].strVal
-            patt.add n
-            patt.add '='
-            patt.add '{'
-            patt.add "safeUrl "
-            patt.add n
-            patt.add '}'
+        newTree(nnkCommand, ident"fmt", newLit patt)
 
-          newTree(nnkCommand, ident"fmt", newLit patt)
+  result.add newConstStmt(exported urlVarName, newlit url)
+  result.add newproc(
+        exported(procname),
+        @[ident"string"] & dinfo.args.map(toIdentDef),
+        procbody)
 
-    result.add newConstStmt(exported urlVarName, newlit url)
-    result.add newproc(
-          exported(procname),
-          @[ident"string"] & a.args.map(toIdentDef),
-          procbody)
-
-  debugecho repr result
+  # debugecho repr result
 
 func firstArgument(procdef: NimNode): NimNode =
   procdef.params[1][IdentDefName]

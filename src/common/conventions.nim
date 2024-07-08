@@ -4,6 +4,7 @@ import std/macros
 
 const noIndex* = -1
 
+
 template `or`*(a, b: string): untyped =
   if a == "": b
   else: a
@@ -55,6 +56,10 @@ template safeFail*(stmt): untyped =
 
 template `~>`*(expr, action): untyped =
   expr.mapIt action
+
+
+func len[E: enum](e: type E): Natural =
+  len e.low .. e.high
 
 
 macro noJs*(procDef): untyped = 

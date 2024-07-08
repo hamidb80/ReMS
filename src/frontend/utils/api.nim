@@ -1,7 +1,7 @@
 import std/[strutils, sequtils]
 import std/[jsformdata, jsffi]
 
-import ../../backend/routes
+import ../../backend/urls
 import ../../backend/auth
 import ../../backend/database/[models]
 import ../../common/[types, datastructures, conventions]

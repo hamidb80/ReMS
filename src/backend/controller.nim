@@ -1,9 +1,9 @@
-import std/[strformat, tables, strutils, os, oids, json, httpclient,
-    times, sha1]
+import std/[strformat, strutils, tables, strutils, os, oids, json, httpclient,
+    times, sha1, uri]
 
 # import checksums/sha1
 import mummy, mummy/multipart
-import webby
+import webby, webby/queryparams
 import cookiejar
 import quickjwt
 import jsony
@@ -12,11 +12,14 @@ import htmlparser
 
 import ../common/[types, path, datastructures, conventions, package]
 import ./utils/[web, github, link_preview, auth]
+import ./utils/subjson
+
 import ./database/[models, queries, dbconn]
-import ./[routes, config]
+import ./[urls, config]
 import ./views/partials
 
 include ./database/jsony_fix
+
 
 # ------- Static pages
 
@@ -27,12 +30,6 @@ proc errorHandler*(req: Request, e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
-
-const distFolder* = projectHome / "dist"
-
-proc loadHtml*(path: string): RequestHandler =
-  proc(req: Request) =
-    respFile "text/html", readfile apv distFolder / path, noCache
 
 func noPathTraversal(s: string): bool =
   ## https://owasp.org/www-community/attacks/Path_Traversal
@@ -54,7 +51,7 @@ proc loadDist*(filename: string): RequestHandler =
   proc(req: Request) =
     respFile mime, readfile p, cache
 
-proc staticFileHandler*(req: Request) {.qparams.} =
+proc staticFileHandler*(req: Request) {.qparams, gcsafe.} =
   let
     fname = q.getOrDefault "file"
     ext = getExt fname
@@ -73,10 +70,35 @@ proc download*(url: string): string =
   result = client.get(url).body
   close client
 
+proc isPost(req: Request): bool = 
+  0 == cmpIgnoreCase(req.httpMethod, "POST")
+
+func decodedQuery(body: string): Table[string, string] = 
+  for (key, val) in decodeQuery body:
+    result[key] = val
+
 # ------- main
+
+import pretty
 
 proc landingPageHandler*(req: Request) =
   req.respond 200, emptyHttpHeaders(), landingPageHtml()
+
+
+proc signInHandler*(req: Request) =
+  if isPost req:
+    print decodedQuery req.body
+    req.respond 200, emptyHttpHeaders(), "wow"
+  else:
+    req.respond 200, emptyHttpHeaders(), signInFormHtml()
+
+proc signUpFormHandler*(req: Request) =
+  req.respond 200, emptyHttpHeaders(), signUpFormHtml()
+
+
+proc respHtml*(req: Request, content: string) =
+  req.respond 200, emptyHttpHeaders(), content
+
 
 proc getMe*(req: Request) {.userOnly.} =
   respJson toJson userc.account
@@ -103,13 +125,13 @@ proc saveAsset(req: Request): Id {.userOnly.} =
   for entry in multip:
     if entry.data.isSome:
       let
-        (start, last) = entry.data.get
-        content = req.body[start..last]
+        (start, last)  = entry.data.get
+        content        = req.body[start..last]
         (_, name, ext) = splitFile entry.filename.get
-        fname = name & ext
-        mime = mimetype ext
-        oid = genOid()
-        timestamp = toUnix getTime()
+        fname          = name & ext
+        mime           = mimetype ext
+        oid            = genOid()
+        timestamp      = toUnix getTime()
 
       {.cast(gcsafe).}:
         let storePath = appSaveDir / fmt"{oid}-{timestamp}{ext}"

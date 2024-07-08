@@ -16,7 +16,7 @@ import ../utils/[browser, js, api, shortcuts]
 import ../../common/[conventions, datastructures, types, iter]
 
 import ../../backend/database/[models]
-import ../../backend/routes
+import ../../backend/urls
 
 
 type

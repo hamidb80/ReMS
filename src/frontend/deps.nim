@@ -16,6 +16,8 @@ const
 
         "lib.unpoly.js":  "https://cdn.jsdelivr.net/npm/unpoly@3.8.0/unpoly.min.js",
         "lib.unpoly.css": "https://cdn.jsdelivr.net/npm/unpoly@3.8.0/unpoly.min.css",
+        "lib.unpoly.b5.css": "https://cdn.jsdelivr.net/npm/unpoly@3.8.0/unpoly-bootstrap5.min.css",
+
     }
 
 when isMainModule:
