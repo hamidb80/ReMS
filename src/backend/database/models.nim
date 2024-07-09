@@ -41,38 +41,38 @@ type
 
   Asset* = object
     id*  {.primary, autoIncrement.}: Id
-    name*: Str  # name with extention
-    mime*: Str
-    size*: Bytes
-    path*: Path # where is it stored?
+    name*:                           Str  # name with extention
+    mime*:                           Str
+    size*:                           Bytes
+    path*:                           Path # where is it stored?
 
-    owner* {.references: User.id.}: Id
-    is_private*: bool
-    deleted_at*: Option[UnixTime]
+    owner* {.references: User.id.}:  Id
+    is_private*:                     bool
+    deleted_at*:                     Option[UnixTime]
 
   Note* = object
     id* {.primary, autoIncrement.}: Id
-    data*: NoteData
+    data*:                          NoteData
 
     owner* {.references: User.id.}: Id
-    is_private*: bool
-    deleted_at*: Option[UnixTime]
+    is_private*:                    bool
+    deleted_at*:                    Option[UnixTime]
 
   Board* = object
-    id* {.primary, autoIncrement.}: Id
-    title*: Str
+    id* {.primary, autoIncrement.}:       Id
+    title*:                               Str
     screenshot* {.references: Asset.id.}: Option[Id]
-    data*: BoardData
+    data*:                                BoardData
 
     owner* {.references: User.id.}: Id
     is_private*: bool
     deleted_at*: Option[UnixTime]
 
   Palette* = object
-    id* {.primary, autoIncrement.}: Id
-    owner* {.references: User.id.}: Option[Id]         ## owner
-    name* {.uniqueIndex.}: Str
-    color_themes*: seq[ColorTheme]
+    id*    {.primary, autoIncrement.}: Id
+    owner* {.references: User.id.}:    Option[Id]         ## owner
+    name*  {.uniqueIndex.}:            Str
+    color_themes*:                     seq[ColorTheme]
 
   Tag* = object ## Relation Template
     id* {.primary, autoIncrement.}: Id
