@@ -2,11 +2,13 @@ import std/[times, json, options, strutils, strformat, sequtils, tables]
 
 import ponairi
 import questionable
-include jsony_fix
+import checksums/sha1
 
 import ./[models, logic]
 import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
+
+include jsony_fix
 
 
 proc inspect(s: SqlQuery): SqlQuery =
@@ -47,13 +49,13 @@ proc getInvitation*(db: DbConn,
       {time} - a.created_at <= {expiresAfterSec}
     """
 
-proc getBaleAuth*(db: DbConn, baleUserId: int): options.Option[Auth] =
+proc getAuthByCode*(db: DbConn, code: string): options.Option[Auth] =
   db.find R, fsql"""
     SELECT *
     FROM Auth a
     WHERE 
       int_index = {baleUserId} AND
-      kind      = {messangerT}
+      kind      = {akCode}
   """
 
 proc activateBaleAuth*(db: DbConn, a: Auth, baleUserId, userId: int) =
@@ -69,9 +71,9 @@ proc activateBaleAuth*(db: DbConn, a: Auth, baleUserId, userId: int) =
 
 proc addPassAuth*(db: DbConn, uid: Id, password: string) =
   db.insert Auth(
-    kind: userPassT,
+    kind: $akForm,
     user: some uid,
-    secret: $ secureHash password)
+    secret: $secureHash password)
 
 
 proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =

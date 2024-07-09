@@ -10,9 +10,9 @@ import cookiejar
 import quickjwt
 import htmlparser
 
-import ./[urls, config]
+import ./[urls, settings]
 import ./database/[dbconn, models, queries]
-import ./utils/[web, sqlgen, github, link_preview]
+import ./utils/[web, sqlgen, api_call]
 import ../common/[types, path, datastructures, conventions, package]
 
 import ./views/partials

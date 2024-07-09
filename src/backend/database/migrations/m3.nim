@@ -2,7 +2,7 @@ import std/[json, sequtils, os, options]
 
 import ponairi
 
-import ../../config
+import ../../settings
 import ../../../common/[datastructures]
 import ../[models, dbconn]
 

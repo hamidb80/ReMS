@@ -18,37 +18,6 @@ template wrapResp(body): untyped {.dirty.} =
         body
 
 
-proc loginApi*(
-    code: string,
-    success: proc(),
-    fail: proc() = noop
-) =
-    discard post_api_login_url(messangerT)
-    .postApi(cstring code)
-    .then(success)
-    .catch(fail)
-
-proc loginApi*(
-    user, pass: string,
-    success: proc(),
-    fail: proc() = noop
-) =
-    discard post_api_login_url(userPassT)
-    .postApi(forceJsObject LoginForm(
-            username: user,
-            password: pass))
-    .then(success)
-    .catch(fail)
-
-proc logoutApi*(
-    success: proc(),
-    fail: proc() = noop
-) =
-    discard get_api_logout_url()
-    .getApi()
-    .then(success)
-    .catch(fail)
-
 proc meApi*(
     success: proc(u: User),
     fail: proc() = noop

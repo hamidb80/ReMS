@@ -20,31 +20,27 @@ type
     umTest ## used for testing
 
   User* = object
+    ## minimum info about a user
     id* {.primary, autoIncrement.}: Id
-    username* {.uniqueIndex.}: Str
-    nickname*: Str
-    role*: UserRole
-    mode*: UserMode
+    username* {.uniqueIndex.}:      Str
+    nickname*:                      Str
+    role*:                          UserRole
+    mode*:                          UserMode
 
-  Auth* = object
-    id* {.primary, autoIncrement.}: Id
-    kind* {.index.}: string # Email | [third-party-service-name] | ...
+  Profile* = object
+    ## key value facts about a user
+    id* {.primary, autoIncrement.}:       Id
+    user* {.index, references: User.id.}: Id
+    key*:                                 Str
+    value*:                               Str
 
-    user* {.index, references: User.id.}: Option[Id]
-    secret* {.index.}: string
-
-    str_index* {.index.}: string
-    int_index* {.index.}: int
-    str_val1*: string
-    str_val2*: string
-    int_val3*: int
-    info*: string           ## additional information
-
-    created_at*: UnixTime
-    activated*: bool
+  AuthCode* = object
+    id*   {.primary, autoIncrement.}:  Id
+    code* {.index.}:                   Str
+    created_at*:                       UnixTime
 
   Asset* = object
-    id* {.primary, autoIncrement.}: Id
+    id*  {.primary, autoIncrement.}: Id
     name*: Str  # name with extention
     mime*: Str
     size*: Bytes
@@ -142,46 +138,47 @@ type
     id* {.primary, autoIncrement.}: Id
     is_private*: bool
 
-    user* {.references: User.id.}: Option[Id]         ## owner
-    asset* {.references: Asset.id, index.}: Option[Id]
-    board* {.references: Board.id, index.}: Option[Id]
-    node* {.references: Relation.id, index.}: Option[Id]
-    note* {.references: Note.id, index.}: Option[Id]
-    refers*: Option[Id]                               ## arbitrary row id
+    user*  {.references: User.id.}:            Option[Id]  ## owner
+    asset* {.references: Asset.id,    index.}: Option[Id]
+    board* {.references: Board.id,    index.}: Option[Id]
+    node*  {.references: Relation.id, index.}: Option[Id]
+    note*  {.references: Note.id,     index.}: Option[Id]
+    refers*:                                   Option[Id] ## arbitrary row id
 
-    mode*: RelMode
     label* {.index.}: Str
+    mode*:            RelMode
+    
     sval*: Option[Str]
     fval*: Option[float]
     ival*: Option[int]
 
-    info*: Str                                        ## additional information
-    state*: RelState
-    timestamp*: UnixTime                              ## creation time
+    info*:      Str                                  ## additional information
+    state*:     RelState
+    timestamp*: UnixTime                             ## creation time
 
   RelsCache* = object ## one to one relation with Note/Board/Asset
     id* {.primary, autoIncrement.}: Id
 
-    user* {.references: User.id.}: Option[Id]
+    user*  {.references: User.id.}:         Option[Id]
     asset* {.references: Asset.id, index.}: Option[Id]
     board* {.references: Board.id, index.}: Option[Id]
-    note* {.references: Note.id, index.}: Option[Id]
+    note*  {.references: Note.id,  index.}: Option[Id]
 
     rels*: seq[RelMinData]
 
   RelMinData* = object ## minimum relation data
-    mode*: RelMode
+    mode*:  RelMode
     label*: Str
     value*: Str
 
   # ------------ view models ------------
 
   UserCache* = object
-    exp*: int
+    exp*:     int
     account*: User
 
   EntityClass* = enum
-    ecNote = "note"
+    ecNote  = "note"
     ecAsset = "asset"
     ecBoard = "board"
 
@@ -199,38 +196,38 @@ type
     qoSubStr    ## ~ substring check
 
   TagCriteria* = object
-    mode*: Option[RelMode]
-    label*: Str
+    mode*:       Option[RelMode]
+    label*:      Str
     value_type*: RelValueType
-    operator*: QueryOperator
-    value*: Str
+    operator*:   QueryOperator
+    value*:      Str
 
   ExploreQuery* = object
     searchCriterias*: seq[TagCriteria]
-    sortCriteria*: Option[TagCriteria]
-    order*: SortOrder
-    limit*: Natural
-    selectedUser*: Option[Id] ## only search notes for a specific user
-    skip*: Natural
+    sortCriteria*:    Option[TagCriteria]
+    order*:           SortOrder
+    limit*:           Natural
+    selectedUser*:    Option[Id] ## only search notes for a specific user
+    skip*:            Natural
 
 
   AssetItemView* = object
-    id*: Id
+    id*:   Id
     name*: Str
     mime*: Str
     size*: Bytes
     rels*: seq[RelMinData]
 
   NoteItemView* = object
-    id*: Id
+    id*:   Id
     data*: TreeNodeRaw[NativeJson]
     rels*: seq[RelMinData]
 
   BoardItemView* = object
-    id*: Id
-    title*: Str
+    id*:         Id
+    title*:      Str
     screenshot*: Option[Id]
-    rels*: seq[RelMinData]
+    rels*:       seq[RelMinData]
 
   LoginForm* = object
     username*: Str
@@ -238,11 +235,11 @@ type
 
   GithubCodeEmbed* = object
     style_link*: Str
-    html_code*: Str
+    html_code*:  Str
 
   LinkPreviewData* = object
     title*: Str
-    desc*: Str
+    desc*:  Str
     image*: Str
 
 

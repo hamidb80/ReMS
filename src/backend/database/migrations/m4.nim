@@ -3,12 +3,12 @@ import std/[json, sequtils, os, options]
 import htmlparser
 import ponairi
 
-import ../../config
+import ../../settings
 import ../../../common/[datastructures]
 import ../[models, dbconn]
 
 import std/httpclient
-import ../../utils/link_preview
+import ../../utils/api_call
 
 let c = newHttpclient()
 

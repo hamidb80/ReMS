@@ -71,6 +71,9 @@ type
     ccResizex = "e-resize"
     ccGrabbing = "grabbing"
 
+  AuthKind* = enum
+    akCode = "code"
+    akForm = "form"
 
 func toFloat*[F: Somefloat](f: F): F = f
 
