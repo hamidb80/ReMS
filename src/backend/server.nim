@@ -16,13 +16,14 @@ func initRouter: Router =
   result.get  ur"dist",     staticFileHandler
   result.get  ur"home",     landingPageHandler
 
-  result.get  ur"sign-in",  signInHandler
-  result.get  ur"sign-up",  signUpFormHandler
+  result.route  ur"sign-in",   signInHandler
+  result.route  ur"sign-up",   signUpFormHandler
+  result.get    ur"sign-out",  signOutHandler
   
-  # result.post "/api/login/"?(kind: string), loginDispatcher {.ok.}
-  # result.get "/api/logout/", logout {.ok.}
-
+  result.get  ur"my-profile",  myProfileHandler
+  
   # result.get "/api/profile/me/", getMe {.json: User.}
+
   # result.# get "/api/profile/"?(id: int), getMe {.json: User.}
   # result.# post "/api/profile/new/", getMe {.json: User.}
   # result.# put "/api/profile/update/"?(id: int), getMe {.json: User.}
@@ -78,8 +79,8 @@ func initRouter: Router =
   # result.get "/api/explore/users/"?(name: string, offset: int, limit: int)
 
   # # to aviod CORS
-  # result.get "/api/utils/github/code/"?(url: string), fetchGithubCode {.json.}
-  # result.get "/api/utils/link/preview/"?(url: string), fetchLinkPreivewData {.json.}
+  result.get "/api/utils/github/code/"  ? (url: string), fetchGithubCode
+  result.get "/api/utils/link/preview/" ? (url: string), fetchLinkPreivewData
 
 proc runWebServer*(host: string, port: Port) {.noreturn.} =
   {.cast(gcsafe).}:

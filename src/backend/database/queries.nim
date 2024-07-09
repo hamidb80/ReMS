@@ -21,6 +21,59 @@ template cn(tbl): untyped {.dirty.} =
   columnName tbl
 
 
+proc addInviteCode*(db: DbConn, loginPlatform, code: string, info: JsonNode) =
+  db.insert Auth(
+      kind: loginPlatform,
+      secret: code,
+      info: $info,
+      created_at: unow())
+
+proc addAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
+  db.insert Auth(
+    user: some userId,
+    secret: $pass)
+
+proc getInvitation*(db: DbConn,
+  secret, kind: string,
+  time: Unixtime, expiresAfterSec: Positive
+): options.Option[Auth] =
+
+  db.find R, fsql"""
+    SELECT *
+    FROM Auth a
+    WHERE
+      secret = {secret} AND
+      kind   = {kind}   AND
+      {time} - a.created_at <= {expiresAfterSec}
+    """
+
+proc getBaleAuth*(db: DbConn, baleUserId: int): options.Option[Auth] =
+  db.find R, fsql"""
+    SELECT *
+    FROM Auth a
+    WHERE 
+      int_index = {baleUserId} AND
+      kind      = {messangerT}
+  """
+
+proc activateBaleAuth*(db: DbConn, a: Auth, baleUserId, userId: int) =
+  db.exec fsql"""
+    UPDATE Auth
+    SET 
+      activated = {true},
+      int_index = {baleUserId},
+      user      = {userId}
+    WHERE 
+      id = {a.id}
+  """
+
+proc addPassAuth*(db: DbConn, uid: Id, password: string) =
+  db.insert Auth(
+    kind: userPassT,
+    user: some uid,
+    secret: $ secureHash password)
+
+
 proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =
   db.find R, fsql"""
     SELECT *

@@ -1,27 +1,29 @@
-import std/[strformat, strutils, tables, strutils, os, oids, json, httpclient,
-    times, sha1, uri]
+import std/[options, json]
 
-# import checksums/sha1
-import mummy, mummy/multipart
-import webby, webby/queryparams
+import mummy, mummy/multipart, webby/queryparams
+import questionable
+import ponairi
+import bale
+import jsony
+import checksums/sha1
 import cookiejar
 import quickjwt
-import jsony
-import questionable
 import htmlparser
 
-import ../common/[types, path, datastructures, conventions, package]
-import ./utils/[web, github, link_preview, auth]
-import ./utils/subjson
-
-import ./database/[models, queries, dbconn]
 import ./[urls, config]
+import ./database/[dbconn, models, queries]
+import ./utils/[web, sqlgen, github, link_preview]
+import ../common/[types, path, datastructures, conventions, package]
+
 import ./views/partials
 
 include ./database/jsony_fix
 
-
 # ------- Static pages
+
+# TODO add syntax sugar for errors
+# TODO define error types
+
 
 proc notFoundHandler*(req: Request) =
   respErr 404, "what? " & req.uri
@@ -94,6 +96,87 @@ proc signInHandler*(req: Request) =
 
 proc signUpFormHandler*(req: Request) =
   req.respond 200, emptyHttpHeaders(), signUpFormHtml()
+
+## https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
+const jwtKey* = "auth"
+
+proc appendJwtExpire(ucj: sink JsonNode, expire: int64): JsonNode =
+  ucj["exp"] = %expire
+  ucj
+
+const expireDays = 10
+
+proc toJwt(uc: UserCache): string =
+  sign(
+    header = %*{
+      "typ": "JWT",
+      "alg": "HS256"},
+    claim = appendJwtExpire(parseJson toJson uc, toUnix getTime() +
+        expireDays.days),
+    secret = jwtSecret)
+
+proc jwtCookieSet(token: string): HttpHeaders =
+  result["Set-Cookie"] = $initCookie(jwtKey, token, now() + expireDays.days, path = "/")
+
+proc jwt*(req: Request): Option[string] =
+  try:
+    if "Cookie" in req.headers:
+      let ck = initCookie req.headers["Cookie"]
+      if ck.name == jwtKey:
+        return some ck.value
+  except:
+    discard
+
+proc logoutCookieSet*: HttpHeaders =
+  result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
+
+proc doLogin*(req: Request, uc: UserCache) =
+  if uc.account.mode != umTest or defined loginTestUser:
+    {.cast(gcsafe).}:
+      respond req, 200, jwtCookieSet toJwt uc
+  else:
+    raise newException(ValueError, "User is only available at test")
+
+proc loginWithCode(code: string): UserCache =
+  let inv = !!<db.getInvitation(code, messangerT, unow(), 60)
+
+  if i =? inv:
+    let
+      baleUser = bale.User parseJson i.info
+      maybeAuth = !!<db.getBaleAuth(baleUser.id)
+      uid =
+        if a =? maybeAuth: get a.user
+        else:
+          let u = !!<db.newUser(
+            messangerT & "_" & $baleUser.id,
+            baleUser.firstName & baleUser.lastname.get "",
+            baleUser.id in adminBaleIds,
+            umReal)
+
+          !!db.activateBaleAuth(i, baleUser.id, u)
+          u
+
+      maybeUsr = !!<db.getUser(uid)
+
+    UserCache(account: get maybeUsr)
+
+  else:
+    raise newException(ValueError, "invalid code")
+
+proc loginWithForm(username, password: string): UserCache =
+  ## sign up with form is not possible, only from bale and enabeling password later
+  let
+    u = get !!<db.getUser(lf.username)
+    a = get !!<db.getUserAuth(userPassT, u.id)
+
+  if $(secureHash lf.password) == a.secret:
+    UserCache(account: u)
+  else:
+    raise newException(ValueError, "password is not valid")
+
+proc myProfileHandler*(req: Request) =
+  redirect u"sign-in"()
+
 
 
 proc respHtml*(req: Request, content: string) =

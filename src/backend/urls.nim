@@ -9,7 +9,7 @@ defUrl "dist", "/dist/" ? (file: string)
 
 defUrl "sign-in",                "/sign-in/"
 defUrl "sign-up",                "/sign-up/"
-defUrl "my-profile",             "/api/profile/me/"
+defUrl "my-profile",             "/profile/me/"
 
 defUrl "profile",                "/profile/"               ? (uid: Id)
 defUrl "update-profile",         "/api/profile/update/"
@@ -17,7 +17,6 @@ defUrl "update-profile",         "/api/profile/update/"
 defUrl "upload-asset",           "/assets/upload/"
 defUrl "download-asset",         "/assets/download/"       ? (id: Id)
 defUrl "asset-shorthand",        "/a"
-func get_asset_short_hand_url*(asset_id: Id): string =     fmt"/a?{asset_id}"
 defUrl "asset-preview",          "/asset/preview/"         ? (id: Id)
 defUrl "asset-info",             "/api/asset/"             ? (id: Id)
 defUrl "update-asset-name",      "/api/asset/update/name/" ? (id: Id)
@@ -52,9 +51,9 @@ defUrl "get-palette",       "/api/palette/"                  ? (name: string)
 defUrl "get-all-palettes",  "/api/palettes/"
 defUrl "updte-palette",     "/api/update/palette/"           ? (name: string)
 
-  # api/palette/new/"?(name: string),
-  # api/palette/update/"?(name: string),
-  # "/api/palette/"?(name: string)
+# api/palette/new/"?(name: string),
+# api/palette/update/"?(name: string),
+# "/api/palette/"?(name: string)
 
 defUrl  "explore",            "/explore/"
 defUrl  "explore-notes",      "/api/explore/notes/"  ? (offset: int, limit: int)
@@ -66,3 +65,7 @@ defUrl  "explore-users",      "/api/explore/users/"  ? (name: string, offset: in
 defUrl "get-github-code", "/api/utils/github/code/"  ? (url: string)
 defUrl "link-preview",    "/api/utils/link/preview/" ? (url: string)
 
+
+
+func get_asset_short_hand_url*(asset_id: Id): string =     
+  fmt"/a?{asset_id}"
