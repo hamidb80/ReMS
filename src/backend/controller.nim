@@ -1,23 +1,24 @@
-import std/[options, json]
+import std/[options, json, strutils, paths, os, tables, httpclient, uri, times]
 
 import mummy, mummy/multipart, webby/queryparams
 import questionable
 import ponairi
 import bale
+import webby
 import jsony
 import checksums/sha1
 import cookiejar
 import quickjwt
-import htmlparser
+import pkg/htmlparser
 
 import ./[urls, settings]
-import ./database/[dbconn, models, queries]
+import ./database/[conn, models, queries]
 import ./utils/[web, sqlgen, api_call]
 import ../common/[types, path, datastructures, conventions, package]
 
 import ./views/partials
 
-include ./database/jsony_fix
+include ./utils/jsony_fix
 
 # ------- Static pages
 
@@ -56,8 +57,8 @@ proc loadDist*(filename: string): RequestHandler =
 proc staticFileHandler*(req: Request) {.qparams, gcsafe.} =
   let
     fname = q.getOrDefault "file"
-    ext = getExt fname
-    mime = mimeType ext
+    ext   = getExt fname
+    mime  = mimeType ext
     fpath = distFolder / fname
 
   if (fileExists fpath) and (noPathTraversal fname):
@@ -115,7 +116,7 @@ proc toJwt(uc: UserCache): string =
         expireDays.days),
     secret = jwtSecret)
 
-proc jwtCookieSet(token: string): HttpHeaders =
+proc jwtCookieSet(token: string): webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, token, now() + expireDays.days, path = "/")
 
 proc jwt*(req: Request): Option[string] =
@@ -138,11 +139,11 @@ proc doLogin*(req: Request, uc: UserCache) =
     raise newException(ValueError, "User is only available at test")
 
 proc loginWithCode(code: string): UserCache =
-  let inv = !!<db.getInvitation(code, messangerT, unow(), 60)
+  let inv = !!<db.findCode(code, messangerT, unow(), 60)
 
   if i =? inv:
     let
-      baleUser = bale.User parseJson i.info
+      baleUser  = bale.User parseJson i.info
       maybeAuth = !!<db.getBaleAuth(baleUser.id)
       uid =
         if a =? maybeAuth: get a.user
@@ -197,8 +198,7 @@ proc updateAssetName*(req: Request) {.qparams: {id: int, name: string}, userOnly
   !! db.updateAssetName(userc.account, id, name)
   resp OK
 
-proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: seq[
-    RelMinData], userOnly.} =
+proc updateAssetRelTags*(req: Request) {.qparams: {id: int}, jbody: seq[RelMinData], userOnly.} =
   !! db.updateAssetRelTags(userc.account, id, data)
   resp OK
 
@@ -267,9 +267,11 @@ proc getNoteContentQuery*(req: Request) {.qparams: {id: int, path: seq[int]}.} =
     let node = !!<db.getNote(id).data
     respJson toJson node.follow path
 
-proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, qparams: {
-    id: int}, jbody: TreeNodeRaw[JsonNode], userOnly.} =
-
+proc updateNoteContent*(req: Request) {.gcsafe, nosideeffect, 
+  qparams: {id: int}, 
+  jbody: TreeNodeRaw[JsonNode], 
+  userOnly
+.} =
   forceSafety:
     !!db.updateNoteContent(userc.account, id, data)
     resp OK

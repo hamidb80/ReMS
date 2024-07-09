@@ -29,14 +29,15 @@ type
 
   Profile* = object
     ## key value facts about a user
-    id* {.primary, autoIncrement.}:       Id
-    user* {.index, references: User.id.}: Id
-    key*:                                 Str
-    value*:                               Str
+    id*   {.primary, autoIncrement.}:                          Id
+    user* {.references: User.id, uniqueIndex: "key_of_user".}: Id
+    key*                       {.uniqueIndex: "key_of_user".}: Str
+    value*:                                                    Str
 
   AuthCode* = object
     id*   {.primary, autoIncrement.}:  Id
     code* {.index.}:                   Str
+    info*:                             JsonNode
     created_at*:                       UnixTime
 
   Asset* = object
@@ -245,7 +246,7 @@ type
 
 when not defined js:
   import jsony
-  include jsony_fix
+  include ../utils/jsony_fix
 
   template defSqlJsonType(typename): untyped =
     proc sqlType*(t: typedesc[typename]): string =

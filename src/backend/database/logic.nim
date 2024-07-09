@@ -7,11 +7,11 @@ import ../../common/[types, datastructures, conventions]
 
 template tableName*(t: type Board): untyped = "Board"
 template tableName*(t: type Asset): untyped = "Asset"
-template tableName*(t: type Note): untyped = v"Note"
+template tableName*(t: type Note): untyped  = "Note"
 
 template columnName*(t: type Board): untyped = "board"
 template columnName*(t: type Asset): untyped = "asset"
-template columnName*(t: type Note): untyped =  "note"
+template columnName*(t: type Note): untyped  = "note"
 
 # ------------------------------------------
 

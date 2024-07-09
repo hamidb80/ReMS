@@ -8,7 +8,7 @@ import ./[models, logic]
 import ../utils/sqlgen
 import ../../common/[types, datastructures, conventions]
 
-include jsony_fix
+include ../utils/jsony_fix
 
 
 proc inspect(s: SqlQuery): SqlQuery =
@@ -23,74 +23,40 @@ template cn(tbl): untyped {.dirty.} =
   columnName tbl
 
 
-proc addInviteCode*(db: DbConn, loginPlatform, code: string, info: JsonNode) =
-  db.insert Auth(
-      kind: loginPlatform,
-      secret: code,
-      info: $info,
+# TODO getProfile
+
+proc addAuthCode*(db: DbConn, code: string, info: JsonNode) =
+  db.insert AuthCode(
+      code: code,
+      info: info,
       created_at: unow())
 
 proc addAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
-  db.insert Auth(
-    user: some userId,
-    secret: $pass)
+  db.insert Profile(
+    user:  userId,
+    key:   "password",
+    value: $pass)
 
-proc getInvitation*(db: DbConn,
-  secret, kind: string,
-  time: Unixtime, expiresAfterSec: Positive
-): options.Option[Auth] =
-
+proc findCode*(db: DbConn, code: string, time: Unixtime, expiresAfterSec: Positive): options.Option[AuthCode] =
   db.find R, fsql"""
     SELECT *
-    FROM Auth a
+    FROM AuthCode ac
     WHERE
-      secret = {secret} AND
-      kind   = {kind}   AND
+      code = {code} AND
       {time} - a.created_at <= {expiresAfterSec}
     """
 
-proc getAuthByCode*(db: DbConn, code: string): options.Option[Auth] =
-  db.find R, fsql"""
-    SELECT *
-    FROM Auth a
-    WHERE 
-      int_index = {baleUserId} AND
-      kind      = {akCode}
-  """
+proc activateBaleAuth*(db: DbConn, userId: Id, baleChatId: int) =
+  db.insert Profile(
+    user:  userId,
+    key:   "bale_chat_id",
+    value: $baleChatId)
 
-proc activateBaleAuth*(db: DbConn, a: Auth, baleUserId, userId: int) =
-  db.exec fsql"""
-    UPDATE Auth
-    SET 
-      activated = {true},
-      int_index = {baleUserId},
-      user      = {userId}
-    WHERE 
-      id = {a.id}
-  """
-
-proc addPassAuth*(db: DbConn, uid: Id, password: string) =
-  db.insert Auth(
-    kind: $akForm,
-    user: some uid,
-    secret: $secureHash password)
-
-
-proc getUserAuths*(db: DbConn, user: Id): seq[Auth] =
-  db.find R, fsql"""
-    SELECT *
-    FROM Auth a
-    WHERE user = {user}
-  """
-
-proc getUserAuth*(db: DbConn, kind: string, user: Id): options.Option[Auth] =
-  db.find R, fsql"""
-    SELECT *
-    FROM Auth a
-    WHERE 
-      user = {user} AND
-      kind = {kind}
-  """
+proc addPassAuth*(db: DbConn, userid: Id, password: string) =
+  db.insert Profile(
+    user:  userid,
+    key:   "passowrd",
+    value: $secureHash password)
 
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
   db.find R, fsql"""
@@ -112,7 +78,7 @@ proc newUser*(db: DbConn,
 ): Id =
   let r =
     if isAdmin: urAdmin
-    else: urUser
+    else:       urUser
 
   db.insertID User(
     username: uname,

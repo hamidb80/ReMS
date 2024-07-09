@@ -217,7 +217,7 @@ template redirect*(loc: string, cache: CacheDecision = noCache): untyped {.dirty
 template respErr*(code, msg): untyped {.dirty.} =
   let ct =
     if "api" in req.uri: "application/json"
-    else: "text/html"
+    else:                "text/html"
 
   req.respond(code, @{"Content-Type": ct}, msg)
 
