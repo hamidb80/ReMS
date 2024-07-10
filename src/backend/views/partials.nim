@@ -37,7 +37,7 @@ proc extCss(url: string): string =
 
 proc tryBtnLink(link: string): Rope =
   rope fmt"""
-    <a class="btn btn-primary" href={link} up-follow up-transition="cross-fade" up-duration="300">Open</a>
+    <a class="btn btn-primary" href={link} up-cache="false" up-follow up-transition="cross-fade" up-duration="300">Open</a>
   """
 
 proc blockk(title, desc, icon, link: string): Rope =
