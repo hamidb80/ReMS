@@ -34,7 +34,7 @@ func initRouter: Router =
     route  ur"user-profile",  userProfileHandler , {GET}
 
     route  ur"explore",            exploreHandle , {GET}
-    # route  ur"explore-users",      exploreUsersHandle  , {GET} 
+    route  ur"explore-users",      exploreUsersHandle  , {GET} 
     # route  ur"explore-boards",     exploreBoardsHandle , {GET}
     # route  ur"explore-notes",      exploreNotesHandle  , {GET} 
     # route  ur"explore-assets",     exploreAssetsHandle , {GET}

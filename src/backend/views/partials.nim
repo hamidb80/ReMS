@@ -1,6 +1,7 @@
 import std/[ropes, strformat, strutils, sequtils, os, tables]
 
 import ../urls
+import ../utils/web
 import ../database/[models, logic]
 import ../../frontend/deps
 import ../../common/[package, str, conventions]
@@ -302,55 +303,74 @@ proc exploreUserItem(u: User): string =
 
 type
   SearchableClass = enum
-    scUsers = "users"
-    scNotes = "notes"
+    scUsers =  "users"
+    scNotes =  "notes"
     scBoards = "boards"
     scAssets = "assets"
 
 func iconClass(sc: SearchableClass): string =
   case sc
-  of scUsers: "fa-users"
-  of scNotes: "fa-note-sticky"
+  of scUsers:  "fa-users"
+  of scNotes:  "fa-note-sticky"
   of scBoards: "fa-diagram-project"
   of scAssets: "fa-file"
 
-proc temp: string = 
-  let i = 0
-  fmt"""
-    <div class="d-flex justify-content-around align-items-center flex-wrap my-4">
-      <ul class="pagination pagination-lg">
-        for i in SearchableClass:
-          <li class="page-item" onclick="searchClassSetter i">
-            <a class="page-link" href="#">
-              {icon iconClass scUsers}
-              if soLandscape == screenOrientation():
-                <span class="ms-2">{i}</span>
-            </a>
-          </li>
-      </ul>
 
-      <ul class="pagination pagination-lg">
-        for i in 1..4:
-          <li class="page-item " & iff(i == columnsCount "active" onclick = columnCountSetter i>
-            <a class="page-link"  href="#">{i}</a>
-          </li>
-      </ul>
+func pageLink(sc: SearchableClass): string =
+  case sc
+  of scUsers:  u"explore-users"()
+  of scNotes:  u"explore-boards"()
+  of scBoards: u"explore-notes"()
+  of scAssets: u"explore-assets"()
+
+
+proc exploreWrapperHtml(page, body: string): string =
+  let 
+    scls = join SearchableClass.mapIt fmt"""
+      <li class="page-item">
+        <a class="page-link" href="{pageLink it}" up-follow up-transition="cross-fade" up-duration="300">
+          {icon iconClass it}
+          <span class="ms-2">{it}</span>
+        </a>
+      </li>
+    """
+
+    views = join (1..4).toseq.mapit fmt"""
+      <li class="page-item">
+        <a class="page-link" href="#">{it}</a>
+      </li>"""
+
+  htmlPage:
+    commonPage fmt"explore {page}", @[], rope fmt"""
+      {nav "fa-magnifying-glass", "explore"}
+
+      <div class="d-flex justify-content-around align-items-center flex-wrap my-4">
+        <ul class="pagination pagination-lg">
+          {scls}
+        </ul>
+
+        <ul class="pagination pagination-lg">
+          {views}
+        </ul>
+      </div>
+
+      {body}
+    """
+
+proc exploreHtml*(): string =
+  exploreWrapperHtml "users", fmt"""
+    choose...
+  """
+
+proc exploreUsersHtml*(users: seq[User]): string =
+  let usersItems = join users.map exploreUserItem
+
+  exploreWrapperHtml "users", fmt"""
+    <div class="list-group my-4 p-4">
+      {usersItems}
     </div>
   """
 
-
-proc exploreHtml*(users: seq[User]): string =
-  let 
-    usersItems = join users.map exploreUserItem
-
-  htmlPage:
-    commonPage "explore ", @[], rope fmt"""
-      {nav "fa-magnifying-glass", "explore"}
-
-      <div class="list-group my-4 p-4">
-        {usersItems}
-      </div>
-    """
 
 
 proc redirectingHtml*(link: string): string =

@@ -210,10 +210,13 @@ proc userProfileHandler*(req;) {.qparams: {id: int}.} =
   let u = !!<db.getUser(id)
   req.respond 200, emptyHttpHeaders(), profileHtml(get u)
 
+
 proc exploreHandle*(req;) =
-  let users =
-    !!<db.exploreUser("", 0, 0) 
-  req.respond 200, emptyHttpHeaders(), exploreHtml users
+  req.respond 200, emptyHttpHeaders(), exploreHtml()
+
+proc exploreUsersHandle*(req;) =
+  let users = !!<db.exploreUser("", 0, 0) 
+  req.respond 200, emptyHttpHeaders(), exploreUsersHtml users
 
 
 proc respHtml*(req; content: string) =
