@@ -95,31 +95,31 @@ proc getProfile*(db: DbConn, userid: Id, key: string): string =
     """)
   t[0]
   
-proc newTag*(db: DbConn, u: User, t: sink Tag) =
+proc newTagConfig*(db: DbConn, u: User, t: sink TagConfig) =
   t.owner = u.id
   db.insert t
 
 proc deleteTag*(db: DbConn, u: User, id: Id) =
   db.exec fsql"""
-    DELETE FROM Tag 
+    DELETE FROM TagConfig
     WHERE 
       id = {id} AND
       ({isAdmin u} OR owner = {u.id})
   """
 
-proc updateTag*(db: DbConn, u: User, id: Id, t: sink Tag) =
+proc updateTag*(db: DbConn, u: User, id: Id, t: sink TagConfig) =
   db.deleteTag u, id
-  db.newTag u, t
+  db.newTagConfig u, t
 
-proc listTagFor*(db: DbConn, u: User): seq[Tag] =
+proc listTagFor*(db: DbConn, u: User): seq[TagConfig] =
   db.find R, fsql"""
     SELECT * 
-    FROM Tag t
+    FROM TagConfig t
     WHERE t.owner = {u.id}
   """
 
-proc allTags*(db: DbConn): seq[Tag] =
-  db.find R, sql"SELECT * FROM Tag"
+proc allTags*(db: DbConn): seq[TagConfig] =
+  db.find R, sql"SELECT * FROM TagConfig"
 
 proc addAsset*(db: DbConn, u: User, n: string, m: string, p: Path,
     s: Bytes): int64 =
@@ -130,9 +130,6 @@ proc addAsset*(db: DbConn, u: User, n: string, m: string, p: Path,
       mime: m,
       size: s)
 
-  db.insert RelsCache(
-    asset: some result)
-
 proc findAsset*(db: DbConn, id: Id): Asset =
   db.find R, fsql"""
     SELECT * 
@@ -142,10 +139,8 @@ proc findAsset*(db: DbConn, id: Id): Asset =
 
 proc getAsset*(db: DbConn, id: Id): AssetItemView =
   db.find R, fsql"""
-    SELECT a.id, a.name, a.mime, a.size, rc.rels
+    SELECT a.id, a.name, a.mime, a.size
     FROM Asset a
-    JOIN RelsCache rc
-    ON rc.asset = a.id
     WHERE a.id = {id}
   """
 
@@ -161,18 +156,15 @@ proc updateAssetName*(db: DbConn, u: User, id: Id, name: string) =
 
 proc getNote*(db: DbConn, id: Id): NoteItemView =
   db.find R, fsql"""
-    SELECT n.id, n.data, rc.rels 
+    SELECT n.id, n.data 
     FROM Note n
-    JOIN RelsCache rc
-    ON rc.note = n.id
     WHERE n.id = {id}
   """
 
 proc newNote*(db: DbConn, u: User): Id {.gcsafe.} =
-  result = forceSafety db.insertID Note(
+  forceSafety db.insertID Note(
     owner: u.id,
     data: newNoteData())
-  db.insert RelsCache(note: some result)
 
 proc updateNoteContent*(db: DbConn, u: User, id: Id, data: TreeNodeRaw[JsonNode]) =
   db.exec fsql"""
@@ -207,43 +199,7 @@ proc deleteRels(
   tab: type,
   id: Id
 ) =
-  db.exec fsql"DELETE FROM Relation  WHERE [cn tab] = {id}"
-  db.exec fsql"DELETE FROM RelsCache WHERE [cn tab] = {id}"
-
-template updateRelTagsGeneric*(
-  db: DbConn,
-  u: User,
-  tab: type,
-  field: untyped,
-  entityId: Id,
-  data: seq[RelMinData]
-): untyped =
-  assert db.hasAccessTo(u, tn tab, entityId)
-  transaction db:
-    deleteRels db, tab, entityId
-
-    db.insert RelsCache(
-      field: some entityId,
-      rels: data)
-
-    for t in data:
-      var r = Relation(
-        field: some entityId,
-        label: t.label,
-        timestamp: unow())
-
-      setRelValue r, t.value
-      db.insert r
-
-
-proc updateBoardRelTags*(db: DbConn, u: User, id: Id, data: seq[RelMinData]) =
-  updateRelTagsGeneric db, u, Board, board, id, data
-
-proc updateAssetRelTags*(db: DbConn, u: User, id: Id, data: seq[RelMinData]) =
-  updateRelTagsGeneric db, u, Asset, asset, id, data
-
-proc updateNoteRelTags*(db: DbConn, u: User, id: Id, data: seq[RelMinData]) =
-  updateRelTagsGeneric db, u, Note, note, id, data
+  db.exec fsql"DELETE FROM Tag  WHERE [cn tab] = {id}"
 
 
 proc commonLogicalDelete*(db: DbConn, u: User, table: string, id: Id,
@@ -268,7 +224,8 @@ proc deleteNoteLogical*(db: DbConn, u: User, id: Id, time: UnixTime) =
 
 proc deleteCommonPhysical*(db: DbConn, table: type, rowid: Id) =
   transaction db:
-    deleteRels db, table, rowid
+    # FIXME tags
+    # deleteRels db, table, rowid
     db.exec fsql"""
       DELETE FROM [tn table] 
       WHERE id = {rowid}
@@ -289,8 +246,6 @@ proc newBoard*(db: DbConn, u: User): Id =
     title: "[no title]",
     owner: u.id,
     data: BoardData())
-
-  db.insert RelsCache(board: some result)
 
 proc updateBoardContent*(db: DbConn, u: User, id: Id, data: BoardData) =
   db.exec fsql"""
@@ -332,13 +287,10 @@ proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
     introCond =
       case c.operator
       of qoNotExists: "NOT EXISTS"
-      else: "EXISTS"
+      else:               "EXISTS"
 
     candidateCond =
-      if m =? c.mode:
-        fmt"rel.mode = {ord m}"
-      else:
-        fmt"rel.label = {dbValue c.label}"
+      fmt"rel.label = {dbValue c.label}"
 
     op =
       if c.operator == qoExists and c.value.len != 0:
@@ -348,17 +300,17 @@ proc toSubQuery(entity: string, c: TagCriteria, entityIdVar: string): string =
 
     primaryCond =
       if isInfix op:
-        fmt"rel.{columnName c.valueType} {op} {dbvalue c.value}"
+        fmt"rel.value {op} {dbvalue c.value}"
       else:
         "1"
 
   fmt""" 
   {introCond} (
     SELECT *
-    FROM Relation rel
+    FROM Tag t
     WHERE 
-        rel.{entity} = {entityIdVar} AND
-        {candidateCond} AND
+        t.{entity} = {entityIdVar} AND
+        {candidateCond}            AND
         {primaryCond}
   )
   """
@@ -371,15 +323,15 @@ func exploreSqlConds(field: string, xqdata: ExploreQuery,
 
 func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
     xqdata: ExploreQuery): tuple[joinq, sortIdent: string] =
-  if sc =? xqdata.sortCriteria and hasValue sc.valueType:
+  if sc =? xqdata.sortCriteria:
     (
       fmt"""
-      JOIN Relation r
+      JOIN Tag t
       ON 
-        r.{entity} = {fieldIdVar} AND
-        r.label    = {dbvalue sc.label}
+        t.{entity} = {fieldIdVar} AND
+        t.label    = {dbvalue sc.label}
       """,
-      fmt"r.{cn sc.valueType}"
+      "t.value"
     )
   else:
     ("", fieldIdVar)
@@ -389,8 +341,6 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
     repl = exploreSqlConds($entity, xqdata, "thing.id")
     (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
     common = fmt"""
-      JOIN RelsCache rc
-      ON rc.{entity} = thing.id
       {joinq}
       WHERE 
         thing.deleted_at IS NULL AND
@@ -406,8 +356,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
   of ecNote: sql fmt"""
       SELECT 
         thing.id, 
-        thing.data, 
-        rc.rels
+        thing.data
       FROM Note thing
       {common}
     """
@@ -416,8 +365,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
       SELECT 
         thing.id, 
         thing.title, 
-        thing.screenshot, 
-        rc.rels
+        thing.screenshot
       FROM Board thing
       {common}
     """
@@ -427,8 +375,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, lim
         thing.id, 
         thing.name, 
         thing.mime, 
-        thing.size, 
-        rc.rels
+        thing.size
       FROM Asset thing
       {common}
     """
@@ -443,7 +390,7 @@ proc exploreUsers*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   """
 
 proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
-  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
+  db.find R, inspect exploreGenericQuery(ecNote, xqdata, offset, limit, user)
 
 proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
   db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit, user)
@@ -489,9 +436,9 @@ proc updatePalette*(db: DbConn, name: string, p: Palette) =
 #     ORDER BY r.id ASC
 #   """
 
-proc markNotifsAsStale*(db: DbConn, ids: seq[Id]) =
-  db.exec fsql"""
-    UPDATE Relation
-    SET state = {rsStale}
-    WHERE id in [sqlize ids]
-  """
+# proc markNotifsAsStale*(db: DbConn, ids: seq[Id]) =
+#   db.exec fsql"""
+#     UPDATE Relation
+#     SET state = {rsStale}
+#     WHERE id in [sqlize ids]
+#   """

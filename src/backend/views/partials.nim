@@ -2,7 +2,7 @@ import std/[ropes, strformat, strutils, sequtils, os, tables]
 
 import ../urls
 import ../utils/web
-import ../database/[models, logic]
+import ../database/[models, logic, init]
 import ../../frontend/deps
 import ../../common/[package, str, types, conventions]
 
@@ -330,7 +330,7 @@ func pageLink(sc: SearchableClass): string =
   of scAssets: u"explore-assets"()
 
 proc tagViewC*(
-  t: Tag,
+  tc: TagConfig,
   value: string,
   clickHandler: proc()
 ): string =
@@ -339,9 +339,9 @@ proc tagViewC*(
   fmt"""
     <div class="d-inline-flex align-items-center py-2 px-3 mx-2 my-3 badge border-1 solid-border rounded-pill pointer tag"
       style = "
-        background:  {toColorString t.theme.bg};
-        color:       {toColorString t.theme.fg};
-        borderColor: {toColorString t.theme.fg};
+        background:  {toColorString tc.theme.bg};
+        color:       {toColorString tc.theme.fg};
+        borderColor: {toColorString tc.theme.fg};
     ">
       if isAscii t.icon[0]:
         icon $t.icon
@@ -359,16 +359,18 @@ proc tagViewC*(
   """
 
 proc tagViewC*(
-  tagsDB: Table[Str, Tag],
+  tagsDB: Table[Str, TagConfig],
   label: Str,
   value: Str,
   clickHandler: proc()
 ): string =
-  let tag =
-    if label in tagsDB: tagsDB[label]
-    else: defaultTag label
+  let tagc =
+    if label in tagsDB: 
+      tagsDB[label]
+    else: 
+      defaultTagConfig label
 
-  tagViewC tag, value, clickHandler
+  tagViewC tagc, value, clickHandler
 
 func generalCardBtnLink*(icon, colorClass, url: string): GeneralCardButton =
   GeneralCardButton(
@@ -377,8 +379,7 @@ func generalCardBtnLink*(icon, colorClass, url: string): GeneralCardButton =
     kind: gcbkLink,
     url: url)
 
-func generalCardBtnAction*(icon, colorClass: string,
-    action: proc(), isDangerous = false): GeneralCardButton =
+func generalCardBtnAction*(icon, colorClass: string, action: proc(), isDangerous = false): GeneralCardButton =
   GeneralCardButton(
     icon: icon,
     colorClass: colorClass,
@@ -403,35 +404,42 @@ proc generalCardButtonView(b: GeneralCardButton): string =
         {icon b.icon}
       </button>
     """
-    
+
 proc generalCardView*(
   posterImageUrl: string,
   content: string,
-  rels: openArray[RelMinData],
-  tagsDB: Table[Str, Tag],
   btns: openArray[GeneralCardButton],
 ): string =
-  fmt"""
-    <div class="masonry-item card my-3 border rounded bg-white">
-      if posterImageUrl != "":
+  let 
+    img = 
+      if posterImageUrl == "": ""
+      else:
+        fmt"""
         <div class="d-flex bg-light card-img justify-content-center overflow-hidden">
           <img src={posterImageUrl}/>
-        </div>
+        </div>"""
 
+    btns = 
+      join btns.map generalCardButtonView
+
+    footer = 
+      if btns.len == 0: ""
+      else:
+        fmt"""
+        <div class="card-footer d-flex justify-content-center">
+          {btns}
+        </div>"""
+
+  fmt"""
+    <div class="masonry-item card my-3 border rounded bg-white">
+      {img}
       <div class="card-body">
         {content}
-
         <div class="mt-2 tag-list">
-          for r in rels:
-            tagViewC tagsDB, r.label, r.value, noop
+          -- tags be here --
         </div>
       </div>
-
-      if btns.len != 0:
-        <div class="card-footer d-flex justify-content-center">
-          for b in btns:
-            generalCardButtonView b
-        </div>
+      {footer}
     </div>
   """
 
@@ -511,56 +519,53 @@ proc notePreviewC(n: NoteItemView): string =
       if true: "fa-exclamation-circle"
       else:    "fa-trash"
 
-  var btns = @[
-    generalCardBtnLink("fa-glasses", "info",  note_preview_url n.id),
-    generalCardBtnAction("fa-sync", "primary", ),
-    generalCardBtnAction("fa-copy", "primary", )]
+  # var btns = @[
+  #   generalCardBtnLink("fa-glasses", "info",  note_preview_url n.id),
+  #   generalCardBtnAction("fa-sync", "primary", ),
+  #   generalCardBtnAction("fa-copy", "primary", )]
 
-  if issome me:
-    add btns, [
-      generalCardBtnAction("fa-tags", "success", goToTagManager),
-      generalCardBtnLink("fa-pen", "warning", get_note_editor_url n.id),
-      generalCardBtnAction(deleteIcon, "danger", deleteAct)]
+  # if issome me:
+  #   add btns, [
+  #     generalCardBtnAction("fa-tags", "success", goToTagManager),
+  #     generalCardBtnLink("fa-pen", "warning", get_note_editor_url n.id),
+  #     generalCardBtnAction(deleteIcon, "danger", deleteAct)]
 
-  generalCardView "", inner, n.rels, tags, btns
+  # generalCardView "", inner, n.rels, tags, btns
+  generalCardView "", inner, @[]
 
 proc exploreNotesHtml*(notes: seq[NoteItemView]): string =
+  let notesItem = join notes.mapit generalCardView("", "salam", [])
+
   exploreWrapperHtml "Notes", fmt"""
-    Notes!
+    <div class="m-4">
+      {notesItem}
+    </div>
   """
 
 
-proc boardItemViewC(b: BoardItemView): VNode =
-  let
-    inner = buildHtml:
-      h3(dir = "auto"):
-        text b.title
+# proc boardItemViewC(b: BoardItemView): string =
+#   let
+#     inner = fmt"""
+#       <h3 dir="auto">{b.title}</h3>
+#     """
 
-    url =
-      if issome b.screenshot:
-        get_asset_short_hand_url get b.screenshot
-      else:
-        ""
+#     url =
+#       if issome b.screenshot:
+#         asset_short_hand_url get b.screenshot
+#       else: 
+#         ""
 
-    deleteIcon =
-      if b.id in wantToDelete: "fa-exclamation-circle"
-      else: "fa-trash"
+#     deleteIcon =
+#       if true: "fa-exclamation-circle"
+#       else:    "fa-trash"
 
-  proc deleteBoardAct =
-    if b.id in wantToDelete:
-      deleteBoard b.id
-      discard fetchBoards()
-    else:
-      add wantToDelete, b.id
+#   var btns = @[
+#     generalCardBtnLink("fa-eye", "info", get_board_edit_url b.id)]
 
+#   if issome me:
+#     add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
 
-  var btns = @[
-    generalCardBtnLink("fa-eye", "info", get_board_edit_url b.id)]
-
-  if issome me:
-    add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
-
-  generalCardView url, inner, b.rels, tags, btns
+#   generalCardView url, inner, b.rels, tags, btns
 
 proc exploreBoardsHtml*(boards: seq[BoardItemView]): string =
   exploreWrapperHtml "Boards", fmt"""
@@ -574,7 +579,7 @@ proc assetItemComponent(a: AssetItemView): string =
         <span>#{a.id}</span>
 
         <bold class="mx-2">
-          <a href={previewLink}>
+          <a href="#">
             {a.name}
           </a>
 
@@ -587,7 +592,7 @@ proc assetItemComponent(a: AssetItemView): string =
         <div>
           for r in a.rels:
             if r.label in tags:
-              {tagViewC tags, r.label, r.value, noop}
+              tagViewC tags, r.label, r.value, noop
         </div>
 
         <button class="mx-2 btn btn-outline-dark>

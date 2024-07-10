@@ -34,8 +34,11 @@ type
     asTagManager
     asTagSettings
 
+
 const maxItems = 30
+
 let compTable = defaultComponents()
+
 var
   me = none User
   lastPage: array[SearchableClass, Natural]
@@ -64,17 +67,6 @@ var
   messagesResolved = true
 
 
-type AppState2 = enum
-  asInit
-  asSelectIcon
-
-var
-  tagsList: seq[Tag]
-  tagState = asInit
-  selectedTagI = noIndex
-  currentTag = none Tag
-  colors: seq[ColorTheme]
-
 const
   ttt = staticRead "./icons.txt"
 
@@ -82,28 +74,6 @@ let
   icons = splitlines ttt
   defaultIcon = icons[0]
 
-
-proc dummyTag: Tag =
-  result = Tag(
-    icon: defaultIcon,
-    theme: colors[0], # sample colors,
-    show_name: true,
-    is_private: false,
-    value_type: rvtNone,
-    label: "name")
-
-proc onIconSelected(icon: string) =
-  currentTag.get.icon = icon
-  tagState = asInit
-
-proc genChangeSelectedTagi(i: int): proc() =
-  proc =
-    if selectedTagI == i:
-      selectedTagI = noIndex
-      currentTag = some dummyTag()
-    else:
-      selectedTagI = i
-      currentTag = some tagsList[i]
 
 proc iconSelectionBlock(icon: string, setIcon: proc(icon: string)): VNode =
   buildHtml:
@@ -297,235 +267,6 @@ proc assetUploader: VNode =
               uploadStatusBtn u
 
 # ----- UI
-
-proc notePreviewC(n: NoteItemView, i: int): VNode =
-  let
-    inner = buildHtml:
-      tdiv(class = "tw-content"):
-        if n.id in msgCache:
-          verbatim msgCache[n.id]
-        else:
-          text "loading..."
-
-    deleteIcon =
-      if n.id in wantToDelete: "fa-exclamation-circle"
-      else: "fa-trash"
-
-  proc copyNoteId =
-    copyToClipboard $n.id
-
-  proc goToTagManager =
-    selectedNoteId = n.id
-    selectedNoteIndex = i
-    currentRels = n.rels
-    activeRelTagIndex = noIndex
-    appState = asTagManager
-
-  proc deleteAct =
-    if n.id in wantToDelete:
-      deleteNote n.id
-    else:
-      add wantToDelete, n.id
-
-  var btns = @[
-    generalCardBtnLink("fa-glasses", "info", get_note_preview_url n.id),
-    generalCardBtnAction("fa-sync", "primary", proc = resolveNote n),
-    generalCardBtnAction("fa-copy", "primary", copyNoteId)]
-
-  if issome me:
-    add btns, [
-      generalCardBtnAction("fa-tags", "success", goToTagManager),
-      generalCardBtnLink("fa-pen", "warning", get_note_editor_url n.id),
-      generalCardBtnAction(deleteIcon, "danger", deleteAct)]
-
-  generalCardView "", inner, n.rels, tags, btns
-
-proc boardItemViewC(b: BoardItemView): VNode =
-  let
-    inner = buildHtml:
-      h3(dir = "auto"):
-        text b.title
-
-    url =
-      if issome b.screenshot:
-        get_asset_short_hand_url get b.screenshot
-      else:
-        ""
-
-    deleteIcon =
-      if b.id in wantToDelete: "fa-exclamation-circle"
-      else: "fa-trash"
-
-  proc deleteBoardAct =
-    if b.id in wantToDelete:
-      deleteBoard b.id
-      discard fetchBoards()
-    else:
-      add wantToDelete, b.id
-
-
-  var btns = @[
-    generalCardBtnLink("fa-eye", "info", get_board_edit_url b.id)]
-
-  if issome me:
-    add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
-
-  generalCardView url, inner, b.rels, tags, btns
-
-proc relTagManager(): Vnode =
-  buildHTML:
-    tdiv:
-      h3(class = "mt-4"):
-        text "Available Tags"
-
-      tdiv(class = "card"):
-        tdiv(class = "card-body"):
-          for id, t in tags:
-            let val =
-              if hasValue t: "..."
-              else: ""
-            tagViewC t, val, genAddTagToList t.label
-          tagViewC defaultTag "...", "", genAddTagToList "..."
-
-      h3(class = "mt-4"):
-        text "Current Tags"
-
-      tdiv(class = "card"):
-        tdiv(class = "card-body"):
-          for index, r in currentRels:
-            tagViewC tags, r.label, r.value, genActiveTagClick index
-
-      if activeRelTagIndex != noIndex:
-        let
-          r = currentRels[activeRelTagIndex]
-          exists = r.label in tags
-
-        if not exists:
-          input(`type` = "text", class = "form-control",
-            placeholder = "name",
-            value = r.label):
-            proc oninput(e: Event, v: Vnode) =
-              currentRels[activeRelTagIndex].label = e.target.value
-
-
-        if (not exists) or (hasValue tags[r.label]):
-          input(`type` = "text", class = "form-control",
-            placeholder = "value ...",
-            value = r.value):
-            proc oninput(e: Event, v: Vnode) =
-              currentRels[activeRelTagIndex].value = e.target.value
-
-        button(class = "btn btn-danger w-100 mt-2 mb-4"):
-          text "remove"
-          icon "mx-2 fa-close"
-
-          proc onclick =
-            delete currentRels, activeRelTagIndex
-            activeRelTagIndex = noIndex
-
-      button(class = "btn btn-primary w-100 mt-2"):
-        text "save"
-        icon "mx-2 fa-save"
-
-        proc onclick =
-          let d = cast[JsObject](currentRels)
-
-          case selectedClass
-          of scUsers: discard
-          of scBoards: discard
-
-          of scNotes:
-            apiUpdateNoteTags selectedNoteId, d, proc =
-              notify "changes applied"
-              notes[selectedNoteIndex].rels = currentRels
-
-          of scAssets:
-            apiUpdateAssetTags assets[selectedAssetIndex].id, d, proc =
-              assets[selectedAssetIndex].rels = currentRels
-              notify "changes applied"
-
-      button(class = "btn btn-warning w-100 mt-2 mb-4"):
-        text "cancel"
-        icon "mx-2 fa-hand"
-
-        proc onclick =
-          reset activeRelTagIndex
-          appState = asNormal
-
-proc searchTagManager(): Vnode =
-  buildHTML:
-    tdiv:
-      h3(class = "mt-4"):
-        text "Available Tags"
-
-        tdiv(class = "mx-4 btn btn-outline-white"):
-          proc onclick =
-            appState = asTagSettings
-          icon "fa-cog fa-xl"
-
-      tdiv(class = "card"):
-        tdiv(class = "card-body"):
-          for id, t in tags:
-            let val =
-              if hasValue t: "..."
-              else: ""
-            tagViewC t, val, genAddSearchCriteria t
-          tagViewC defaultTag "...", "", genAddSearchCriteria("...", "")
-
-      h3(class = "mt-4"):
-        text "Current Criterias"
-
-      tdiv(class = "card"):
-        tdiv(class = "card-body"):
-          for i, cr in searchCriterias:
-            tdiv:
-              let vtype =
-                if cr.label in tags: tags[cr.label].valueType
-                else: rvtNone
-
-              text "@ "
-              span(onclick = genRoundOperator(i, vtype)):
-                text $cr.operator
-              tagViewC tags, cr.label, cr.value, genSelectCriteria i
-              if selectedSortCriteriaI == i:
-                case sortOrder
-                of Descending:
-                  icon "fa-arrow-up-short-wide"
-                of Ascending:
-                  icon "fa-arrow-down-short-wide"
-
-      if selectedCriteriaI != noIndex:
-        let
-          cr = searchCriterias[selectedCriteriaI]
-          exists = cr.label in tags
-          hasValue =
-            if exists: hasValue tags[cr.label]
-            else: true
-
-        input(`type` = "text", class = "form-control",
-          placeholder = "label ...",
-          value = cr.label):
-          proc oninput(e: Event, v: Vnode) =
-            searchCriterias[selectedCriteriaI].label = e.target.value
-
-        if hasValue:
-          input(`type` = "text", class = "form-control",
-            placeholder = "value ...",
-            value = cr.value):
-            proc oninput(e: Event, v: Vnode) =
-              searchCriterias[selectedCriteriaI].value = e.target.value
-
-        button(class = "btn btn-danger w-100 my-2"):
-          text "remove"
-          icon "mx-2 fa-close"
-
-          proc onclick =
-            if selectedCriteriaI == selectedSortCriteriaI:
-              selectedCriteriaI = noIndex
-
-            delete searchCriterias, selectedCriteriaI
-            selectedCriteriaI = noIndex
-
 
 proc createDom: Vnode =
   echo "just redrawn"

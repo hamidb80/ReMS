@@ -1,4 +1,4 @@
-import std/[strformat, options, json, strutils, paths, os, tables, httpclient, uri, times, oids]
+import std/[strformat, options, json, strutils, paths, os, tables, httpclient, uri, times, oids, algorithm]
 
 import mummy, mummy/multipart, webby/queryparams
 import questionable
@@ -219,8 +219,15 @@ proc exploreUsersHandle*(req) =
   req.respond 200, emptyHttpHeaders(), exploreUsersHtml users
 
 proc exploreNotesHandle*(req) =
-  # let notes = !!<db.exploreNotes("", 0, 0) 
-  req.respond 200, emptyHttpHeaders(), exploreNotesHtml(@[])
+  forceSafety:
+    let notes = !!<db.exploreNotes(ExploreQuery(
+      # searchCriterias: @[],
+      # sortCriteria:    Option[TagCriteria]
+      # order:           Descending,
+      limit:           10,
+      skip:            0,
+    ), 0, 10, none Id)
+    req.respond 200, emptyHttpHeaders(), exploreNotesHtml notes
 
 
 proc respHtml*(req; content: string) =
@@ -239,10 +246,6 @@ proc getAsset*(req) {.qparams: {id: int}.} =
 
 proc updateAssetName*(req) {.qparams: {id: int, name: string}, userOnly.} =
   !! db.updateAssetName(userc.account, id, name)
-  resp OK
-
-proc updateAssetRelTags*(req) {.qparams: {id: int}, jbody: seq[RelMinData], userOnly.} =
-  !! db.updateAssetRelTags(userc.account, id, data)
   resp OK
 
 proc saveAsset(req): Id {.userOnly.} =
@@ -319,11 +322,6 @@ proc updateNoteContent*(req) {.gcsafe, nosideeffect,
     !!db.updateNoteContent(userc.account, id, data)
     resp OK
 
-proc updateNoteRelTags*(req) {.qparams: {id: int},
-    jbody: seq[RelMinData], userOnly.} =
-  !!db.updateNoteRelTags(userc.account, id, data)
-  resp OK
-
 proc deleteNote*(req) {.qparams: {id: int}, userOnly.} =
   !!db.deleteNoteLogical(userc.account, id, unow())
   resp OK
@@ -345,10 +343,6 @@ proc updateBoardTitle*(req) {.qparams: {id: int, title: string}, userOnly.} =
   !!db.updateBoardTitle(userc.account, id, title)
   resp OK
 
-proc updateBoardRelTags*(req) {.qparams: {id: int},
-    jbody: seq[RelMinData], userOnly.} =
-  !!db.updateBoardRelTags(userc.account, id, data)
-  resp OK
 
 proc getBoard*(req) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
@@ -361,11 +355,11 @@ proc deleteBoard*(req) {.qparams: {id: int}, userOnly.} =
 proc listTags*(req) =
   !!respJson toJson db.allTags
 
-proc newTag*(req) {.jbody: Tag, userOnly.} =
-  !!db.newTag(userc.account, data)
+proc newTag*(req) {.jbody: TagConfig, userOnly.} =
+  !!db.newTagConfig(userc.account, data)
   resp OK
 
-proc updateTag*(req) {.qparams: {id: int}, jbody: Tag, userOnly.} =
+proc updateTagConfig*(req) {.qparams: {id: int}, jbody: TagConfig, userOnly.} =
   !!db.updateTag(userc.account, id, data)
   resp OK
 
@@ -374,17 +368,17 @@ proc deleteTag*(req) {.qparams: {id: int}, userOnly.} =
   resp OK
 
 
-proc exploreNotes*(req)  {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
-  !!respJson forceSafety toJson db.exploreNotes(data, offset, limit, none Id)
+# proc exploreNotes*(req)  {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+#   !!respJson forceSafety toJson db.exploreNotes(data, offset, limit, none Id)
 
-proc exploreBoards*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreBoards(data, offset, limit, none Id)
+# proc exploreBoards*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+#   !!respJson toJson db.exploreBoards(data, offset, limit, none Id)
 
-proc exploreAssets*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
-  !!respJson toJson db.exploreAssets(data, offset, limit, none Id)
+# proc exploreAssets*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+#   !!respJson toJson db.exploreAssets(data, offset, limit, none Id)
 
-proc exploreUsers*(req)  {.qparams: {name: string, limit: Natural, offset: Natural}.} =
-  !!respJson toJson db.exploreUsers(name, offset, limit)
+# proc exploreUsers*(req)  {.qparams: {name: string, limit: Natural, offset: Natural}.} =
+#   !!respJson toJson db.exploreUsers(name, offset, limit)
 
 
 proc getPalette*(req) {.qparams: {name: string}.} =

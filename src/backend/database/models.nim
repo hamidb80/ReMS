@@ -10,7 +10,6 @@ else:
 
 type 
   # ------------ database models ------------
-  
   UserRole* = enum
     urUser
     urAdmin
@@ -75,102 +74,93 @@ type
     name*  {.uniqueIndex.}:            Str
     color_themes*:                     seq[ColorTheme]
 
-  Tag* = object ## Relation Template
+  TagConfig* = object
     id* {.primary, autoIncrement.}: Id
     owner* {.references: User.id.}: Id
 
-    mode* {.index.}: RelMode
-    label*: Str
+    label*:          Str
+    # value_type*:     RelValueType
 
-    value_type*: RelValueType
-    is_private*: bool
-  
-    # --- styles
-    icon*: Str
-    show_name*: bool
+    icon*:  Str
     theme*: ColorTheme
 
-  RelValueType* = enum
-    rvtNone
-    rvtStr
-    rvtFloat
-    rvtInt
-    rvtDate
-
-  RelMode* = enum
-    rmCustom           ## user defined
-
-    # -- hidden or special view component
-    rmForwarded        ## a note that is forwarded from another user
-    rmNoteComment      ## a note (as comment) that refers to main note (refers)
-    rmNoteCommentReply ## reply to another comment
-
-    rmBoardNode        ##
-    rmBoardNodeNote    ##
-
-    rmFollows          ## user => refers (user.id)
-    rmNotification     ##
-
-    # -- visible
-    rmOwner            ## owner
-    rmTimestamp        ## creation time
-    rmSize             ## size in bytes
-    rmFileName         ## name of file
-    rmMime             ## mime type of a file
-    rmPrivate          ## everything is public except when it has private tag
-
-    rmHasAccess        ## tag with username of the person as value - is used with private
-    rmNoteHighlight    ##
-    rmTextContent      ## raw text
-    rmBoardScreenShot  ## screenshots that are taken from boards
-
-    rmLike             ##
-    rmImportant        ##
-    rmLater            ##
-
-    rmRememberIn       ##
-    rmRemembered       ##
-
-  RelState* = enum
-    rsFresh
-    rsStale ## to mark as processed or expired by the system
-
-  Relation* = object
+  Tag* = object
     id* {.primary, autoIncrement.}: Id
-    is_private*: bool
 
-    user*  {.references: User.id.}:            Option[Id]  ## owner
     asset* {.references: Asset.id,    index.}: Option[Id]
     board* {.references: Board.id,    index.}: Option[Id]
-    node*  {.references: Relation.id, index.}: Option[Id]
     note*  {.references: Note.id,     index.}: Option[Id]
-    refers*:                                   Option[Id] ## arbitrary row id
 
     label* {.index.}: Str
-    mode*:            RelMode
-    
-    sval*: Option[Str]
-    fval*: Option[float]
-    ival*: Option[int]
-
-    info*:      Str                                  ## additional information
-    state*:     RelState
-    timestamp*: UnixTime                             ## creation time
-
-  RelsCache* = object ## one to one relation with Note/Board/Asset
-    id* {.primary, autoIncrement.}: Id
-
-    user*  {.references: User.id.}:         Option[Id]
-    asset* {.references: Asset.id, index.}: Option[Id]
-    board* {.references: Board.id, index.}: Option[Id]
-    note*  {.references: Note.id,  index.}: Option[Id]
-
-    rels*: seq[RelMinData]
-
-  RelMinData* = object ## minimum relation data
-    mode*:  RelMode
-    label*: Str
     value*: Str
+
+
+  # RelValueType* = enum
+  #   rvtNone
+  #   rvtStr
+  #   rvtFloat
+  #   rvtInt
+  #   rvtDate
+
+  # RelMode* = enum
+  #   rmCustom           ## user defined
+
+  #   # -- hidden or special view component
+  #   rmForwarded        ## a note that is forwarded from another user
+  #   rmNoteComment      ## a note (as comment) that refers to main note (refers)
+  #   rmNoteCommentReply ## reply to another comment
+
+  #   rmBoardNode        ##
+  #   rmBoardNodeNote    ##
+
+  #   rmFollows          ## user => refers (user.id)
+  #   rmNotification     ##
+
+  #   # -- visible
+  #   rmOwner            ## owner
+  #   rmTimestamp        ## creation time
+  #   rmSize             ## size in bytes
+  #   rmFileName         ## name of file
+  #   rmMime             ## mime type of a file
+  #   rmPrivate          ## everything is public except when it has private tag
+
+  #   rmHasAccess        ## tag with username of the person as value - is used with private
+  #   rmNoteHighlight    ##
+  #   rmTextContent      ## raw text
+  #   rmBoardScreenShot  ## screenshots that are taken from boards
+
+  #   rmLike             ##
+  #   rmImportant        ##
+  #   rmLater            ##
+
+  #   rmRememberIn       ##
+  #   rmRemembered       ##
+
+  # RelState* = enum
+  #   rsFresh
+  #   rsStale ## to mark as processed or expired by the system
+
+  # Relation* = object
+  #   id* {.primary, autoIncrement.}: Id
+  #   is_private*: bool
+
+  #   user*  {.references: User.id.}:            Option[Id]  ## owner
+  #   asset* {.references: Asset.id,    index.}: Option[Id]
+  #   board* {.references: Board.id,    index.}: Option[Id]
+  #   node*  {.references: Relation.id, index.}: Option[Id]
+  #   note*  {.references: Note.id,     index.}: Option[Id]
+  #   refers*:                                   Option[Id] ## arbitrary row id
+
+  #   label* {.index.}: Str
+  #   mode*:            RelMode
+    
+  #   sval*: Option[Str]
+  #   fval*: Option[float]
+  #   ival*: Option[int]
+
+  #   info*:      Str                                  ## additional information
+  #   state*:     RelState
+  #   timestamp*: UnixTime                             ## creation time
 
   # ------------ view models ------------
 
@@ -197,9 +187,10 @@ type
     qoSubStr    ## ~ substring check
 
   TagCriteria* = object
-    mode*:       Option[RelMode]
+    # mode*:       Option[RelMode]
+    # value_type*: RelValueType
+
     label*:      Str
-    value_type*: RelValueType
     operator*:   QueryOperator
     value*:      Str
 
@@ -217,22 +208,16 @@ type
     name*: Str
     mime*: Str
     size*: Bytes
-    rels*: seq[RelMinData]
 
   NoteItemView* = object
     id*:   Id
     data*: TreeNodeRaw[NativeJson]
-    rels*: seq[RelMinData]
 
   BoardItemView* = object
     id*:         Id
     title*:      Str
     screenshot*: Option[Id]
-    rels*:       seq[RelMinData]
 
-  LoginForm* = object
-    username*: Str
-    password*: Str
 
   GithubCodeEmbed* = object
     style_link*: Str
@@ -264,8 +249,8 @@ when not defined js:
   defSqlJsonType NTable
   defSqlJsonType ColorTheme
   defSqlJsonType seq[ColorTheme]
-  defSqlJsonType RelMinData
-  defSqlJsonType seq[RelMinData]
+  # defSqlJsonType PackedTag
+  # defSqlJsonType seq[PackedTag]
 
   proc sqlType*(t: typedesc[Path]): string = "TEXT"
   proc dbValue*(p: Path): DbValue = DbValue(kind: dvkString, s: p.string)

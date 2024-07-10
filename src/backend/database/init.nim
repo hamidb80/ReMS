@@ -40,8 +40,6 @@ proc defaultPalette(db: DbConn) =
 
 proc addAdminUser(db: DbConn) =
     let uid = db.newUser("admin", "admin user", true, umTest)
-    debugecho "---------------------------"
-    debugecho defaultAdminPass
     db.addSigninPass(uid, defaultAdminPass)
 
 proc createTables(db: DbConn) =
@@ -53,8 +51,7 @@ proc createTables(db: DbConn) =
         Note,
         Board,
         Tag,
-        Relation,
-        RelsCache,
+        TagConfig,
         Palette)
 
 proc initDb* =

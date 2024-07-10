@@ -15,24 +15,24 @@ template columnName*(t: type Note): untyped  = "note"
 
 # ------------------------------------------
 
-func hasValue*(rv: RelValueType): bool =
-  rv != rvtNone
+# func hasValue*(rv: RelValueType): bool =
+#   rv != rvtNone
 
-func hasValue*(t: Tag): bool =
-  t.valueType != rvtNone
+# func hasValue*(t: TagConfig): bool =
+#   t.valueType != rvtNone
 
 func isAdmin*(u: User): bool =
   u.role == urAdmin
 
-func columnName*(vt: RelValueType): string =
-  case vt
-  of rvtNone: raise newException(ValueError, "'rvtNone' does not have column")
-  of rvtStr: "sval"
-  of rvtFloat: "fval"
-  of rvtDate, rvtInt: "ival"
+# func columnName*(vt: RelValueType): string =
+#   case vt
+#   of rvtNone: raise newException(ValueError, "'rvtNone' does not have column")
+#   of rvtStr: "sval"
+#   of rvtFloat: "fval"
+#   of rvtDate, rvtInt: "ival"
 
-func isHidden*(lbl: RelMode): bool =
-  lbl in rmForwarded .. rmNotification
+# func isHidden*(lbl: RelMode): bool =
+#   lbl in rmForwarded .. rmNotification
 
 func isInfix*(qo: QueryOperator): bool =
   qo in qoLess..qoSubStr
@@ -56,7 +56,7 @@ func `$`*(qo: QueryOperator): string =
 func `$`*(so: SortOrder): string =
   case so
   of Descending: "DESC"
-  of Ascending: "ASC"
+  of Ascending:  "ASC"
 
 # ------------------------------------------
 
@@ -87,18 +87,18 @@ const defaultColorThemes* = @[
     c(0x424242, 0xececec, 0x919191), # dark
 ]
 
-func defaultTag*(name: Str): Tag = Tag(
-  label: name,
-  icon: "fa-hashtag",
-  show_name: true,
-  theme: defaultColorThemes[1])
+func defaultTagConfig*(name: Str): TagConfig = 
+  TagConfig(
+    label: name,
+    icon: "fa-hashtag",
+    theme: defaultColorThemes[1])
 
 # ------------------------------------------
 
-func setRelValue*(rel: var Relation, value: string) {.noJs.} =
-  let cleaned = strip value
-  if cleaned != "":
-    rel.sval = some cleaned
-    safeFail:
-      rel.fval = some parseFloat cleaned
-      rel.ival = some parseInt cleaned
+# func setRelValue*(rel: var Relation, value: string) {.noJs.} =
+#   let cleaned = strip value
+#   if cleaned != "":
+#     rel.sval = some cleaned
+#     safeFail:
+#       rel.fval = some parseFloat cleaned
+#       rel.ival = some parseInt cleaned
