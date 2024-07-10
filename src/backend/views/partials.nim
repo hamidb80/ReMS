@@ -5,6 +5,7 @@ import ../utils/web
 import ../database/[models, logic, init]
 import ../../frontend/deps
 import ../../common/[package, str, types, conventions]
+import jsony
 
 
 type
@@ -534,7 +535,7 @@ proc notePreviewC(n: NoteItemView): string =
   generalCardView "", inner, @[]
 
 proc exploreNotesHtml*(notes: seq[NoteItemView]): string =
-  let notesItem = join notes.mapit generalCardView("", "salam", [])
+  let notesItem = join notes.mapit generalCardView("", tojson it.data, [])
 
   exploreWrapperHtml "Notes", fmt"""
     <div class="m-4">
