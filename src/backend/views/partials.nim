@@ -285,19 +285,59 @@ proc profileHtml*(u: User): string =
 
 proc exploreUserItem(u: User): string = 
   fmt"""
-    <div class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-      <bold class = "mx-2">
+    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+      <bold class="mx-2">
         <a href="{user_profile_url(u.id)}" up-follow up-transition="cross-fade" up-duration="300">
           @{u.username}
         </a>
       </bold>
 
-      <span class = "text-muted fst-italic">
+      <span class="text-muted fst-italic">
         {u.nickname}
         {iff(isAdmin u, icon "fa-user-shield ms-2", "")}
       </span>
     </div>
   """
+
+
+type
+  SearchableClass = enum
+    scUsers = "users"
+    scNotes = "notes"
+    scBoards = "boards"
+    scAssets = "assets"
+
+func iconClass(sc: SearchableClass): string =
+  case sc
+  of scUsers: "fa-users"
+  of scNotes: "fa-note-sticky"
+  of scBoards: "fa-diagram-project"
+  of scAssets: "fa-file"
+
+proc temp: string = 
+  let i = 0
+  fmt"""
+    <div class="d-flex justify-content-around align-items-center flex-wrap my-4">
+      <ul class="pagination pagination-lg">
+        for i in SearchableClass:
+          <li class="page-item" onclick="searchClassSetter i">
+            <a class="page-link" href="#">
+              {icon iconClass scUsers}
+              if soLandscape == screenOrientation():
+                <span class="ms-2">{i}</span>
+            </a>
+          </li>
+      </ul>
+
+      <ul class="pagination pagination-lg">
+        for i in 1..4:
+          <li class="page-item " & iff(i == columnsCount "active" onclick = columnCountSetter i>
+            <a class="page-link"  href="#">{i}</a>
+          </li>
+      </ul>
+    </div>
+  """
+
 
 proc exploreHtml*(users: seq[User]): string =
   let 
@@ -307,7 +347,7 @@ proc exploreHtml*(users: seq[User]): string =
     commonPage "explore ", @[], rope fmt"""
       {nav "fa-magnifying-glass", "explore"}
 
-      <div class = "list-group my-4 p-4">
+      <div class="list-group my-4 p-4">
         {usersItems}
       </div>
     """

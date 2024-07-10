@@ -34,12 +34,6 @@ type
     asTagManager
     asTagSettings
 
-  SearchableClass = enum
-    scUsers = "users"
-    scNotes = "notes"
-    scBoards = "boards"
-    scAssets = "assets"
-
 const maxItems = 30
 let compTable = defaultComponents()
 var
@@ -122,19 +116,6 @@ proc iconSelectionBlock(icon: string, setIcon: proc(icon: string)): VNode =
       proc onclick =
         setIcon icon
 
-func iconClass(sc: SearchableClass): string =
-  case sc
-  of scUsers: "fa-users"
-  of scNotes: "fa-note-sticky"
-  of scBoards: "fa-diagram-project"
-  of scAssets: "fa-file"
-
-proc loadMsg(n: NoteItemView): Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    deserizalize(compTable, n.data).dthen proc(t: TwNode) =
-      msgCache[n.id] = t.dom.innerHtml
-      resolve()
-
 proc getExploreQuery: ExploreQuery =
   result = ExploreQuery(
     searchCriterias: searchCriterias,
@@ -143,126 +124,12 @@ proc getExploreQuery: ExploreQuery =
   if selectedCriteriaI != noIndex:
     result.sortCriteria = somec searchCriterias[selectedCriteriaI]
 
-proc fetchAssets: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scAssets]
-    reset assets
-    apiExploreAssets getExploreQuery(), p*maxItems, maxItems,
-      proc(ass: seq[AssetItemView]) =
-      assets = ass
-      resolve()
-      redraw()
-
-proc fetchBoards: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scBoards]
-    reset boards
-    apiExploreBoards getExploreQuery(), p*maxItems, maxItems,
-      proc(bs: seq[BoardItemView]) =
-      boards = bs
-      resolve()
-      redraw()
-
-proc resolveNote(n: NoteItemView) =
-  n.loadMsg.dthen proc =
-    redraw()
-
-proc resolveNotes =
-  for n in notes:
-    resolveNote n
-
-  messagesResolved = true
-
-proc fetchNotes: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scNotes]
-    reset notes
-    apiExploreNotes getExploreQuery(), p*maxItems, maxItems,
-      proc(ns: seq[NoteItemView]) =
-      notes = ns
-      messagesResolved = false
-
-      if selectedClass == scNotes:
-        resolveNotes()
-      resolve()
-
-proc fetchTags: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    apiGetTagsList proc(ts: seq[Tag]) =
-      tagsList = ts
-      for t in tagsList:
-        tags[t.label] = t
-      resolve()
-
-proc fetchUsers: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    let p = lastPage[scUsers]
-    reset users
-    apiExploreUsers userSearchStr, p*maxItems, maxItems, proc(us: seq[User]) =
-      users = us
-      resolve()
-      redraw()
-
-
-proc startUpload(u: Upload) =
-  var
-    form = toForm(u.name, u.file)
-    cfg = AxiosConfig[FormData]()
-
-  cfg.onUploadProgress = proc(pe: ProgressEvent) =
-    u.progress = pe.loaded / pe.total * 100
-    redraw()
-
-  u.promise = postForm(post_assets_upload_url(), form, cfg)
-
-  u.promise.dthen proc(r: AxiosResponse) =
-    u.status = usCompleted
-    discard fetchAssets().then proc =
-      redraw()
-
-  u.promise.dcatch proc(r: AxiosResponse) =
-    u.status = usFailed
-    u.reason = cast[cstring](r.data)
-    redraw()
-
-  u.status = usInProgress
-  redraw()
-
-proc cancelUpload(u: Upload) =
-  # https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
-  discard
-
-proc pushUploads(files: seq[DFile]) =
-  for f in files:
-    let u = Upload(
-      name: f.name,
-      status: usInProgress,
-      progress: 0.0,
-      file: f)
-
-    startUpload u
-    add uploads, u
-
-# ----- Events
-
-proc dropHandler(ev: Event as DragEvent) {.caster.} =
-  pushUploads ev.dataTransfer.filesArray
-
-proc genCopy(url: cstring): proc =
-  proc =
-    copyToClipboard url
-
-proc genSelectAsset(a: AssetItemView, i: int): proc =
-  proc =
-    selectedAssetIndex = i
-    assetNameTemp = a.name
-
 # ----- UI
 
 func statusColor(status: UploadStatus): cstring =
   case status
   of usInProgress: "bg-primary"
-  of usFailed: "bg-danger"
+  of usFailed:     "bg-danger"
   of usCancelled: "bg-warning"
   of usCompleted: "bg-success"
 
@@ -303,23 +170,6 @@ proc uploadStatusBtn(u: Upload): VNode =
 
     # TODO show error message as a tooltip
 
-proc genAssetDelete(id: Id, index: int): proc() =
-  proc =
-    apiDeleteAsset id, proc =
-      notify "asset deleted!"
-      delete assets, index
-
-proc genAssetEditTags(a: AssetItemView, i: int): proc() =
-  proc =
-    currentRels = a.rels
-    appState = asTagManager
-
-proc genAssetApplyBtn(id: Id, index: int): proc() =
-  proc =
-    apiUpdateAssetName id, $assetNameTemp, proc =
-      assets[index].name = assetNameTemp
-      notify "name updated"
-
 
 proc assetFocusedComponent(a: AssetItemView, previewLink: string,
     index: int): VNode =
@@ -358,22 +208,7 @@ proc assetFocusedComponent(a: AssetItemView, previewLink: string,
             span: text "apply"
             icon "fa-check ms-2"
 
-proc userItemC(u: User): VNode =
-  buildHTML:
-    tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
-      bold(class = "mx-2"):
-        a(target = "_blank"):
-          text "@"
-          text u.username
-
-      span(class = "text-muted fst-italic"):
-        text u.nickname
-
-        if isAdmin u:
-          icon "fa-user-shield ms-2"
-
-proc assetItemComponent(index: int, a: AssetItemView,
-    previewLink: string): Vnode =
+proc assetItemComponent(index: int, a: AssetItemView, previewLink: string): Vnode =
   buildHtml:
     tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
       tdiv:
@@ -461,29 +296,7 @@ proc assetUploader: VNode =
               progressbar u.progress, u.status
               uploadStatusBtn u
 
-
-proc deleteBoard(id: Id) =
-  apiDeleteBoard id, proc =
-    discard fetchBoards()
-
-proc deleteNote(id: Id) =
-  apiDeleteNote id, proc =
-    deleteIt notes, it.id == id
-    redraw()
-
 # ----- UI
-
-proc columnCountSetter(i: int): proc() =
-  proc =
-    columnsCount = i
-
-proc searchClassSetter(i: SearchableClass): proc() =
-  proc =
-    if i == scNotes and not messagesResolved:
-      resolveNotes()
-
-    selectedClass = i
-    reset wantToDelete
 
 proc notePreviewC(n: NoteItemView, i: int): VNode =
   let
@@ -558,15 +371,6 @@ proc boardItemViewC(b: BoardItemView): VNode =
     add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
 
   generalCardView url, inner, b.rels, tags, btns
-
-
-proc genAddTagToList(lbl: Str): proc() =
-  proc =
-    add currentRels, RelMinData(label: lbl, value: "")
-
-proc genActiveTagClick(index: int): proc() =
-  proc =
-    activeRelTagIndex = index
 
 proc relTagManager(): Vnode =
   buildHTML:
@@ -647,53 +451,6 @@ proc relTagManager(): Vnode =
         proc onclick =
           reset activeRelTagIndex
           appState = asNormal
-
-proc doSearch =
-  case selectedClass
-  of scNotes: discard fetchNotes()
-  of scBoards: discard fetchBoards()
-  of scAssets: discard fetchAssets()
-  of scUsers: discard fetchUsers()
-
-
-proc genRoundOperator(i: int, vt: RelValueType): proc() =
-  proc =
-    incRound searchCriterias[i].operator
-
-proc genAddSearchCriteriaImpl(tc: TagCriteria): proc() =
-  proc =
-    add searchCriterias, tc
-    selectedCriteriaI = searchCriterias.high
-
-proc genAddSearchCriteria(lbl, val: Str): proc() =
-  genAddSearchCriteriaImpl TagCriteria(
-    label: lbl,
-    valuetype: rvtNone,
-    operator: qoExists,
-    value: val)
-
-proc genAddSearchCriteria(t: Tag): proc() =
-  genAddSearchCriteriaImpl TagCriteria(
-    label: t.label,
-    valuetype: t.valuetype,
-    operator: qoExists,
-    value: "")
-
-proc genSelectCriteria(i: int): proc() =
-  proc =
-    if i == selectedCriteriaI:
-      if i == selectedSortCriteriaI:
-        case sortOrder
-        of Descending:
-          sortOrder = Ascending
-        of Ascending:
-          sortOrder = Descending
-          selectedSortCriteriaI = noIndex
-          selectedCriteriaI = noIndex
-      else:
-        selectedSortCriteriaI = i
-    else:
-      selectedCriteriaI = i
 
 proc searchTagManager(): Vnode =
   buildHTML:
@@ -1064,13 +821,6 @@ proc createDom: Vnode =
                 appState = asNormal
 
 
-proc fetchDefaultPalette: Future[void] =
-  newPromise proc(resolve, reject: proc()) =
-    apiGetPalette "default", proc(cs: seq[ColorTheme]) =
-      colors = cs
-      currentTag = some dummyTag()
-      resolve()
-
 when isMainModule:
   randomize()
   setRenderer createDom
@@ -1079,15 +829,6 @@ when isMainModule:
     case screenOrientation()
     of soPortrait: 1
     of soLandscape: 2
-
-  meApi proc (u: User) =
-    me = some u
-    redraw()
-
-  waitAll [fetchTags(), fetchUsers(), fetchBoards(), fetchAssets(),
-      fetchDefaultPalette()], proc =
-    currentTag = some dummyTag()
-    redraw()
 
   document.body.addEventListener "paste":
     proc(e: Event as ClipboardEvent) {.caster.} =

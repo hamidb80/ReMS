@@ -23,7 +23,7 @@ proc notify*(text: cstring, delay = 2000) {.exportc.} =
 proc snackbar*: Vnode =
     let displayClass =
         if hidden: "opacity-0"
-        else: "opacity-75"
+        else:      "opacity-75"
 
     buildHtml:
         tdiv(class = "d-flex justify-content-center fixed-bottom mb-3 pe-none"):
