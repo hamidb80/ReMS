@@ -4,7 +4,31 @@ import ../urls
 import ../utils/web
 import ../database/[models, logic]
 import ../../frontend/deps
-import ../../common/[package, str, conventions]
+import ../../common/[package, str, types, conventions]
+
+
+type
+  SearchableClass = enum
+    scUsers =  "users"
+    scNotes =  "notes"
+    scBoards = "boards"
+    scAssets = "assets"
+
+  GeneralCardButtonKind = enum
+    gcbkLink
+    gcbkAction
+
+  GeneralCardButton* = object
+    icon: string
+    colorClass: string
+
+    case kind: GeneralCardButtonKind
+    of gcbkAction:
+      isDangerous: bool
+      action: proc()
+
+    of gcbkLink:
+      url: string
 
 
 # ----- helpers -----------------------------------------------------
@@ -36,6 +60,15 @@ proc extCss(url: string): string =
 
 # ----- mini components ----------------------------------------------
 
+func icon*(faClass: string): string =
+  ## Font-Awesome solid icon
+  fmt"""<i class="fa-solid {faClass}"></i>"""
+
+func iconr*(faClass: string): string =
+  ## Font-Awesome regular icon
+  fmt"""<i class="fa-regular {faClass}"></i>"""
+
+
 proc tryBtnLink(link: string): Rope =
   rope fmt"""
     <a class="btn btn-primary" href={link} up-cache="false" up-follow up-transition="cross-fade" up-duration="300">Open</a>
@@ -62,10 +95,6 @@ proc blockk(title, desc, icon, link: string): Rope =
       </div>
     </div>
   """
-
-func icon*(class: string): string =
-  fmt"""<i class="fa-solid {class}"></i>"""
-  # "fa-regular "
 
 # ----- partials -----------------------------------------------------
 
@@ -284,6 +313,128 @@ proc profileHtml*(u: User): string =
       </a>
     """
 
+
+
+func iconClass(sc: SearchableClass): string =
+  case sc
+  of scUsers:  "fa-users"
+  of scNotes:  "fa-note-sticky"
+  of scBoards: "fa-diagram-project"
+  of scAssets: "fa-file"
+
+func pageLink(sc: SearchableClass): string =
+  case sc
+  of scUsers:  u"explore-users"()
+  of scNotes:  u"explore-notes"()
+  of scBoards: u"explore-boards"()
+  of scAssets: u"explore-assets"()
+
+proc tagViewC*(
+  t: Tag,
+  value: string,
+  clickHandler: proc()
+): string =
+  let hasValue = value != ""
+
+  fmt"""
+    <div class="d-inline-flex align-items-center py-2 px-3 mx-2 my-3 badge border-1 solid-border rounded-pill pointer tag"
+      style = "
+        background:  {toColorString t.theme.bg};
+        color:       {toColorString t.theme.fg};
+        borderColor: {toColorString t.theme.fg};
+    ">
+      if isAscii t.icon[0]:
+        icon $t.icon
+      else:
+        span:
+          text t.icon
+
+      if t.showName or hasValue:
+        span(dir = "auto", class="ms-2"):
+          text t.label
+
+          if hasValue:
+            text ": "
+            text value
+  """
+
+proc tagViewC*(
+  tagsDB: Table[Str, Tag],
+  label: Str,
+  value: Str,
+  clickHandler: proc()
+): string =
+  let tag =
+    if label in tagsDB: tagsDB[label]
+    else: defaultTag label
+
+  tagViewC tag, value, clickHandler
+
+func generalCardBtnLink*(icon, colorClass, url: string): GeneralCardButton =
+  GeneralCardButton(
+    icon: icon,
+    colorClass: colorClass,
+    kind: gcbkLink,
+    url: url)
+
+func generalCardBtnAction*(icon, colorClass: string,
+    action: proc(), isDangerous = false): GeneralCardButton =
+  GeneralCardButton(
+    icon: icon,
+    colorClass: colorClass,
+    kind: gcbkAction,
+    action: action,
+    isDangerous: isDangerous)
+
+proc generalCardButtonView(b: GeneralCardButton): string =
+  let cls = fmt"btn mx-1 btn-compact btn-outline-{b.colorClass}"
+
+  case b.kind
+  of gcbkLink:
+    fmt"""
+      <a class="{cls}", href={b.url}>
+        {icon b.icon}
+      </a>
+    """
+
+  of gcbkAction:
+    fmt"""
+      <button class="{cls}">
+        {icon b.icon}
+      </button>
+    """
+    
+proc generalCardView*(
+  posterImageUrl: string,
+  content: string,
+  rels: openArray[RelMinData],
+  tagsDB: Table[Str, Tag],
+  btns: openArray[GeneralCardButton],
+): string =
+  fmt"""
+    <div class="masonry-item card my-3 border rounded bg-white">
+      if posterImageUrl != "":
+        <div class="d-flex bg-light card-img justify-content-center overflow-hidden">
+          <img src={posterImageUrl}/>
+        </div>
+
+      <div class="card-body">
+        {content}
+
+        <div class="mt-2 tag-list">
+          for r in rels:
+            tagViewC tagsDB, r.label, r.value, noop
+        </div>
+      </div>
+
+      if btns.len != 0:
+        <div class="card-footer d-flex justify-content-center">
+          for b in btns:
+            generalCardButtonView b
+        </div>
+    </div>
+  """
+
 proc exploreUserItem(u: User): string = 
   fmt"""
     <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
@@ -299,29 +450,6 @@ proc exploreUserItem(u: User): string =
       </span>
     </div>
   """
-
-
-type
-  SearchableClass = enum
-    scUsers =  "users"
-    scNotes =  "notes"
-    scBoards = "boards"
-    scAssets = "assets"
-
-func iconClass(sc: SearchableClass): string =
-  case sc
-  of scUsers:  "fa-users"
-  of scNotes:  "fa-note-sticky"
-  of scBoards: "fa-diagram-project"
-  of scAssets: "fa-file"
-
-
-func pageLink(sc: SearchableClass): string =
-  case sc
-  of scUsers:  u"explore-users"()
-  of scNotes:  u"explore-notes"()
-  of scBoards: u"explore-boards"()
-  of scAssets: u"explore-assets"()
 
 
 proc exploreWrapperHtml(page, body: string): string =
@@ -372,39 +500,21 @@ proc exploreUsersHtml*(users: seq[User]): string =
   """
 
 
-proc notePreviewC(n: NoteItemView, i: int): VNode =
+proc notePreviewC(n: NoteItemView): string =
   let
-    inner = buildHtml:
-      tdiv(class = "tw-content"):
-        if n.id in msgCache:
-          verbatim msgCache[n.id]
-        else:
-          text "loading..."
-
+    inner = fmt"""
+      <div class="tw-content">
+        loading...
+      </div>
+    """
     deleteIcon =
-      if n.id in wantToDelete: "fa-exclamation-circle"
-      else: "fa-trash"
-
-  proc copyNoteId =
-    copyToClipboard $n.id
-
-  proc goToTagManager =
-    selectedNoteId = n.id
-    selectedNoteIndex = i
-    currentRels = n.rels
-    activeRelTagIndex = noIndex
-    appState = asTagManager
-
-  proc deleteAct =
-    if n.id in wantToDelete:
-      deleteNote n.id
-    else:
-      add wantToDelete, n.id
+      if true: "fa-exclamation-circle"
+      else:    "fa-trash"
 
   var btns = @[
-    generalCardBtnLink("fa-glasses", "info", get_note_preview_url n.id),
-    generalCardBtnAction("fa-sync", "primary", proc = resolveNote n),
-    generalCardBtnAction("fa-copy", "primary", copyNoteId)]
+    generalCardBtnLink("fa-glasses", "info",  note_preview_url n.id),
+    generalCardBtnAction("fa-sync", "primary", ),
+    generalCardBtnAction("fa-copy", "primary", )]
 
   if issome me:
     add btns, [
@@ -457,34 +567,35 @@ proc exploreBoardsHtml*(boards: seq[BoardItemView]): string =
     Boards!
   """
 
+proc assetItemComponent(a: AssetItemView): string =
+  fmt"""
+    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+      <div>
+        <span>#{a.id}</span>
 
-proc assetItemComponent(index: int, a: AssetItemView, previewLink: string): Vnode =
-  buildHtml:
-    tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
-      tdiv:
-        span:
-          text "#"
-          text $a.id
+        <bold class="mx-2">
+          <a href={previewLink}>
+            {a.name}
+          </a>
 
-        bold(class = "mx-2"):
-          a(target = "_blank", href = previewLink):
-            text a.name
+        <span class="text-muted fst-italic">
+          ({a.size.int} B)
+        </span>
+      </div>
 
-        span(class = "text-muted fst-italic"):
-          text "("
-          text $a.size.int
-          text " B)"
-
-      tdiv(class = "d-flex flex-row align-items-center"):
-        tdiv:
+      <div class="d-flex flex-row align-items-center">
+        <div>
           for r in a.rels:
             if r.label in tags:
-              tagViewC tags, r.label, r.value, noop
+              {tagViewC tags, r.label, r.value, noop}
+        </div>
 
-        button(class = "mx-2 btn btn-outline-dark",
-            onclick = genSelectAsset(a, index)):
-          icon "fa-chevron-down"
-
+        <button class="mx-2 btn btn-outline-dark>
+          {icon "fa-chevron-down"}
+        </button>
+      </div>
+    </div>
+  """
 
 
 proc redirectingHtml*(link: string): string =
