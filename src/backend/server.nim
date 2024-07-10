@@ -36,8 +36,8 @@ func initRouter: Router =
     route  ur"explore",            exploreHandle , {GET}
     route  ur"explore-users",      exploreUsersHandle  , {GET, POST} 
     route  ur"explore-notes",      exploreNotesHandle  , {GET, POST} 
-    # route  ur"explore-boards",     exploreBoardsHandle , {GET}
-    # route  ur"explore-assets",     exploreAssetsHandle , {GET}
+    route  ur"explore-boards",     exploreBoardsHandle , {GET}
+    route  ur"explore-assets",     exploreAssetsHandle , {GET}
 
   # result.get "/api/profile/me/", getMe {.json: User.}
 

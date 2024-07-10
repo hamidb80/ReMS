@@ -230,6 +230,29 @@ proc exploreNotesHandle*(req) =
     req.respond 200, emptyHttpHeaders(), exploreNotesHtml notes
 
 
+proc exploreBoardsHandle*(req) =
+  forceSafety:
+    let boards = !!<db.exploreBoards(ExploreQuery(
+      # searchCriterias: @[],
+      # sortCriteria:    Option[TagCriteria]
+      # order:           Descending,
+      limit:           10,
+      skip:            0,
+    ), 0, 10, none Id)
+    req.respond 200, emptyHttpHeaders(), exploreBoardsHtml boards
+
+proc exploreAssetsHandle*(req) =
+  forceSafety:
+    let assets = !!<db.exploreAssets(ExploreQuery(
+      # searchCriterias: @[],
+      # sortCriteria:    Option[TagCriteria]
+      # order:           Descending,
+      limit:           10,
+      skip:            0,
+    ), 0, 10, none Id)
+    req.respond 200, emptyHttpHeaders(), exploreAssetsHtml assets
+
+
 proc respHtml*(req; content: string) =
   req.respond 200, emptyHttpHeaders(), content
 
@@ -355,7 +378,7 @@ proc deleteBoard*(req) {.qparams: {id: int}, userOnly.} =
 proc listTags*(req) =
   !!respJson toJson db.allTags
 
-proc newTag*(req) {.jbody: TagConfig, userOnly.} =
+proc newTagConfig*(req) {.jbody: TagConfig, userOnly.} =
   !!db.newTagConfig(userc.account, data)
   resp OK
 
@@ -363,8 +386,8 @@ proc updateTagConfig*(req) {.qparams: {id: int}, jbody: TagConfig, userOnly.} =
   !!db.updateTag(userc.account, id, data)
   resp OK
 
-proc deleteTag*(req) {.qparams: {id: int}, userOnly.} =
-  !!db.deleteTag(userc.account, id)
+proc deleteTagConfig*(req) {.qparams: {id: int}, userOnly.} =
+  !!db.deleteTagConfig(userc.account, id)
   resp OK
 
 

@@ -108,10 +108,10 @@ proc deleteTagConfig*(db: DbConn, u: User, id: Id) =
   """
 
 proc updateTag*(db: DbConn, u: User, id: Id, t: sink TagConfig) =
-  db.deleteTag u, id
+  db.deleteTagConfig u, id
   db.newTagConfig u, t
 
-proc listTagsOfUser*(db: DbConn, uid: id): seq[TagConfig] =
+proc listTagsOfUser*(db: DbConn, uid: Id): seq[TagConfig] =
   db.find R, fsql"""
     SELECT * 
     FROM TagConfig t

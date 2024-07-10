@@ -2,8 +2,6 @@
 ##      normal text, italic, bold, under line, strike through, 
 ##      latex, code, spoiler, highlight
 
-# import std/jsffi
-
 
 type
     LinearMarkdownMode* = enum

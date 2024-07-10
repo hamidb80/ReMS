@@ -573,6 +573,7 @@ proc exploreBoardsHtml*(boards: seq[BoardItemView]): string =
     Boards!
   """
 
+
 proc assetItemComponent(a: AssetItemView): string =
   fmt"""
     <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
@@ -601,6 +602,11 @@ proc assetItemComponent(a: AssetItemView): string =
         </button>
       </div>
     </div>
+  """
+
+proc exploreAssetsHtml*(assets: seq[AssetItemView]): string =
+  exploreWrapperHtml "Assets", fmt"""
+    Assets!
   """
 
 
