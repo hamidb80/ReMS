@@ -99,7 +99,7 @@ proc newTagConfig*(db: DbConn, u: User, t: sink TagConfig) =
   t.owner = u.id
   db.insert t
 
-proc deleteTag*(db: DbConn, u: User, id: Id) =
+proc deleteTagConfig*(db: DbConn, u: User, id: Id) =
   db.exec fsql"""
     DELETE FROM TagConfig
     WHERE 
@@ -111,11 +111,11 @@ proc updateTag*(db: DbConn, u: User, id: Id, t: sink TagConfig) =
   db.deleteTag u, id
   db.newTagConfig u, t
 
-proc listTagFor*(db: DbConn, u: User): seq[TagConfig] =
+proc listTagsOfUser*(db: DbConn, uid: id): seq[TagConfig] =
   db.find R, fsql"""
     SELECT * 
     FROM TagConfig t
-    WHERE t.owner = {u.id}
+    WHERE t.owner = {uid}
   """
 
 proc allTags*(db: DbConn): seq[TagConfig] =
@@ -193,14 +193,6 @@ proc hasAccessTo(
       ) 
     LIMIT 1
     """)
-
-proc deleteRels(
-  db: DbConn,
-  tab: type,
-  id: Id
-) =
-  db.exec fsql"DELETE FROM Tag  WHERE [cn tab] = {id}"
-
 
 proc commonLogicalDelete*(db: DbConn, u: User, table: string, id: Id,
     time: UnixTime) =
@@ -420,25 +412,3 @@ proc updatePalette*(db: DbConn, name: string, p: Palette) =
     WHERE 
       name = {name}
   """
-
-# proc getActiveNotifs*(db: DbConn): seq[Notification] =
-#   db.find R, fsql"""
-#     SELECT r.id, u.id, u.nickname, r.kind, a.bale
-#     FROM Relation r
-
-#     JOIN User u
-#     ON r.user = u.id
-
-#     JOIN Auth a
-#     ON a.user = r.user
-
-#     WHERE r.state = {rsFresh}
-#     ORDER BY r.id ASC
-#   """
-
-# proc markNotifsAsStale*(db: DbConn, ids: seq[Id]) =
-#   db.exec fsql"""
-#     UPDATE Relation
-#     SET state = {rsStale}
-#     WHERE id in [sqlize ids]
-#   """

@@ -71,6 +71,5 @@ defUrl "get-github-code", "/api/utils/github/code/"  ? (url: string)
 defUrl "link-preview",    "/api/utils/link/preview/" ? (url: string)
 
 
-
 func asset_short_hand_url*(asset_id: Id): string =     
   fmt"/a?{asset_id}"
