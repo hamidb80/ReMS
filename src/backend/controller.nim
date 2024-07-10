@@ -1,4 +1,4 @@
-import std/[options, json, strutils, paths, os, tables, httpclient, uri, times]
+import std/[strformat, options, json, strutils, paths, os, tables, httpclient, uri, times, oids]
 
 import mummy, mummy/multipart, webby/queryparams
 import questionable
@@ -119,7 +119,7 @@ proc toJwt(uc: UserCache): string =
 proc jwtCookieSet(token: string): webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, token, now() + expireDays.days, path = "/")
 
-proc jwt*(req: Request): Option[string] =
+proc jwt*(req: Request): options.Option[string] =
   try:
     if "Cookie" in req.headers:
       let ck = initCookie req.headers["Cookie"]
@@ -128,7 +128,7 @@ proc jwt*(req: Request): Option[string] =
   except:
     discard
 
-proc logoutCookieSet*: HttpHeaders =
+proc signOutCookieSet*: webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
 proc doLogin*(req: Request, uc: UserCache) =
@@ -139,38 +139,38 @@ proc doLogin*(req: Request, uc: UserCache) =
     raise newException(ValueError, "User is only available at test")
 
 proc loginWithCode(code: string): UserCache =
-  let inv = !!<db.findCode(code, messangerT, unow(), 60)
+  let inv = !!<db.findCode(code, unow(), 60)
 
-  if i =? inv:
-    let
-      baleUser  = bale.User parseJson i.info
-      maybeAuth = !!<db.getBaleAuth(baleUser.id)
-      uid =
-        if a =? maybeAuth: get a.user
-        else:
-          let u = !!<db.newUser(
-            messangerT & "_" & $baleUser.id,
-            baleUser.firstName & baleUser.lastname.get "",
-            baleUser.id in adminBaleIds,
-            umReal)
+  # if i =? inv:
+  #   let
+  #     baleUser  = bale.User i.info
+  #     maybeAuth = 
+  #     uid =
+  #       if a =? maybeAuth: get a.user
+  #       else:
+  #         let u = !!<db.newUser(
+  #           messangerT & "_" & $baleUser.id,
+  #           baleUser.firstName & baleUser.lastname.get "",
+  #           baleUser.id in adminBaleIds,
+  #           umReal)
 
-          !!db.activateBaleAuth(i, baleUser.id, u)
-          u
+  #         !!db.activateBaleAuth(i, baleUser.id, u)
+  #         u
 
-      maybeUsr = !!<db.getUser(uid)
+  #     maybeUsr = !!<db.getUser(uid)
 
-    UserCache(account: get maybeUsr)
+  #   UserCache(account: get maybeUsr)
 
-  else:
-    raise newException(ValueError, "invalid code")
+  # else:
+  #   raise newException(ValueError, "invalid code")
 
 proc loginWithForm(username, password: string): UserCache =
   ## sign up with form is not possible, only from bale and enabeling password later
   let
-    u = get !!<db.getUser(lf.username)
-    a = get !!<db.getUserAuth(userPassT, u.id)
+    u = get !!<db.getUser(username)
+    p = !!<db.getProfile(u.id, "password")
 
-  if $(secureHash lf.password) == a.secret:
+  if $(secureHash password) == p:
     UserCache(account: u)
   else:
     raise newException(ValueError, "password is not valid")
@@ -187,8 +187,8 @@ proc respHtml*(req: Request, content: string) =
 proc getMe*(req: Request) {.userOnly.} =
   respJson toJson userc.account
 
-proc logout*(req: Request) =
-  respond req, 200, logoutCookieSet()
+proc signOutHandler*(req: Request) =
+  respond req, 200, signOutCookieSet()
 
 
 proc getAsset*(req: Request) {.qparams: {id: int}.} =

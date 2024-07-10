@@ -26,7 +26,6 @@ type
   SomeString* = string or cstring
 
   UnixTime* = distinct int64
-  Path* = distinct string
   Mb* = distinct int
   Bytes* = distinct int64
 

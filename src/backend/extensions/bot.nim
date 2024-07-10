@@ -3,8 +3,7 @@ import std/[options, json, httpclient]
 import questionable
 import bale, bale/helper/stdhttpclient
 
-import ../database/[dbconn, models, queries]
-import ../auth
+import ../database/[conn, models, queries]
 import ../utils/[random]
 import ../../common/[types]
 
@@ -31,8 +30,8 @@ var
   # msgQueue = initDeque[Msg](100)
 
 
-proc registerLoginCode(code: string, u: bale.User) =
-  !!db.addInviteCode(messangerT, code, JsonNode u)
+# proc registerLoginCode(code: string, u: bale.User) =
+#   !!db.addInviteCode(messangerT, code, JsonNode u)
 
 template sendMsg(chatId, msg): untyped {.dirty.} =
   discard req(httpc, 
@@ -81,7 +80,8 @@ proc genCheckUpdates(api: string): proc() =
 
             of loginD:
               let code = randCode 4..6
-              registerLoginCode code, msg.frm
+              # FIXME
+              # registerLoginCode code, msg.frm
               sendMsg chid, code
               sendMsg chid, "Enter this code in the login page"
 

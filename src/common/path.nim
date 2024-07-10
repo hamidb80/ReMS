@@ -1,5 +1,4 @@
-import std/[mimetypes, strutils, macros, os]
-import ./types
+import std/[mimetypes, strutils, macros, os, paths]
 
 
 let m = newMimetypes()

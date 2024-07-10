@@ -16,9 +16,9 @@ func initRouter: Router =
   result.get  ur"dist",     staticFileHandler
   result.get  ur"home",     landingPageHandler
 
-  result.route  ur"sign-in",   signInHandler
-  result.route  ur"sign-up",   signUpFormHandler
-  result.get    ur"sign-out",  signOutHandler
+  result.get  ur"sign-in",   signInHandler
+  result.get  ur"sign-up",   signUpFormHandler
+  result.get  ur"sign-out",  signOutHandler
   
   result.get  ur"my-profile",  myProfileHandler
   
@@ -79,8 +79,8 @@ func initRouter: Router =
   # result.get "/api/explore/users/"?(name: string, offset: int, limit: int)
 
   # # to aviod CORS
-  result.get "/api/utils/github/code/"  ? (url: string), fetchGithubCode
-  result.get "/api/utils/link/preview/" ? (url: string), fetchLinkPreivewData
+  # result.get "/api/utils/github/code/" , fetchGithubCode
+  # result.get "/api/utils/link/preview/", fetchLinkPreivewData
 
 proc runWebServer*(host: string, port: Port) {.noreturn.} =
   {.cast(gcsafe).}:

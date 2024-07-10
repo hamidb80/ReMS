@@ -1,4 +1,4 @@
-import std/[algorithm, json]
+import std/[algorithm, json, paths]
 
 import ../../common/[types, datastructures]
 

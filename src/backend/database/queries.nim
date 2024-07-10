@@ -1,4 +1,4 @@
-import std/[times, json, options, strutils, strformat, sequtils, tables]
+import std/[times, json, options, strutils, strformat, sequtils, tables, paths]
 
 import ponairi
 import questionable
@@ -46,10 +46,13 @@ proc findCode*(db: DbConn, code: string, time: Unixtime, expiresAfterSec: Positi
       {time} - a.created_at <= {expiresAfterSec}
     """
 
+const
+  bale_chat_id_key* = "bale_chat_id"
+
 proc activateBaleAuth*(db: DbConn, userId: Id, baleChatId: int) =
   db.insert Profile(
     user:  userId,
-    key:   "bale_chat_id",
+    key:   bale_chat_id_key,
     value: $baleChatId)
 
 proc addPassAuth*(db: DbConn, userid: Id, password: string) =
@@ -87,6 +90,18 @@ proc newUser*(db: DbConn,
     mode: m)
 
 
+proc getProfile*(db: DbConn, userid: Id, key: string): string =
+  let t = 
+    db.find( (string,), fsql"""
+      SELECT value
+      FROM Profile
+      WHERE
+        user = {userid} AND
+        key = {key}
+      LIMIT 1
+    """)
+  t[0]
+  
 proc newTag*(db: DbConn, u: User, t: sink Tag) =
   t.owner = u.id
   db.insert t

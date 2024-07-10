@@ -9,6 +9,8 @@ defUrl "dist", "/dist/" ? (file: string)
 
 defUrl "sign-in",                "/sign-in/"
 defUrl "sign-up",                "/sign-up/"
+defUrl "sign-out",               "/sign-out/"
+
 defUrl "my-profile",             "/profile/me/"
 
 defUrl "profile",                "/profile/"               ? (uid: Id)

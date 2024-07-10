@@ -2,7 +2,7 @@ import std/[nativesockets, threadpool, os]
 
 import ./[server, settings]
 import ./extensions/bot
-import ./utils/db_init
+import ./database/init
 import ../common/package
 
 

@@ -1,11 +1,11 @@
-import std/[json, options]
+import std/[json, options, paths]
 
 import ponairi
 
 import ../../common/[types, datastructures]
 import ../database/[models, logic, queries]
-import ../config
-import ../auth
+import ../settings
+
 
 type
   Theme = object
@@ -33,19 +33,20 @@ proc loadColors(jsonFilePath: string): seq[ColorTheme] =
     
         add result, ColorTheme(bg: b, fg: f, st: f)
 
-proc defaultPalette*(db: DbConn) =
+proc defaultPalette(db: DbConn) =
     db.insert Palette(
         name: "default",
         colorThemes: defaultColorThemes)
 
-proc addAdminUser*(db: DbConn) =
+proc addAdminUser(db: DbConn) =
     let uid = db.newUser("admin", "admin user", true, umTest)
     db.addPassAuth(uid, defaultAdminPass)
 
-proc createTables*(db: DbConn) =
+proc createTables(db: DbConn) =
     db.create(
         User,
-        Auth,
+        Profile,
+        AuthCode,
         Asset,
         Note,
         Board,
@@ -62,6 +63,7 @@ proc initDb* =
         defaultPalette db
     except:
         discard
+
 
 when isMainModule:
     initDb()
