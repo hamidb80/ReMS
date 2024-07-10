@@ -64,6 +64,21 @@ type
 # TODO add DSL
 # TODO add 2-way binding for data & element
 
+# https://stackoverflow.com/questions/3680876/using-queryselectorall-to-retrieve-direct-children
+
+when false:
+  _2wayBinding: {
+    "content": proc = 
+        setContent "", data.content
+    
+    "space_between": proc = 
+      if this == false:
+        setContent "> .around", ""
+      else:
+        setContent "> .around", " "
+  }
+
+
 
 proc eval(v: TwValue, ctx: JsonNode): string = 
   case v.kind
