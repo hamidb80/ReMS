@@ -13,14 +13,13 @@ const
     distFolder* = projectHome / "dist"
 
 let
-    appDir* = getEnvSafe "APP_DIR"
+    appDir*     = getEnvSafe "APP_DIR"
     appSaveDir* = appDir / "resources"
-    appDbPath* = appDir / "db.sqlite3"
+    appDbPath*  = appDir / "db.sqlite3"
 
 
-    defaultAdminPass* = getEnvSafe "DEFAULT_ADMIN_PASS"
-
-    jwtSecret* = getEnvSafe "JWT_KEY"
+    defaultAdminPass* =       getEnvSafe "DEFAULT_ADMIN_PASS"
+    jwtSecret*     =          getEnvSafe "JWT_KEY"
     webServerPort* = parseInt getEnvSafe "WEB_SERVER_PORT"
 
     baleBotToken* = getEnvSafe "BALE_BOT_TOKEN"

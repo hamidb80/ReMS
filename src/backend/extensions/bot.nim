@@ -8,10 +8,10 @@ import ../utils/[random]
 import ../../common/[types]
 
 
-type
-  Msg = object
-    chid: Id
-    content: string
+# type
+#   Msg = object
+#     chid: Id
+#     content: string
 
 
 const

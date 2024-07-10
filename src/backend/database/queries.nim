@@ -25,17 +25,15 @@ template cn(tbl): untyped {.dirty.} =
 
 # TODO getProfile
 
+const
+  baleChatIdK* = "bale_chat_id"
+  passwordK*   = "password"
+
 proc addAuthCode*(db: DbConn, code: string, info: JsonNode) =
   db.insert AuthCode(
       code: code,
       info: info,
       created_at: unow())
-
-proc addAuth*(db: DbConn, userId: Id, pass: SecureHash): Id =
-  db.insert Profile(
-    user:  userId,
-    key:   "password",
-    value: $pass)
 
 proc findCode*(db: DbConn, code: string, time: Unixtime, expiresAfterSec: Positive): options.Option[AuthCode] =
   db.find R, fsql"""
@@ -46,19 +44,16 @@ proc findCode*(db: DbConn, code: string, time: Unixtime, expiresAfterSec: Positi
       {time} - a.created_at <= {expiresAfterSec}
     """
 
-const
-  bale_chat_id_key* = "bale_chat_id"
-
 proc activateBaleAuth*(db: DbConn, userId: Id, baleChatId: int) =
   db.insert Profile(
     user:  userId,
-    key:   bale_chat_id_key,
+    key:   baleChatIdK,
     value: $baleChatId)
 
-proc addPassAuth*(db: DbConn, userid: Id, password: string) =
+proc addSigninPass*(db: DbConn, userid: Id, password: string) =
   db.insert Profile(
     user:  userid,
-    key:   "passowrd",
+    key:   passwordK,
     value: $secureHash password)
 
 proc getUser*(db: DbConn, userid: Id): options.Option[User] =
@@ -97,7 +92,7 @@ proc getProfile*(db: DbConn, userid: Id, key: string): string =
       FROM Profile
       WHERE
         user = {userid} AND
-        key = {key}
+        key  = {key}
       LIMIT 1
     """)
   t[0]

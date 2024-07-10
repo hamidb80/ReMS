@@ -40,7 +40,9 @@ proc defaultPalette(db: DbConn) =
 
 proc addAdminUser(db: DbConn) =
     let uid = db.newUser("admin", "admin user", true, umTest)
-    db.addPassAuth(uid, defaultAdminPass)
+    debugecho "---------------------------"
+    debugecho defaultAdminPass
+    db.addSigninPass(uid, defaultAdminPass)
 
 proc createTables(db: DbConn) =
     db.create(
@@ -59,7 +61,7 @@ proc initDb* =
     let db = open(appDbPath, "", "", "")
     createTables db
     try:
-        addAdminUser db
+        addAdminUser   db
         defaultPalette db
     except:
         discard

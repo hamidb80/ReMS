@@ -1,7 +1,7 @@
 import std/[ropes, strformat, strutils, os, tables]
 
 import ../urls
-import ../utils/web
+import ../database/models
 import ../../frontend/deps
 import ../../common/[package, str, conventions]
 
@@ -37,7 +37,7 @@ proc extCss(url: string): string =
 
 proc tryBtnLink(link: string): Rope =
   rope fmt"""
-    <a class="btn btn-primary" href={link}>Open</a>
+    <a class="btn btn-primary" href={link} up-follow up-transition="cross-fade" up-duration="300">Open</a>
   """
 
 proc blockk(title, desc, icon, link: string): Rope =
@@ -89,7 +89,6 @@ proc commonHead(pageTitle: string, extra: openArray[string]): Rope =
     {extCss resolveLib"theme.bootstrap.css"}
     {extCss resolveLib"icons.boostrap.css"}
     {extCss resolveLib"icons.fontawesome.css"}
-    {extCss resolveLib"lib.unpoly.b5.css"}
     {extCss resolveLib"lib.unpoly.css"}
 
     <!-- font -->
@@ -200,7 +199,7 @@ func signInUpForm(fname, fields: string): string =
       </div>
 
       <div class="card-body p-4">
-        <form class="form-group" action="." method="post">
+        <form class="form-group" action="." method="post" up-submit up-transition="cross-fade" up-duration="300">
           {fields}
         </form>
     </div>
@@ -250,7 +249,7 @@ proc signInFormHtml*: string =
       <label class="form-check-label">pass: </label>
       <input type="password" name="password" class="form-control">
 
-      <button type="submit" class="btn btn-success w-100 mt-2 mb-4">
+      <button type="submit" class="btn btn-success w-100 mt-2 mb-4" name="form">
         sign in!
         {icon "mx-2 fa-sign-in"}
       </button>
@@ -269,6 +268,28 @@ proc signInFormHtml*: string =
     commonPage "sign in", @[], rope fmt"""
       {signInUpFormHeader "sign in"}
       {signInUpForm       "sign in", fields}
+    """
+
+
+proc profileHtml*(u: User): string =
+  htmlPage:
+    commonPage "profile", @[], rope fmt"""
+      {nav "fa-address-card", "profile page"}
+
+      @{u.username} - {u.nickname}
+
+      <a href="{signout_url()}" up-cache="false" up-follow up-transition="cross-fade" up-duration="300">
+        sign out
+      </a>
+    """
+
+
+proc redirectingHtml*(link: string): string =
+  htmlPage:
+    commonPage "redirecting ...", @[], rope fmt"""
+      <a href="{link}" up-follow up-transition="cross-fade" up-duration="300">
+        redirecting ...
+      </a>
     """
 
 

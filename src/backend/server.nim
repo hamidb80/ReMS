@@ -1,4 +1,4 @@
-import std/nativesockets
+import std/[nativesockets, httpcore, with]
 
 import mummy, mummy/routers
 
@@ -8,20 +8,30 @@ import ./[urls, controller]
 import ./views/partials
 
 
+const
+  GET  = HttpGet
+  POST = HttpPost 
+
+proc route(r: var Router, url: string, handler:  RequestHandler, methods: set[HttpMethod]) = 
+  for m in methods:
+    r.addRoute $m, url, handler
+
 func initRouter: Router = 
-  # config "[not found]", notFoundHandler {.depends.}
-  # config "[method not allowed]", notFoundHandler {.depends.}
-  # config "[error]", errorHandler {.depends.}
-
-  result.get  ur"dist",     staticFileHandler
-  result.get  ur"home",     landingPageHandler
-
-  result.get  ur"sign-in",   signInHandler
-  result.get  ur"sign-up",   signUpFormHandler
-  result.get  ur"sign-out",  signOutHandler
   
-  result.get  ur"my-profile",  myProfileHandler
-  
+  with result:
+    methodNotAllowedHandler =  methodNotAllowedHandle
+    notFoundHandler         =  notFoundHandler
+    errorHandler            =  errorHandler
+
+    route  ur"dist",     staticFileHandler   , {GET}
+    route  ur"home",     landingPageHandler  , {GET}
+
+    route  ur"sign-in",   signInHandler      , {GET, POST}
+    route  ur"sign-up",   signUpFormHandler  , {GET, POST}
+    route  ur"sign-out",  signOutHandler     , {GET}
+    
+    route  ur"my-profile",  myProfileHandler , {GET}
+    
   # result.get "/api/profile/me/", getMe {.json: User.}
 
   # result.# get "/api/profile/"?(id: int), getMe {.json: User.}

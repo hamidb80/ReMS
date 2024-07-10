@@ -1,5 +1,6 @@
 import std/[macros, uri, strutils, sequtils, tables]
 
+import webby
 import macroplus
 
 import ../../common/[conventions, str]
@@ -152,17 +153,10 @@ macro userOnly*(procdef): untyped =
     userc = ident"userc"
 
   procdef.body = quote:
-    if tk =? `req`.jwt:
-      let verified = forceSafety verify(tk, jwtSecret)
-      if verified:
-        let
-          s = forceSafety tk.claim
-          `userc` {.used.} = fromJson($s, UserCache)
-        `body`
-      else:
-        raise newException(ValueError, "Invalid JWT token")
+    if `userc` =? isSignedIn `req`:
+      `body`
     else:
-      raise newException(ValueError, "Not logged in")
+      raise newException(ValueError, "Invalid JWT token")
 
   procdef
 
@@ -211,6 +205,11 @@ template respFile*(mime, content: untyped, cache: CacheDecision): untyped {.dirt
 
 template redirect*(loc: string, cache: CacheDecision = noCache): untyped {.dirty.} =
   req.respond 302, @{
+    "Location": loc,
+    "Cache-Control": "max-age=" & $cacheTime(cache)}
+
+template redirect*(loc: string, headers: sink webby.HttpHeaders): untyped {.dirty.} =
+  req.respond 302, headers & @{
     "Location": loc,
     "Cache-Control": "max-age=" & $cacheTime(cache)}
 
