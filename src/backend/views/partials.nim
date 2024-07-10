@@ -1,7 +1,7 @@
-import std/[ropes, strformat, strutils, os, tables]
+import std/[ropes, strformat, strutils, sequtils, os, tables]
 
 import ../urls
-import ../database/models
+import ../database/[models, logic]
 import ../../frontend/deps
 import ../../common/[package, str, conventions]
 
@@ -281,6 +281,35 @@ proc profileHtml*(u: User): string =
       <a href="{signout_url()}" up-cache="false" up-follow up-transition="cross-fade" up-duration="300">
         sign out
       </a>
+    """
+
+proc exploreUserItem(u: User): string = 
+  fmt"""
+    <div class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+      <bold class = "mx-2">
+        <a href="{user_profile_url(u.id)}" up-follow up-transition="cross-fade" up-duration="300">
+          @{u.username}
+        </a>
+      </bold>
+
+      <span class = "text-muted fst-italic">
+        {u.nickname}
+        {iff(isAdmin u, icon "fa-user-shield ms-2", "")}
+      </span>
+    </div>
+  """
+
+proc exploreHtml*(users: seq[User]): string =
+  let 
+    usersItems = join users.map exploreUserItem
+
+  htmlPage:
+    commonPage "explore ", @[], rope fmt"""
+      {nav "fa-magnifying-glass", "explore"}
+
+      <div class = "list-group my-4 p-4">
+        {usersItems}
+      </div>
     """
 
 

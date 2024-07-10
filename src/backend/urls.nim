@@ -12,9 +12,7 @@ defUrl "sign-up",                "/sign-up/"
 defUrl "sign-out",               "/sign-out/"
 
 defUrl "my-profile",             "/profile/me/"
-
-defUrl "profile",                "/profile/"               ? (uid: Id)
-defUrl "update-profile",         "/api/profile/update/"
+defUrl "user-profile",           "/profile/"               ? (id: Id)
 
 defUrl "upload-asset",           "/assets/upload/"
 defUrl "download-asset",         "/assets/download/"       ? (id: Id)
@@ -51,17 +49,22 @@ defUrl "delete-tag",        "/api/tag/"                      ? (id: Id)
 
 defUrl "get-palette",       "/api/palette/"                  ? (name: string)
 defUrl "get-all-palettes",  "/api/palettes/"
-defUrl "updte-palette",     "/api/update/palette/"           ? (name: string)
+defUrl "upadte-palette",     "/api/update/palette/"           ? (name: string)
 
 # api/palette/new/"?(name: string),
 # api/palette/update/"?(name: string),
 # "/api/palette/"?(name: string)
 
 defUrl  "explore",            "/explore/"
-defUrl  "explore-notes",      "/api/explore/notes/"  ? (offset: int, limit: int)
-defUrl  "explore-boards",     "/api/explore/boards/" ? (offset: int, limit: int)
-defUrl  "explore-assets",     "/api/explore/assets/" ? (offset: int, limit: int)
-defUrl  "explore-users",      "/api/explore/users/"  ? (name: string, offset: int, limit: int)
+defUrl  "explore-users",      "/explore/users/" 
+defUrl  "explore-boards",     "/explore/boards/"
+defUrl  "explore-notes",      "/explore/notes/" 
+defUrl  "explore-assets",     "/explore/assets/"
+
+defUrl  "explore-notes-api",      "/api/explore/notes/"  ? (offset: int, limit: int)
+defUrl  "explore-boards-api",     "/api/explore/boards/" ? (offset: int, limit: int)
+defUrl  "explore-assets-api",     "/api/explore/assets/" ? (offset: int, limit: int)
+defUrl  "explore-users-api",      "/api/explore/users/"  ? (name: string, offset: int, limit: int)
 
 # to aviod CORS
 defUrl "get-github-code", "/api/utils/github/code/"  ? (url: string)

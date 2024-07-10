@@ -9,6 +9,7 @@ import jsony
 import checksums/sha1
 import cookiejar
 import quickjwt
+import pretty
 import pkg/htmlparser
 
 import ./[urls, settings]
@@ -86,8 +87,6 @@ func decodedQuery(body: string): Table[string, string] =
     result[key] = val
 
 # ------- main
-
-import pretty
 
 proc landingPageHandler*(req;) =
   req.respond 200, emptyHttpHeaders(), landingPageHtml()
@@ -203,9 +202,18 @@ proc signUpFormHandler*(req;) =
 
 proc myProfileHandler*(req;) =
   if uc =? isSignedIn req:
-    req.respond 200, emptyHttpHeaders(), profileHtml(uc.account)
+    redirect u"user-profile"(uc.account.id)
   else:
     redirect u"sign-in"()
+
+proc userProfileHandler*(req;) {.qparams: {id: int}.} =
+  let u = !!<db.getUser(id)
+  req.respond 200, emptyHttpHeaders(), profileHtml(get u)
+
+proc exploreHandle*(req;) =
+  let users =
+    !!<db.exploreUser("", 0, 0) 
+  req.respond 200, emptyHttpHeaders(), exploreHtml users
 
 
 proc respHtml*(req; content: string) =
