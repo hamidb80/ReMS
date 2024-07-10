@@ -57,8 +57,8 @@ defUrl "upadte-palette",     "/api/update/palette/"           ? (name: string)
 
 defUrl  "explore",            "/explore/"
 defUrl  "explore-users",      "/explore/users/" 
-defUrl  "explore-boards",     "/explore/boards/"
 defUrl  "explore-notes",      "/explore/notes/" 
+defUrl  "explore-boards",     "/explore/boards/"
 defUrl  "explore-assets",     "/explore/assets/"
 
 defUrl  "explore-notes-api",      "/api/explore/notes/"  ? (offset: int, limit: int)

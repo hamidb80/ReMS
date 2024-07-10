@@ -23,8 +23,6 @@ template cn(tbl): untyped {.dirty.} =
   columnName tbl
 
 
-# TODO getProfile
-
 const
   baleChatIdK* = "bale_chat_id"
   passwordK*   = "password"
@@ -386,8 +384,7 @@ func exploreSqlOrder(entity: EntityClass, fieldIdVar: string,
   else:
     ("", fieldIdVar)
 
-func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset,
-    limit: Natural, user: options.Option[Id]): SqlQuery =
+func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): SqlQuery =
   let
     repl = exploreSqlConds($entity, xqdata, "thing.id")
     (joinq, field) = exploreSqlOrder(entity, "thing.id", xqdata)
@@ -436,19 +433,7 @@ func exploreGenericQuery*(entity: EntityClass, xqdata: ExploreQuery, offset,
       {common}
     """
 
-proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset,
-    limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
-  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
-
-proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset,
-    limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
-  db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit, user)
-
-proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset,
-    limit: Natural, user: options.Option[Id]): seq[AssetItemView] =
-  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
-
-proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
+proc exploreUsers*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
   db.find R, fsql"""
     SELECT *
     FROM User u
@@ -456,6 +441,15 @@ proc exploreUser*(db: DbConn, str: string, offset, limit: Natural): seq[User] =
       instr(u.username, {str}) > 0 OR
       instr(u.nickname, {str}) > 0
   """
+
+proc exploreNotes*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): seq[NoteItemView] =
+  db.find R, exploreGenericQuery(ecNote, xqdata, offset, limit, user)
+
+proc exploreBoards*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): seq[BoardItemView] =
+  db.find R, exploreGenericQuery(ecBoard, xqdata, offset, limit, user)
+
+proc exploreAssets*(db: DbConn, xqdata: ExploreQuery, offset, limit: Natural, user: options.Option[Id]): seq[AssetItemView] =
+  db.find R, exploreGenericQuery(ecAsset, xqdata, offset, limit, user)
 
 
 proc getPalette*(db: DbConn, name: string): Palette =

@@ -371,6 +371,11 @@ proc exploreUsersHtml*(users: seq[User]): string =
     </div>
   """
 
+proc exploreNotesHtml*(notes: seq[NoteItemView]): string =
+  exploreWrapperHtml "Notes", fmt"""
+    Notes!
+  """
+
 
 
 proc redirectingHtml*(link: string): string =

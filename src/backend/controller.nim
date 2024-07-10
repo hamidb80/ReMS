@@ -212,11 +212,15 @@ proc userProfileHandler*(req;) {.qparams: {id: int}.} =
 
 
 proc exploreHandle*(req;) =
-  req.respond 200, emptyHttpHeaders(), exploreHtml()
+  redirect u"explore-notes"()
 
 proc exploreUsersHandle*(req;) =
-  let users = !!<db.exploreUser("", 0, 0) 
+  let users = !!<db.exploreUsers("", 0, 0) 
   req.respond 200, emptyHttpHeaders(), exploreUsersHtml users
+
+proc exploreNotesHandle*(req;) =
+  # let notes = !!<db.exploreNotes("", 0, 0) 
+  req.respond 200, emptyHttpHeaders(), exploreNotesHtml(@[])
 
 
 proc respHtml*(req; content: string) =
@@ -370,21 +374,17 @@ proc deleteTag*(req;) {.qparams: {id: int}, userOnly.} =
   resp OK
 
 
-proc exploreNotes*(req;) {.qparams: {limit: Natural, offset: Natural},
-    jbody: ExploreQuery.} =
+proc exploreNotes*(req;)  {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson forceSafety toJson db.exploreNotes(data, offset, limit, none Id)
 
-proc exploreBoards*(req;) {.qparams: {limit: Natural, offset: Natural},
-    jbody: ExploreQuery.} =
+proc exploreBoards*(req;) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson toJson db.exploreBoards(data, offset, limit, none Id)
 
-proc exploreAssets*(req;) {.qparams: {limit: Natural, offset: Natural},
-    jbody: ExploreQuery.} =
+proc exploreAssets*(req;) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson toJson db.exploreAssets(data, offset, limit, none Id)
 
-proc exploreUsers*(req;) {.qparams: {name: string, limit: Natural,
-    offset: Natural}.} =
-  !!respJson toJson db.exploreUser(name, offset, limit)
+proc exploreUsers*(req;)  {.qparams: {name: string, limit: Natural, offset: Natural}.} =
+  !!respJson toJson db.exploreUsers(name, offset, limit)
 
 
 proc getPalette*(req;) {.qparams: {name: string}.} =
