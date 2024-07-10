@@ -29,14 +29,14 @@ include ./utils/jsony_fix
 using 
   req: Request
 
-proc notFoundHandler*(req;) =
+proc notFoundHandler*(req) =
   respErr 404, "what? " & req.uri
 
 proc errorHandler*(req; e: ref Exception) =
   echo e.msg, "\n\n", e.getStackTrace
   respErr 500, e.msg
 
-proc methodNotAllowedHandle*(req;) = 
+proc methodNotAllowedHandle*(req) = 
   req.respond 200, emptyHttpHeaders(), fmt"{req.httpmethod} :: {req.uri}"
 
 
@@ -57,10 +57,10 @@ proc loadDist*(filename: string): RequestHandler =
     p = projectHome / "dist" / apv filename
     mime = mimeType getExt filename
 
-  proc(req;) =
+  proc(req) =
     respFile mime, readfile p, cache
 
-proc staticFileHandler*(req;) {.qparams, gcsafe.} =
+proc staticFileHandler*(req) {.qparams, gcsafe.} =
   let
     fname = q.getOrDefault "file"
     ext   = getExt fname
@@ -79,7 +79,7 @@ proc download*(url: string): string =
   result = client.get(url).body
   close client
 
-proc isPost(req;): bool = 
+proc isPost(req): bool = 
   0 == cmpIgnoreCase(req.httpMethod, "POST")
 
 func decodedQuery(body: string): Table[string, string] = 
@@ -88,7 +88,7 @@ func decodedQuery(body: string): Table[string, string] =
 
 # ------- main
 
-proc landingPageHandler*(req;) =
+proc landingPageHandler*(req) =
   req.respond 200, emptyHttpHeaders(), landingPageHtml()
 
 
@@ -116,7 +116,7 @@ proc jwtCookieSet(token: string): webby.HttpHeaders =
 proc signOutCookieSet*: webby.HttpHeaders =
   result["Set-Cookie"] = $initCookie(jwtKey, "", path = "/")
 
-proc jwt(req;): options.Option[string] =
+proc jwt(req): options.Option[string] =
   try:
     if "Cookie" in req.headers:
       let ck = initCookie req.headers["Cookie"]
@@ -125,7 +125,7 @@ proc jwt(req;): options.Option[string] =
   except:
     discard
 
-proc isSignedIn(req;): options.Option[UserCache] {.nosideeffect, gcsafe.} =
+proc isSignedIn(req): options.Option[UserCache] {.nosideeffect, gcsafe.} =
   forceSafety:
     if tk =? `req`.jwt:
       if verify(tk, jwtSecret):
@@ -175,7 +175,7 @@ proc signinWithForm(username, password: string): UserCache =
   else:
     raise newException(ValueError, "password is not valid")
 
-proc signInHandler*(req;) {.gcsafe.} =
+proc signInHandler*(req) {.gcsafe.} =
   if isPost req:
     let 
       f = decodedQuery req.body
@@ -192,7 +192,7 @@ proc signInHandler*(req;) {.gcsafe.} =
   else:
     req.respond 200, emptyHttpHeaders(), signInFormHtml()
 
-proc signUpFormHandler*(req;) =
+proc signUpFormHandler*(req) =
   if isPost req:
     discard
   elif uc =? isSignedIn req:
@@ -200,25 +200,25 @@ proc signUpFormHandler*(req;) =
   else:
     req.respond 200, emptyHttpHeaders(), signUpFormHtml()
 
-proc myProfileHandler*(req;) =
+proc myProfileHandler*(req) =
   if uc =? isSignedIn req:
     redirect u"user-profile"(uc.account.id)
   else:
     redirect u"sign-in"()
 
-proc userProfileHandler*(req;) {.qparams: {id: int}.} =
+proc userProfileHandler*(req) {.qparams: {id: int}.} =
   let u = !!<db.getUser(id)
   req.respond 200, emptyHttpHeaders(), profileHtml(get u)
 
 
-proc exploreHandle*(req;) =
+proc exploreHandle*(req) =
   redirect u"explore-notes"()
 
-proc exploreUsersHandle*(req;) =
+proc exploreUsersHandle*(req) =
   let users = !!<db.exploreUsers("", 0, 0) 
   req.respond 200, emptyHttpHeaders(), exploreUsersHtml users
 
-proc exploreNotesHandle*(req;) =
+proc exploreNotesHandle*(req) =
   # let notes = !!<db.exploreNotes("", 0, 0) 
   req.respond 200, emptyHttpHeaders(), exploreNotesHtml(@[])
 
@@ -227,25 +227,25 @@ proc respHtml*(req; content: string) =
   req.respond 200, emptyHttpHeaders(), content
 
 
-proc getMe*(req;) {.userOnly.} = 
+proc getMe*(req) {.userOnly.} = 
   respJson toJson userc.account
 
-proc signOutHandler*(req;) =
+proc signOutHandler*(req) =
   req.respond 200, signOutCookieSet(), redirectingHtml u"home"() 
 
 
-proc getAsset*(req;) {.qparams: {id: int}.} =
+proc getAsset*(req) {.qparams: {id: int}.} =
   !!respJson toJson db.getAsset(id)
 
-proc updateAssetName*(req;) {.qparams: {id: int, name: string}, userOnly.} =
+proc updateAssetName*(req) {.qparams: {id: int, name: string}, userOnly.} =
   !! db.updateAssetName(userc.account, id, name)
   resp OK
 
-proc updateAssetRelTags*(req;) {.qparams: {id: int}, jbody: seq[RelMinData], userOnly.} =
+proc updateAssetRelTags*(req) {.qparams: {id: int}, jbody: seq[RelMinData], userOnly.} =
   !! db.updateAssetRelTags(userc.account, id, data)
   resp OK
 
-proc saveAsset(req;): Id {.userOnly.} =
+proc saveAsset(req): Id {.userOnly.} =
   let multip = req.decodeMultipart()
 
   for entry in multip:
@@ -271,10 +271,10 @@ proc saveAsset(req;): Id {.userOnly.} =
 
   raise newException(ValueError, "no files found")
 
-proc assetsUpload*(req;) {.userOnly.} =
+proc assetsUpload*(req) {.userOnly.} =
   respJson str saveAsset req
 
-proc assetShorthand*(req;) =
+proc assetShorthand*(req) =
   let qi = req.uri.find '?'
   if qi == -1:
     notFoundHandler req
@@ -282,35 +282,35 @@ proc assetShorthand*(req;) =
     let assetid = req.uri[qi+1..^1]
     redirect u"download-asset"(parseInt assetid), cache
 
-proc assetsDownload*(req;) {.qparams: {id: int}.} =
+proc assetsDownload*(req) {.qparams: {id: int}.} =
   let
     asset = !!<db.findAsset(id)
     content = readfile asset.path
 
   respFile asset.mime, content, cache
 
-proc deleteAsset*(req;) {.qparams: {id: int}, userOnly.} =
+proc deleteAsset*(req) {.qparams: {id: int}, userOnly.} =
   !!db.deleteAssetLogical(userc.account, id, unow())
   resp OK
 
 
-proc newNote*(req;) {.userOnly.} =
+proc newNote*(req) {.userOnly.} =
   let id = forceSafety !!<db.newNote(userc.account)
   redirect note_editor_url id
 
-proc newNoteApi*(req;) {.userOnly.} =
+proc newNoteApi*(req) {.userOnly.} =
   let id = forceSafety !!<db.newNote(userc.account)
   respJson toJson id
 
-proc getNote*(req;) {.qparams: {id: int}.} =
+proc getNote*(req) {.qparams: {id: int}.} =
   !!respJson forceSafety toJson db.getNote(id)
 
-proc getNoteContentQuery*(req;) {.qparams: {id: int, path: seq[int]}.} =
+proc getNoteContentQuery*(req) {.qparams: {id: int, path: seq[int]}.} =
   forceSafety:
     let node = !!<db.getNote(id).data
     respJson toJson node.follow path
 
-proc updateNoteContent*(req;) {.gcsafe, nosideeffect, 
+proc updateNoteContent*(req) {.gcsafe, nosideeffect, 
   qparams: {id: int}, 
   jbody: TreeNodeRaw[JsonNode], 
   userOnly
@@ -319,88 +319,88 @@ proc updateNoteContent*(req;) {.gcsafe, nosideeffect,
     !!db.updateNoteContent(userc.account, id, data)
     resp OK
 
-proc updateNoteRelTags*(req;) {.qparams: {id: int},
+proc updateNoteRelTags*(req) {.qparams: {id: int},
     jbody: seq[RelMinData], userOnly.} =
   !!db.updateNoteRelTags(userc.account, id, data)
   resp OK
 
-proc deleteNote*(req;) {.qparams: {id: int}, userOnly.} =
+proc deleteNote*(req) {.qparams: {id: int}, userOnly.} =
   !!db.deleteNoteLogical(userc.account, id, unow())
   resp OK
 
 
-proc newBoard*(req;) {.userOnly.} =
+proc newBoard*(req) {.userOnly.} =
   let id = !!<db.newBoard(userc.account)
   redirect board_editor_url id
 
-proc updateBoardContent*(req;) {.qparams: {id: int}, jbody: BoardData, userOnly.} =
+proc updateBoardContent*(req) {.qparams: {id: int}, jbody: BoardData, userOnly.} =
   !!db.updateBoardContent(userc.account, id, data)
   resp OK
 
-proc updateBoardScreenShot*(req;) {.qparams: {id: int}, userOnly.} =
+proc updateBoardScreenShot*(req) {.qparams: {id: int}, userOnly.} =
   !!db.setBoardScreenShot(userc.account, id, saveAsset req)
   resp OK
 
-proc updateBoardTitle*(req;) {.qparams: {id: int, title: string}, userOnly.} =
+proc updateBoardTitle*(req) {.qparams: {id: int, title: string}, userOnly.} =
   !!db.updateBoardTitle(userc.account, id, title)
   resp OK
 
-proc updateBoardRelTags*(req;) {.qparams: {id: int},
+proc updateBoardRelTags*(req) {.qparams: {id: int},
     jbody: seq[RelMinData], userOnly.} =
   !!db.updateBoardRelTags(userc.account, id, data)
   resp OK
 
-proc getBoard*(req;) {.qparams: {id: int}.} =
+proc getBoard*(req) {.qparams: {id: int}.} =
   !!respJson toJson db.getBoard(id)
 
-proc deleteBoard*(req;) {.qparams: {id: int}, userOnly.} =
+proc deleteBoard*(req) {.qparams: {id: int}, userOnly.} =
   !!db.deleteBoardLogical(userc.account, id, unow())
   resp OK
 
 
-proc listTags*(req;) =
+proc listTags*(req) =
   !!respJson toJson db.allTags
 
-proc newTag*(req;) {.jbody: Tag, userOnly.} =
+proc newTag*(req) {.jbody: Tag, userOnly.} =
   !!db.newTag(userc.account, data)
   resp OK
 
-proc updateTag*(req;) {.qparams: {id: int}, jbody: Tag, userOnly.} =
+proc updateTag*(req) {.qparams: {id: int}, jbody: Tag, userOnly.} =
   !!db.updateTag(userc.account, id, data)
   resp OK
 
-proc deleteTag*(req;) {.qparams: {id: int}, userOnly.} =
+proc deleteTag*(req) {.qparams: {id: int}, userOnly.} =
   !!db.deleteTag(userc.account, id)
   resp OK
 
 
-proc exploreNotes*(req;)  {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+proc exploreNotes*(req)  {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson forceSafety toJson db.exploreNotes(data, offset, limit, none Id)
 
-proc exploreBoards*(req;) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+proc exploreBoards*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson toJson db.exploreBoards(data, offset, limit, none Id)
 
-proc exploreAssets*(req;) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
+proc exploreAssets*(req) {.qparams: {limit: Natural, offset: Natural}, jbody: ExploreQuery.} =
   !!respJson toJson db.exploreAssets(data, offset, limit, none Id)
 
-proc exploreUsers*(req;)  {.qparams: {name: string, limit: Natural, offset: Natural}.} =
+proc exploreUsers*(req)  {.qparams: {name: string, limit: Natural, offset: Natural}.} =
   !!respJson toJson db.exploreUsers(name, offset, limit)
 
 
-proc getPalette*(req;) {.qparams: {name: string}.} =
+proc getPalette*(req) {.qparams: {name: string}.} =
   !!respJson toJson db.getPalette(name).colorThemes
 
-proc updatePalette*(req;) {.qparams: {name: string}, jbody: Palette,
+proc updatePalette*(req) {.qparams: {name: string}, jbody: Palette,
     checkAdmin, userOnly.} =
   !!db.updatePalette(name, data)
   resp OK
 
-proc listPalettes*(req;) =
+proc listPalettes*(req) =
   !!respJson toJson db.listPalettes()
 
 
-proc fetchGithubCode*(req;) {.qparams: {url: string}.} =
+proc fetchGithubCode*(req) {.qparams: {url: string}.} =
   respJson toJson parseGithubJsFile download url
 
-proc fetchLinkPreivewData*(req;) {.qparams: {url: string}.} =
+proc fetchLinkPreivewData*(req) {.qparams: {url: string}.} =
   respJson toJson linkPreviewData parseHtml cropHead download url

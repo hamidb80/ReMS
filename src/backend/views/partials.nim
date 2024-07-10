@@ -319,8 +319,8 @@ func iconClass(sc: SearchableClass): string =
 func pageLink(sc: SearchableClass): string =
   case sc
   of scUsers:  u"explore-users"()
-  of scNotes:  u"explore-boards"()
-  of scBoards: u"explore-notes"()
+  of scNotes:  u"explore-notes"()
+  of scBoards: u"explore-boards"()
   of scAssets: u"explore-assets"()
 
 
@@ -371,10 +371,119 @@ proc exploreUsersHtml*(users: seq[User]): string =
     </div>
   """
 
+
+proc notePreviewC(n: NoteItemView, i: int): VNode =
+  let
+    inner = buildHtml:
+      tdiv(class = "tw-content"):
+        if n.id in msgCache:
+          verbatim msgCache[n.id]
+        else:
+          text "loading..."
+
+    deleteIcon =
+      if n.id in wantToDelete: "fa-exclamation-circle"
+      else: "fa-trash"
+
+  proc copyNoteId =
+    copyToClipboard $n.id
+
+  proc goToTagManager =
+    selectedNoteId = n.id
+    selectedNoteIndex = i
+    currentRels = n.rels
+    activeRelTagIndex = noIndex
+    appState = asTagManager
+
+  proc deleteAct =
+    if n.id in wantToDelete:
+      deleteNote n.id
+    else:
+      add wantToDelete, n.id
+
+  var btns = @[
+    generalCardBtnLink("fa-glasses", "info", get_note_preview_url n.id),
+    generalCardBtnAction("fa-sync", "primary", proc = resolveNote n),
+    generalCardBtnAction("fa-copy", "primary", copyNoteId)]
+
+  if issome me:
+    add btns, [
+      generalCardBtnAction("fa-tags", "success", goToTagManager),
+      generalCardBtnLink("fa-pen", "warning", get_note_editor_url n.id),
+      generalCardBtnAction(deleteIcon, "danger", deleteAct)]
+
+  generalCardView "", inner, n.rels, tags, btns
+
 proc exploreNotesHtml*(notes: seq[NoteItemView]): string =
   exploreWrapperHtml "Notes", fmt"""
     Notes!
   """
+
+
+proc boardItemViewC(b: BoardItemView): VNode =
+  let
+    inner = buildHtml:
+      h3(dir = "auto"):
+        text b.title
+
+    url =
+      if issome b.screenshot:
+        get_asset_short_hand_url get b.screenshot
+      else:
+        ""
+
+    deleteIcon =
+      if b.id in wantToDelete: "fa-exclamation-circle"
+      else: "fa-trash"
+
+  proc deleteBoardAct =
+    if b.id in wantToDelete:
+      deleteBoard b.id
+      discard fetchBoards()
+    else:
+      add wantToDelete, b.id
+
+
+  var btns = @[
+    generalCardBtnLink("fa-eye", "info", get_board_edit_url b.id)]
+
+  if issome me:
+    add btns, generalCardBtnAction(deleteIcon, "danger", deleteBoardAct)
+
+  generalCardView url, inner, b.rels, tags, btns
+
+proc exploreBoardsHtml*(boards: seq[BoardItemView]): string =
+  exploreWrapperHtml "Boards", fmt"""
+    Boards!
+  """
+
+
+proc assetItemComponent(index: int, a: AssetItemView, previewLink: string): Vnode =
+  buildHtml:
+    tdiv(class = "list-group-item list-group-item-action d-flex justify-content-between align-items-center"):
+      tdiv:
+        span:
+          text "#"
+          text $a.id
+
+        bold(class = "mx-2"):
+          a(target = "_blank", href = previewLink):
+            text a.name
+
+        span(class = "text-muted fst-italic"):
+          text "("
+          text $a.size.int
+          text " B)"
+
+      tdiv(class = "d-flex flex-row align-items-center"):
+        tdiv:
+          for r in a.rels:
+            if r.label in tags:
+              tagViewC tags, r.label, r.value, noop
+
+        button(class = "mx-2 btn btn-outline-dark",
+            onclick = genSelectAsset(a, index)):
+          icon "fa-chevron-down"
 
 
 
