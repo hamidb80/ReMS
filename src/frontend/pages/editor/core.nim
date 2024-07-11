@@ -88,25 +88,24 @@ type
     isGenerator*: bool   ## like markdown
 
 ## ---- syntax sugar
-proc dom*(t: TwNode): auto = t.data.hooks.dom()
-proc componentsTable*(t: TwNode): auto = t.data.hooks.componentsTable()
-proc mounted*(t: TwNode, by: MountedBy,
-    mode: TwNodeMode): auto = t.data.hooks.mounted(by, mode)
-proc die*(t: TwNode) = t.data.hooks.die()
-proc status*(t: TwNode): auto = t.data.hooks.status()
-proc role*(t: TwNode, child: Index): auto = t.data.hooks.role(child)
-proc focus*(t: TwNode) = t.data.hooks.focus()
-proc blur*(t: TwNode) = t.data.hooks.blur()
-proc hover*(t: TwNode) = t.data.hooks.hover()
-proc unhover*(t: TwNode) = t.data.hooks.unhover()
-proc attachNode*(t, n: TwNode, i: Index) = t.data.hooks.attachNode(n, i)
-proc detachNode*(t: TwNode, i: Index) = t.data.hooks.detachNode(i)
-proc capture*(t: TwNode): auto = t.data.hooks.capture()
-proc restore*(t: TwNode, input: JsObject) = t.data.hooks.restore(input)
-proc refresh*(t: TwNode) = t.data.hooks.refresh()
-proc render*(t: TwNode): auto = t.data.hooks.render()
-proc acceptsAsChild*(t: TwNode): auto = t.data.hooks.acceptsAsChild()
-proc settings*(t: TwNode): auto = t.data.hooks.settings()
+proc dom*(t: TwNode)                                             : auto = t.data.hooks.dom()
+proc componentsTable*(t: TwNode)                                 : auto = t.data.hooks.componentsTable()
+proc mounted*        (t: TwNode, by: MountedBy, mode: TwNodeMode): auto = t.data.hooks.mounted(by, mode)
+proc die*            (t: TwNode)                                        = t.data.hooks.die()
+proc status*         (t: TwNode)                                 : auto = t.data.hooks.status()
+proc role*           (t: TwNode, child: Index)                   : auto = t.data.hooks.role(child)
+proc focus*          (t: TwNode)                                        = t.data.hooks.focus()
+proc blur*           (t: TwNode)                                        = t.data.hooks.blur()
+proc hover*          (t: TwNode)                                        = t.data.hooks.hover()
+proc unhover*        (t: TwNode)                                        = t.data.hooks.unhover()
+proc attachNode*     (t, n: TwNode, i: Index)                           = t.data.hooks.attachNode(n, i)
+proc detachNode*     (t: TwNode,    i: Index)                           = t.data.hooks.detachNode(i)
+proc capture*        (t: TwNode)                                 : auto = t.data.hooks.capture()
+proc restore*        (t: TwNode, input: JsObject)                       = t.data.hooks.restore(input)
+proc refresh*        (t: TwNode)                                        = t.data.hooks.refresh()
+proc render*         (t: TwNode)                                 : auto = t.data.hooks.render()
+proc acceptsAsChild* (t: TwNode)                                 : auto = t.data.hooks.acceptsAsChild()
+proc settings*       (t: TwNode)                                 : auto = t.data.hooks.settings()
 
 proc firstChild*(t: TwNode, cname: string): TwNode =
   for ch in t.children:

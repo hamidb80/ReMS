@@ -12,6 +12,8 @@ type
     takRemoveElement
     takSetInnerText
 
+    takConvertMarkDown
+
     takRemoveClass
     takAddClass
     
