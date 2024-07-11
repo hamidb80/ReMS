@@ -30,19 +30,19 @@ template defHooks(body): untyped {.dirty.} =
     var hooks = result
 
   with hooks: # defaults
-    dom = errProc(Element, "hooks.dom() is not set yet")
-    status = () => (tsNothing, "")
-    role = (i: Index) => ""
-    die = noop
-    focus = addFocusClass hooks
-    blur = removeFocusClass hooks
-    hover = addHoverClass hooks
-    unhover = removeHoverClass hooks
-    capture = returnNull
-    restore = nothingToRestore
-    mounted = genMounted: discard
-    render = genRender: discard
-    refresh = noop
+    dom      = errProc(Element, "hooks.dom() is not set yet")
+    status   = () => (tsNothing, "")
+    role     = (i: Index) => ""
+    die      = noop
+    focus    = addFocusClass hooks
+    blur     = removeFocusClass hooks
+    hover    = addHoverClass hooks
+    unhover  = removeHoverClass hooks
+    capture  = returnNull
+    restore  = nothingToRestore
+    mounted  = genMounted: discard
+    render   = genRender: discard
+    refresh  = noop
     settings = noSettings
 
     attachNode = proc(child: TwNode, at: Index) =
@@ -56,8 +56,7 @@ template defHooks(body): untyped {.dirty.} =
 
   result = hooks
 
-template defComponent(ident, identstr, icone, tagss, initproc: untyped,
-    gn = false): untyped =
+template defComponent(ident, identstr, icone, tagss, initproc: untyped, gn = false): untyped =
   let ident* = Component(
     name: identstr,
     icon: icone,
@@ -71,8 +70,8 @@ func genAllowedTags(tags: seq[cstring]): () -> seq[cstring] =
   () => tags
 
 let
-  noTags = genAllowedTags @[]
-  anyTag = genAllowedTags @[c"global"]
+  noTags      = genAllowedTags @[]
+  anyTag      = genAllowedTags @[c"global"]
   onlyInlines = genAllowedTags @[c"inline"]
 
 func noSettings: seq[SettingsPart] = @[]
@@ -111,14 +110,15 @@ proc attachNodeDefault(father, child: TwNode, wrapper, what: Element, at: Index)
 proc dettachNodeDefault(self: TwNode, at: Index, basedOnDom: bool) =
   remove:
     if basedOnDom: self.dom.childNodes[at]
-    else: self.children[at].dom
+    else:          self.children[at].dom
 
   self.children.delete at
 
 proc genState[T](init: T): tuple[getter: () -> T, setter: T -> void] =
   let value = new T
-  value[] = init
-  result.getter = () => value[]
+  value[]   = init
+
+  result.getter = ()     => value[]
   result.setter = (t: T) => value[].set t
 
 template mutState(setter, datatype): untyped {.dirty.} =
@@ -167,7 +167,7 @@ proc initRawText: Hooks =
       "spaceAround": spaceAround()}
 
     restore = proc(input: JsObject) =
-      cSet getDefault(input, "content", cstring"")
+      cSet getDefault( input, "content",     cstring"")
       spSet getDefault(input, "spaceAround", true)
 
     render = genRender:
@@ -178,7 +178,7 @@ proc initRawText: Hooks =
     settings = () => @[
       SettingsPart(
         field: "content",
-        icon: "bi bi-type",
+        icon:  "bi bi-type",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: content().toJs,
@@ -186,7 +186,7 @@ proc initRawText: Hooks =
 
       SettingsPart(
         field: "space around",
-        icon: "bi bi-backspace-fill",
+        icon:  "bi bi-backspace-fill",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: spaceAround().toJs,
@@ -238,7 +238,7 @@ proc initTitle: Hooks =
     settings = () => @[
       SettingsPart(
         field: "text direction",
-        icon: "bi bi-paragraph",
+        icon:  "bi bi-paragraph",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -300,7 +300,7 @@ proc initParagraph: Hooks =
     settings = () => @[
       SettingsPart(
         field: "text direction",
-        icon: "bi bi-paragraph",
+        icon:  "bi bi-paragraph",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -313,7 +313,7 @@ proc initParagraph: Hooks =
 
       SettingsPart(
         field: "text align",
-        icon: "bi bi-signpost-fill",
+        icon:  "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -327,7 +327,7 @@ proc initParagraph: Hooks =
 
       SettingsPart(
         field: "inline?",
-        icon: "bi bi-backspace-fill",
+        icon:  "bi bi-backspace-fill",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: inline().toJs,
@@ -355,7 +355,7 @@ proc initVerticalSpace: Hooks =
     settings = () => @[
       SettingsPart(
         field: "space from top",
-        icon: "bi bi-signpost-fill",
+        icon:  "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -402,7 +402,7 @@ proc initLink: Hooks =
     settings = () => @[
       SettingsPart(
         field: "link",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs url(),
@@ -432,7 +432,7 @@ proc initLatex: Hooks =
     settings = () => @[
       SettingsPart(
         field: "latex code",
-        icon: "bi bi-regex",
+        icon:  "bi bi-regex",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
@@ -440,7 +440,7 @@ proc initLatex: Hooks =
 
       SettingsPart(
         field: "inline",
-        icon: "bi bi-displayport",
+        icon:  "bi bi-displayport",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: toJs inline(),
@@ -448,8 +448,7 @@ proc initLatex: Hooks =
 
 proc initLinearMarkdown: Hooks =
   let
-    el = createElement("div", {"class": "tw-linear-markdown " &
-        displayInlineClass})
+    el = createElement("div", {"class": "tw-linear-markdown " & displayInlineClass})
     (content, cset) = genState c""
   var
     id: TimeOut
@@ -511,7 +510,7 @@ proc initLinearMarkdown: Hooks =
         let ct = hooks.componentsTable()
         var temp = inss(ct["raw-text"], ct)
         restore temp, <*{
-          "content": str,
+          "content":     str,
           "spaceAround": false}
         discard render temp
         temp
@@ -541,7 +540,7 @@ proc initLinearMarkdown: Hooks =
     settings = () => @[
       SettingsPart(
         field: "linear markdown",
-        icon: "bi bi-markdown-fill",
+        icon:  "bi bi-markdown-fill",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
@@ -668,7 +667,7 @@ proc initVideo: Hooks =
     settings = () => @[
       SettingsPart(
         field: "url",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "file-upload-on-paste",
           input: toJs url(),
@@ -676,7 +675,7 @@ proc initVideo: Hooks =
 
       SettingsPart(
         field: "width",
-        icon: "bi bi-arrow-right",
+        icon:  "bi bi-arrow-right",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs width(),
@@ -684,7 +683,7 @@ proc initVideo: Hooks =
 
       SettingsPart(
         field: "height",
-        icon: "bi bi-arrow-down",
+        icon:  "bi bi-arrow-down",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs height(),
@@ -692,7 +691,7 @@ proc initVideo: Hooks =
 
       SettingsPart(
         field: "loop?",
-        icon: "bi bi-repeat",
+        icon:  "bi bi-repeat",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: toJs loop(),
@@ -746,7 +745,7 @@ proc initList: Hooks =
     settings = () => @[
       SettingsPart(
         field: "style",
-        icon: "bi bi-signpost-fill",
+        icon:  "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -763,7 +762,7 @@ proc initList: Hooks =
 
       SettingsPart(
         field: "text direction",
-        icon: "bi bi-paragraph",
+        icon:  "bi bi-paragraph",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -816,7 +815,7 @@ proc initCustomHtml: Hooks =
     settings = () => @[
       SettingsPart(
         field: "HTML code",
-        icon: "bi bi-filetype-html",
+        icon:  "bi bi-filetype-html",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
@@ -855,7 +854,7 @@ proc initGithubGist: Hooks =
     settings = () => @[
       SettingsPart(
         field: "link",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs url(),
@@ -902,7 +901,7 @@ proc initIncluder: Hooks =
     settings = () => @[
       SettingsPart(
         field: "note id",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs noteQuery(),
@@ -910,7 +909,7 @@ proc initIncluder: Hooks =
 
       SettingsPart(
         field: "inline",
-        icon: "bi bi-displayport",
+        icon:  "bi bi-displayport",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: toJs inline(),
@@ -923,22 +922,27 @@ proc initLinkPreivew: Hooks =
 
     titleWrapperEl = createElement("div", {
       "class": "tw-link-preview-title card-header", "dir": "auto"})
-    titleLinkEl = createElement("a", {
+    
+    titleLinkEl    = createElement("a", {
         "class": "tw-link-preview-title-text card-link text-decoration-none",
         "target": "_blank"})
 
-    detailsEl = createElement("div", {"class": "tw-link-preview-details card-body"})
-    descEl = createElement("div", {
+    detailsEl = createElement("div", {
+      "class": "tw-link-preview-details card-body"})
+    
+    descEl    = createElement("div", {
       "class": "tw-link-preview-desc card-text text-muted",
       "dir": "auto"})
 
     photoWrapperEl = createElement("div", {
         "class": "tw-link-preview-img-wrapper mt-4 text-center"})
-    photoEl = createElement("img", {"class": "tw-link-preview-img rounded"})
+    
+    photoEl = createElement("img", {
+        "class": "tw-link-preview-img rounded"})
 
-    (url, uset) = genstate c""
-    (title, tset) = genstate c""
-    (desc, dset) = genstate c""
+    (url,      uset) = genstate c""
+    (title,    tset) = genstate c""
+    (desc,     dset) = genstate c""
     (imagesrc, iset) = genstate c""
 
   appendTree mainEl:
@@ -954,16 +958,16 @@ proc initLinkPreivew: Hooks =
     acceptsAsChild = noTags
 
     capture = () => <*{
-      "url": url(),
+      "url":   url(),
       "title": title(),
-      "desc": desc(),
+      "desc":  desc(),
       "image": imagesrc(),
     }
 
     restore = proc(j: JsObject) =
-      uset getDefault(j, "url", cstring"")
+      uset getDefault(j, "url",   cstring"")
       tset getDefault(j, "title", cstring"")
-      dset getDefault(j, "desc", cstring"")
+      dset getDefault(j, "desc",  cstring"")
       iset getDefault(j, "image", cstring"")
 
       lasturl = url()
@@ -1002,7 +1006,7 @@ proc initLinkPreivew: Hooks =
     settings = () => @[
       SettingsPart(
         field: "link",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs url(),
@@ -1010,7 +1014,7 @@ proc initLinkPreivew: Hooks =
 
       SettingsPart(
         field: "title",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs title(),
@@ -1018,7 +1022,7 @@ proc initLinkPreivew: Hooks =
 
       SettingsPart(
         field: "description",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs desc(),
@@ -1026,7 +1030,7 @@ proc initLinkPreivew: Hooks =
 
       SettingsPart(
         field: "image link",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs imagesrc(),
@@ -1036,9 +1040,8 @@ proc initLinkPreivew: Hooks =
 proc initMoreCollapse: Hooks =
   let
     wrapperEl = createElement("details", {"class": "tw-more"})
-    summaryEl = createElement("summary", {
-        "class": "tw-more-summary text-center"})
-    mainEl = createElement("main", {"class": "tw-more-body"})
+    summaryEl = createElement("summary", {"class": "tw-more-summary text-center"})
+    mainEl    = createElement("main",    {"class": "tw-more-body"})
 
   append wrapperEl, summaryEl, mainEl
 
@@ -1057,7 +1060,6 @@ proc initMoreCollapse: Hooks =
       of 0:
         if 0 < self.children.len:
           prepend mainEl, self.children[0].dom
-
         attachNodeDefault self, child, summaryEl, child.dom, at
 
       else:
@@ -1140,15 +1142,16 @@ proc initGrid: Hooks =
       el.setAttr "class", "tw-grid" & myc & mxc
 
     settings = () => @[
-      sss("margin", "bi bi-border-inner", margin, setm),
-      sss("padding", "bi bi-border-outer", padding, setp),
-      sss("width", "bi bi-arrows", width, setw),
-      sss("height", "bi bi-arrows-vertical", height, seth),
-      sss("max width", "bi bi-arrows", maxWidth, setmw),
+      sss("margin",     "bi bi-border-inner",    margin,    setm),
+      sss("padding",    "bi bi-border-outer",    padding,   setp),
+      sss("width",      "bi bi-arrows",          width,     setw),
+      sss("height",     "bi bi-arrows-vertical", height,    seth),
+      sss("max width",  "bi bi-arrows",          maxWidth,  setmw),
       sss("max height", "bi bi-arrows-vertical", maxHeight, setmh),
+      
       SettingsPart(
         field: "vertical space between components",
-        icon: "bi bi-signpost-fill",
+        icon:  "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -1160,9 +1163,10 @@ proc initGrid: Hooks =
               [3, "3"],
               [4, "4"]]},
           updateCallback: mutState(setvsi, int))),
+      
       SettingsPart(
         field: "horizontal space between components",
-        icon: "bi bi-signpost-fill",
+        icon:  "bi bi-signpost-fill",
         editorData: () => EditorInitData(
           name: "option-selector",
           input: <* {
@@ -1180,25 +1184,25 @@ proc initQuote: Hooks =
     el = createElement("div", {"class": "tw-quote"})
 
   defHooks:
-    dom = () => el
+    dom            = () => el
     acceptsAsChild = anyTag
 
 proc initRawCode: Hooks =
   let
     el = createElement("pre", {"class": "tw-raw-code"})
     (content, cset) = genState c""
-    (inline, iset) = genState false
+    (inline,  iset) = genState false
 
   defHooks:
     dom = () => el
     acceptsAsChild = noTags
     capture = () => <*{
       "content": content(),
-      "inline": inline()}
+      "inline":  inline()}
 
     restore = proc(input: JsObject) =
       cset input["content"].to cstring
-      iset input["inline"].to bool
+      iset input["inline"].to  bool
 
     render = genRender:
       el.ctrlClass displayInlineClass, inline()
@@ -1207,7 +1211,7 @@ proc initRawCode: Hooks =
     settings = () => @[
       SettingsPart(
         field: "code",
-        icon: "bi bi-code-slash",
+        icon:  "bi bi-code-slash",
         editorData: () => EditorInitData(
           name: "raw-text-editor",
           input: toJs content(),
@@ -1215,7 +1219,7 @@ proc initRawCode: Hooks =
 
       SettingsPart(
         field: "inline",
-        icon: "bi bi-displayport",
+        icon:  "bi bi-displayport",
         editorData: () => EditorInitData(
           name: "checkbox-editor",
           input: toJs inline(),
