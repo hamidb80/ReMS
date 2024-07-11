@@ -145,25 +145,25 @@ proc attachInstance(comp: Component, hooks: Hooks, ct: ComponentsTable) =
 
 proc initRoot: Hooks =
   defHooks:
-    dom = errProc(Element, "this hooks should be set by app manually")
-    hover = noop
-    unhover = noop
-    focus = noop
-    blur = noop
+    dom            = errProc(Element, "this hooks should be set by app manually")
+    hover          = noop
+    unhover        = noop
+    focus          = noop
+    blur           = noop
     acceptsAsChild = genAllowedTags @[c"block"]
 
 proc initRawText: Hooks =
   let
-    el = createElement "span"
-    (content, cSet) = genState c""
+    el                   = createElement "span"
+    (content, cSet)      = genState c""
     (spaceAround, spSet) = genState true
 
   defHooks:
-    dom = () => el
+    dom            = () => el
     acceptsAsChild = noTags
 
     capture = () => <*{
-      "content": content(),
+      "content":     content(),
       "spaceAround": spaceAround()}
 
     restore = proc(input: JsObject) =
@@ -173,7 +173,7 @@ proc initRawText: Hooks =
     render = genRender:
       el.innerText =
         if spaceAround(): c" " & content() & c" "
-        else: content()
+        else:                    content()
 
     settings = () => @[
       SettingsPart(
@@ -256,9 +256,9 @@ proc initTitle: Hooks =
 proc initParagraph: Hooks =
   let
     el = createElement("div", {"class": "tw-paragraph"})
-    (dir, setDir) = genState c"auto"
+    (dir, setDir)    = genState c"auto"
     (align, setAlgn) = genState c"auto"
-    (inline, iset) = genState false
+    (inline, iset)   = genState false
 
   defHooks:
     dom = () => el
@@ -271,22 +271,22 @@ proc initParagraph: Hooks =
 
     restore = proc(j: JsObject) =
       if isObject j:
-        setDir getDefault(j, c"dir", c"auto") ~~ cstring
-        setAlgn getDefault(j, c"align", c"auto") ~~ cstring
-        iset getDefault(j, c"inline", false) ~~ bool
+        setDir  getDefault(j, c"dir",    c"auto") ~~ cstring
+        setAlgn getDefault(j, c"align",  c"auto") ~~ cstring
+        iset    getDefault(j, c"inline", false)   ~~ bool
 
     render = genRender:
       case $dir()
       of "ltr": setAttr el, "dir", "ltr"
       of "rtl": setAttr el, "dir", "rtl"
-      else: setAttr el, "dir", "auto"
+      else:     setAttr el, "dir", "auto"
 
       el.className = "tw-paragraph"
 
       case $align()
       of "center": add el.classList, "text-center"
-      of "left": add el.classList, "text-start"
-      of "right": add el.classList, "text-end"
+      of "left":   add el.classList, "text-start"
+      of "right":  add el.classList, "text-end"
       else: discard
 
       if inline():
@@ -550,11 +550,13 @@ proc initLinearMarkdown: Hooks =
 proc initImage: Hooks =
   let
     hooks = Hooks()
+    
     wrapper = createElement("figure", {"class": "tw-image-wrapper"})
-    img = createElement("img") # TODO add optional "rounded" class
+    img     = createElement("img") # TODO add optional "rounded" class
     caption = createElement "figcaption"
-    (url, setUrl) = genState c""
-    (width, setWidth) = genState c""
+    
+    (url, setUrl)       = genState c""
+    (width, setWidth)   = genState c""
     (height, setHeight) = genState c""
     (status, setStatus) = genState (tsWarning, "no url")
 
@@ -571,22 +573,22 @@ proc initImage: Hooks =
       else: @[]
 
     capture = () => <* {
-      "url": url(),
-      "width": width(),
+      "url":    url(),
+      "width":  width(),
       "height": height()}
 
     restore = proc(j: JsObject) =
-      setUrl j["url"].to cstring
-      setWidth j["width"].to cstring
+      setUrl    j["url"].to    cstring
+      setWidth  j["width"].to  cstring
       setHeight j["height"].to cstring
 
-    role = (i: Index) => "caption"
-    status = () => status()
+    role   = (i: Index) => "caption"
+    status = ()         => status()
 
     render = genRender:
       setAttr img, "src", url()
       setAttr img, "style", toInlineCss {
-        "width": width(),
+        "width":  width(),
         "height": height()}
 
     mounted = genMounted:
@@ -601,7 +603,7 @@ proc initImage: Hooks =
     settings = () => @[
       SettingsPart(
         field: "url",
-        icon: "bi bi-link-45deg",
+        icon:  "bi bi-link-45deg",
         editorData: () => EditorInitData(
           name: "file-upload-on-paste",
           input: toJs url(),
@@ -609,7 +611,7 @@ proc initImage: Hooks =
 
       SettingsPart(
         field: "width",
-        icon: "bi bi-arrow-right",
+        icon:  "bi bi-arrow-right",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs width(),
@@ -617,7 +619,7 @@ proc initImage: Hooks =
 
       SettingsPart(
         field: "height",
-        icon: "bi bi-arrow-down",
+        icon:  "bi bi-arrow-down",
         editorData: () => EditorInitData(
           name: "linear-text-editor",
           input: toJs height(),
@@ -626,11 +628,12 @@ proc initImage: Hooks =
 proc initVideo: Hooks =
   let
     wrapper = createElement("div", {"class": "tw-video-wrapper"})
-    videl = createElement "video"
-    (url, setUrl) = genstate c""
-    (width, setWidth) = genState c""
+    videl =   createElement "video"
+
+    (url, setUrl)       = genstate c""
+    (width, setWidth)   = genState c""
     (height, setHeight) = genState c""
-    (loop, setLoop) = genState false
+    (loop, setLoop)     = genState false
 
   append wrapper, videl
 
@@ -639,15 +642,15 @@ proc initVideo: Hooks =
     acceptsAsChild = noTags
 
     capture = () => <* {
-      "url": url(),
-      "loop": loop(),
-      "width": width(),
+      "url":    url(),
+      "loop":   loop(),
+      "width":  width(),
       "height": height()}
 
     restore = proc(j: JsObject) =
-      setUrl j["url"].to cstring
-      setLoop j["loop"].to bool
-      setWidth j["width"].to cstring
+      setUrl    j["url"].to    cstring
+      setLoop   j["loop"].to   bool
+      setWidth  j["width"].to  cstring
       setHeight j["height"].to cstring
 
     render = genRender:
@@ -699,7 +702,7 @@ proc initList: Hooks =
   let
     ul = createElement "ui"
     (style, setStyle) = genState c""
-    (dir, setdir) = genState c""
+    (dir, setdir)     = genState c""
 
   defHooks:
     dom = () => ul
@@ -712,22 +715,22 @@ proc initList: Hooks =
     restore = proc(j: JsObject) =
       if isObject j:
         setStyle getDefault(j, c"style", c"list-disc") ~~ cstring
-        setdir getDefault(j, c"dir", c"auto") ~~ cstring
+        setdir   getDefault(j, c"dir",   c"auto")      ~~ cstring
 
     render = genRender:
       case $dir()
       of "ltr": setAttr ul, "dir", "ltr"
       of "rtl": setAttr ul, "dir", "rtl"
-      else: setAttr ul, "dir", "auto"
+      else:     setAttr ul, "dir", "auto"
 
       let c =
         case $style()
         of "persian": "list-persian-number"
-        of "abjad": "list-abjad"
-        of "roman": "list-roman"
-        of "latin": "list-latin"
+        of "abjad":   "list-abjad"
+        of "roman":   "list-roman"
+        of "latin":   "list-latin"
         of "decimal": "list-decimal"
-        else: "list-disc"
+        else:         "list-disc"
 
       ul.className = "tw-list w-100"
       add ul.classList, c
@@ -821,9 +824,9 @@ proc initCustomHtml: Hooks =
 
 proc initGithubGist: Hooks =
   let
-    wrapperEl = createElement("div", {"class": "tw-gh-code"})
+    wrapperEl = createElement("div",  {"class": "tw-gh-code"})
     cssLinkEl = createElement("link", {"rel": "stylesheet", "href": ""})
-    codeEl = createElement("div", {"class": "tw-gh-code-content"})
+    codeEl    = createElement("div",  {"class": "tw-gh-code-content"})
     (url, uset) = genState c""
 
   append wrapperEl, cssLinkEl, codeEl
@@ -874,7 +877,7 @@ proc initIncluder: Hooks =
 
     restore = proc(j: JsObject) =
       setNoteQuery j["query"].to(cstring)
-      inlineSet j["inline"].to(bool)
+      inlineSet    j["inline"].to(bool)
 
     render = genRender:
       if inline():
@@ -1077,13 +1080,13 @@ proc initMoreCollapse: Hooks =
 proc initGrid: Hooks =
   let
     el = createElement("div", {"class": "tw-grid"})
-    (margin, setm) = genState c""
-    (padding, setp) = genState c""
-    (width, setw) = genState c""
-    (height, seth) = genState c""
-    (maxWidth, setmw) = genState c""
-    (maxHeight, setmh) = genState c""
-    (verticalSpaceItems, setvsi) = genState 0
+    (margin,              setm)   = genState c""
+    (padding,             setp)   = genState c""
+    (width,               setw)   = genState c""
+    (height,              seth)   = genState c""
+    (maxWidth,            setmw)  = genState c""
+    (maxHeight,           setmh)  = genState c""
+    (verticalSpaceItems,  setvsi) = genState 0
     (horzontalSpaceItems, sethsi) = genState 0
 
   template sss(namee, icone: string, refVal, setter): untyped =
@@ -1100,33 +1103,33 @@ proc initGrid: Hooks =
     dom = () => el
     acceptsAsChild = anyTag
     capture = () => <*{
-      "margin": margin(),
-      "padding": padding(),
-      "width": width(),
-      "height": height(),
-      "maxWidth": maxWidth(),
-      "maxHeight": maxHeight(),
-      "verticalSpaceItems": verticalSpaceItems(),
+      "margin":              margin(),
+      "padding":             padding(),
+      "width":               width(),
+      "height":              height(),
+      "maxWidth":            maxWidth(),
+      "maxHeight":           maxHeight(),
+      "verticalSpaceItems":  verticalSpaceItems(),
       "horzontalSpaceItems": horzontalSpaceItems(),
       }
 
     restore = proc(input: JsObject) =
-      setm getDefault(input, "margin", cstring"")
-      setp getDefault(input, "padding", cstring"")
-      setw getDefault(input, "width", cstring"")
-      seth getDefault(input, "height", cstring"")
-      setmw getDefault(input, "maxWidth", cstring"")
-      setmh getDefault(input, "maxHeight", cstring"")
-      setvsi getDefault(input, "verticalSpaceItems", 0)
+      setm   getDefault(input, "margin",              cstring"")
+      setp   getDefault(input, "padding",             cstring"")
+      setw   getDefault(input, "width",               cstring"")
+      seth   getDefault(input, "height",              cstring"")
+      setmw  getDefault(input, "maxWidth",            cstring"")
+      setmh  getDefault(input, "maxHeight",           cstring"")
+      setvsi getDefault(input, "verticalSpaceItems",  0)
       sethsi getDefault(input, "horzontalSpaceItems", 0)
 
     render = genRender:
       setAttr el, "style", fmt"""
-        margin: {margin()};
-        padding: {padding()};
-        width: {width()};
-        height: {height()};
-        max-width: {maxWidth()};
+        margin:     {margin()}   ;
+        padding:    {padding()}  ;
+        width:      {width()}    ;
+        height:     {height()}   ;
+        max-width:  {maxWidth()} ;
         max-height: {maxHeight()};
       """
 
