@@ -37,6 +37,8 @@ https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa30
 - [lpsa.swarthmore.edu](https://lpsa.swarthmore.edu/TM/tmExplore/index.html?LPSA#t_lpsahome)
 - [CISCO Network Academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
 - [Hepta Base](https://heptabase.com/) + [Margin Note](https://www.marginnote.com/)
+- [connected papers](https://www.connectedpapers.com/)
+
 
 [Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
 
