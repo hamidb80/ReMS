@@ -41,7 +41,8 @@ https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa30
 
 ### Good Ideas
 - [Makandra cards](https://makandracards.com/)
-- anki
+- Anki
+- `.epub` is HTML ...
 
 
 [Obsidian](https://obsidian.md/)? [Notion](https://www.notion.so/)? [LogSeq](https://github.com/logseq/logseq)? Nah, I didn't find them useful ...
