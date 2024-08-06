@@ -38,6 +38,7 @@ https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa30
 - [CISCO Network Academy](http://cisco.num.edu.mn/CCNA_R&S1/course/module7/#7.0.1.1)
 - [Hepta Base](https://heptabase.com/) + [Margin Note](https://www.marginnote.com/)
 - [connected papers](https://www.connectedpapers.com/)
+- [capacities](https://capacities.io/)
 
 ### Good Ideas
 - [Makandra cards](https://makandracards.com/)
