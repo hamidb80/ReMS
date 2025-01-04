@@ -28,7 +28,7 @@ https://github.com/hamidb80/ReMS/assets/33871336/e1cac5a9-9b50-4b1b-ab29-f80fa30
 - Google Keep
 
 ### Similar Works
-- [OrgPad](https://orgpad.info/)
+- [OrgPad](https://orgpad.info/) + emacs org mode 
 - [mindomo](https://mindomo.com/)
 - [kumu](https://kumu.io/)
 - [Tiddly Map](https://tiddlymap.org/)
